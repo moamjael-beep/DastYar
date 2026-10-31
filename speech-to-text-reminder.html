@@ -1384,6 +1384,22 @@ body { padding-bottom: 30px; }
 /* Fixed group item ("همه کارها") — NOT draggable. */
 .group-item-fixed {
     cursor: pointer;
+    /* 🔧 بوردر مشکی ضخیم برای گروه‌های «همه کارها» و «کارهای فوری» */
+    border: 3px solid #000 !important;
+    /* 🔧 sticky — با اسکرول گروه‌ها به پایین، این دو گروه ثابت می‌مانند */
+    position: sticky;
+    position: -webkit-sticky;
+    top: 78px;  /* زیر هدر اصلی (~70px) با کمی فاصله */
+    z-index: 50;
+}
+/* 🔧 گروه «کارهای فوری» زیر «همه کارها» قرار می‌گیرد */
+.group-item-fixed.group-urgent {
+    top: 138px;  /* زیر «همه کارها» (~60px ارتفاع + 78px top) */
+}
+/* 🔧 پس‌زمینهٔ کمی مات برای خوانایی هنگام اسکرول */
+.group-item-fixed {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 /* Visual hint that the group is being dragged */
 .group-item.sortable-ghost { opacity: 0.4; }
@@ -2016,6 +2032,37 @@ body.locked .header-actions button {
     position: relative;
     z-index: 1;
 }
+/* 🔧 تیک «فوری» در جزئیات تسک */
+.urgent-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    margin-top: 4px;
+}
+.urgent-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    color: inherit;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.urgent-checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #FFC107;  /* رنگ زرد برای تیک فوری */
+}
+.urgent-checkbox-label span {
+    line-height: 1.4;
+}
+/* وقتی تسک فوری است، یک نوار زرد در سمت چپ نشان بده */
+.item.urgent-task {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12), inset 4px 0 0 #FFC107 !important;
+}
 </style>
 </head>
 <body>
@@ -2305,7 +2352,7 @@ body.locked .header-actions button {
 //         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
 //         Also: backup button now asks for confirmation before saving
 //         (it was being accidentally triggered next to the + button).
-const APP_VERSION = 'v28-2026-10-31-task-pin-system';
+const APP_VERSION = 'v29-2026-10-31-urgent-group-and-task-pin';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -3045,6 +3092,12 @@ function migrateItemsSchema(rawItems, validGroupIds) {
             }
             if (item.pinned === true) out.pinned = true;
 
+            // 🔧 فیلد urgent — آیا تسک در گروه «کارهای فوری» نمایش داده شود؟
+            if (item.urgent === true) out.urgent = true;
+            // 🔧 فیلدهای پین
+            if (item.pinnedAt) out.pinnedAt = item.pinnedAt;
+            if (typeof item.pinnedOrder === 'number') out.pinnedOrder = item.pinnedOrder;
+
             // parentId — link to parent for repeat children. Keep only if
             // it's a non-empty string and NOT pointing to self.
             if (item.parentId && typeof item.parentId === 'string' && item.parentId !== item.id) {
@@ -3627,13 +3680,33 @@ const GROUP_COLORS = [
 function getGroups() {
     try {
         let groups = JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]');
-        // Ensure 'all' group always exists
+        // 🔧 Ensure 'all' group always exists (first)
         if (!groups.find(g => g.id === 'all')) {
-            groups.unshift({ id: 'all', name: 'همه کارها', color: '#4CAF50', isDefault: true });
+            groups.unshift({ id: 'all', name: 'همه کارها', color: '#4CAF50', isDefault: true, headerIcon: '📋' });
+            localStorage.setItem(GROUPS_KEY, JSON.stringify(groups));
+        }
+        // 🔧 Ensure 'urgent' group always exists (second, after 'all')
+        // این گروه تسک‌هایی که علامت «فوری» خورده‌اند را نمایش می‌دهد
+        if (!groups.find(g => g.id === 'urgent')) {
+            const allIdx = groups.findIndex(g => g.id === 'all');
+            groups.splice(allIdx + 1, 0, {
+                id: 'urgent',
+                name: 'کارهای فوری',
+                color: '#FFC107',  // زرد
+                isDefault: true,    // قابل حذف نیست
+                isUrgent: true,     // نشان می‌دهد این گروه فیلتر urgent است
+                headerIcon: '🚨',
+                showInAll: false    // خودش در «همه کارها» نمایش داده نمی‌شود
+            });
             localStorage.setItem(GROUPS_KEY, JSON.stringify(groups));
         }
         return groups;
-    } catch(e) { return [{ id: 'all', name: 'همه کارها', color: '#4CAF50', isDefault: true }]; }
+    } catch(e) {
+        return [
+            { id: 'all', name: 'همه کارها', color: '#4CAF50', isDefault: true, headerIcon: '📋' },
+            { id: 'urgent', name: 'کارهای فوری', color: '#FFC107', isDefault: true, isUrgent: true, headerIcon: '🚨' }
+        ];
+    }
 }
 
 function setGroups(groups) {
@@ -5590,10 +5663,10 @@ function initSortable() {
         initGroupsSortable(container);
         return;
     }
-    // 🔧 در گروه «همه کارها» هم drag-drop فعال است تا کاربر بتواند پین‌ها را مرتب کند
+    // 🔧 در گروه «همه کارها» و «کارهای فوری» هم drag-drop فعال است تا کاربر بتواند پین‌ها را مرتب کند
     // (قبلاً غیرفعال بود چون ترتیب فقط بر اساس deadline بود، اما حالا پین‌ها نیاز به drag-drop دارند)
     // اگر هیچ پینی وجود ندارد، drag-drop غیرفعال می‌ماند (چون فقط deadline مهم است)
-    if (currentGroupId === 'all') {
+    if (currentGroupId === 'all' || currentGroupId === 'urgent') {
         const allItems = getDB();
         const hasPinned = allItems.some(i => i.pinned === true);
         if (!hasPinned) return;  // اگر پینی نیست، drag-drop لازم نیست
@@ -5869,9 +5942,9 @@ function resetTaskPosition(id) {
 // (currentView === 'groups') and in the "همه کارها" group — there's no
 // manual ordering to reset in either of those cases.
 function resetAllTaskPositions() {
-    // Refuse if disabled (main page or 'all' group). The CSS already
+    // Refuse if disabled (main page or 'all'/'urgent' group). The CSS already
     // blocks pointer events, but this is a defensive check.
-    if (currentView === 'groups' || currentGroupId === 'all' || !currentGroupId) {
+    if (currentView === 'groups' || currentGroupId === 'all' || currentGroupId === 'urgent' || !currentGroupId) {
         showToast('در این صفحه بازگردانی کار نمی‌کند');
         return;
     }
@@ -6234,10 +6307,22 @@ function renderGroupsView() {
     allDiv.onclick = () => openGroupView('all');
     container.appendChild(allDiv);
 
+    // 🔧 "کارهای فوری" (yellow, second — NOT draggable, sticky)
+    // این گروه تسک‌هایی که علامت «فوری» خورده‌اند را نمایش می‌دهد
+    const urgentCount = items.filter(i => i.urgent === true).length;
+    const urgentDiv = document.createElement('div');
+    urgentDiv.className = 'group-item group-item-fixed group-urgent';
+    urgentDiv.dataset.groupId = 'urgent';
+    urgentDiv.style.background = 'linear-gradient(135deg, #FFC107, #FF8F00)';
+    urgentDiv.innerHTML = `<div class="group-item-row"><div class="group-list-icon"><span>🚨</span></div><span class="group-name">کارهای فوری</span><span class="group-count">${toPersianNumber(urgentCount)}</span></div>`;
+    urgentDiv.onclick = () => openGroupView('urgent');
+    container.appendChild(urgentDiv);
+
     // Other groups — draggable (re-orderable). The SortableJS instance
     // (initGroupsSortable, called from fullRender when currentView==='groups')
     // saves the new order to localStorage on drag-end.
-    groups.filter(g => g.id !== 'all').forEach(group => {
+    // 🔧 گروه‌های 'all' و 'urgent' در این لیست نیستند (فیلتر می‌شوند)
+    groups.filter(g => g.id !== 'all' && g.id !== 'urgent').forEach(group => {
         const count = items.filter(i => i.groupId === group.id).length;
         const div = document.createElement('div');
         div.className = 'group-item group-item-draggable';
@@ -6282,13 +6367,17 @@ function renderTasksView(groupId) {
     const container = document.getElementById('container');
     const group = getGroupById(groupId);
     let items = getDB();
-    if (groupId !== 'all') {
-        items = items.filter(i => i.groupId === groupId);
-    } else {
+    if (groupId === 'all') {
         // در گروه «همه کارها»، فقط گروه‌هایی که showInAll !== false هستند نمایش داده می‌شوند
         const groups = getGroups();
         const visibleGroupIds = new Set(groups.filter(g => g.showInAll !== false).map(g => g.id));
         items = items.filter(i => visibleGroupIds.has(i.groupId || 'all'));
+    } else if (groupId === 'urgent') {
+        // 🔧 در گروه «کارهای فوری»، فقط تسک‌هایی که urgent === true هستند نمایش داده می‌شوند
+        items = items.filter(i => i.urgent === true);
+    } else {
+        // گروه‌های سفارشی — فقط تسک‌های همین گروه
+        items = items.filter(i => i.groupId === groupId);
     }
 
     // 🔧 مرتب‌سازی: پین‌ها اول، بعد تسک‌های غیرپین
@@ -6315,8 +6404,8 @@ function renderTasksView(groupId) {
             return (b.pinnedAt || 0) - (a.pinnedAt || 0);
         }
         // ۳. تسک‌های غیرپین
-        if (groupId === 'all') {
-            // در «همه کارها» فقط deadline (drag-drop ندارد)
+        if (groupId === 'all' || groupId === 'urgent') {
+            // در «همه کارها» و «کارهای فوری» فقط deadline (drag-drop ندارند)
             return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
         } else {
             // در گروه‌های سفارشی: اول position (drag-drop)، بعد deadline
@@ -6397,7 +6486,8 @@ function renderTasksView(groupId) {
         const level = getUrgencyLevel(item.deadline, item.done);
         const div = document.createElement('div');
         // 🔧 اگر تسک پین شده، کلاس pinned-task اضافه کن (نوار زرد در سمت راست)
-        div.className = `item ${level}` + (expandedId === item.id ? ' expanded' : '') + (item.pinned ? ' pinned-task' : '');
+        // 🔧 اگر تسک فوری است، کلاس urgent-task اضافه کن (نوار زرد در سمت چپ)
+        div.className = `item ${level}` + (expandedId === item.id ? ' expanded' : '') + (item.pinned ? ' pinned-task' : '') + (item.urgent ? ' urgent-task' : '');
         div.dataset.id = item.id;
 
         const row = document.createElement('div');
@@ -6449,6 +6539,7 @@ function renderTasksView(groupId) {
             <div class="detail-row"><span class="detail-label">انجام شد:</span><span class="detail-value">${item.completedAt ? toPersianDigits(toJalaliFull(item.completedAt)) : 'هنوز انجام نشده'}</span></div>
             ${item.completedAt ? `<div class="detail-row"><span class="detail-label">روز انجام:</span><span class="detail-value">${toJalaliLong(item.completedAt)}</span></div>` : ''}
             <div class="detail-row group-selector-row"><span class="detail-label">گروه:</span><select class="group-selector" onchange="changeTaskGroup('${item.id}', this.value)">${groupOpts}</select></div>
+            <div class="detail-row urgent-toggle-row"><span class="detail-label">🚨 فوری:</span><label class="urgent-checkbox-label"><input type="checkbox" class="urgent-checkbox" ${item.urgent ? 'checked' : ''} onchange="toggleTaskUrgent('${item.id}')"> <span>این تسک در گروه «کارهای فوری» نمایش داده شود</span></label></div>
             <div class="item-actions"><button class="action-btn" data-action="edit">✏️ ویرایش</button><button class="action-btn" data-action="toggle">${item.done ? '↩ بازگردانی' : '✓ انجام شد'}</button><button class="action-btn danger" data-action="delete">🗑 حذف</button></div>
         `;
         div.appendChild(row);
@@ -6458,7 +6549,7 @@ function renderTasksView(groupId) {
             if (action === 'toggle') { e.stopPropagation(); toggleDone(item.id); return; }
             if (action === 'delete') { e.stopPropagation(); deleteItem(item.id); return; }
             if (action === 'edit') { e.stopPropagation(); editTask(item.id); return; }
-            if (e.target.closest('.action-btn') || e.target.closest('.group-selector')) return;
+            if (e.target.closest('.action-btn') || e.target.closest('.group-selector') || e.target.closest('.urgent-checkbox-label') || e.target.classList.contains('urgent-checkbox')) return;
             toggleExpand(item.id);
         });
         container.appendChild(div);
@@ -6544,6 +6635,42 @@ function toggleDone(id) {
     setDB(items);
     fullRender();
     showToast(item.done ? 'انجام شد ✓' : 'بازگردانی شد');
+}
+
+// 🔧 تغییر وضعیت «فوری» یک تسک
+// اگر فوری نباشد → فوری می‌شود (در گروه «کارهای فوری» نمایش داده می‌شود)
+// اگر فوری باشد → فوری بودن آن حذف می‌شود
+function toggleTaskUrgent(id) {
+    const items = getDB();
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    if (item.urgent) {
+        // حذف فوری
+        try { delete item.urgent; } catch(e) {}
+        item.urgent = undefined;
+    } else {
+        // افزودن فوری
+        item.urgent = true;
+    }
+    setDB(items);
+    fullRender();
+    showToast(item.urgent ? '🚨 فوری شد' : 'فوری برداشته شد');
+    if (navigator.vibrate) navigator.vibrate(20);
+}
+
+// 🔧 مهاجرت فیلد urgent برای تسک‌های قدیمی
+// تسک‌هایی که urgent ندارند، به‌صورت پیش‌فرض urgent = undefined می‌شوند
+function migrateUrgentField() {
+    const items = getDB();
+    let changed = false;
+    items.forEach(item => {
+        if (item.urgent === undefined) {
+            // نیازی به ذخیرهٔ صریح نیست — undefined یعنی فوری نیست
+            // اما اگر خواسته باشیم، می‌توانیم item.urgent = false قرار دهیم
+            // اینجا کاری نمی‌کنیم چون undefined هم یعنی فوری نیست
+        }
+    });
+    return changed;
 }
 
 function deleteItem(id) {
