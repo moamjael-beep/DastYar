@@ -374,6 +374,48 @@ body { padding-bottom: 30px; }
     border-radius: 10px;
     flex-shrink: 0;
 }
+/* 🔧 آیکون پین (Pin) — سمت چپ هر تسک
+   - کم‌رنگ وقتی پین نیست (opacity: 0.4)
+   - پررنگ وقتی پین شده (opacity: 1, با چرخش و رنگ زرد)
+   - با کلیک روی آن، تسک پین/نپین می‌شود */
+.task-pin-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+    border-radius: 50%;
+    transition: transform 0.2s, background 0.2s, opacity 0.2s;
+    opacity: 0.4;  /* کم‌رنگ وقتی پین نیست */
+    -webkit-tap-highlight-color: transparent;
+}
+.task-pin-btn:hover {
+    opacity: 0.7;
+    background: rgba(255,255,255,0.15);
+}
+.task-pin-btn:active {
+    transform: scale(0.85);
+}
+/* وقتی تسک پین شده است */
+.task-pin-btn.pinned {
+    opacity: 1;  /* پررنگ */
+    transform: rotate(-40deg);  /* چرخش آیکون پین */
+    filter: drop-shadow(0 0 4px rgba(255, 235, 59, 0.8));
+}
+.task-pin-btn.pinned:hover {
+    background: rgba(255, 235, 59, 0.2);
+}
+/* نشانگر پین شده بودن تسک — یک نوار رنگی کوچک در سمت راست تسک */
+.item.pinned-task {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12), inset 4px 0 0 #FFEB3B;
+}
 .item-done-mark {
     width: 22px;
     height: 22px;
@@ -2263,7 +2305,7 @@ body.locked .header-actions button {
 //         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
 //         Also: backup button now asks for confirmation before saving
 //         (it was being accidentally triggered next to the + button).
-const APP_VERSION = 'v27-2026-10-31-phone-number-parsing-fix';
+const APP_VERSION = 'v28-2026-10-31-task-pin-system';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -5548,9 +5590,14 @@ function initSortable() {
         initGroupsSortable(container);
         return;
     }
-    // In the "همه کارها" group, no Sortable (read-only ordering by deadline).
+    // 🔧 در گروه «همه کارها» هم drag-drop فعال است تا کاربر بتواند پین‌ها را مرتب کند
+    // (قبلاً غیرفعال بود چون ترتیب فقط بر اساس deadline بود، اما حالا پین‌ها نیاز به drag-drop دارند)
+    // اگر هیچ پینی وجود ندارد، drag-drop غیرفعال می‌ماند (چون فقط deadline مهم است)
     if (currentGroupId === 'all') {
-        return;
+        const allItems = getDB();
+        const hasPinned = allItems.some(i => i.pinned === true);
+        if (!hasPinned) return;  // اگر پینی نیست، drag-drop لازم نیست
+        // اگر پین هست، drag-drop را فعال کن (با filter برای پین‌ها)
     }
     sortableInstance = Sortable.create(container, {
         animation: 300,           // smoother slide animation (ms) - soap-like
@@ -5694,17 +5741,34 @@ function saveNewOrder(draggedId) {
         .map(el => el.dataset.id)
         .filter(id => id);
     const items = getDB();
-    // Separate done and not-done tasks based on their current done status
-    // (we preserve the visual grouping: not-done first, done at bottom)
-    const notDoneIds = domOrder.filter(id => {
+
+    // 🔧 جداسازی پین‌ها از غیرپین‌ها
+    // پین‌ها در بالای لیست هستند، غیرپین‌ها در پایین
+    // در DOM، پین‌ها اول می‌آیند (چون در رندر اول نمایش داده می‌شوند)
+    // ما باید تشخیص دهیم کدام تسک‌ها پین هستند و کدام نیستند
+    const pinnedIds = [];
+    const notDoneIds = [];
+    const doneIds = [];
+    domOrder.forEach(id => {
         const it = items.find(i => i.id === id);
-        return it && !it.done;
+        if (!it) return;
+        if (it.pinned === true) {
+            pinnedIds.push(id);
+        } else if (it.done) {
+            doneIds.push(id);
+        } else {
+            notDoneIds.push(id);
+        }
     });
-    const doneIds = domOrder.filter(id => {
+
+    // 🔧 ذخیرهٔ ترتیب پین‌ها (pinnedOrder)
+    // ترتیب در DOM همان ترتیب نمایش است — پین‌ها به همین ترتیب ذخیره می‌شوند
+    pinnedIds.forEach((id, idx) => {
         const it = items.find(i => i.id === id);
-        return it && it.done;
+        if (it) it.pinnedOrder = idx;
     });
-    // Assign positions
+
+    // 🔧 ذخیرهٔ ترتیب لمسی غیرپین‌ها (position)
     notDoneIds.forEach((id, idx) => {
         const it = items.find(i => i.id === id);
         if (it) it.position = idx;
@@ -5713,15 +5777,7 @@ function saveNewOrder(draggedId) {
         const it = items.find(i => i.id === id);
         if (it) it.position = idx;
     });
-    // Mark ONLY the dragged task as pinned. Other tasks that shifted to
-    // accommodate the drag are NOT pinned — they can be re-sorted by
-    // deadline when a new task is added.
-    if (draggedId) {
-        const dragged = items.find(i => i.id === draggedId);
-        if (dragged) {
-            dragged.pinned = true;
-        }
-    }
+
     setDB(items);
     // Full re-render with SortableJS re-init to ensure drag-drop continues working
     fullRender();
@@ -5837,6 +5893,81 @@ function resetAllTaskPositions() {
     fullRender();
     showToast('↩ تسک‌های این گروه به ترتیب اصلی برگشتند');
     if (navigator.vibrate) navigator.vibrate(30);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 📌 سیستم پین (Pin) تسک‌ها
+// ════════════════════════════════════════════════════════════════════
+// هر تسک می‌تواند پین شود. پین‌ها در بالای گروه (بالای همهٔ تسک‌ها)
+// قرار می‌گیرند و به ترتیب زمان پین شدن مرتب می‌شوند (آخرین پین‌شده بالاتر).
+// پین‌ها نامحدود هستند و هر گروه پین‌های خودش را دارد.
+// در گروه «همه کارها» هم پین کار می‌کند.
+//
+// ذخیره‌سازی:
+//   - item.pinned: true/false (آیا پین شده؟)
+//   - item.pinnedAt: timestamp (چه زمانی پین شد — برای مرتب‌سازی)
+//   - item.pinnedOrder: عدد (موقعیت در میان پین‌ها — توسط drag-drop تنظیم)
+
+// تغییر وضعیت پین یک تسک
+// اگر پین نباشد → پین می‌شود و به بالای گروه می‌رود
+// اگر پین باشد → نپین می‌شود و به جای خودش برمی‌گردد
+function togglePinTask(taskId) {
+    const items = getDB();
+    const item = items.find(i => i.id === taskId);
+    if (!item) return;
+
+    if (item.pinned) {
+        // نپین کردن — حذف pinned, pinnedAt, pinnedOrder
+        try { delete item.pinned; } catch(e) {}
+        item.pinned = undefined;
+        try { delete item.pinnedAt; } catch(e) {}
+        item.pinnedAt = undefined;
+        try { delete item.pinnedOrder; } catch(e) {}
+        item.pinnedOrder = undefined;
+        // حذف position هم برای اینکه به ترتیب لمسی/زمانی برگردد
+        try { delete item.position; } catch(e) {}
+        item.position = undefined;
+    } else {
+        // پین کردن
+        item.pinned = true;
+        item.pinnedAt = Date.now();
+        // pinnedOrder را به‌صورت خودکار در recalcPinnedOrder تنظیم می‌کنیم
+    }
+    setDB(items);
+    // محاسبهٔ مجدد ترتیب پین‌ها در این گروه
+    recalcPinnedOrder(item.groupId || 'all');
+    fullRender();
+    if (navigator.vibrate) navigator.vibrate(20);
+    showToast(item.pinned ? '📌 پین شد' : '📌 پین برداشته شد');
+}
+
+// محاسبهٔ مجدد pinnedOrder برای تمام پین‌های یک گروه
+// پین‌ها به ترتیب زمان پین شدن (pinnedAt) مرتب می‌شوند:
+// آخرین پین‌شده (pinnedAt بزرگ‌تر) → pinnedOrder کمتر (بالاتر در لیست)
+// کاربر می‌تواند بعداً با drag-drop ترتیب پین‌ها را تغییر دهد
+function recalcPinnedOrder(groupId) {
+    const items = getDB();
+    let pinnedItems;
+    if (groupId === 'all') {
+        // در گروه «همه کارها»، همهٔ پین‌ها (از همهٔ گروه‌ها) در نظر گرفته می‌شوند
+        pinnedItems = items.filter(i => i.pinned === true);
+    } else {
+        pinnedItems = items.filter(i => i.pinned === true && (i.groupId || 'all') === groupId);
+    }
+    // مرتب‌سازی بر اساس pinnedAt (نزولی: آخرین پین‌شده اول)
+    pinnedItems.sort((a, b) => (b.pinnedAt || 0) - (a.pinnedAt || 0));
+    // اگر کاربر قبلاً با drag-drop ترتیب پین‌ها را تغییر داده (pinnedOrder دارد),
+    // آن ترتیب را حفظ کن. ولی برای پین‌های جدید که pinnedOrder ندارند،
+    // به‌طور خودکار بر اساس pinnedAt تنظیم کن.
+    const hasManualOrder = pinnedItems.some(i => typeof i.pinnedOrder === 'number');
+    if (!hasManualOrder) {
+        // هیچ ترتیب دستی نیست — بر اساس pinnedAt تنظیم کن
+        pinnedItems.forEach((item, idx) => {
+            const orig = items.find(i => i.id === item.id);
+            if (orig) orig.pinnedOrder = idx;
+        });
+        setDB(items);
+    }
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -6160,26 +6291,41 @@ function renderTasksView(groupId) {
         items = items.filter(i => visibleGroupIds.has(i.groupId || 'all'));
     }
 
-    // Sort: not-done first, then by deadline (past → future).
-    // In the "همه کارها" group, we ALWAYS sort by deadline (ignore manual
-    // drag-drop positions — that group is read-only for ordering).
-    // In custom groups, manual drag-drop positions take precedence
-    // (a manually-moved task stays where the user put it); tasks WITHOUT
-    // a position fall back to deadline-based ordering.
-    if (groupId === 'all') {
-        items.sort((a, b) => {
-            if (a.done !== b.done) return a.done ? 1 : -1;
+    // 🔧 مرتب‌سازی: پین‌ها اول، بعد تسک‌های غیرپین
+    // پین‌ها به ترتیب pinnedOrder (آخرین پین‌شده بالاتر — drag-drop قابل تغییر)
+    // تسک‌های غیرپین به ترتیب position (drag-drop) یا deadline
+    // در هر دو حالت، تسک‌های انجام‌شده در پایین قرار می‌گیرند
+    //
+    // برای گروه «همه کارها» هم پین کار می‌کند — پین‌ها بالاترین هستند
+    // و بقیه بر اساس deadline مرتب می‌شوند (چون این گروه drag-drop ندارد)
+    items.sort((a, b) => {
+        // ۱. انجام‌شده‌ها در پایین
+        if (a.done !== b.done) return a.done ? 1 : -1;
+        // ۲. پین‌ها اول
+        const aPinned = a.pinned === true;
+        const bPinned = b.pinned === true;
+        if (aPinned && !bPinned) return -1;
+        if (!aPinned && bPinned) return 1;
+        if (aPinned && bPinned) {
+            // هر دو پین هستند — بر اساس pinnedOrder
+            const aOrder = (typeof a.pinnedOrder === 'number') ? a.pinnedOrder : 999999;
+            const bOrder = (typeof b.pinnedOrder === 'number') ? b.pinnedOrder : 999999;
+            if (aOrder !== bOrder) return aOrder - bOrder;
+            // اگر pinnedOrder ندارند، بر اساس pinnedAt (نزولی)
+            return (b.pinnedAt || 0) - (a.pinnedAt || 0);
+        }
+        // ۳. تسک‌های غیرپین
+        if (groupId === 'all') {
+            // در «همه کارها» فقط deadline (drag-drop ندارد)
             return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-        });
-    } else {
-        items.sort((a, b) => {
-            if (a.done !== b.done) return a.done ? 1 : -1;
+        } else {
+            // در گروه‌های سفارشی: اول position (drag-drop)، بعد deadline
             const aPos = (typeof a.position === 'number') ? a.position : 999999;
             const bPos = (typeof b.position === 'number') ? b.position : 999999;
             if (aPos !== bPos) return aPos - bPos;
             return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-        });
-    }
+        }
+    });
 
     container.innerHTML = '';
 
@@ -6250,7 +6396,8 @@ function renderTasksView(groupId) {
     items.forEach((item) => {
         const level = getUrgencyLevel(item.deadline, item.done);
         const div = document.createElement('div');
-        div.className = `item ${level}` + (expandedId === item.id ? ' expanded' : '');
+        // 🔧 اگر تسک پین شده، کلاس pinned-task اضافه کن (نوار زرد در سمت راست)
+        div.className = `item ${level}` + (expandedId === item.id ? ' expanded' : '') + (item.pinned ? ' pinned-task' : '');
         div.dataset.id = item.id;
 
         const row = document.createElement('div');
@@ -6279,6 +6426,17 @@ function renderTasksView(groupId) {
             }
         }
         const remEl = document.createElement('div'); remEl.className='item-remaining'; remEl.textContent=toPersianDigits(formatRemaining(item.deadline, item.done)); row.appendChild(remEl);
+        // 🔧 آیکون پین — سمت چپ (در RTL، آخرین عنصر در row)
+        // کم‌رنگ وقتی پین نیست، پررنگ (با چرخش) وقتی پین شده
+        const pinBtn = document.createElement('button');
+        pinBtn.className = 'task-pin-btn' + (item.pinned ? ' pinned' : '');
+        pinBtn.title = item.pinned ? 'حذف پین' : 'پین کردن';
+        pinBtn.textContent = '📌';
+        pinBtn.onclick = function(e) {
+            e.stopPropagation();
+            togglePinTask(item.id);
+        };
+        row.appendChild(pinBtn);
 
         const groups = getGroups();
         const groupOpts = groups.map(g => `<option value="${g.id}" ${g.id === (item.groupId || 'all') ? 'selected' : ''}>${escapeHtml(g.name)}</option>`).join('');
