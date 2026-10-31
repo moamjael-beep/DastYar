@@ -2063,6 +2063,417 @@ body.locked .header-actions button {
 .item.urgent-task {
     box-shadow: 0 2px 6px rgba(0,0,0,0.12), inset 4px 0 0 #FFC107 !important;
 }
+
+/* ============ 👥 بانک اطلاعاتی اشخاص (CRM) ============ */
+.contacts-overlay {
+    position: fixed;
+    inset: 0;
+    background: #f0f2f5;
+    z-index: 1500;
+    display: none;
+    flex-direction: column;
+    direction: rtl;
+}
+.contacts-overlay.active { display: flex; }
+
+.contacts-header {
+    position: sticky;
+    top: 0;
+    background: linear-gradient(135deg, #1976D2, #0D47A1);
+    color: white;
+    padding: 14px 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.contacts-header h2 { font-size: 17px; font-weight: 700; }
+.contacts-header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.contacts-action-btn {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+.contacts-action-btn:hover { background: rgba(255,255,255,0.35); }
+.contacts-action-btn:active { transform: scale(0.95); }
+.contacts-action-btn.primary { background: #4CAF50; border-color: #4CAF50; }
+.contacts-action-btn.primary:hover { background: #43A047; }
+
+.contacts-back-btn {
+    background: rgba(255,255,255,0.25);
+    border: none;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.contacts-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.contacts-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    font-size: 13px;
+}
+.contacts-table thead {
+    background: linear-gradient(135deg, #1976D2, #0D47A1);
+    color: white;
+}
+.contacts-table th {
+    padding: 12px 10px;
+    text-align: right;
+    font-weight: 700;
+    font-size: 12px;
+    white-space: nowrap;
+}
+.contacts-table td {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+}
+.contacts-table tr:hover { background: #f5f9ff; }
+.contacts-table tr:last-child td { border-bottom: none; }
+.contacts-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+    font-size: 14px;
+}
+.contacts-empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+
+.contact-row-actions { display: flex; gap: 4px; }
+.contact-row-btn {
+    background: #e3f2fd;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+    color: #1565C0;
+}
+.contact-row-btn.danger { background: #ffebee; color: #c62828; }
+.contact-row-btn:active { transform: scale(0.92); }
+
+/* فرم تعریف/ویرایش شخص */
+.contact-form-modal {
+    max-width: 500px;
+    width: 95%;
+    max-height: calc(100vh - 40px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.contact-form-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+    -webkit-overflow-scrolling: touch;
+}
+.contact-form-section {
+    margin-bottom: 14px;
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: 8px;
+}
+.contact-form-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #555;
+    margin-bottom: 8px;
+    border-bottom: 2px solid #1976D2;
+    padding-bottom: 4px;
+}
+.contact-form-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.contact-form-row:last-child { margin-bottom: 0; }
+.contact-form-field {
+    flex: 1;
+}
+.contact-form-field label {
+    display: block;
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 3px;
+    font-weight: 600;
+}
+.contact-form-field input,
+.contact-form-field textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    background: #fff;
+    direction: rtl;
+}
+.contact-form-field input:focus,
+.contact-form-field textarea:focus {
+    outline: none;
+    border-color: #1976D2;
+}
+.contact-form-field textarea {
+    resize: vertical;
+    min-height: 40px;
+}
+.contact-dynamic-list {
+    margin-top: 6px;
+}
+.contact-dynamic-item {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 6px;
+    align-items: center;
+}
+.contact-dynamic-item input {
+    flex: 1;
+    padding: 7px 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: inherit;
+    direction: rtl;
+}
+.contact-dynamic-item input:focus { outline: none; border-color: #1976D2; }
+.contact-dynamic-remove {
+    background: #ffebee;
+    border: none;
+    color: #c62828;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.contact-dynamic-add-btn {
+    background: #e3f2fd;
+    color: #1565C0;
+    border: 1px dashed #90CAF9;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+    width: 100%;
+    margin-top: 4px;
+}
+.contact-dynamic-add-btn:active { transform: scale(0.97); }
+
+/* صفحه جستجو و گزارشات */
+.search-form-modal {
+    max-width: 500px;
+    width: 95%;
+    max-height: calc(100vh - 40px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.search-form-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+    -webkit-overflow-scrolling: touch;
+}
+.search-results-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    font-size: 12px;
+    margin-top: 12px;
+}
+.search-results-table thead {
+    background: linear-gradient(135deg, #009688, #00695C);
+    color: white;
+}
+.search-results-table th {
+    padding: 10px 8px;
+    text-align: right;
+    font-weight: 700;
+    font-size: 11px;
+    white-space: nowrap;
+}
+.search-results-table td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+}
+.report-header {
+    background: linear-gradient(135deg, #FF9800, #E65100);
+    color: white;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    text-align: center;
+}
+.report-header h3 { font-size: 16px; margin-bottom: 4px; }
+.report-header .report-meta { font-size: 11px; opacity: 0.9; }
+.report-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+.report-action-btn {
+    background: #FF9800;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    font-weight: 600;
+}
+.report-action-btn:active { transform: scale(0.95); }
+
+/* ============ 📞 منوی انتخاب عملیات تلفن ============ */
+/* وقتی کاربر روی یک شماره تلفن کلیک می‌کند، این منو باز می‌شود و
+   گزینه‌های تماس، پیامک، و ارسال به شبکه‌های اطلاع‌رسانی را نشان می‌دهد */
+.phone-action-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 3000;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 16px;
+    backdrop-filter: blur(2px);
+}
+.phone-action-overlay.active { display: flex; }
+.phone-action-menu {
+    background: white;
+    border-radius: 16px 16px 0 0;
+    width: 100%;
+    max-width: 400px;
+    padding: 16px;
+    animation: phoneMenuSlideUp 0.3s;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+@keyframes phoneMenuSlideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+.phone-action-title {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #1976D2;
+}
+.phone-action-number {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1976D2;
+    margin-bottom: 16px;
+    direction: ltr;
+    font-family: 'Tahoma', monospace;
+}
+.phone-action-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.phone-action-item {
+    background: #f5f5f5;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 8px;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s, transform 0.15s;
+    text-decoration: none;
+    color: #333;
+}
+.phone-action-item:hover { background: #e3f2fd; }
+.phone-action-item:active { transform: scale(0.95); }
+.phone-action-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+.phone-action-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.3;
+}
+.phone-action-close {
+    width: 100%;
+    background: #e0e0e0;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 600;
+    color: #555;
+    cursor: pointer;
+    margin-top: 8px;
+}
+.phone-action-close:active { transform: scale(0.97); }
+/* شماره تلفن قابل کلیک در جداول */
+.clickable-phone {
+    color: #1565C0;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+    direction: ltr;
+    display: inline-block;
+}
+.clickable-phone:hover { color: #0D47A1; }
+
+/* رسپانسیو موبایل */
+@media (max-width: 600px) {
+    .contacts-table { font-size: 11px; }
+    .contacts-table th { padding: 8px 6px; font-size: 10px; }
+    .contacts-table td { padding: 6px; }
+    .contact-form-row { flex-direction: column; gap: 6px; }
+    .contacts-header { padding: 10px 12px; }
+    .contacts-header h2 { font-size: 15px; }
+    .contacts-action-btn { padding: 6px 12px; font-size: 12px; }
+    .phone-action-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .phone-action-icon { font-size: 24px; }
+    .phone-action-label { font-size: 10px; }
+}
 </style>
 </head>
 <body>
@@ -2098,6 +2509,7 @@ body.locked .header-actions button {
     <div class="header-actions">
         <button class="icon-btn share-btn install-btn" id="installBtn" onclick="installApp()" title="نصب به عنوان اپلیکیشن" style="display:none;">⬇</button>
         <button class="icon-btn share-btn" id="calBtn" onclick="openCalendar()" title="تقویم شمسی">📅</button>
+        <button class="icon-btn share-btn" id="contactsBtn" onclick="openContacts()" title="بانک اطلاعاتی اشخاص">👥</button>
         <!-- دکمه بازگردانی به هدر گروه‌ها منتقل شد (در منوی همبرگری هر گروه) -->
 <button class="icon-btn share-btn" id="resetOrderBtn" onclick="resetAllTaskPositions()" title="برگرداندن همه تسک‌ها به ترتیب اصلی" style="display:none;">↩</button>
         <button class="icon-btn share-btn" id="importBtn" onclick="importDatabase()" title="وارد کردن دیتابیس از فایل JSON">📥</button>
@@ -2146,13 +2558,7 @@ body.locked .header-actions button {
                 <input type="hidden" id="itemDeadline">
                 <button type="button" class="datetime-picker-btn" onclick="openDatetimePicker()" title="باز کردن تقویم شمسی">📅</button>
             </div>
-            <div class="quick-deadline">
-                <button class="quick-btn" onclick="setQuickDeadline(1)">۱ ساعت</button>
-                <button class="quick-btn" onclick="setQuickDeadline(3)">۳ ساعت</button>
-                <button class="quick-btn" onclick="setQuickDeadline(24)">۱ روز</button>
-                <button class="quick-btn" onclick="setQuickDeadline(72)">۳ روز</button>
-                <button class="quick-btn" onclick="setQuickDeadline(168)">۱ هفته</button>
-            </div>
+            <!-- 🔧 کلیدهای پیشنهادی (۱ ساعت تا ۱ هفته) حذف شدند — فقط تقویم شمسی -->
 
             <!-- Repeat options: repeat the task at regular intervals until an end date -->
             <div class="repeat-section" id="repeatSection">
@@ -2237,6 +2643,305 @@ body.locked .header-actions button {
             <button class="btn btn-secondary" onclick="closeGroupSettings()">انصراف</button>
             <button class="btn btn-primary" onclick="saveGroupSettings()">ذخیره</button>
         </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     👥 بانک اطلاعاتی اشخاص (CRM)
+     ════════════════════════════════════════════════════════════════════
+     این بخش شامل ۴ صفحه است:
+     ۱) لیست اشخاص (با دکمه‌های جدید/جستجو/گزارشات)
+     ۲) فرم تعریف/ویرایش شخص
+     ۳) صفحه جستجو (تکی و ترکیبی)
+     ۴) صفحه گزارشات (تکی و ترکیبی، قابل ذخیره و ارسال)
+     ════════════════════════════════════════════════════════════════════ -->
+
+<!-- صفحه اصلی لیست اشخاص -->
+<div class="contacts-overlay" id="contactsOverlay">
+    <div class="contacts-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <button class="contacts-back-btn" onclick="closeContacts()" title="بازگشت">◄</button>
+            <h2>👥 بانک اطلاعاتی اشخاص</h2>
+        </div>
+        <div class="contacts-header-actions">
+            <button class="contacts-action-btn primary" onclick="openContactForm()">➕ جدید</button>
+            <button class="contacts-action-btn" onclick="openContactSearch()">🔍 جستجو</button>
+            <button class="contacts-action-btn" onclick="openContactReport()">📊 گزارشات</button>
+        </div>
+    </div>
+    <div class="contacts-body" id="contactsBody">
+        <!-- جدول اشخاص توسط JavaScript پر می‌شود -->
+    </div>
+</div>
+
+<!-- مودال فرم تعریف/ویرایش شخص -->
+<div class="modal-overlay" id="contactFormOverlay">
+    <div class="modal contact-form-modal">
+        <h2 id="contactFormTitle">تعریف شخص جدید</h2>
+        <div class="contact-form-body">
+            <!-- بخش اطلاعات اصلی -->
+            <div class="contact-form-section">
+                <div class="contact-form-section-title">📋 اطلاعات اصلی</div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>نام شرکت</label>
+                        <input type="text" id="contactCompany" placeholder="نام شرکت">
+                    </div>
+                </div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>نام شخص *</label>
+                        <input type="text" id="contactName" placeholder="نام و نام خانوادگی">
+                    </div>
+                    <div class="contact-form-field">
+                        <label>سمت</label>
+                        <input type="text" id="contactPosition" placeholder="سمت">
+                    </div>
+                </div>
+            </div>
+
+            <!-- بخش تاریخ‌ها -->
+            <div class="contact-form-section">
+                <div class="contact-form-section-title">📅 تاریخ‌ها</div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>تاریخ شروع همکاری</label>
+                        <input type="text" id="contactStartDate" placeholder="مثال: ۱۴۰۵/۰۱/۱۵" onclick="openContactDatePicker('contactStartDate')">
+                    </div>
+                    <div class="contact-form-field">
+                        <label>تاریخ تولد</label>
+                        <input type="text" id="contactBirthDate" placeholder="مثال: ۱۳۶۰/۰۵/۲۰" onclick="openContactDatePicker('contactBirthDate')">
+                    </div>
+                </div>
+            </div>
+
+            <!-- بخش اشانتیون -->
+            <div class="contact-form-section">
+                <div class="contact-form-section-title">💰 اشانتیون</div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>اشانتیون خواسته شده</label>
+                        <input type="text" id="contactCommissionAsked" placeholder="مبلغ به تومان">
+                    </div>
+                    <div class="contact-form-field">
+                        <label>اشانتیون داده شده</label>
+                        <input type="text" id="contactCommissionPaid" placeholder="مبلغ به تومان">
+                    </div>
+                </div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>اعلام درصد کارپردازی به ایشان</label>
+                        <input type="text" id="contactCommissionPercent" placeholder="مثال: ۱۰٪">
+                    </div>
+                </div>
+            </div>
+
+            <!-- بخش تلفن‌ها (نامحدود) -->
+            <div class="contact-form-section">
+                <div class="contact-form-section-title">📞 تلفن و همراه (نامحدود)</div>
+                <div class="contact-dynamic-list" id="contactPhonesList"></div>
+                <button class="contact-dynamic-add-btn" onclick="addContactPhone()">➕ افزودن تلفن</button>
+            </div>
+
+            <!-- بخش آدرس‌ها (نامحدود) -->
+            <div class="contact-form-section">
+                <div class="contact-form-section-title">📍 آدرس (نامحدود)</div>
+                <div class="contact-dynamic-list" id="contactAddressesList"></div>
+                <button class="contact-dynamic-add-btn" onclick="addContactAddress()">➕ افزودن آدرس</button>
+            </div>
+
+            <!-- بخش توضیحات (نامحدود) -->
+            <div class="contact-form-section">
+                <div class="contact-form-section-title">📝 توضیحات (نامحدود)</div>
+                <div class="contact-dynamic-list" id="contactNotesList"></div>
+                <button class="contact-dynamic-add-btn" onclick="addContactNote()">➕ افزودن توضیح</button>
+            </div>
+        </div>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeContactForm()">انصراف</button>
+            <button class="btn btn-primary" onclick="saveContact()">ذخیره</button>
+        </div>
+    </div>
+</div>
+
+<!-- مودال جستجوی اشخاص -->
+<div class="modal-overlay" id="contactSearchOverlay">
+    <div class="modal search-form-modal">
+        <h2>🔍 جستجوی اشخاص</h2>
+        <div class="search-form-body">
+            <div class="contact-form-section">
+                <div class="contact-form-section-title">معیارهای جستجو (می‌توانید چند فیلد را پر کنید)</div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>نام شرکت</label>
+                        <input type="text" id="searchCompany" placeholder="نام شرکت">
+                    </div>
+                </div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>نام شخص</label>
+                        <input type="text" id="searchName" placeholder="نام و نام خانوادگی">
+                    </div>
+                    <div class="contact-form-field">
+                        <label>سمت</label>
+                        <input type="text" id="searchPosition" placeholder="سمت">
+                    </div>
+                </div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>تلفن</label>
+                        <input type="text" id="searchPhone" placeholder="شماره تلفن">
+                    </div>
+                </div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>اشانتیون خواسته شده (از)</label>
+                        <input type="text" id="searchCommissionAskedMin" placeholder="حداقل مبلغ">
+                    </div>
+                    <div class="contact-form-field">
+                        <label>اشانتیون خواسته شده (تا)</label>
+                        <input type="text" id="searchCommissionAskedMax" placeholder="حداکثر مبلغ">
+                    </div>
+                </div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>اشانتیون داده شده (از)</label>
+                        <input type="text" id="searchCommissionPaidMin" placeholder="حداقل مبلغ">
+                    </div>
+                    <div class="contact-form-field">
+                        <label>اشانتیون داده شده (تا)</label>
+                        <input type="text" id="searchCommissionPaidMax" placeholder="حداکثر مبلغ">
+                    </div>
+                </div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>درصد کارپردازی</label>
+                        <input type="text" id="searchCommissionPercent" placeholder="مثال: ۱۰">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeContactSearch()">انصراف</button>
+            <button class="btn btn-primary" onclick="executeContactSearch()">🔍 جستجو</button>
+        </div>
+    </div>
+</div>
+
+<!-- صفحه نتایج جستجو -->
+<div class="contacts-overlay" id="contactSearchResultsOverlay">
+    <div class="contacts-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <button class="contacts-back-btn" onclick="closeContactSearchResults()" title="بازگشت">◄</button>
+            <h2>🔍 نتایج جستجو</h2>
+        </div>
+        <div class="contacts-header-actions">
+            <span id="searchResultsCount" style="color:white;font-size:13px;"></span>
+        </div>
+    </div>
+    <div class="contacts-body" id="contactSearchResultsBody"></div>
+</div>
+
+<!-- مودال گزارشات اشخاص -->
+<div class="modal-overlay" id="contactReportOverlay">
+    <div class="modal search-form-modal">
+        <h2>📊 گزارش‌گیری اشخاص</h2>
+        <div class="search-form-body">
+            <div class="contact-form-section">
+                <div class="contact-form-section-title">معیارهای گزارش (می‌توانید چند فیلد را انتخاب کنید)</div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>نام شرکت</label>
+                        <input type="text" id="reportCompany" placeholder="نام شرکت">
+                    </div>
+                </div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>نام شخص</label>
+                        <input type="text" id="reportName" placeholder="نام">
+                    </div>
+                    <div class="contact-form-field">
+                        <label>سمت</label>
+                        <input type="text" id="reportPosition" placeholder="سمت">
+                    </div>
+                </div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>تلفن</label>
+                        <input type="text" id="reportPhone" placeholder="شماره تلفن">
+                    </div>
+                </div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>اشانتیون خواسته شده (از)</label>
+                        <input type="text" id="reportCommissionAskedMin" placeholder="حداقل">
+                    </div>
+                    <div class="contact-form-field">
+                        <label>تا</label>
+                        <input type="text" id="reportCommissionAskedMax" placeholder="حداکثر">
+                    </div>
+                </div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>اشانتیون داده شده (از)</label>
+                        <input type="text" id="reportCommissionPaidMin" placeholder="حداقل">
+                    </div>
+                    <div class="contact-form-field">
+                        <label>تا</label>
+                        <input type="text" id="reportCommissionPaidMax" placeholder="حداکثر">
+                    </div>
+                </div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>درصد کارپردازی</label>
+                        <input type="text" id="reportCommissionPercent" placeholder="مثال: ۱۰">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeContactReport()">انصراف</button>
+            <button class="btn btn-primary" onclick="executeContactReport()">📊 تولید گزارش</button>
+        </div>
+    </div>
+</div>
+
+<!-- صفحه نتایج گزارش -->
+<div class="contacts-overlay" id="contactReportResultsOverlay">
+    <div class="contacts-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <button class="contacts-back-btn" onclick="closeContactReportResults()" title="بازگشت">◄</button>
+            <h2>📊 گزارش اشخاص</h2>
+        </div>
+        <div class="contacts-header-actions">
+            <button class="contacts-action-btn" onclick="saveContactReport()">💾 ذخیره</button>
+            <button class="contacts-action-btn" onclick="shareContactReport()">📤 ارسال</button>
+            <button class="contacts-action-btn" onclick="printContactReport()">🖨️ چاپ</button>
+        </div>
+    </div>
+    <div class="contacts-body" id="contactReportResultsBody"></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     📞 منوی انتخاب عملیات تلفن
+     ════════════════════════════════════════════════════════════════════
+     وقتی کاربر روی یک شماره تلفن کلیک می‌کند، این منو از پایین صفحه
+     باز می‌شود و گزینه‌های زیر را نشان می‌دهد:
+       - تماس تلفنی (tel:)
+       - پیامک (sms:)
+       - تلگرام (https://t.me/)
+       - واتساپ (https://wa.me/)
+       - ایتا (https://eitaa.com/)
+       - روبیکا (https://rubika.ir/)
+       - بله (https://ble.ir/)
+       - سروش (https://splus.ir/)
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="phone-action-overlay" id="phoneActionOverlay">
+    <div class="phone-action-menu">
+        <div class="phone-action-title">📞 انتخاب عملیات</div>
+        <div class="phone-action-number" id="phoneActionNumber"></div>
+        <div class="phone-action-grid" id="phoneActionGrid"></div>
+        <button class="phone-action-close" onclick="closePhoneActionMenu()">انصراف</button>
     </div>
 </div>
 
@@ -2352,7 +3057,7 @@ body.locked .header-actions button {
 //         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
 //         Also: backup button now asks for confirmation before saving
 //         (it was being accidentally triggered next to the + button).
-const APP_VERSION = 'v30-2026-10-31-fix-urgent-group-task-creation';
+const APP_VERSION = 'v33-2026-10-31-backup-restore-v5';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -3068,93 +3773,165 @@ function getDB() {
 // @param {Array} rawItems      - items from backup file (or current DB)
 // @param {Set}   validGroupIds - set of valid group IDs (orphans → 'all')
 // @returns {Array} validated + migrated items
+// ════════════════════════════════════════════════════════════════════
+// 🔧 سیستم مهاجرت هوشمند داده‌ها
+// ════════════════════════════════════════════════════════════════════
+// این توابع برای مهاجرت بک‌آپ‌های قدیمی به ساختار جدید استفاده می‌شوند.
+// هر بار که فیلد جدیدی به برنامه اضافه می‌شود، این توابع به‌طور خودکار
+// آن را به داده‌های قدیمی اضافه می‌کنند (با مقدار پیش‌فرض).
+//
+// نسخه‌های بک‌آپ:
+//   v1 (legacy) — فقط آرایه items
+//   v2 — { items, groups }
+//   v3 — + exportedAt, count, groupsCount, exportedAtJalali
+//   v4 — + parentId, repeat, pinned, position, completedAt
+//   v5 — + urgent, pinnedAt, pinnedOrder, headerIcon, headerImage, showInAll,
+//         گروه urgent (سیستمی)، contacts (بانک اطلاعاتی اشخاص)
+
+// مهاجرت یک تسک به ساختار فعلی
+// تمام فیلدهای جدید با مقدار پیش‌فرض پر می‌شوند
+function migrateItem(item) {
+    if (!item || !item.id || !item.text || !item.createdAt || !item.deadline) return null;
+
+    const out = {
+        // فیلدهای ضروری
+        id: String(item.id),
+        text: String(item.text),
+        createdAt: String(item.createdAt),
+        deadline: String(item.deadline),
+        done: !!item.done,
+        groupId: item.groupId ? String(item.groupId) : 'all',
+    };
+
+    // 🔧 فیلدهای اختیاری — فقط اگر موجود و معتبر باشند کپی می‌شوند
+
+    // تاریخ انجام
+    if (item.completedAt) out.completedAt = String(item.completedAt);
+
+    // موقعیت لمسی (drag-drop)
+    if (typeof item.position === 'number' && isFinite(item.position)) {
+        out.position = item.position;
+    }
+
+    // 🔧 سیستم پین (Pin)
+    if (item.pinned === true) out.pinned = true;
+    if (item.pinnedAt) out.pinnedAt = item.pinnedAt;
+    if (typeof item.pinnedOrder === 'number' && isFinite(item.pinnedOrder)) {
+        out.pinnedOrder = item.pinnedOrder;
+    }
+
+    // 🔧 فیلد فوری (Urgent)
+    if (item.urgent === true) out.urgent = true;
+
+    // parentId — لینک به والد برای فرزندان تکرارشونده
+    if (item.parentId && typeof item.parentId === 'string' && item.parentId !== item.id) {
+        out.parentId = String(item.parentId);
+    }
+
+    // repeat — تنظیمات تکرار والد
+    const validRepeatTypes = new Set(['none', 'hours', 'days', 'weeks', 'months']);
+    if (item.repeat && typeof item.repeat === 'object') {
+        if (validRepeatTypes.has(item.repeat.type)) {
+            const repType = item.repeat.type;
+            const repVal = parseInt(item.repeat.value, 10);
+            const repEnd = item.repeat.endDate ? String(item.repeat.endDate) : '';
+            if (repType === 'none') {
+                out.repeat = { type: 'none', value: isNaN(repVal) ? 1 : repVal, endDate: repEnd };
+            } else if (!isNaN(repVal) && repVal >= 1 && repEnd) {
+                out.repeat = { type: repType, value: repVal, endDate: repEnd };
+            }
+        }
+    }
+
+    return out;
+}
+
+// مهاجرت یک گروه به ساختار فعلی
+// فیلدهای headerIcon, headerImage, showInAll با مقدار پیش‌فرض پر می‌شوند
+function migrateGroup(group) {
+    if (!group || !group.id || !group.name) return null;
+
+    // گروه‌های سیستمی (all, urgent) نباید از بک‌آپ بازیابی شوند
+    // چون خودکار ساخته می‌شوند
+    if (group.id === 'all' || group.id === 'urgent') return null;
+
+    return {
+        id: String(group.id),
+        name: String(group.name),
+        color: group.color ? String(group.color) : '#607D8B',
+        isDefault: false,
+        // 🔧 فیلدهای شخصی‌سازی هدر گروه (با مقدار پیش‌فرض)
+        headerIcon: group.headerIcon ? String(group.headerIcon) : '📋',
+        headerImage: group.headerImage ? String(group.headerImage) : '',
+        showInAll: group.showInAll !== false  // پیش‌فرض: true
+    };
+}
+
+// مهاجرت کامل لیست items + groups به ساختار فعلی
+// این تابع جایگزین migrateItemsSchema قدیمی شده است
 function migrateItemsSchema(rawItems, validGroupIds) {
     if (!Array.isArray(rawItems)) return [];
 
-    // First pass: validate required fields + preserve optional fields
-    const validRepeatTypes = new Set(['none', 'hours', 'days', 'weeks', 'months']);
+    // Pass 1: مهاجرت هر تسک
     const normalized = rawItems
-        .filter(item => item && item.id && item.text && item.createdAt && item.deadline)
-        .map(item => {
-            const out = {
-                id: String(item.id),
-                text: String(item.text),
-                createdAt: String(item.createdAt),
-                deadline: String(item.deadline),
-                done: !!item.done,
-                groupId: item.groupId ? String(item.groupId) : 'all',
-            };
+        .map(item => migrateItem(item))
+        .filter(item => item !== null);
 
-            // Optional fields — only copy if present and valid
-            if (item.completedAt) out.completedAt = String(item.completedAt);
-            if (typeof item.position === 'number' && isFinite(item.position)) {
-                out.position = item.position;
-            }
-            if (item.pinned === true) out.pinned = true;
-
-            // 🔧 فیلد urgent — آیا تسک در گروه «کارهای فوری» نمایش داده شود؟
-            if (item.urgent === true) out.urgent = true;
-            // 🔧 فیلدهای پین
-            if (item.pinnedAt) out.pinnedAt = item.pinnedAt;
-            if (typeof item.pinnedOrder === 'number') out.pinnedOrder = item.pinnedOrder;
-
-            // parentId — link to parent for repeat children. Keep only if
-            // it's a non-empty string and NOT pointing to self.
-            if (item.parentId && typeof item.parentId === 'string' && item.parentId !== item.id) {
-                out.parentId = String(item.parentId);
-            }
-
-            // repeat — parent task's repeat config. Validate the structure.
-            if (item.repeat && typeof item.repeat === 'object') {
-                // Only preserve if the type is a recognized repeat type
-                // (including 'none'). Unknown types are dropped (corrupt data).
-                if (validRepeatTypes.has(item.repeat.type)) {
-                    const repType = item.repeat.type;
-                    const repVal = parseInt(item.repeat.value, 10);
-                    const repEnd = item.repeat.endDate ? String(item.repeat.endDate) : '';
-                    if (repType === 'none') {
-                        // 'none' is valid — preserve it so the UI knows the
-                        // task was previously a repeat parent that was reset.
-                        out.repeat = { type: 'none', value: isNaN(repVal) ? 1 : repVal, endDate: repEnd };
-                    } else if (!isNaN(repVal) && repVal >= 1 && repEnd) {
-                        // Valid non-'none' repeat config
-                        out.repeat = {
-                            type: repType,
-                            value: repVal,
-                            endDate: repEnd,
-                        };
-                    }
-                    // Else: valid type but bad value/endDate → drop entirely
-                }
-                // Else: invalid type (e.g., 'INVALID', 'yearly', etc.) → drop entirely
-            }
-
-            return out;
-        });
-
-    // Second pass: validate parentIds — if the parent doesn't exist in
-    // the migrated set, the child becomes a regular task (no parentId).
-    // This handles the case where a backup includes a child task but
-    // not its parent (e.g., partial backup, or parent was deleted).
+    // Pass 2: اعتبارسنجی parentId — اگر والد وجود ندارد، فرزند مستقل می‌شود
     const validIds = new Set(normalized.map(i => i.id));
     const cleaned = normalized.map(item => {
         if (item.parentId && !validIds.has(item.parentId)) {
-            // Orphan child — remove the parentId reference
             const { parentId, ...rest } = item;
             return rest;
         }
         return item;
     });
 
-    // Third pass: validate groupIds against validGroupIds (orphans → 'all')
+    // Pass 3: اعتبارسنجی groupId — اگر گروه وجود ندارد، به 'all' می‌رود
     const final = cleaned.map(item => {
         if (validGroupIds && !validGroupIds.has(item.groupId)) {
             return { ...item, groupId: 'all' };
+        }
+        // 🔧 مهاجرت خاص: تسک‌های قدیمی با groupId='urgent' → groupId='all' + urgent=true
+        // این برای بک‌آپ‌های قدیمی است که تسک‌ها را در گروه urgent ذخیره کرده‌اند
+        if (item.groupId === 'urgent') {
+            return { ...item, groupId: 'all', urgent: true };
         }
         return item;
     });
 
     return final;
+}
+
+// مهاجرت کامل لیست groups
+function migrateGroups(rawGroups) {
+    if (!Array.isArray(rawGroups)) return [];
+    return rawGroups
+        .map(g => migrateGroup(g))
+        .filter(g => g !== null);
+}
+
+// مهاجرت بانک اطلاعاتی اشخاص (contacts)
+// اگر بک‌آپ قدیمی است و contacts ندارد، آرایه خالی برمی‌گرداند
+function migrateContacts(rawContacts) {
+    if (!Array.isArray(rawContacts)) return [];
+    return rawContacts
+        .filter(c => c && c.id && c.name)
+        .map(c => ({
+            id: String(c.id),
+            company: c.company ? String(c.company) : '',
+            name: String(c.name),
+            position: c.position ? String(c.position) : '',
+            startDate: c.startDate ? String(c.startDate) : '',
+            birthDate: c.birthDate ? String(c.birthDate) : '',
+            commissionAsked: c.commissionAsked ? String(c.commissionAsked) : '',
+            commissionPaid: c.commissionPaid ? String(c.commissionPaid) : '',
+            commissionPercent: c.commissionPercent ? String(c.commissionPercent) : '',
+            phones: Array.isArray(c.phones) ? c.phones.filter(p => p).map(p => String(p)) : [],
+            addresses: Array.isArray(c.addresses) ? c.addresses.filter(a => a).map(a => String(a)) : [],
+            notes: Array.isArray(c.notes) ? c.notes.filter(n => n).map(n => String(n)) : [],
+            createdAt: c.createdAt ? String(c.createdAt) : new Date().toISOString(),
+        }));
 }
 function setDB(items) {
     try {
@@ -6155,6 +6932,13 @@ function closeModalByType(type) {
         'datetimePicker': 'datetimePickerOverlay',
         'groupPicker': 'groupPickerOverlay',
         'groupDeleteConfirm': 'groupDeleteConfirmOverlay',
+        'contacts': 'contactsOverlay',
+        'contactForm': 'contactFormOverlay',
+        'contactSearch': 'contactSearchOverlay',
+        'contactSearchResults': 'contactSearchResultsOverlay',
+        'contactReport': 'contactReportOverlay',
+        'contactReportResults': 'contactReportResultsOverlay',
+        'phoneAction': 'phoneActionOverlay',
     }[type];
     if (overlayId) {
         const el = document.getElementById(overlayId);
@@ -6735,23 +7519,33 @@ function confirmBackup() {
 
 function saveBackupToLocal() {
     const items = getDB();
-    const customGroups = getGroups().filter(g => g.id !== 'all');
+    const customGroups = getGroups().filter(g => g.id !== 'all' && g.id !== 'urgent');
+    const contacts = getContacts();
+
+    // 🔧 نسخه v5: شامل تمام فیلدهای جدید
+    //   - urgent (فوری)
+    //   - pinned, pinnedAt, pinnedOrder (سیستم پین)
+    //   - headerIcon, headerImage, showInAll (شخصی‌سازی هدر گروه)
+    //   - contacts (بانک اطلاعاتی اشخاص)
+    //   - appVersion (نسخه برنامه برای مهاجرت هوشمند)
     const dbContent = JSON.stringify({
         // Backup format version history:
         //   v1 (legacy) — just an array of items
         //   v2 — { items, groups } wrapper
         //   v3 — added exportedAt, count, groupsCount, exportedAtJalali
-        //   v4 — preserves all new schema fields (parentId, repeat, pinned,
-        //        position, completedAt) for full round-trip backup/restore.
-        //        The migrateItemsSchema() function on import handles all
-        //        versions gracefully (including v1-v3 backups).
-        version: 4,
+        //   v4 — preserves parentId, repeat, pinned, position, completedAt
+        //   v5 — + urgent, pinnedAt, pinnedOrder, headerIcon, headerImage,
+        //        showInAll, contacts, appVersion
+        version: 5,
+        appVersion: APP_VERSION,
         exportedAt: new Date().toISOString(),
         exportedAtJalali: toJalaliLong(new Date()),
         count: items.length,
         groupsCount: customGroups.length,
+        contactsCount: contacts.length,
         groups: customGroups,
-        items: items
+        items: items,
+        contacts: contacts
     }, null, 2);
     const dbBlob = new Blob([dbContent], { type: 'application/json' });
     // Filename: YadAvar_YYYYMMDDHHmm.json where the date/time is Jalali (Shamsi).
@@ -6791,6 +7585,10 @@ function downloadBlob(blob, filename) {
 // بازیابی دیتابیس از فایل JSON
 // ────────────────────────────────────────────────────────────────────
 // ============ Import Database ============
+// 🔧 بازنویسی شده برای مهاجرت خودکار از هر نسخه بک‌آپ
+// این تابع بک‌آپ‌های v1 تا v5 را تشخیص می‌دهد و به‌طور خودکار
+// به ساختار فعلی تبدیل می‌کند. تمام فیلدهای جدید با مقدار پیش‌فرض
+// پر می‌شوند.
 function importDatabase() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -6805,48 +7603,42 @@ function importDatabase() {
                 const data = JSON.parse(event.target.result);
                 let importedItems = [];
                 let importedGroups = [];
+                let importedContacts = [];
+                let backupVersion = 1;  // پیش‌فرض: قدیمی‌ترین نسخه
 
-                // Support both { items: [...] } wrapper and raw [...]
+                // تشخیص نسخه بک‌آپ و استخراج داده‌ها
                 if (Array.isArray(data)) {
-                    // v1 (legacy) backup: just an array of items, no groups
+                    // v1 (legacy): فقط آرایه items
                     importedItems = data;
+                    backupVersion = 1;
                 } else if (data && Array.isArray(data.items)) {
                     importedItems = data.items;
-                    // v2+ backup: includes a `groups` array of custom groups
+                    backupVersion = data.version || 2;
                     if (Array.isArray(data.groups)) {
                         importedGroups = data.groups;
+                    }
+                    // 🔧 v5+: استخراج contacts
+                    if (Array.isArray(data.contacts)) {
+                        importedContacts = data.contacts;
                     }
                 } else {
                     throw new Error('ساختار فایل نامعتبر است');
                 }
 
-                // Validate imported groups — strip the 'all' group if present
-                // (it's auto-created on this device and shouldn't be duplicated).
-                const validImportedGroups = (importedGroups || [])
-                    .filter(g => g && g.id && g.name && g.id !== 'all')
-                    .map(g => ({
-                        id: String(g.id),
-                        name: String(g.name),
-                        color: g.color ? String(g.color) : '#607D8B',
-                        isDefault: false,
-                        // 🆕 پشتیبانی از فیلدهای جدید شخصی‌سازی هدر گروه:
-                        headerIcon: g.headerIcon ? String(g.headerIcon) : '📋',
-                        headerImage: g.headerImage ? String(g.headerImage) : '',
-                        showInAll: g.showInAll !== false
-                    }));
+                console.log('[Import] Backup version:', backupVersion, 'Items:', importedItems.length);
 
-                // CRITICAL: Build the SET of valid group IDs FIRST so the
-                // migration function can validate task groupIds against it.
-                // This combines existing groups (if merge) + imported groups.
-                // For REPLACE mode, this is built later (before setDB).
-                // For now, we just pre-validate the items via migrateItemsSchema
-                // WITHOUT the groupIds check — that's done after we know the mode.
-                // First pass: just normalize each item's shape (preserve
-                // parentId, repeat, pinned, position, completedAt).
+                // 🔧 مهاجرت گروه‌ها — حذف گروه‌های سیستمی (all, urgent)
+                // و افزودن فیلدهای جدید با مقدار پیش‌فرض
+                const validImportedGroups = migrateGroups(importedGroups);
+
+                // 🔧 مهاجرت items — اعتبارسنجی و افزودن فیلدهای جدید
                 const normalizedItems = migrateItemsSchema(importedItems, null);
 
-                if (normalizedItems.length === 0) {
-                    showToast('هیچ یادآور معتبری در فایل یافت نشد');
+                // 🔧 مهاجرت contacts
+                const validImportedContacts = migrateContacts(importedContacts);
+
+                if (normalizedItems.length === 0 && validImportedContacts.length === 0) {
+                    showToast('هیچ داده معتبری در فایل یافت نشد');
                     return;
                 }
 
@@ -6855,21 +7647,27 @@ function importDatabase() {
                 const newItems = normalizedItems.filter(i => !existingIds.has(i.id));
                 const dupCount = normalizedItems.length - newItems.length;
 
-                // Build dialog message
+                // ساخت پیام تأیید
                 const groupsLine = validImportedGroups.length > 0
                     ? `فایل شامل ${validImportedGroups.length} گروه سفارشی است\n`
                     : '';
-                const msg = `فایل دارای ${normalizedItems.length} یادآور است.\n` +
-                    groupsLine +
+                const contactsLine = validImportedContacts.length > 0
+                    ? `فایل شامل ${validImportedContacts.length} شخص است\n`
+                    : '';
+                const versionLine = backupVersion < 5
+                    ? `⚠️ بک‌آپ نسخه ${toPersianNumber(backupVersion)} است — به‌طور خودکار مهاجرت می‌شود\n`
+                    : '';
+                const msg = versionLine +
+                    `فایل دارای ${normalizedItems.length} یادآور است.\n` +
+                    groupsLine + contactsLine +
                     `دیتابیس فعلی: ${currentItems.length} مورد\n` +
-                    (dupCount > 0 ? `${dupCount} مورد تکراری (با همان شناسه) شناسایی شد\n` : '') +
-                    `\nبرای «ادغام» (افزودن موارد جدید + گروه‌ها) = بله\n` +
+                    (dupCount > 0 ? `${dupCount} مورد تکراری شناسایی شد\n` : '') +
+                    `\nبرای «ادغام» = بله\n` +
                     `برای «جایگزینی کامل» = خیر`;
 
                 if (confirm(msg)) {
                     // ===== MERGE MODE =====
-                    // 1. Merge groups: add any imported custom groups whose id
-                    //    doesn't already exist on this device.
+                    // 1. ادغام گروه‌ها
                     const currentGroups = getGroups();
                     const existingGroupIds = new Set(currentGroups.map(g => g.id));
                     const newGroupsToAdd = validImportedGroups.filter(g => !existingGroupIds.has(g.id));
@@ -6877,21 +7675,14 @@ function importDatabase() {
                         setGroups([...currentGroups, ...newGroupsToAdd]);
                     }
 
-                    // 2. Build the set of valid group IDs after merge, so we can
-                    //    re-validate each task's groupId. Any orphaned task
-                    //    (whose group was deleted on this device) is sent to 'all'.
+                    // 2. اعتبارسنجی نهایی items با group IDs نهایی
                     const finalGroups = getGroups();
                     const finalGroupIds = new Set(finalGroups.map(g => g.id));
-                    // Re-run migration with the final group IDs — this ensures
-                    // orphan tasks go to 'all' and parentIds are re-validated
-                    // against the NEW merged set.
                     const fixedItems = migrateItemsSchema(newItems, finalGroupIds);
-                    // Also re-validate existing items' parentIds against the
-                    // merged set (an existing child might reference a newly
-                    // imported parent — that's fine, the link is now valid).
+
+                    // پاک کردن parentId های یتیم در items فعلی
                     const mergedSet = [...currentItems, ...fixedItems];
                     const allIds = new Set(mergedSet.map(i => i.id));
-                    // Just clean up orphan parentIds on existing items (rare, but safe)
                     const cleanedCurrent = currentItems.map(item => {
                         if (item.parentId && !allIds.has(item.parentId)) {
                             const { parentId, ...rest } = item;
@@ -6900,41 +7691,56 @@ function importDatabase() {
                         return item;
                     });
 
-                    // 3. Merge tasks: existing items untouched, new items appended.
+                    // 3. ادغام tasks
                     const merged = [...cleanedCurrent, ...fixedItems];
-                    setDB(merged);  // always saves to IDB + OPFS (no downloads)
+                    setDB(merged);
+
+                    // 4. 🔧 ادغام contacts (فقط در حالت merge)
+                    if (validImportedContacts.length > 0) {
+                        const currentContacts = getContacts();
+                        const existingContactIds = new Set(currentContacts.map(c => c.id));
+                        const newContacts = validImportedContacts.filter(c => !existingContactIds.has(c.id));
+                        if (newContacts.length > 0) {
+                            setContacts([...currentContacts, ...newContacts]);
+                        }
+                    }
+
                     fullRender();
-                    const taskCount = fixedItems.length;
-                    const groupCount = newGroupsToAdd.length;
-                    const parts = [`${taskCount} یادآور جدید اضافه شد`];
-                    if (groupCount > 0) parts.push(`${groupCount} گروه جدید اضافه شد`);
+                    const parts = [`${fixedItems.length} یادآور جدید`];
+                    if (newGroupsToAdd.length > 0) parts.push(`${newGroupsToAdd.length} گروه جدید`);
+                    if (validImportedContacts.length > 0) parts.push(`${validImportedContacts.length} شخص جدید`);
                     showToast(parts.join('، ') + ' ✓');
                 } else {
                     // ===== REPLACE MODE =====
                     if (confirm(`دیتابیس فعلی (${currentItems.length} مورد) با ${normalizedItems.length} مورد جدید جایگزین شود؟`)) {
-                        // 1. Replace groups: always start with the default 'all'
-                        //    group, then append all imported custom groups.
+                        // 1. جایگزینی گروه‌ها — گروه‌های سیستمی (all, urgent) خودکار ساخته می‌شوند
+                        //    فقط گروه‌های سفارشی از بک‌آپ می‌آیند
                         const replacedGroups = [
-                            { id: 'all', name: 'همه کارها', color: '#4CAF50', isDefault: true },
+                            { id: 'all', name: 'همه کارها', color: '#4CAF50', isDefault: true, headerIcon: '📋' },
+                            // گروه urgent خودکار توسط getGroups() ساخته می‌شود
                             ...validImportedGroups
                         ];
                         setGroups(replacedGroups);
+                        // فراخوانی getGroups برای اطمینان از وجود گروه urgent
+                        getGroups();
 
-                        // 2. Re-validate task groupIds against the new groups.
-                        //    Use the full migration function so all fields
-                        //    (parentId, repeat, pinned, position, completedAt)
-                        //    are preserved and orphan parentIds are cleaned up.
-                        const replacedGroupIds = new Set(replacedGroups.map(g => g.id));
-                        const fixedItems = migrateItemsSchema(normalizedItems, replacedGroupIds);
+                        // 2. اعتبارسنجی نهایی items
+                        const allGroups = getGroups();
+                        const allGroupIds = new Set(allGroups.map(g => g.id));
+                        const fixedItems = migrateItemsSchema(normalizedItems, allGroupIds);
 
-                        setDB(fixedItems);  // always saves to IDB + OPFS (no downloads)
-                        // Clear sent notifications for items no longer present
+                        setDB(fixedItems);
                         clearSentNotificationsFor(fixedItems);
+
+                        // 3. 🔧 جایگزینی contacts
+                        if (validImportedContacts.length > 0) {
+                            setContacts(validImportedContacts);
+                        }
+
                         fullRender();
-                        const taskCount = fixedItems.length;
-                        const groupCount = validImportedGroups.length;
                         const parts = ['دیتابیس جایگزین شد'];
-                        if (groupCount > 0) parts.push(`${groupCount} گروه بازگردانده شد`);
+                        if (validImportedGroups.length > 0) parts.push(`${validImportedGroups.length} گروه`);
+                        if (validImportedContacts.length > 0) parts.push(`${validImportedContacts.length} شخص`);
                         showToast(parts.join('، ') + ' ✓');
                     }
                 }
@@ -7136,6 +7942,782 @@ function cleanupOldNotifications() {
 // ────────────────────────────────────────────────────────────────────
 // ============ Toast ============
 let toastTimer;
+
+// ════════════════════════════════════════════════════════════════════
+// 👥 بخش: بانک اطلاعاتی اشخاص (CRM)
+// ════════════════════════════════════════════════════════════════════
+// این بخش شامل توابع مدیریت اشخاص است:
+//   - باز/بستن صفحه اشخاص
+//   - تعریف/ویرایش/حذف شخص
+//   - جستجوی تکی و ترکیبی
+//   - گزارش‌گیری با قابلیت ذخیره و ارسال
+//
+// پایگاه داده: localStorage با کلید 'contacts_db_v1'
+// ساختار هر شخص:
+//   {
+//     id: string,
+//     company: string,         // نام شرکت
+//     name: string,            // نام شخص
+//     position: string,        // سمت
+//     startDate: string,       // تاریخ شروع همکاری (شمسی)
+//     birthDate: string,       // تاریخ تولد (شمسی)
+//     commissionAsked: string, // اشانتیون خواسته شده
+//     commissionPaid: string,  // اشانتیون داده شده
+//     commissionPercent: string, // اعلام درصد کارپردازی
+//     phones: [string],        // لیست تلفن‌ها (نامحدود)
+//     addresses: [string],     // لیست آدرس‌ها (نامحدود)
+//     notes: [string],         // لیست توضیحات (نامحدود)
+//     createdAt: string        // تاریخ ایجاد (ISO)
+//   }
+
+const CONTACTS_KEY = 'contacts_db_v1';
+let _editingContactId = null;
+
+// ─── توابع پایگاه داده ───
+
+function getContacts() {
+    try {
+        return JSON.parse(localStorage.getItem(CONTACTS_KEY) || '[]');
+    } catch(e) { return []; }
+}
+
+function setContacts(contacts) {
+    try { localStorage.setItem(CONTACTS_KEY, JSON.stringify(contacts)); }
+    catch(e) { console.error('Contacts write error', e); }
+}
+
+function getContactById(id) {
+    return getContacts().find(c => c.id === id);
+}
+
+// ─── باز/بستن صفحه اشخاص ───
+
+function openContacts() {
+    renderContactsList();
+    document.getElementById('contactsOverlay').classList.add('active');
+    navPush({ view: 'modal', type: 'contacts' });
+    trackModalOpen('contacts');
+}
+
+function closeContacts() {
+    document.getElementById('contactsOverlay').classList.remove('active');
+    closeModalByType('contacts');
+    navBack();
+}
+
+// ─── رندر لیست اشخاص ───
+
+function renderContactsList() {
+    const body = document.getElementById('contactsBody');
+    const contacts = getContacts();
+
+    if (contacts.length === 0) {
+        body.innerHTML = '<div class="contacts-empty"><div class="contacts-empty-icon">👥</div><div>هیچ شخصی تعریف نشده است<br>برای افزودن، دکمه «جدید» را بزنید</div></div>';
+        return;
+    }
+
+    let html = '<table class="contacts-table"><thead><tr>';
+    html += '<th>ردیف</th>';
+    html += '<th>نام شرکت</th>';
+    html += '<th>نام</th>';
+    html += '<th>سمت</th>';
+    html += '<th>تلفن</th>';
+    html += '<th>عملیات</th>';
+    html += '</tr></thead><tbody>';
+
+    contacts.forEach((c, idx) => {
+        const firstPhone = (c.phones && c.phones.length > 0) ? c.phones[0] : '';
+        html += '<tr>';
+        html += '<td>' + toPersianNumber(idx + 1) + '</td>';
+        html += '<td>' + escapeHtml(c.company || '—') + '</td>';
+        html += '<td>' + escapeHtml(c.name || '—') + '</td>';
+        html += '<td>' + escapeHtml(c.position || '—') + '</td>';
+        html += '<td>' + renderClickablePhone(firstPhone) + '</td>';
+        html += '<td><div class="contact-row-actions">';
+        html += '<button class="contact-row-btn" onclick="editContact(\'' + c.id + '\')">✏️</button>';
+        html += '<button class="contact-row-btn danger" onclick="deleteContact(\'' + c.id + '\')">🗑</button>';
+        html += '</div></td>';
+        html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    body.innerHTML = html;
+}
+
+// ─── فرم تعریف/ویرایش شخص ───
+
+function openContactForm(id) {
+    _editingContactId = id || null;
+    const isEdit = !!id;
+    document.getElementById('contactFormTitle').textContent = isEdit ? 'ویرایش شخص' : 'تعریف شخص جدید';
+
+    if (isEdit) {
+        const c = getContactById(id);
+        if (!c) { showToast('شخص یافت نشد'); return; }
+        document.getElementById('contactCompany').value = c.company || '';
+        document.getElementById('contactName').value = c.name || '';
+        document.getElementById('contactPosition').value = c.position || '';
+        document.getElementById('contactStartDate').value = c.startDate || '';
+        document.getElementById('contactBirthDate').value = c.birthDate || '';
+        document.getElementById('contactCommissionAsked').value = c.commissionAsked || '';
+        document.getElementById('contactCommissionPaid').value = c.commissionPaid || '';
+        document.getElementById('contactCommissionPercent').value = c.commissionPercent || '';
+        renderDynamicList('contactPhonesList', c.phones || [], 'تلفن');
+        renderDynamicList('contactAddressesList', c.addresses || [], 'آدرس');
+        renderDynamicList('contactNotesList', c.notes || [], 'توضیح');
+    } else {
+        document.getElementById('contactCompany').value = '';
+        document.getElementById('contactName').value = '';
+        document.getElementById('contactPosition').value = '';
+        document.getElementById('contactStartDate').value = '';
+        document.getElementById('contactBirthDate').value = '';
+        document.getElementById('contactCommissionAsked').value = '';
+        document.getElementById('contactCommissionPaid').value = '';
+        document.getElementById('contactCommissionPercent').value = '';
+        renderDynamicList('contactPhonesList', [''], 'تلفن');
+        renderDynamicList('contactAddressesList', [''], 'آدرس');
+        renderDynamicList('contactNotesList', [''], 'توضیح');
+    }
+
+    document.getElementById('contactFormOverlay').classList.add('active');
+    navPush({ view: 'modal', type: 'contactForm' });
+    trackModalOpen('contactForm');
+}
+
+function closeContactForm() {
+    document.getElementById('contactFormOverlay').classList.remove('active');
+    closeModalByType('contactForm');
+    navBack();
+    _editingContactId = null;
+}
+
+// ─── لیست‌های پویا (تلفن، آدرس، توضیح) ───
+
+function renderDynamicList(listId, items, placeholder) {
+    const list = document.getElementById(listId);
+    list.innerHTML = '';
+    if (items.length === 0) items = [''];
+    items.forEach((val, idx) => {
+        const div = document.createElement('div');
+        div.className = 'contact-dynamic-item';
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = val;
+        input.placeholder = placeholder;
+        input.dataset.idx = idx;
+        div.appendChild(input);
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'contact-dynamic-remove';
+        removeBtn.textContent = '×';
+        removeBtn.onclick = function(e) {
+            e.stopPropagation();
+            if (list.children.length > 1) {
+                div.remove();
+            } else {
+                input.value = '';
+            }
+        };
+        div.appendChild(removeBtn);
+        list.appendChild(div);
+    });
+}
+
+function addContactPhone() {
+    addDynamicItem('contactPhonesList', 'تلفن');
+}
+function addContactAddress() {
+    addDynamicItem('contactAddressesList', 'آدرس');
+}
+function addContactNote() {
+    addDynamicItem('contactNotesList', 'توضیح');
+}
+
+function addDynamicItem(listId, placeholder) {
+    const list = document.getElementById(listId);
+    const div = document.createElement('div');
+    div.className = 'contact-dynamic-item';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = placeholder;
+    div.appendChild(input);
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'contact-dynamic-remove';
+    removeBtn.textContent = '×';
+    removeBtn.onclick = function(e) {
+        e.stopPropagation();
+        if (list.children.length > 1) {
+            div.remove();
+        } else {
+            input.value = '';
+        }
+    };
+    div.appendChild(removeBtn);
+    list.appendChild(div);
+}
+
+function getDynamicListValues(listId) {
+    const list = document.getElementById(listId);
+    const values = [];
+    list.querySelectorAll('input').forEach(input => {
+        const val = input.value.trim();
+        if (val) values.push(val);
+    });
+    return values;
+}
+
+// ─── ذخیره شخص ───
+
+function saveContact() {
+    const name = document.getElementById('contactName').value.trim();
+    if (!name) {
+        showToast('نام شخص الزامی است');
+        return;
+    }
+
+    const contact = {
+        company: document.getElementById('contactCompany').value.trim(),
+        name: name,
+        position: document.getElementById('contactPosition').value.trim(),
+        startDate: document.getElementById('contactStartDate').value.trim(),
+        birthDate: document.getElementById('contactBirthDate').value.trim(),
+        commissionAsked: document.getElementById('contactCommissionAsked').value.trim(),
+        commissionPaid: document.getElementById('contactCommissionPaid').value.trim(),
+        commissionPercent: document.getElementById('contactCommissionPercent').value.trim(),
+        phones: getDynamicListValues('contactPhonesList'),
+        addresses: getDynamicListValues('contactAddressesList'),
+        notes: getDynamicListValues('contactNotesList'),
+    };
+
+    const contacts = getContacts();
+    if (_editingContactId) {
+        // ویرایش
+        const idx = contacts.findIndex(c => c.id === _editingContactId);
+        if (idx >= 0) {
+            contact.id = _editingContactId;
+            contact.createdAt = contacts[idx].createdAt;
+            contacts[idx] = contact;
+        }
+    } else {
+        // جدید
+        contact.id = 'c_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        contact.createdAt = new Date().toISOString();
+        contacts.push(contact);
+    }
+
+    setContacts(contacts);
+    closeContactForm();
+    renderContactsList();
+    showToast(_editingContactId ? 'شخص ویرایش شد ✓' : 'شخص اضافه شد ✓');
+}
+
+// ─── ویرایش و حذف ───
+
+function editContact(id) {
+    openContactForm(id);
+}
+
+function deleteContact(id) {
+    if (!confirm('این شخص حذف شود؟')) return;
+    const contacts = getContacts().filter(c => c.id !== id);
+    setContacts(contacts);
+    renderContactsList();
+    showToast('شخص حذف شد');
+}
+
+// ─── جستجو ───
+
+function openContactSearch() {
+    document.getElementById('searchCompany').value = '';
+    document.getElementById('searchName').value = '';
+    document.getElementById('searchPosition').value = '';
+    document.getElementById('searchPhone').value = '';
+    document.getElementById('searchCommissionAskedMin').value = '';
+    document.getElementById('searchCommissionAskedMax').value = '';
+    document.getElementById('searchCommissionPaidMin').value = '';
+    document.getElementById('searchCommissionPaidMax').value = '';
+    document.getElementById('searchCommissionPercent').value = '';
+    document.getElementById('contactSearchOverlay').classList.add('active');
+    navPush({ view: 'modal', type: 'contactSearch' });
+    trackModalOpen('contactSearch');
+}
+
+function closeContactSearch() {
+    document.getElementById('contactSearchOverlay').classList.remove('active');
+    closeModalByType('contactSearch');
+    navBack();
+}
+
+function executeContactSearch() {
+    const criteria = {
+        company: document.getElementById('searchCompany').value.trim().toLowerCase(),
+        name: document.getElementById('searchName').value.trim().toLowerCase(),
+        position: document.getElementById('searchPosition').value.trim().toLowerCase(),
+        phone: document.getElementById('searchPhone').value.trim().toLowerCase(),
+        commissionAskedMin: document.getElementById('searchCommissionAskedMin').value.trim(),
+        commissionAskedMax: document.getElementById('searchCommissionAskedMax').value.trim(),
+        commissionPaidMin: document.getElementById('searchCommissionPaidMin').value.trim(),
+        commissionPaidMax: document.getElementById('searchCommissionPaidMax').value.trim(),
+        commissionPercent: document.getElementById('searchCommissionPercent').value.trim(),
+    };
+
+    const results = filterContacts(criteria);
+    closeContactSearch();
+    showContactSearchResults(results);
+}
+
+function filterContacts(criteria) {
+    let contacts = getContacts();
+
+    if (criteria.company) {
+        contacts = contacts.filter(c => (c.company || '').toLowerCase().includes(criteria.company));
+    }
+    if (criteria.name) {
+        contacts = contacts.filter(c => (c.name || '').toLowerCase().includes(criteria.name));
+    }
+    if (criteria.position) {
+        contacts = contacts.filter(c => (c.position || '').toLowerCase().includes(criteria.position));
+    }
+    if (criteria.phone) {
+        contacts = contacts.filter(c => (c.phones || []).some(p => p.toLowerCase().includes(criteria.phone)));
+    }
+    if (criteria.commissionAskedMin) {
+        const min = parseInt(criteria.commissionAskedMin.replace(/[^0-9]/g, ''), 10);
+        if (!isNaN(min)) contacts = contacts.filter(c => parseInt((c.commissionAsked || '0').replace(/[^0-9]/g, ''), 10) >= min);
+    }
+    if (criteria.commissionAskedMax) {
+        const max = parseInt(criteria.commissionAskedMax.replace(/[^0-9]/g, ''), 10);
+        if (!isNaN(max)) contacts = contacts.filter(c => parseInt((c.commissionAsked || '0').replace(/[^0-9]/g, ''), 10) <= max);
+    }
+    if (criteria.commissionPaidMin) {
+        const min = parseInt(criteria.commissionPaidMin.replace(/[^0-9]/g, ''), 10);
+        if (!isNaN(min)) contacts = contacts.filter(c => parseInt((c.commissionPaid || '0').replace(/[^0-9]/g, ''), 10) >= min);
+    }
+    if (criteria.commissionPaidMax) {
+        const max = parseInt(criteria.commissionPaidMax.replace(/[^0-9]/g, ''), 10);
+        if (!isNaN(max)) contacts = contacts.filter(c => parseInt((c.commissionPaid || '0').replace(/[^0-9]/g, ''), 10) <= max);
+    }
+    if (criteria.commissionPercent) {
+        contacts = contacts.filter(c => (c.commissionPercent || '').includes(criteria.commissionPercent));
+    }
+
+    return contacts;
+}
+
+function showContactSearchResults(results) {
+    document.getElementById('searchResultsCount').textContent = 'تعداد: ' + toPersianNumber(results.length) + ' نفر';
+    const body = document.getElementById('contactSearchResultsBody');
+
+    if (results.length === 0) {
+        body.innerHTML = '<div class="contacts-empty"><div class="contacts-empty-icon">🔍</div><div>هیچ نتیجه‌ای یافت نشد</div></div>';
+    } else {
+        let html = '<table class="search-results-table"><thead><tr>';
+        html += '<th>ردیف</th><th>نام شرکت</th><th>نام</th><th>سمت</th><th>تلفن</th><th>شروع همکاری</th><th>تولد</th>';
+        html += '</tr></thead><tbody>';
+        results.forEach((c, idx) => {
+            const firstPhone = (c.phones && c.phones.length > 0) ? c.phones[0] : '';
+            html += '<tr>';
+            html += '<td>' + toPersianNumber(idx + 1) + '</td>';
+            html += '<td>' + escapeHtml(c.company || '—') + '</td>';
+            html += '<td>' + escapeHtml(c.name || '—') + '</td>';
+            html += '<td>' + escapeHtml(c.position || '—') + '</td>';
+            html += '<td>' + renderClickablePhone(firstPhone) + '</td>';
+            html += '<td>' + escapeHtml(c.startDate || '—') + '</td>';
+            html += '<td>' + escapeHtml(c.birthDate || '—') + '</td>';
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+        body.innerHTML = html;
+    }
+
+    document.getElementById('contactSearchResultsOverlay').classList.add('active');
+    navPush({ view: 'modal', type: 'contactSearchResults' });
+    trackModalOpen('contactSearchResults');
+}
+
+function closeContactSearchResults() {
+    document.getElementById('contactSearchResultsOverlay').classList.remove('active');
+    closeModalByType('contactSearchResults');
+    navBack();
+}
+
+// ─── گزارشات ───
+
+function openContactReport() {
+    document.getElementById('reportCompany').value = '';
+    document.getElementById('reportName').value = '';
+    document.getElementById('reportPosition').value = '';
+    document.getElementById('reportPhone').value = '';
+    document.getElementById('reportCommissionAskedMin').value = '';
+    document.getElementById('reportCommissionAskedMax').value = '';
+    document.getElementById('reportCommissionPaidMin').value = '';
+    document.getElementById('reportCommissionPaidMax').value = '';
+    document.getElementById('reportCommissionPercent').value = '';
+    document.getElementById('contactReportOverlay').classList.add('active');
+    navPush({ view: 'modal', type: 'contactReport' });
+    trackModalOpen('contactReport');
+}
+
+function closeContactReport() {
+    document.getElementById('contactReportOverlay').classList.remove('active');
+    closeModalByType('contactReport');
+    navBack();
+}
+
+function executeContactReport() {
+    const criteria = {
+        company: document.getElementById('reportCompany').value.trim().toLowerCase(),
+        name: document.getElementById('reportName').value.trim().toLowerCase(),
+        position: document.getElementById('reportPosition').value.trim().toLowerCase(),
+        phone: document.getElementById('reportPhone').value.trim().toLowerCase(),
+        commissionAskedMin: document.getElementById('reportCommissionAskedMin').value.trim(),
+        commissionAskedMax: document.getElementById('reportCommissionAskedMax').value.trim(),
+        commissionPaidMin: document.getElementById('reportCommissionPaidMin').value.trim(),
+        commissionPaidMax: document.getElementById('reportCommissionPaidMax').value.trim(),
+        commissionPercent: document.getElementById('reportCommissionPercent').value.trim(),
+    };
+
+    const results = filterContacts(criteria);
+    closeContactReport();
+    showContactReportResults(results, criteria);
+}
+
+function showContactReportResults(results, criteria) {
+    const body = document.getElementById('contactReportResultsBody');
+    const now = new Date();
+    const [jy, jm, jd] = toJalaliParts(now);
+    const dateStr = toPersianNumber(jy) + '/' + toPersianDigits(pad2(jm)) + '/' + toPersianDigits(pad2(jd));
+
+    let html = '<div class="report-header">';
+    html += '<h3>📊 گزارش بانک اطلاعاتی اشخاص</h3>';
+    html += '<div class="report-meta">تاریخ تولید: ' + dateStr + ' — تعداد: ' + toPersianNumber(results.length) + ' نفر</div>';
+    html += '</div>';
+
+    html += '<div class="report-actions">';
+    html += '<button class="report-action-btn" onclick="saveContactReport()">💾 ذخیره فایل</button>';
+    html += '<button class="report-action-btn" onclick="shareContactReport()">📤 ارسال</button>';
+    html += '<button class="report-action-btn" onclick="printContactReport()">🖨️ چاپ</button>';
+    html += '</div>';
+
+    if (results.length === 0) {
+        html += '<div class="contacts-empty"><div class="contacts-empty-icon">📊</div><div>هیچ نتیجه‌ای برای گزارش یافت نشد</div></div>';
+    } else {
+        // خلاصه آماری
+        let totalAsked = 0, totalPaid = 0;
+        results.forEach(c => {
+            totalAsked += parseInt((c.commissionAsked || '0').replace(/[^0-9]/g, ''), 10) || 0;
+            totalPaid += parseInt((c.commissionPaid || '0').replace(/[^0-9]/g, ''), 10) || 0;
+        });
+
+        html += '<div class="contact-form-section" style="margin-bottom:12px;">';
+        html += '<div class="contact-form-section-title">📈 خلاصه آماری</div>';
+        html += '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px;">';
+        html += '<div>👥 تعداد اشخاص: <b>' + toPersianNumber(results.length) + '</b></div>';
+        html += '<div>💰 مجموع اشانتیون خواسته شده: <b>' + toPersianNumberWithSep(totalAsked) + '</b></div>';
+        html += '<div>💵 مجموع اشانتیون داده شده: <b>' + toPersianNumberWithSep(totalPaid) + '</b></div>';
+        html += '</div></div>';
+
+        // جدول کامل
+        html += '<table class="search-results-table"><thead><tr>';
+        html += '<th>ردیف</th><th>نام شرکت</th><th>نام</th><th>سمت</th>';
+        html += '<th>تلفن‌ها</th><th>آدرس</th><th>شروع همکاری</th><th>تولد</th>';
+        html += '<th>اشانتیون خواسته</th><th>اشانتیون داده</th><th>درصد</th><th>توضیحات</th>';
+        html += '</tr></thead><tbody>';
+        results.forEach((c, idx) => {
+            html += '<tr>';
+            html += '<td>' + toPersianNumber(idx + 1) + '</td>';
+            html += '<td>' + escapeHtml(c.company || '—') + '</td>';
+            html += '<td>' + escapeHtml(c.name || '—') + '</td>';
+            html += '<td>' + escapeHtml(c.position || '—') + '</td>';
+            html += '<td>' + renderClickablePhones(c.phones) + '</td>';
+            html += '<td>' + (c.addresses || []).map(a => escapeHtml(a)).join('<br>') + '</td>';
+            html += '<td>' + escapeHtml(c.startDate || '—') + '</td>';
+            html += '<td>' + escapeHtml(c.birthDate || '—') + '</td>';
+            html += '<td>' + escapeHtml(c.commissionAsked || '—') + '</td>';
+            html += '<td>' + escapeHtml(c.commissionPaid || '—') + '</td>';
+            html += '<td>' + escapeHtml(c.commissionPercent || '—') + '</td>';
+            html += '<td>' + (c.notes || []).map(n => escapeHtml(n)).join('<br>') + '</td>';
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+    }
+
+    body.innerHTML = html;
+    body.dataset.reportData = JSON.stringify(results);
+
+    document.getElementById('contactReportResultsOverlay').classList.add('active');
+    navPush({ view: 'modal', type: 'contactReportResults' });
+    trackModalOpen('contactReportResults');
+}
+
+function closeContactReportResults() {
+    document.getElementById('contactReportResultsOverlay').classList.remove('active');
+    closeModalByType('contactReportResults');
+    navBack();
+}
+
+// ─── ذخیره و ارسال گزارش ───
+
+function saveContactReport() {
+    const body = document.getElementById('contactReportResultsBody');
+    const results = JSON.parse(body.dataset.reportData || '[]');
+    const now = new Date();
+    const [jy, jm, jd] = toJalaliParts(now);
+    const ts = '' + jy + pad2(jm) + pad2(jd) + pad2(now.getHours()) + pad2(now.getMinutes());
+
+    const reportContent = JSON.stringify({
+        type: 'contacts_report',
+        generatedAt: now.toISOString(),
+        count: results.length,
+        contacts: results
+    }, null, 2);
+
+    const blob = new Blob([reportContent], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ContactsReport_' + ts + '.json';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    showToast('گزارش ذخیره شد ✓');
+}
+
+function shareContactReport() {
+    const body = document.getElementById('contactReportResultsBody');
+    const results = JSON.parse(body.dataset.reportData || '[]');
+
+    // تولید متن گزارش برای اشتراک‌گذاری
+    let text = '📊 گزارش بانک اطلاعاتی اشخاص\n';
+    text += 'تعداد: ' + results.length + ' نفر\n\n';
+    results.forEach((c, idx) => {
+        text += (idx + 1) + '. ' + (c.name || '—');
+        if (c.company) text += ' (' + c.company + ')';
+        text += '\n';
+        if (c.position) text += '   سمت: ' + c.position + '\n';
+        if (c.phones && c.phones.length > 0) text += '   تلفن: ' + c.phones.join('، ') + '\n';
+        if (c.commissionAsked) text += '   اشانتیون خواسته: ' + c.commissionAsked + '\n';
+        if (c.commissionPaid) text += '   اشانتیون داده: ' + c.commissionPaid + '\n';
+        text += '\n';
+    });
+
+    if (navigator.share) {
+        navigator.share({
+            title: 'گزارش اشخاص',
+            text: text
+        }).catch(() => {
+            // اگر اشتراک‌گذاری شکست خورد، فایل دانلود کن
+            saveContactReport();
+        });
+    } else {
+        // مرورگر از share پشتیبانی نمی‌کند — فایل دانلود کن
+        saveContactReport();
+    }
+}
+
+function printContactReport() {
+    const body = document.getElementById('contactReportResultsBody');
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write('<html dir="rtl"><head><title>گزارش اشخاص</title>');
+    printWindow.document.write('<style>body{font-family:Tahoma,sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;font-size:11px;}th,td{border:1px solid #ddd;padding:6px;text-align:right;}th{background:#1976D2;color:white;}</style>');
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(body.innerHTML);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// ─── انتخاب تاریخ شمسی برای فیلدهای شخص ───
+
+let _contactDatePickerTarget = null;
+
+// ════════════════════════════════════════════════════════════════════
+// 📞 منوی انتخاب عملیات تلفن
+// ════════════════════════════════════════════════════════════════════
+// وقتی کاربر روی یک شماره تلفن کلیک می‌کند، این منو باز می‌شود و
+// گزینه‌های تماس، پیامک، و ارسال به شبکه‌های اطلاع‌رسانی را نشان می‌دهد.
+//
+// راه‌حل: برای هر شماره، لینک‌های tel:, sms:, و URL شبکه‌های اطلاع‌رسانی
+// ساخته می‌شود. وقتی کاربر روی یکی کلیک می‌کند، دستگاه به‌طور خودکار
+// برنامهٔ مربوطه را باز می‌کند.
+//
+// لیست شبکه‌های اطلاع‌رسانی پشتیبانی‌شده:
+//   - تماس تلفنی (tel:)
+//   - پیامک (sms:)
+//   - تلگرام (https://t.me/)
+//   - واتساپ (https://wa.me/)
+//   - ایتا (https://eitaa.com/#send?to=...)
+//   - روبیکا (https://rubika.ir/)
+//   - بله (https://ble.ir/)
+//   - سروش (https://splus.ir/)
+
+// پاک کردن شماره تلفن — حذف فاصله، خط تیره، پرانتز و غیره
+function cleanPhoneNumber(phone) {
+    return phone.replace(/[\s\-()،.]/g, '').replace(/[۰-۹]/g, function(d) {
+        return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d);
+    });
+}
+
+// باز کردن منوی انتخاب عملیات تلفن
+function openPhoneActionMenu(phone) {
+    const cleanPhone = cleanPhoneNumber(phone);
+    if (!cleanPhone) return;
+
+    // نمایش شماره در منو
+    document.getElementById('phoneActionNumber').textContent = phone;
+
+    // ساخت لیست گزینه‌ها
+    const grid = document.getElementById('phoneActionGrid');
+    grid.innerHTML = '';
+
+    // لیست عملیات: [آیکون, برچسب, URL]
+    const actions = [
+        ['📞', 'تماس', 'tel:' + cleanPhone],
+        ['💬', 'پیامک', 'sms:' + cleanPhone],
+        ['✈️', 'تلگرام', 'https://t.me/+' + cleanPhone],
+        ['🟢', 'واتساپ', 'https://wa.me/' + cleanPhone.replace(/^0/, '98')],
+        ['🤖', 'ایتا', 'https://eitaa.com/#send?to=' + cleanPhone],
+        ['🟣', 'روبیکا', 'https://rubika.ir/'],
+        ['🔵', 'بله', 'https://ble.ir/'],
+        ['🔴', 'سروش', 'https://splus.ir/'],
+        ['📋', 'کپی شماره', 'copy:' + cleanPhone],
+    ];
+
+    actions.forEach(function(action) {
+        const icon = action[0];
+        const label = action[1];
+        const url = action[2];
+
+        const item = document.createElement('a');
+        item.className = 'phone-action-item';
+        item.href = url;
+        if (url.startsWith('http')) {
+            item.target = '_blank';
+            item.rel = 'noopener noreferrer';
+        }
+
+        // حالت خاص برای کپی
+        if (url.startsWith('copy:')) {
+            item.href = '#';
+            item.onclick = function(e) {
+                e.preventDefault();
+                copyToClipboard(cleanPhone);
+                closePhoneActionMenu();
+                showToast('شماره کپی شد ✓');
+            };
+        }
+
+        item.innerHTML = '<div class="phone-action-icon">' + icon + '</div>' +
+                         '<div class="phone-action-label">' + label + '</div>';
+        grid.appendChild(item);
+    });
+
+    // نمایش منو
+    document.getElementById('phoneActionOverlay').classList.add('active');
+}
+
+// بستن منوی انتخاب عملیات تلفن
+function closePhoneActionMenu() {
+    document.getElementById('phoneActionOverlay').classList.remove('active');
+}
+
+// کپی به کلیپ‌بورد (fallback برای مرورگرهای قدیمی)
+function copyToClipboard(text) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).catch(function() {
+            fallbackCopyToClipboard(text);
+        });
+    } else {
+        fallbackCopyToClipboard(text);
+    }
+}
+
+function fallbackCopyToClipboard(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(textarea);
+}
+
+// ساخت HTML قابل کلیک برای یک شماره تلفن
+// در جداول لیست اشخاص، نتایج جستجو و گزارشات استفاده می‌شود
+function renderClickablePhone(phone) {
+    if (!phone) return '—';
+    return '<span class="clickable-phone" onclick="event.stopPropagation(); openPhoneActionMenu(\'' + phone.replace(/'/g, "\\'") + '\')">' + escapeHtml(phone) + '</span>';
+}
+
+// ساخت HTML قابل کلیک برای لیست تلفن‌ها (اگر چندتایی است، با <br> جدا می‌شوند)
+function renderClickablePhones(phones) {
+    if (!phones || phones.length === 0) return '—';
+    return phones.map(function(p) { return renderClickablePhone(p); }).join('<br>');
+}
+
+
+
+function openContactDatePicker(fieldId) {
+    _contactDatePickerTarget = fieldId;
+    // استفاده از تقویم موجود برنامه
+    const currentVal = document.getElementById(fieldId).value;
+    let initialDate = new Date();
+    if (currentVal) {
+        // تلاش برای parse تاریخ شمسی (مثلاً ۱۴۰۵/۰۱/۱۵)
+        const parts = currentVal.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).split('/');
+        if (parts.length === 3) {
+            const g = jalaliToGregorian(parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2]));
+            if (g && !isNaN(g.getTime())) initialDate = g;
+        }
+    }
+    const [jy, jm, jd] = toJalaliParts(initialDate);
+    pickerState = {
+        year: jy,
+        month: jm,
+        selectedDay: jd,
+        initialHour: initialDate.getHours(),
+        initialMinute: initialDate.getMinutes()
+    };
+    renderPickerCalendar();
+    populateTimeSelects();
+    document.getElementById('pickerHour').value = String(initialDate.getHours()).padStart(2, '0');
+    document.getElementById('pickerMinute').value = String(initialDate.getMinutes()).padStart(2, '0');
+    document.getElementById('datetimePickerOverlay').classList.add('active');
+    navPush({ view: 'modal', type: 'datetimePicker' });
+    trackModalOpen('datetimePicker');
+}
+
+// 🔧 هک: intercept confirmDatetimePicker برای تشخیص اینکه آیا برای شخص است
+const _originalConfirmDatetimePicker = confirmDatetimePicker;
+confirmDatetimePicker = function() {
+    if (_contactDatePickerTarget) {
+        // حالت انتخاب تاریخ برای شخص
+        if (!pickerState.selectedDay) {
+            showToast('یک روز را در تقویم انتخاب کنید');
+            return;
+        }
+        const hour = parseInt(document.getElementById('pickerHour').value, 10) || 0;
+        const minute = parseInt(document.getElementById('pickerMinute').value, 10) || 0;
+        const gDate = jalaliToGregorian(pickerState.year, pickerState.month, pickerState.selectedDay);
+        // فقط تاریخ (بدون ساعت) برای شخص
+        const [jy, jm, jd] = toJalaliParts(gDate);
+        const dateStr = toPersianNumber(jy) + '/' + toPersianDigits(pad2(jm)) + '/' + toPersianDigits(pad2(jd));
+        document.getElementById(_contactDatePickerTarget).value = dateStr;
+        _contactDatePickerTarget = null;
+        // بستن picker
+        closeModalByType('datetimePicker');
+        window._pickingRepeatEndDate = false;
+        navBack();
+        return;
+    }
+    // در غیر این صورت، رفتار اصلی را اجرا کن
+    return _originalConfirmDatetimePicker.apply(this, arguments);
+};
+
+
+// ============ Toast ============
 function showToast(msg) {
     const toast = document.getElementById('toast');
     toast.textContent = msg;
@@ -8063,6 +9645,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (groupSettingsOverlay) {
         groupSettingsOverlay.addEventListener('click', (e) => {
             if (e.target.id === 'groupSettingsOverlay') closeGroupSettings();
+        });
+    }
+
+    // 🔧 Close phone action menu on overlay click
+    const phoneActionOverlay = document.getElementById('phoneActionOverlay');
+    if (phoneActionOverlay) {
+        phoneActionOverlay.addEventListener('click', (e) => {
+            if (e.target.id === 'phoneActionOverlay') closePhoneActionMenu();
         });
     }
 
