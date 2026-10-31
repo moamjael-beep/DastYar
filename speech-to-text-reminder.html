@@ -1,28 +1,102 @@
+<!-- ════════════════════════════════════════════════════════════════════
+     📋 برنامهٔ «یادآور صوتی» — صفحهٔ اصلی (HTML + CSS + JavaScript)
+     ════════════════════════════════════════════════════════════════════
+
+     🎯 این برنامه چه کاری می‌کند؟
+        کاربر با صحبت کردن به میکروفون، یک یادآور می‌سازد. برنامه:
+          1) صحبت را به متن تبدیل می‌کند (تشخیص صوت).
+          2) اعداد فارسی را از صحبت کاربر استخراج می‌کند. مثلاً:
+             • «دو میلیون»      → ۲٬۰۰۰٬۰۰۰  (با جداکننده)
+             • «صفر نه یک پنج»  → ۰۹۱۵        (شماره تلفن)
+             • «دویست و پنجاه»  → ۲۵۰         (بدون جداکننده)
+          3) یک سررسید (تاریخ و ساعت) به یادآور اضافه می‌کند.
+          4) وقتی سررسید نزدیک شد، اعلان می‌فرستد.
+          5) همهٔ یادآورها در تقویم شمسی نمایش داده می‌شوند.
+          6) کاربر می‌تواند یادآورها را در گروه‌های مختلف دسته‌بندی کند.
+
+     📁 ساختار فایل‌ها:
+        - speech-to-text-reminder.html : همین فایل (همه چیز در همین فایل است)
+        - manifest.json                : فایل معرفی PWA (نصب روی گوشی)
+        - sw.js                        : سرویس ورکر (کار در پس‌زمینه)
+
+     🧭 نقشهٔ فایل (به ترتیب از بالا به پایین):
+        بخش ۰  : تنظیمات HTML و اتصال به فونت/کتابخانه
+        بخش ۱  : استایل‌های CSS (ظاهر برنامه)
+        بخش ۲  : ساختار بدنهٔ HTML (عناصر قابل دیدن)
+        بخش ۳  : JavaScript — تنظیمات و متغیرهای عمومی
+        بخش ۴  : 🚨 تبدیل تاریخ شمسی (حساس)
+        بخش ۵  : 🚨 تبدیل اعداد فارسی از صحبت (بسیار حساس — دست نزنید)
+        بخش ۶  : پایگاه داده (localStorage + IndexedDB)
+        بخش ۷  : تشخیص صوت و ضبط
+        بخش ۸  : انتخاب‌گر تاریخ و ساعت شمسی
+        بخش ۹  : مدیریت گروه‌ها و حذف چندمرحله‌ای
+        بخش ۱۰ : منطق تکرار یادآورها
+        بخش ۱۱ : رنگ‌بندی فوریتی و Drag-Drop
+        بخش ۱۲ : رندر و مدیریت History (دکمهٔ Back موبایل)
+        بخش ۱۳ : ذخیره و بازیابی بک‌آپ
+        بخش ۱۴ : اعلان‌ها و تقویم شمسی
+        بخش ۱۵ : سرویس ورکر و تشخیص اتصال اینترنت
+        بخش ۱۶ : راه‌اندازی اولیه و نصب PWA
+
+     ⚠️  نکتهٔ بسیار مهم برای توسعه‌دهنده:
+        اگر کدی را اضافه یا تغییر دادید، مراقب باشید که بخش‌های حساس
+        (به‌ویژه «تبدیل اعداد فارسی از صوت» در بخش ۵) دست‌نخورده
+        بمانند. این بخش با دقت زیاد نوشته شده و خراب شدن آن، کل
+        کارایی برنامه را به هم می‌ریزد. بخش‌های حساس با علامت 🚨
+        مشخص شده‌اند.
+     ════════════════════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
+<!-- زبان صفحه «فارسی» و جهت «راست‌چین» است. این دو ویژگی برای نمایش
+     درست متن و چیدمان عناصر بسیار مهم هستند. -->
 <html lang="fa" dir="rtl">
 <head>
+<!-- کدگذاری UTF-8 — برای نمایش درست حروف فارسی ضروری است -->
 <meta charset="UTF-8">
+<!-- viewport: تنظیمات نمایش روی موبایل. maximum-scale=1.0 و
+     user-scalable=no یعنی کاربر نمی‌تواند زوم کند (برای اپلیکیشن
+     موبایل طبیعی است). -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- رنگ نوار وضعیت گوشی (در حالت نصب‌شده) -->
 <meta name="theme-color" content="#1976D2">
+<!-- متا تگ‌های زیر برای حالت «افزودن به صفحهٔ اصلی» در iOS و Android
+     هستند تا برنامه مثل یک اپلیکیشن واقعی رفتار کند. -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="یادآور">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="یادآور صوتی">
 <title>یادآور صوتی</title>
+<!-- اتصال به فایل manifest.json برای تبدیل شدن به PWA (نصب روی گوشی) -->
 <link rel="manifest" href="./manifest.json">
+<!-- آیکون‌های زیر همگی به‌صورت «دادهٔ درون‌خطی» (base64) تعبیه شده‌اند
+     تا نیاز به فایل آیکون جداگانه نباشد و برنامه سریع‌تر بارگذاری شود. -->
 <link rel="apple-touch-icon" href="data:image/png;base64,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">
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAEzklEQVR4nL2Xy2ocRxSGv7r0dM99IlmSRzaOISZZKW8Q7IUCATtPETDGIXjhEO8cnJ0DWmQTjCHkIYIhxAbnAn6AeBGCszDG1kSSrYzmInXPdFVl0dNzkaZHYzCuTVdXn6rz16n/P3VaMNbqX/3peAut8e2HIu3Lt+38sC+ZDtjOTsPFvRBnzazJUoCnBL4W5D1JyZfkPYmvBZ4SSDFjsrPGxb3QdnYaKQiRdlzcC4XSHkKq45xXAkUlrygHEiUExjnaoaV1YGiFhr5x2Kx4OmuciftC5wIAnY7P67xW0NSrmuvrK1QChZRgLbRCw8aDLeSeoLkfZ4MQUgk1dDsCMK/z0zWPmxfr1GselbEItELLrUurfHOvAXAsiOHaWU7Hm5JJ2OtVzc2Ldc4seCyVNCVfUfQlJV+xVNKcWcgl4KqaSqBQMwnxGgCkgHJecX19hXrNo1bQE4QbRUhRr3lcX1+hnFezCfl6AASVQCbkC+RUto8IOrKT4g1FQElQQiDTZ8a6UkzaqTlWnwuAsWCcw6bPDIlZN2ln7GsA8FR2IrHO0Y0s3Z6hG1lMBgJjJ+2sm7QbT2JHAJyqeZwoaQq5o1nNOuhElrt/vKIT2ZkRmGY3cixZKCrOLOSGczTA5u017v/V4sdHuzQPYpr7hlZoaYcGa1zGzo6GKitSSgrKgaJWUKxWPa6eP8GF98sjAAAfrATc+rTObjfmebPPxv0tupEZ7syOcyDjbMe/2zGuSAGVQPLl+jLnln0Wi2OZcPP2GgBLZY0UgsWiwjqoBIqtVgw4pEikKMfUMK2Nf5cDtViXylhRr3qcruUo+qMFhj0tE3L4WpIbcCCVkZKCoi8p5pLMl6VvKSbt0kyoZMIBPSC6p6aQMLaOKHZEsaUXO/pmJCMpoORLLn+0SMmXM/PANDtjoW8csUnW7ZsRi+XqjccA7LRjnu32eLIdsbnXpxWaoYyydna4ZUXKOkcrNDT2+jxv9njZiYdzhmz4eys8ooLk/EY5YlauSCNw2DaKEx60QsvGg23qAxXUq94IwOqNx5xdzBHFjvZYQWGsm/v8RyAm7Q/6iRzboeGgZ+lEhq9/avBk+2lin0580ezzshOz37NEAw6kEZjn/MejcNjeuoQDUWzZ7Rqe7faOHkF/SuKWImFuJVCUAzXXHZ/WDqm9VmKwmWRDdkhAMQDgZt0YjoKW5BT4WgwuGAcDnR9udnABGefwtSCnoKDhILJwJH0nA3pmESzAGMGltQqNZoTE8U5BU86rARlHIKxLjq19YPhvP6bR7HFprcLGL12wBpdxf2hmAHACjIE7DzepFTS1guLKhZNUAkWtoCkFiryXEK0TGpr7Ma3QcOfXf2nuJ+/GmKTSzwAgTl57lPlDMp5+tRJU8oqSL6kEmlpBc+3jU+RzkoOe5bv7LwYAYjpRUqLHxk3cDVMBrHzxe/LFWYvIyvIJGDU4+7RCXip7fHZ+lR9+22Sn3R+rhBMuZDkd9yVWPn+Y/JiYXiSk9maBGIKRCYiiP6rku9Egf2T+kYycOxv3hcr5kGjh1PLVB89t99W2DMpV5gShpqjRHOMbZy027tuwvSeLi8vb36+fFsC7AMtXfn56nNM32bbvfHIWkgi8lw4uX773z1txfvfiubT/P5q8k5Mc+ulLAAAAAElFTkSuQmCC">
 <link rel="icon" type="image/png" sizes="16x16" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAB50lEQVR4nJ2SzUpcQRCFv6puZzLMVRhlIlEk4t7gxuQFXOQZxAdwL8RnMIuss3EX3LpNHsBFcBcfICGIQsiMo9yZSXv7J4t7vWMyEiEHGqqquw59TpUAPHvzJfEfuHz7QuRfzRcH63W8tH/24ButoxTDjBG6mWVjpcXx7hrng4LBKHA+KDjeXWNjpUU3s1hNYZpA1KjAbMuwt7XIcqdBN7O0m0o3syx3GuxtLTLbMhhVM0WgAipC1lCyppI1FBWYMYIKf9VlWsJcy2AUxkWsz33cr5vJv0uCi4N1FtoWawTnE4cnPXIXiZW9MUHuIocnPZxPWCO1yXrn9OpCg/m2JcZE7iJDF4kpVQSJoYslaUzMt+20hJ1X82xvdgipbAgpESsVMVLmKRESbG926hHXBB8+9zk6vcJUZhoRtLpVpcxFMAJHp1f1Xuhd8PWno597VIWsqbSbE7dVhHaznIKq0M/9nxKW9s/oDz3OB1QSOy87qMD4NpC7wPg2oEJVTzhf7tHS/hk2hQKA62E58+DhZlRwOYB+Xu5CTOB85GZUEHxB8J4USoMt3lVOxxis0XzoeffpO3NPDDNmsjBFSNz8CuTjQLgtIlEUwKaKANAiFPQc9K55DLX5Ajx/uvvx26MtD+DH+9ervwGu7uip/fGBkgAAAABJRU5ErkJggg==">
 <link rel="icon" type="image/png" sizes="192x192" href="data:image/png;base64,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">
+<!-- preconnect: به مرورگر می‌گوید پیشاپیش به سرور CDN وصل شود تا
+     بارگذاری فونت سریع‌تر انجام شود. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
+<!-- فونت فارسی «وزیرمتن» از CDN. اگر بارگذاری شکست خورد، حذف می‌شود
+     و مرورگر از فونت جایگزین (Tahoma) استفاده می‌کند. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" media="all" onerror="this.remove()">
-<!-- SortableJS for drag-drop reordering. Primary CDN: jsdelivr. Fallback:
-     unpkg (loaded if the primary fails). Both are HTTPS and widely cached. -->
+<!-- ────────────────────────────────────────────────────────────────────
+     📦 کتابخانهٔ SortableJS برای قابلیت «کشیدن و رها کردن» (Drag & Drop)
+     یادآورها و گروه‌ها. اگر CDN اصلی (jsdelivr) در دسترس نبود، به‌صورت
+     خودکار از CDN جایگزین (unpkg) بارگذاری می‌شود.
+     ──────────────────────────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"
         onerror="this.onerror=null; var fb=document.createElement('script'); fb.src='https://unpkg.com/sortablejs@1.15.0/Sortable.min.js'; document.head.appendChild(fb);"></script>
 <style>
+/* ════════════════════════════════════════════════════════════════════
+   بخش ۱: استایل‌های CSS — ظاهر و چیدمان برنامه
+   ════════════════════════════════════════════════════════════════════
+   همهٔ قواعد بصری (رنگ، اندازه، فاصله، انیمیشن) در این بخش است.
+   رنگ‌های اصلی در :root تعریف شده‌اند تا در همه‌جا قابل استفاده باشند.
+   ════════════════════════════════════════════════════════════════════ */
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    /* متغیرهای رنگ اصلی برنامه. اگر می‌خواهید رنگ‌های برنامه را تغییر
+       دهید، فقط این مقادیر را ویرایش کنید — همه‌جا به‌طور خودکار به‌روز می‌شوند. */
 :root {
     --bg: #f0f2f5;
     --card: #ffffff;
@@ -155,26 +229,6 @@ body { padding-bottom: 30px; }
     color: white;
     animation: pulse 1.2s infinite;
 }
-#assistantBtn.listening {
-    background: #4CAF50 !important;
-    color: white;
-    animation: pulse 1.2s infinite;
-}
-.assistant-feedback {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,0.85);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 12px;
-    font-size: 13px;
-    max-width: 90%;
-    text-align: center;
-    z-index: 10000;
-    display: none;
-}
 /* Disabled state for the + button. Used when the user is on the groups
    list view (no specific group selected) — adding a task wouldn't know
    which group to assign it to. Clicks are intercepted in JS to show a toast. */
@@ -221,6 +275,40 @@ body { padding-bottom: 30px; }
     opacity: 0.4;
 }
 
+/* Credit footer — small, subtle English text at the bottom of the page.
+   Sits on the white space below the task list. Uses light gray color,
+   small font size, and elegant letter-spacing for a refined look. */
+.credit-footer {
+    text-align: center;
+    padding: 24px 16px 40px;
+    color: rgba(120, 120, 130, 0.65);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    line-height: 1.6;
+    direction: ltr;  /* English text, LTR even on RTL pages */
+    user-select: none;
+}
+.credit-footer .credit-line {
+    display: block;
+    text-transform: uppercase;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: rgba(140, 140, 150, 0.55);
+    margin-bottom: 4px;
+}
+.credit-footer .credit-names {
+    font-weight: 500;
+    color: rgba(80, 80, 90, 0.78);
+    letter-spacing: 0.03em;
+}
+.credit-footer .credit-sep {
+    margin: 0 6px;
+    color: rgba(140, 140, 150, 0.55);
+    font-weight: 300;
+}
+
 .item {
     border-radius: 10px;
     color: white;
@@ -260,6 +348,22 @@ body { padding-bottom: 30px; }
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: 1.6;
+    min-width: 0;
+}
+/* Group tag badge on each task row — shown only in "همه کارها" view */
+.item-group-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    color: white;
+    flex-shrink: 0;
+    white-space: nowrap;
+    max-width: 70px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.12);
 }
 .item-remaining {
     font-size: 11px;
@@ -597,6 +701,43 @@ body { padding-bottom: 30px; }
     flex-wrap: wrap;
     margin-bottom: 12px;
 }
+/* Repeat section in the task form */
+.repeat-section {
+    margin-top: 8px;
+    margin-bottom: 12px;
+    padding: 10px;
+    background: #f5f5f5;
+    border-radius: 8px;
+}
+.repeat-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.repeat-select {
+    padding: 8px 10px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 13px;
+    flex: 1;
+}
+.repeat-value {
+    width: 60px;
+    padding: 8px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 13px;
+    text-align: center;
+}
+.repeat-unit {
+    font-size: 12px;
+    color: #666;
+}
+.repeat-end-row {
+    margin-top: 8px;
+}
 .quick-btn {
     background: #e3f2fd;
     color: var(--primary);
@@ -641,7 +782,7 @@ body { padding-bottom: 30px; }
     padding: 11px 22px;
     border-radius: 24px;
     font-size: 13px;
-    z-index: 2000;
+    z-index: 10001; /* افزایش برای نمایش روی صفحه قفل (z-index 9998) */
     opacity: 0;
     transition: all 0.3s;
     pointer-events: none;
@@ -1272,13 +1413,154 @@ body { padding-bottom: 30px; }
     cursor: pointer;
 }
 .group-selector option { background: #333; color: white; }
+
+/* ============ 🔒 صفحه قفل انقضا ============ */
+/* این استایل‌ها برای صفحه‌ای است که بعد از ۲۰ فروردین ۱۴۰۵ نمایش داده
+   می‌شود. اکانت اینستاگرام سازنده + متن هشدار + دکمه بک‌آپ را نشان می‌دهد. */
+.lock-screen {
+    position: fixed;
+    top: 70px;            /* زیر هدر (هدر ~70px ارتفاع دارد) */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    z-index: 9998;        /* زیر هدر (9999) اما بالای همه چیز دیگر */
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+    padding: 30px 20px;
+    overflow-y: auto;
+    animation: lockFadeIn 0.5s ease;
+}
+@keyframes lockFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.lock-screen.active { display: flex; }
+
+/* آیکون دوربین (نماد اینستاگرام) */
+.lock-screen .lock-icon {
+    font-size: 72px;
+    margin-bottom: 24px;
+    opacity: 0.9;
+    animation: lockPulse 3s ease-in-out infinite;
+}
+@keyframes lockPulse {
+    0%, 100% { transform: scale(1); opacity: 0.9; }
+    50% { transform: scale(1.08); opacity: 1; }
+}
+
+/* لینک اکانت اینستاگرام — بزرگ و برجسته */
+.lock-screen .lock-instagram-link {
+    font-size: 42px;
+    font-weight: 700;
+    color: #E1306C;                /* رنگ رسمی اینستاگرام */
+    text-decoration: none;
+    margin-bottom: 30px;
+    padding: 12px 36px;
+    border: 3px solid #E1306C;
+    border-radius: 50px;
+    transition: all 0.3s;
+    background: rgba(225, 48, 108, 0.1);
+    font-family: inherit;
+    display: inline-block;
+}
+.lock-screen .lock-instagram-link:hover {
+    background: #E1306C;
+    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(225, 48, 108, 0.5);
+}
+.lock-screen .lock-instagram-link:active {
+    transform: scale(0.98);
+}
+
+/* متن هشدار */
+.lock-screen .lock-warning-text {
+    font-size: 16px;
+    line-height: 2;
+    max-width: 500px;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 30px;
+}
+
+/* دکمه بک‌آپ — برای اینکه کاربر بتواند داده‌هایش را ذخیره کند */
+.lock-screen .lock-backup-btn {
+    background: linear-gradient(135deg, #1976D2, #0D47A1);
+    color: white;
+    border: none;
+    padding: 14px 32px;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 4px 15px rgba(25, 118, 210, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.lock-screen .lock-backup-btn:hover {
+    box-shadow: 0 6px 20px rgba(25, 118, 210, 0.6);
+}
+.lock-screen .lock-backup-btn:active {
+    transform: scale(0.95);
+}
+
+/* وقتی برنامه قفل است، دکمه‌های هدر غیرفعال می‌شوند */
+body.locked .header-actions button {
+    pointer-events: none;
+    opacity: 0.3;
+}
+
+/* عنوان هدر قابل کلیک است (برای شمارش ۲۰ کلیک) */
+#headerTitle {
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* رسپانسیو برای موبایل */
+@media (max-width: 480px) {
+    .lock-screen .lock-instagram-link {
+        font-size: 32px;
+        padding: 10px 24px;
+    }
+    .lock-screen .lock-icon { font-size: 56px; }
+    .lock-screen .lock-warning-text { font-size: 14px; line-height: 1.9; }
+}
 </style>
 </head>
 <body>
+<!-- ════════════════════════════════════════════════════════════════════
+     🏗️ بخش ۲: ساختار بدنهٔ HTML (عناصر قابل دیدن)
+     ════════════════════════════════════════════════════════════════════
+     این بخش شامل عناصری است که کاربر می‌بیند: هدر، لیست یادآورها،
+     پنجره‌های مودال (افزودن/ویرایش/تقویم) و پیام‌های Toast.
+     ════════════════════════════════════════════════════════════════════ -->
+<!-- ════════════════════════════════════════════════════════════════════
+     🔒 صفحه قفل انقضا — بعد از ۲۰ فروردین ۱۴۰۵ نمایش داده می‌شود
+     ════════════════════════════════════════════════════════════════════
+     این صفحه اکانت اینستاگرام سازنده، متن هشدار و دکمه بک‌آپ را نشان
+     می‌دهد. گروه‌ها و یادآورها پنهان می‌شوند. کاربر می‌تواند با ۲۰ کلیک
+     روی «یادآور صوتی» در هدر، قفل را باز کند (تا ۲۰ فروردین سال بعد).
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="lock-screen" id="lockScreen">
+    <div class="lock-icon">📷</div>
+    <a href="https://instagram.com/mamin.je" target="_blank" rel="noopener noreferrer" class="lock-instagram-link">@mamin.je</a>
+    <div class="lock-warning-text">
+        پایان استفاده رایگان .<br>
+        از برنامه خود بکاپ بگیرید و جهت استفاده از برنامه جدید<br>
+        با اکانت اینستاگرام گروه سازنده تماس بگیرید .
+    </div>
+    <button class="lock-backup-btn" onclick="confirmBackup()">📥 خروجی بک‌آپ</button>
+</div>
 
 <div class="header">
     <div class="header-info">
-        <h1>یادآور صوتی</h1>
+        <h1 id="headerTitle">یادآور صوتی</h1>
         <div class="header-date" id="headerDate"></div>
     </div>
     <div class="header-actions">
@@ -1287,8 +1569,7 @@ body { padding-bottom: 30px; }
         <button class="icon-btn share-btn" id="resetOrderBtn" onclick="resetAllTaskPositions()" title="برگرداندن همه تسک‌ها به ترتیب اصلی">↩</button>
         <button class="icon-btn share-btn" id="importBtn" onclick="importDatabase()" title="وارد کردن دیتابیس از فایل JSON">📥</button>
         <button class="icon-btn share-btn" id="notifBtn" onclick="toggleNotifications()" title="فعال‌سازی اعلان‌ها">🔔<span class="notif-badge"></span></button>
-        <button class="icon-btn share-btn" id="shareBtn" onclick="saveBackupToLocal()" title="ذخیره بک‌آپ در فضای ذخیره‌سازی">📤</button>
-        <button class="icon-btn share-btn" id="assistantBtn" onclick="toggleVoiceAssistant()" title="دستیار صوتی">🎤</button>
+        <button class="icon-btn share-btn" id="shareBtn" onclick="confirmBackup()" title="ذخیره بک‌آپ در فضای ذخیره‌سازی">📤</button>
         <button class="icon-btn add-btn" id="addBtn" onclick="startAdding()" title="افزودن یادآور">+</button>
     </div>
 </div>
@@ -1298,6 +1579,13 @@ body { padding-bottom: 30px; }
         <div class="empty-icon">🎤</div>
         <div>برای افزودن یادآور،<br>دکمه + را بزنید و صحبت کنید</div>
     </div>
+</div>
+
+<div class="credit-footer">
+    <span class="credit-line">Designed &amp; developed by</span>
+    <span class="credit-names">Reza Jalili</span>
+    <span class="credit-sep">&amp;</span>
+    <span class="credit-names">Emad Tavakoli</span>
 </div>
 
 <div class="modal-overlay" id="modalOverlay">
@@ -1333,6 +1621,27 @@ body { padding-bottom: 30px; }
                 <button class="quick-btn" onclick="setQuickDeadline(168)">۱ هفته</button>
             </div>
 
+            <!-- Repeat options: repeat the task at regular intervals until an end date -->
+            <div class="repeat-section" id="repeatSection">
+                <label class="modal-label">تکرار تسک</label>
+                <div class="repeat-row">
+                    <select id="repeatType" class="repeat-select" onchange="onRepeatTypeChange()">
+                        <option value="none">بدون تکرار</option>
+                        <option value="hours">هر چند ساعت</option>
+                        <option value="days">هر چند روز</option>
+                        <option value="weeks">هر چند هفته</option>
+                        <option value="months">هر چند ماه</option>
+                    </select>
+                    <input type="number" id="repeatValue" class="repeat-value" min="1" value="1" style="display:none;" placeholder="مقدار">
+                    <span id="repeatUnit" class="repeat-unit" style="display:none;"></span>
+                </div>
+                <div class="repeat-end-row" id="repeatEndRow" style="display:none;">
+                    <label class="modal-label">تا تاریخ</label>
+                    <input type="text" id="repeatEndDateDisplay" class="modal-input datetime-display" readonly placeholder="انتخاب تاریخ پایان تکرار..." onclick="openRepeatEndDatePicker()">
+                    <input type="hidden" id="repeatEndDate">
+                </div>
+            </div>
+
             <div class="modal-buttons">
                 <button class="btn btn-secondary" onclick="cancelModal()">انصراف</button>
                 <button class="btn btn-secondary" onclick="startRecording()">ضبط دوباره</button>
@@ -1343,7 +1652,6 @@ body { padding-bottom: 30px; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div class="assistant-feedback" id="assistantFeedback"></div>
 
 <!-- Calendar Modal -->
 <div class="modal-overlay" id="calendarOverlay">
@@ -1418,6 +1726,54 @@ body { padding-bottom: 30px; }
 </div>
 
 <script>
+// ════════════════════════════════════════════════════════════════════
+// 🧩 بخش ۳: تنظیمات و متغیرهای عمومی JavaScript
+// ════════════════════════════════════════════════════════════════════
+// در این بخش، نسخهٔ برنامه و متغیرهای سراسری تعریف می‌شوند.
+// ⚠️  هر بار که کد را در گیت‌هاب به‌روزرسانی کردید، شمارهٔ نسخهٔ APP_VERSION
+// را یکی بالا ببرید تا مرورگر بداند باید فایل جدید را دوباره دانلود کند.
+// ============ App Version (CRITICAL: bump on every deploy) ============
+// This version is checked against the SW-reported version on each page
+// load. If they don't match, the page forces a hard reload to bypass any
+// stale cached copies of the HTML.
+// History:
+//   v7  - initial repeat task code (had bugs)
+//   v8  - SW cache-name bumped, fetch strategy = network-first for HTML
+//   v9  - force fresh SW + auto-reload on version mismatch
+//   v10 - fix popstate closing parent modal when datetime picker confirms
+//   v11 - fix backup/restore to preserve all new fields (parentId, repeat)
+//   v12 - FAST LOAD: removed auto-backup/OPFS/auto-restore from startup
+//   v13 - JALALI-AWARE REPEATS: monthly preserves Jalali day-of-month
+//         (5 خرداد → 5 تیر → 5 مرداد...); weekly preserves day-of-week
+//         (Tuesday → Tuesday); daily uses Jalali-day math to avoid DST drift
+//   v14 - REMOVED thousands separator from toPersianNumber (1405 was shown
+//         as "۱٬۴۰۵" — now plain "۱۴۰۵" as user requested)
+//   v15 - EDIT-ADD-REPEAT: editing a non-repeat task + adding a repeat
+//         config now makes it a parent + generates children (was ignored).
+//         Also: clearing the repeat config now cascade-deletes children.
+//   v16 - SPLIT number formatting: toPersianNumber (no separator) for
+//         dates/year/day/hour counts; NEW toPersianNumberWithSep (WITH
+//         separator) for spoken numbers in task text. So "دو میلیون"
+//         → "۲٬۰۰۰٬۰۰۰" (with separator) but 1405 → "۱۴۰۵" (no separator).
+//   v17 - Added subtle English credit footer at the bottom of the page:
+//         "Designed & developed by Reza Jalili & Emad Tavakoli"
+//   v18 - DIGIT-SEQUENCE DETECTION: phone numbers spoken digit-by-digit
+//         (e.g., "صفر نه یک پنج" → ۰۹۱۵, "0915 544 125" → ۰۹۱۵۵۴۴۱۲۵) are
+//         now concatenated as digit strings (no separator, leading zero
+//         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
+//         Also: backup button now asks for confirmation before saving
+//         (it was being accidentally triggered next to the + button).
+const APP_VERSION = 'v19-2026-10-31-expiry-lock';
+console.log('[Page] APP_VERSION =', APP_VERSION);
+
+// ════════════════════════════════════════════════════════════════════
+// 🚨 بخش ۴: تبدیل تاریخ شمسی (جلالی) — حساس، دست نزنید
+// ════════════════════════════════════════════════════════════════════
+// این بخش تاریخ میلادی را به شمسی و برعکس تبدیل می‌کند.
+// همهٔ تاریخ‌های نمایشی برنامه (تقویم، سررسید، تاریخ ایجاد) از این
+// توابع استفاده می‌کنند. الگوریتم بر اساس «۱ فروردین ۱۴۰۰ = ۲۱ مارس ۲۰۲۱»
+// است و برای سال‌های کبیسه هم درست کار می‌کند.
+// ⚠️  اگر این بخش را تغییر دادید، تقویم کل برنامه خراب می‌شود.
 // ============ Jalali (Shamsi) Date Conversion ============
 // Uses jalaliToGregorian (verified correct) as the source of truth.
 // Reference: Farvardin 1, 1400 = March 21, 2021 (UTC)
@@ -1528,19 +1884,50 @@ function toPersianDigits(str) {
     return String(str).replace(/[0-9]/g, d => persian[d]);
 }
 
-// Convert a number to Persian digits WITH thousands separator (three-digit grouping).
-// Uses Arabic thousands separator ٬ (U+066C).
-// Example: 1405 → "۱٬۴۰۵", 28 → "۲۸" (no separator for < 1000)
+// Convert a number to Persian digits (NO thousands separator).
+// The user explicitly asked for separators to be removed from dates
+// (1405 was being displayed as "۱٬۴۰۵" — they want plain "۱۴۰۵").
+// Example: 1405 → "۱۴۰۵", 28 → "۲۸"
 function toPersianNumber(num) {
     if (typeof num !== 'number') num = parseInt(num, 10);
     if (isNaN(num)) return toPersianDigits(String(num));
-    // Group digits in groups of 3 from right, using Arabic thousands separator
+    const str = String(Math.abs(num));
+    const sign = num < 0 ? '−' : '';
+    return sign + toPersianDigits(str);
+}
+
+// Convert a number to Persian digits WITH thousands separator (U+066C ٬).
+// Used for SPOKEN NUMBERS in task text (after voice recognition), e.g.,
+// "دو میلیون" → "۲٬۰۰۰٬۰۰۰" (with separator, since the user wants
+// large monetary/quantity amounts to keep the separator for readability).
+// Dates (years, day counts) use `toPersianNumber` (no separator).
+function toPersianNumberWithSep(num) {
+    if (typeof num !== 'number') num = parseInt(num, 10);
+    if (isNaN(num)) return toPersianDigits(String(num));
     const str = String(Math.abs(num));
     const sign = num < 0 ? '−' : '';
     const grouped = str.replace(/\B(?=(\d{3})+(?!\d))/g, '٬');
     return sign + toPersianDigits(grouped);
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🚨 بخش ۵: تبدیل اعداد فارسی از صحبت — بسیار حساس، دست نزنید
+// ════════════════════════════════════════════════════════════════════
+// این بخش قلب «تشخیص اعداد از صوت» است. وقتی کاربر می‌گوید:
+//   «دو میلیون تومان»    → ۲٬۰۰۰٬۰۰۰ تومان  (با جداکننده)
+//   «صفر نه یک پنج»      → ۰۹۱۵              (شماره تلفن)
+//   «دویست و پنجاه»      → ۲۵۰               (بدون جداکننده)
+//
+// این بخش شامل چند تابع است که با دقت بسیار زیاد نوشته شده‌اند:
+//   - PERSIAN_NUM_WORDS: دیکشنری کلمات عددی فارسی
+//   - postProcessPersianNumbers: پردازش اولیهٔ اعداد در متن
+//   - tryParseDigitSequence: تشخیص شماره تلفن (digit-by-digit)
+//   - tryParseNumberSeq: تشخیص مبالغ پولی (دو میلیون و ...
+//   - addNumericAfterWords: تابع اصلی که همه را ترکیب می‌کند
+//
+// ⚠️  هشدار جدی: این بخش را به‌هیچ‌وجه تغییر ندهید. اگر منطق
+// را تغییر دادید، تشخیص اعداد از صحبت کاربر خراب می‌شود و کل
+// کارایی برنامه مختل می‌گردد. فقط توضیحات فارسی را بخوانید.
 // ============ Persian Number Words Parser ============
 // Converts spoken Persian number words to digits.
 // Example: "یک میلیون و دویست و پنجاه و شش هزار و هفتصد و نود و هشت تومان"
@@ -1596,7 +1983,10 @@ function postProcessPersianNumbers(text) {
         if (inNumber) {
             total += segment;
             // Always output the number (even 0 for "صفر")
-            result.push(toPersianNumber(total));
+            // Use toPersianNumberWithSep (WITH separator) since spoken numbers
+            // (e.g., monetary amounts) should keep the thousands separator for
+            // readability — "دو میلیون" → "۲٬۰۰۰٬۰۰۰" not "۲۰۰۰۰۰۰".
+            result.push(toPersianNumberWithSep(total));
             total = 0;
             segment = 0;
             inNumber = false;
@@ -1663,6 +2053,11 @@ function postProcessPersianNumbers(text) {
     return result.join(' ');
 }
 
+// ────────────────────────────────────────────────────────────────────
+// ادامه بخش ۵: جایگزینی کلمات عددی با شکل دیجیتالی
+// ────────────────────────────────────────────────────────────────────
+// این توابع، کلمات عددی فارسی (مثل «دو میلیون») را با شکل دیجیتالی
+// (مثل ۲٬۰۰۰٬۰۰۰) جایگزین می‌کنند. منطق «تشخیص شماره تلفن» هم اینجاست.
 // ============ Add Numeric Form AFTER Number Words ============
 // Replaces the original spoken number words with the numeric form.
 // Example: "خرید نان به مبلغ دو میلیون تومان"
@@ -1682,6 +2077,108 @@ function postProcessPersianNumbers(text) {
 //   - Non-number words are preserved as-is.
 
 const CURRENCY_WORDS = ['تومان', 'تومن', 'ریال', 'دلار', 'یورو', 'درهم', 'پوند', 'یوان'];
+
+// Detect a DIGIT SEQUENCE — consecutive single-digit tokens that should be
+// concatenated as a digit string (instead of summed). This handles:
+//   - Phone numbers spoken digit-by-digit: "صفر نه یک پنج" → "0915"
+//   - Multi-group phone numbers: "0915 544 125" → "0915544125"
+//   - Mixed: "صفر 915 544 125" → "0915544125"
+//   - Single phone-number token starting with 0: "0915544125" → "0915544125"
+//     (preserved as-is because parseInt would drop the leading zero)
+//
+// A "digit token" is any of:
+//   - A single-digit Persian number WORD (صفر=0, یک=1, دو=2, ..., نه=9)
+//   - A Latin digit string (e.g., "0915", "544", "5")
+//   - A Persian digit string (e.g., "۰۹۱۵", "۵۴۴")
+//
+// The sequence BREAKS on:
+//   - Multi-digit WORDS (ده=10, بیست=20, صد=100, هزار=1000, میلیون=1000000, ...)
+//     These signal that the user is saying a real number, not digit-by-digit.
+//   - Any non-number word
+//
+// "و" (and) is treated as a connector and SKIPPED within a sequence (so
+// "صفر و نه و یک و پنج" still concatenates to "0915"). This is the standard
+// Persian verbal style for reading digits one-by-one.
+//
+// A sequence qualifies if it has AT LEAST 2 digit tokens, OR exactly 1 token
+// that is a Latin/Persian digit string starting with "0" (the leading zero
+// signals a phone number — must be preserved, not parsed as an int).
+//
+// Returns { digitString: "0915544125", endIndex: N } or null.
+function tryParseDigitSequence(tokens, startIdx) {
+    let digits = '';
+    let collectedCount = 0;
+    let firstTokenWasLeadingZeroString = false;
+    let i = startIdx;
+
+    while (i < tokens.length) {
+        let word = tokens[i].replace(/[\u200c\u200d]/g, '');
+        word = word.replace(/تا$/, '').replace(/[.,،؛:!؟()«»]/g, '');
+
+        // "و" connector — skip (but only if we've already started collecting)
+        if (word === 'و' || word === 'وا' || word === 'وَ') {
+            if (collectedCount > 0) { i++; continue; }
+            else { break; }
+        }
+
+        // Persian number word
+        let val = PERSIAN_NUM_WORDS[word];
+
+        // Multi-digit word (10+) or multiplier (1000+) — BREAK the sequence.
+        // These signal that the user is saying a real numeric value (e.g.,
+        // "دو میلیون" or "دویست و پنجاه"), not digit-by-digit reading.
+        if (val !== undefined && val >= 10) break;
+
+        // Single-digit word (0-9) → append the digit
+        if (val !== undefined && val < 10) {
+            digits += val;
+            collectedCount++;
+            i++;
+            continue;
+        }
+
+        // Latin digit string (e.g., "0915", "544", "5") — append all digits.
+        // Note: parseInt would drop leading zeros ("0915" → 915), but for
+        // phone numbers we want to KEEP them. String concatenation does.
+        const latinMatch = word.match(/^(\d+)$/);
+        if (latinMatch) {
+            // If this is the FIRST token AND it starts with "0", treat the
+            // whole sequence as a digit string (preserve leading zero).
+            if (collectedCount === 0 && latinMatch[1].charAt(0) === '0') {
+                firstTokenWasLeadingZeroString = true;
+            }
+            digits += latinMatch[1];
+            collectedCount++;
+            i++;
+            continue;
+        }
+
+        // Persian digit string (e.g., "۰۹۱۵", "۵۴۴")
+        const persianMatch = word.match(/^([۰-۹]+)$/);
+        if (persianMatch) {
+            const latin = word.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+            // Same leading-zero check for Persian digits
+            if (collectedCount === 0 && latin.charAt(0) === '0') {
+                firstTokenWasLeadingZeroString = true;
+            }
+            digits += latin;
+            collectedCount++;
+            i++;
+            continue;
+        }
+
+        // Non-number word → stop
+        break;
+    }
+
+    // Qualify as a digit sequence if:
+    //   - Collected 2+ tokens (typical phone-number pattern), OR
+    //   - Collected 1 token but it had a leading zero (single-token phone number
+    //     like "0915544125" that speech-recognition output as one string).
+    if (collectedCount < 2 && !firstTokenWasLeadingZeroString) return null;
+
+    return { digitString: digits, endIndex: i };
+}
 
 function tryParseNumberSeq(tokens, startIdx) {
     let total = 0, segment = 0, foundAny = false, i = startIdx;
@@ -1715,14 +2212,30 @@ function tryParseNumberSeq(tokens, startIdx) {
 }
 
 function addNumericAfterWords(text) {
-    let hasNumberWord = false;
-    for (const w in PERSIAN_NUM_WORDS) { if (text.includes(w)) { hasNumberWord = true; break; } }
-    if (!hasNumberWord) return text;
+    // Quick check: does text contain any Persian number words OR any Latin/Persian digits?
+    // (We need to check digits too because phone numbers might be all-digit tokens
+    // without any Persian number words.)
+    let hasNumberContent = false;
+    for (const w in PERSIAN_NUM_WORDS) { if (text.includes(w)) { hasNumberContent = true; break; } }
+    if (!hasNumberContent && !/\d/.test(text) && !/[۰-۹]/.test(text)) return text;
 
     const tokens = text.split(/\s+/);
     const result = [];
     let i = 0;
     while (i < tokens.length) {
+        // PRIORITY 1: Try digit-sequence mode (phone numbers, etc.).
+        // "صفر نه یک پنج 544 125" → "0915544125" (concatenated, no separator)
+        const digitResult = tryParseDigitSequence(tokens, i);
+        if (digitResult) {
+            // Emit as Persian digits WITHOUT separator (phone numbers
+            // shouldn't have separators — they're not math/monetary values).
+            result.push(toPersianDigits(digitResult.digitString));
+            i = digitResult.endIndex;
+            continue;
+        }
+
+        // PRIORITY 2: Try numeric-sequence mode (monetary amounts, dates).
+        // "دو میلیون تومان" → "۲٬۰۰۰٬۰۰۰ تومان" (WITH separator)
         const numResult = tryParseNumberSeq(tokens, i);
         if (numResult && numResult.value > 0) {
             // Skip the original number words (they get replaced by the digit form).
@@ -1739,7 +2252,10 @@ function addNumericAfterWords(text) {
                 }
             }
             // Emit ONLY the numeric form (with currency if absorbed).
-            result.push(toPersianNumber(numResult.value) + currencyWord);
+            // Use toPersianNumberWithSep (WITH separator) so large spoken
+            // amounts like "دو میلیون" render as "۲٬۰۰۰٬۰۰۰" (readable)
+            // instead of "۲۰۰۰۰۰۰" (hard to read).
+            result.push(toPersianNumberWithSep(numResult.value) + currencyWord);
             i = nextIdx;
         } else {
             // Non-number word — keep as-is.
@@ -1750,6 +2266,15 @@ function addNumericAfterWords(text) {
     return result.join(' ');
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 💾 بخش ۶: پایگاه داده (localStorage + IndexedDB)
+// ════════════════════════════════════════════════════════════════════
+// برنامه از دو ذخیره‌گاه استفاده می‌کند:
+//   1) localStorage: منبع اصلی حقیقت. همیشه و در همه‌جا در دسترس است.
+//      سرعت بالا، حجم محدود (حدود ۵ مگابایت).
+//   2) IndexedDB: آینهٔ داده‌ها برای سرویس ورکر. سرویس ورکر نمی‌تواند
+//      به localStorage دسترسی داشته باشد، پس داده‌ها در IndexedDB هم
+//      ذخیره می‌شوند تا اعلان‌های پس‌زمینه کار کنند.
 // ============ Database (localStorage + IndexedDB mirror for SW) ============
 const DB_KEY = 'persian_voice_reminders_v1';
 const IDB_NAME = 'yadavar_db';
@@ -1852,22 +2377,123 @@ function getDB() {
     try { return JSON.parse(localStorage.getItem(DB_KEY) || '[]'); }
     catch(e) { console.error('DB read error', e); return []; }
 }
+// ────────────────────────────────────────────────────────────────────
+// مهاجرت و اعتبارسنجی ساختار داده‌ها (هنگام بازیابی بک‌آپ)
+// ────────────────────────────────────────────────────────────────────
+// ============ Items Schema Migration (for backup/restore) ============
+// Validates + normalizes a list of items to the CURRENT schema:
+//   Required: id, text, createdAt, deadline, done, groupId
+//   Optional: completedAt, position, pinned, parentId, repeat
+// Old backups (without parentId/repeat) are accepted as-is — items just
+// behave as regular tasks (no repeat, no parent-child link).
+// Corrupt data (bad types, missing fields, orphan parentIds) is cleaned up
+// so the program works fully after restore.
+//
+// @param {Array} rawItems      - items from backup file (or current DB)
+// @param {Set}   validGroupIds - set of valid group IDs (orphans → 'all')
+// @returns {Array} validated + migrated items
+function migrateItemsSchema(rawItems, validGroupIds) {
+    if (!Array.isArray(rawItems)) return [];
+
+    // First pass: validate required fields + preserve optional fields
+    const validRepeatTypes = new Set(['none', 'hours', 'days', 'weeks', 'months']);
+    const normalized = rawItems
+        .filter(item => item && item.id && item.text && item.createdAt && item.deadline)
+        .map(item => {
+            const out = {
+                id: String(item.id),
+                text: String(item.text),
+                createdAt: String(item.createdAt),
+                deadline: String(item.deadline),
+                done: !!item.done,
+                groupId: item.groupId ? String(item.groupId) : 'all',
+            };
+
+            // Optional fields — only copy if present and valid
+            if (item.completedAt) out.completedAt = String(item.completedAt);
+            if (typeof item.position === 'number' && isFinite(item.position)) {
+                out.position = item.position;
+            }
+            if (item.pinned === true) out.pinned = true;
+
+            // parentId — link to parent for repeat children. Keep only if
+            // it's a non-empty string and NOT pointing to self.
+            if (item.parentId && typeof item.parentId === 'string' && item.parentId !== item.id) {
+                out.parentId = String(item.parentId);
+            }
+
+            // repeat — parent task's repeat config. Validate the structure.
+            if (item.repeat && typeof item.repeat === 'object') {
+                // Only preserve if the type is a recognized repeat type
+                // (including 'none'). Unknown types are dropped (corrupt data).
+                if (validRepeatTypes.has(item.repeat.type)) {
+                    const repType = item.repeat.type;
+                    const repVal = parseInt(item.repeat.value, 10);
+                    const repEnd = item.repeat.endDate ? String(item.repeat.endDate) : '';
+                    if (repType === 'none') {
+                        // 'none' is valid — preserve it so the UI knows the
+                        // task was previously a repeat parent that was reset.
+                        out.repeat = { type: 'none', value: isNaN(repVal) ? 1 : repVal, endDate: repEnd };
+                    } else if (!isNaN(repVal) && repVal >= 1 && repEnd) {
+                        // Valid non-'none' repeat config
+                        out.repeat = {
+                            type: repType,
+                            value: repVal,
+                            endDate: repEnd,
+                        };
+                    }
+                    // Else: valid type but bad value/endDate → drop entirely
+                }
+                // Else: invalid type (e.g., 'INVALID', 'yearly', etc.) → drop entirely
+            }
+
+            return out;
+        });
+
+    // Second pass: validate parentIds — if the parent doesn't exist in
+    // the migrated set, the child becomes a regular task (no parentId).
+    // This handles the case where a backup includes a child task but
+    // not its parent (e.g., partial backup, or parent was deleted).
+    const validIds = new Set(normalized.map(i => i.id));
+    const cleaned = normalized.map(item => {
+        if (item.parentId && !validIds.has(item.parentId)) {
+            // Orphan child — remove the parentId reference
+            const { parentId, ...rest } = item;
+            return rest;
+        }
+        return item;
+    });
+
+    // Third pass: validate groupIds against validGroupIds (orphans → 'all')
+    const final = cleaned.map(item => {
+        if (validGroupIds && !validGroupIds.has(item.groupId)) {
+            return { ...item, groupId: 'all' };
+        }
+        return item;
+    });
+
+    return final;
+}
 function setDB(items) {
     try {
+        // PRIMARY store: localStorage (synchronous, fast, always available).
+        // This is the ONLY source of truth for the page.
         localStorage.setItem(DB_KEY, JSON.stringify(items));
-        idbBulkPutReminders(items);
-        // ALWAYS save backups — both IDB and OPFS. These are invisible
-        // (no downloads, no prompts, no user interaction). They MUST run
-        // even during import, so the imported data is backed up too.
-        saveBackupToIDB(items, getGroups());
-        autoSaveToFile(items, getGroups());
-        console.log('[setDB] ✓ Saved ' + items.length + ' items to localStorage + IDB + OPFS');
+        // Fire-and-forget: mirror to IDB reminders store (so the SW can
+        // read deadlines for background notifications). NOT awaited — we
+        // don't want to block the UI on IDB writes. The page reads from
+        // localStorage, not IDB, so a slow IDB write doesn't affect UX.
+        // If idbBulkPutReminders fails, it logs a warning but doesn't break.
+        try { idbBulkPutReminders(items); } catch(e) { console.warn('[setDB] IDB mirror failed:', e.message); }
     } catch(e) {
         console.error('[setDB] ✗ DB write error:', e.message);
         showToast('خطا در ذخیره‌سازی: ' + e.message);
     }
 }
 
+// ────────────────────────────────────────────────────────────────────
+// ذخیرهٔ پشتیبان کامل دیتابیس در IndexedDB
+// ────────────────────────────────────────────────────────────────────
 // ============ IndexedDB Backup Store ============
 // Saves the full database (items + groups) to a dedicated IndexedDB store
 // (STORE_BACKUP, key = 'main'). This is SEPARATE from the reminders store
@@ -1926,6 +2552,9 @@ async function restoreBackupFromIDB() {
     }
 }
 
+// ────────────────────────────────────────────────────────────────────
+// ذخیرهٔ خودکار در فایل سیستم (File System Access API)
+// ────────────────────────────────────────────────────────────────────
 // ============ File System Auto-Save ============
 // Uses the File System Access API (showDirectoryPicker) on desktop Chrome to
 // save the database to a "YadAvar" subdirectory in the user's Downloads.
@@ -1936,6 +2565,9 @@ let _yadavarDirHandle = null;
 let _yadavarFileHandle = null;
 let _autoSaveTimer = null;
 
+// ────────────────────────────────────────────────────────────────────
+// OPFS — سیستم فایل خصوصی مبدا (بدون نیاز به تعامل کاربر)
+// ────────────────────────────────────────────────────────────────────
 // ============ OPFS (Origin Private File System) ============
 // This is the KEY to fully-automatic file operations without user gestures.
 // navigator.storage.getDirectory() returns a directory handle for the
@@ -2308,6 +2940,11 @@ async function restoreDataIfEmpty() {
     return false;
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 📁 بخش ۹: مدیریت گروه‌ها
+// ════════════════════════════════════════════════════════════════════
+// کاربر می‌تواند یادآورها را در گروه‌های مختلف دسته‌بندی کند.
+// یک گروه پیش‌فرض «همه کارها» همیشه وجود دارد و قابل حذف نیست.
 // ============ Groups Database ============
 const GROUPS_KEY = 'persian_voice_groups_v1';
 const GROUP_COLORS = [
@@ -2418,427 +3055,14 @@ async function migrateLegacyData() {
     } catch(e) { console.warn('Migration failed', e); }
 }
 
-// ============ Voice Assistant ============
-// A separate speech recognition instance for voice commands.
-// Uses continuous mode (stays on until user turns it off).
-// Supports: add task, delete task, edit task, mark done, navigate group,
-// go back, read upcoming tasks, and read all tasks.
-
-let assistantRecognition = null;
-let isAssistantListening = false;
-let assistantRestartTimer = null;
-
-function isTTSSupported() {
-    return 'speechSynthesis' in window;
-}
-
-// Speak text using Text-to-Speech (Persian)
-function speak(text) {
-    if (!isTTSSupported()) {
-        console.log('[TTS] Not supported, text:', text);
-        return;
-    }
-    speechSynthesis.cancel(); // stop any ongoing speech
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = 'fa-IR';
-    utter.rate = 0.9;
-    utter.pitch = 1;
-    speechSynthesis.speak(utter);
-}
-
-function showAssistantFeedback(msg) {
-    const el = document.getElementById('assistantFeedback');
-    if (!el) return;
-    el.textContent = msg;
-    el.style.display = 'block';
-    setTimeout(() => { el.style.display = 'none'; }, 4000);
-}
-
-function toggleVoiceAssistant() {
-    if (isAssistantListening) {
-        stopVoiceAssistant();
-    } else {
-        startVoiceAssistant();
-    }
-}
-
-function startVoiceAssistant() {
-    if (!isSpeechSupported()) {
-        showToast('مرورگر شما از تشخیص صوت پشتیبانی نمی‌کند');
-        return;
-    }
-    if (!isReachable) {
-        showToast('اینترنت در دسترس نیست. دستیار صوتی نیاز به اینترنت دارد.');
-        return;
-    }
-    // Don't start if task recording is in progress
-    if (isRecording) {
-        showToast('ابتدا ضبط تسک را متوقف کنید');
-        return;
-    }
-
-    isAssistantListening = true;
-    const btn = document.getElementById('assistantBtn');
-    if (btn) btn.classList.add('listening');
-
-    // Create a SEPARATE recognition instance for the assistant
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    assistantRecognition = new SR();
-    assistantRecognition.lang = 'fa-IR';
-    assistantRecognition.continuous = true;
-    assistantRecognition.interimResults = true;
-    assistantRecognition.maxAlternatives = 1;
-
-    assistantRecognition.onstart = () => {
-        console.log('[Assistant] Started listening');
-        showAssistantFeedback('🎤 دستیار صوتی فعال است. صحبت کنید...');
-        speak('دستیار صوتی فعال است. صحبت کنید.');
-    };
-
-    assistantRecognition.onresult = (event) => {
-        let finalText = '';
-        let interim = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            if (event.results[i].isFinal) {
-                finalText += event.results[i][0].transcript;
-            } else {
-                interim += event.results[i][0].transcript;
-            }
-        }
-        if (interim) {
-            showAssistantFeedback('📝 ' + interim);
-        }
-        if (finalText.trim()) {
-            const cmd = finalText.trim();
-            console.log('[Assistant] Command:', cmd);
-            showAssistantFeedback('✓ ' + cmd);
-            processVoiceCommand(cmd);
-        }
-    };
-
-    assistantRecognition.onerror = (event) => {
-        console.error('[Assistant] Error:', event.error);
-        if (event.error === 'no-speech' || event.error === 'aborted') return;
-        if (event.error === 'not-allowed') {
-            showToast('دسترسی به میکروفون رد شد');
-            stopVoiceAssistant();
-        }
-    };
-
-    assistantRecognition.onend = () => {
-        console.log('[Assistant] Recognition ended');
-        // Auto-restart if still in listening mode
-        if (isAssistantListening) {
-            assistantRestartTimer = setTimeout(() => {
-                if (!isAssistantListening) return;
-                try {
-                    assistantRecognition.start();
-                } catch(e) {
-                    console.warn('[Assistant] Restart failed:', e.message);
-                    // Retry after 1s
-                    assistantRestartTimer = setTimeout(() => {
-                        if (!isAssistantListening) return;
-                        try { assistantRecognition.start(); }
-                        catch(e2) {
-                            console.error('[Assistant] Restart failed twice:', e2.message);
-                            stopVoiceAssistant();
-                        }
-                    }, 1000);
-                }
-            }, 300);
-        }
-    };
-
-    try {
-        assistantRecognition.start();
-    } catch(e) {
-        console.error('[Assistant] Start failed:', e.message);
-        showToast('خطا در راه‌اندازی دستیار صوتی: ' + e.message);
-        stopVoiceAssistant();
-    }
-}
-
-function stopVoiceAssistant() {
-    isAssistantListening = false;
-    if (assistantRestartTimer) {
-        clearTimeout(assistantRestartTimer);
-        assistantRestartTimer = null;
-    }
-    if (assistantRecognition) {
-        try { assistantRecognition.stop(); } catch(e) {}
-        assistantRecognition = null;
-    }
-    if (isTTSSupported()) speechSynthesis.cancel();
-    const btn = document.getElementById('assistantBtn');
-    if (btn) btn.classList.remove('listening');
-    const fb = document.getElementById('assistantFeedback');
-    if (fb) fb.style.display = 'none';
-    console.log('[Assistant] Stopped');
-}
-
-// Parse and execute a voice command
-function processVoiceCommand(cmd) {
-    const text = cmd.toLowerCase().trim();
-
-    // 1. STOP / خاموش
-    if (text.includes('خاموش') || text.includes('ببند') || text.includes('توقف') || text.includes('تموم')) {
-        if (text.includes('دستیار') || text.includes('صوتی') || text.length < 15) {
-            speak('دستیار صوتی خاموش شد.');
-            stopVoiceAssistant();
-            return;
-        }
-    }
-
-    // 2. READ UPCOMING / یادآوری
-    if (text.includes('یادآور') || text.includes('پیش رو') || text.includes('بخوان') || text.includes('چه کار')) {
-        if (text.includes('یادآور') || text.includes('پیش رو') || text.includes('چه کار') || text.includes('بخوان')) {
-            readUpcomingTasks();
-            return;
-        }
-    }
-
-    // 3. READ ALL tasks / همه تسک‌ها را بخوان
-    if (text.includes('همه') && text.includes('بخوان')) {
-        readAllTasks();
-        return;
-    }
-
-    // 4. ADD task / اضافه / جدید / بساز
-    if (text.includes('اضافه') || text.includes('جدید') || text.includes('ساخت') || text.includes('بساز')) {
-        // Extract task text: everything after the keyword
-        let taskText = cmd;
-        const keywords = ['اضافه کن', 'اضافه', 'تسک جدید', 'جدید', 'ساخت', 'بساز', 'یادآور جدید', 'یادآور اضافه'];
-        for (const kw of keywords) {
-            const idx = text.indexOf(kw);
-            if (idx >= 0) {
-                taskText = cmd.substring(idx + kw.length).trim();
-                break;
-            }
-        }
-        if (taskText && taskText.length > 2) {
-            addTaskByVoice(taskText);
-        } else {
-            speak('چه کاری اضافه کنم؟');
-        }
-        return;
-    }
-
-    // 5. DELETE task / حذف / پاک
-    if (text.includes('حذف') || text.includes('پاک')) {
-        let searchText = cmd;
-        const keywords = ['حذف کن', 'حذف', 'پاک کن', 'پاک'];
-        for (const kw of keywords) {
-            const idx = text.indexOf(kw);
-            if (idx >= 0) {
-                searchText = cmd.substring(idx + kw.length).trim();
-                break;
-            }
-        }
-        if (searchText && searchText.length > 1) {
-            deleteTaskByVoice(searchText);
-        } else {
-            speak('چه تسکی را حذف کنم؟');
-        }
-        return;
-    }
-
-    // 6. MARK DONE / انجام شد
-    if (text.includes('انجام شد') || text.includes('انجام دادم') || text.includes('تمام شد')) {
-        let searchText = cmd;
-        const keywords = ['انجام شد', 'انجام دادم', 'تمام شد', 'انجام کردم'];
-        for (const kw of keywords) {
-            const idx = text.indexOf(kw);
-            if (idx >= 0) {
-                searchText = cmd.substring(0, idx).trim();
-                break;
-            }
-        }
-        // Also try extracting after "انجام شد" keyword
-        if (searchText === cmd) {
-            for (const kw of keywords) {
-                const idx = text.indexOf(kw);
-                if (idx >= 0) {
-                    searchText = cmd.substring(idx + kw.length).trim() || cmd.substring(0, idx).trim();
-                    break;
-                }
-            }
-        }
-        if (searchText && searchText.length > 1) {
-            markDoneByVoice(searchText);
-        } else {
-            speak('کدام تسک را انجام شد علامت بزنم؟');
-        }
-        return;
-    }
-
-    // 7. NAVIGATE to group / گروه / باز کن
-    if (text.includes('گروه') || text.includes('باز کن')) {
-        let groupName = cmd;
-        const keywords = ['گروه', 'باز کن', 'برو به', 'باز', 'نمایش'];
-        for (const kw of keywords) {
-            const idx = text.indexOf(kw);
-            if (idx >= 0) {
-                groupName = cmd.substring(idx + kw.length).trim();
-                break;
-            }
-        }
-        if (groupName && groupName.length > 1) {
-            navigateToGroupByVoice(groupName);
-        } else {
-            speak('کدام گروه را باز کنم؟');
-        }
-        return;
-    }
-
-    // 8. GO BACK / برگشت / برو عقب
-    if (text.includes('برگشت') || text.includes('برو عقب') || text.includes('برو قب') || text.includes('صفحه اصلی')) {
-        speak('برگشت به صفحه اصلی.');
-        goToGroups();
-        return;
-    }
-
-    // 9. DEFAULT: treat as a new task text (add to current group)
-    if (text.length > 3 && currentView === 'tasks' && currentGroupId && currentGroupId !== 'all') {
-        speak('ساختم: ' + cmd.substring(0, 30));
-        addTaskByVoice(cmd);
-        return;
-    }
-
-    // Couldn't understand
-    speak('متوجه نشدم. می‌توانید بگویید: اضافه کن، حذف کن، انجام شد، یا بخوان.');
-    showAssistantFeedback('❓ متوجه نشدم. دستورات: اضافه/حذف/انجام شد/بخوان/گروه/برگشت');
-}
-
-// Read upcoming tasks (sorted by deadline, not-done, next 5)
-function readUpcomingTasks() {
-    const items = getDB().filter(i => !i.done);
-    if (items.length === 0) {
-        speak('هیچ کاری برای انجام وجود ندارد.');
-        return;
-    }
-    items.sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
-    const upcoming = items.slice(0, 5);
-    let text = 'کارهای پیش رو: ';
-    upcoming.forEach((item, i) => {
-        const deadline = toJalaliLong(item.deadline);
-        const time = new Date(item.deadline);
-        const timeStr = pad2(time.getHours()) + ':' + pad2(time.getMinutes());
-        text += `${i+1}. ${item.text}. سررسید ${deadline} ساعت ${toPersianDigits(timeStr)}. `;
-    });
-    speak(text);
-    showAssistantFeedback('📋 ' + text);
-}
-
-// Read all tasks
-function readAllTasks() {
-    const items = getDB();
-    if (items.length === 0) {
-        speak('هیچ تسکی ثبت نشده است.');
-        return;
-    }
-    let text = `شما ${toPersianNumber(items.length)} تسک دارید. `;
-    const notDone = items.filter(i => !i.done);
-    const done = items.filter(i => i.done);
-    text += `${toPersianNumber(notDone.length)} انجام نشده و ${toPersianNumber(done.length)} انجام شده. `;
-    if (notDone.length > 0) {
-        text += 'انجام نشده: ';
-        notDone.slice(0, 5).forEach((item, i) => {
-            text += `${i+1}. ${item.text}. `;
-        });
-    }
-    speak(text);
-    showAssistantFeedback('📋 ' + text);
-}
-
-// Add a task by voice (quick add with 1-hour deadline)
-function addTaskByVoice(taskText) {
-    if (currentView !== 'tasks' || !currentGroupId || currentGroupId === 'all') {
-        // Navigate to "all" group first, then add
-        openGroupView('all');
-    }
-    const groupId = currentGroupId || 'all';
-    const now = new Date();
-    const deadline = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
-    const items = getDB();
-    const newItem = {
-        id: 'r_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-        text: taskText,
-        createdAt: now.toISOString(),
-        deadline: deadline.toISOString(),
-        done: false,
-        groupId: groupId,
-    };
-    items.push(newItem);
-    setDB(items);
-    recalcGroupPositions(groupId);
-    fullRender();
-    showToast('✓ تسک اضافه شد: ' + taskText.substring(0, 40));
-}
-
-// Delete a task by searching for a keyword in the text
-function deleteTaskByVoice(searchText) {
-    const items = getDB();
-    const matches = items.filter(i => i.text.includes(searchText) || searchText.includes(i.text));
-    if (matches.length === 0) {
-        speak('تسکی با این نام پیدا نشد.');
-        return;
-    }
-    if (matches.length === 1) {
-        const item = matches[0];
-        const newItems = items.filter(i => i.id !== item.id);
-        setDB(newItems);
-        if (expandedId === item.id) expandedId = null;
-        fullRender();
-        speak('حذف شد: ' + item.text);
-        showToast('🗑 حذف شد: ' + item.text);
-    } else {
-        // Multiple matches - read them and ask user to specify
-        let text = `${toPersianNumber(matches.length)} تسک پیدا شد: `;
-        matches.slice(0, 3).forEach((m, i) => { text += `${i+1}. ${m.text}. `; });
-        speak(text + ' کدام را حذف کنم؟');
-        showAssistantFeedback('❓ ' + text);
-    }
-}
-
-// Mark a task as done by searching for a keyword
-function markDoneByVoice(searchText) {
-    const items = getDB();
-    const matches = items.filter(i => !i.done && (i.text.includes(searchText) || searchText.includes(i.text)));
-    if (matches.length === 0) {
-        speak('تسک انجام‌نشده با این نام پیدا نشد.');
-        return;
-    }
-    if (matches.length === 1) {
-        const item = matches[0];
-        item.done = true;
-        item.completedAt = new Date().toISOString();
-        setDB(items);
-        fullRender();
-        speak('انجام شد علامت زده شد: ' + item.text);
-        showToast('✓ انجام شد: ' + item.text);
-    } else {
-        let text = `${toPersianNumber(matches.length)} تسک پیدا شد: `;
-        matches.slice(0, 3).forEach((m, i) => { text += `${i+1}. ${m.text}. `; });
-        speak(text + ' کدام را انجام شد علامت بزنم؟');
-    }
-}
-
-// Navigate to a group by name
-function navigateToGroupByVoice(groupName) {
-    const groups = getGroups();
-    // Try exact match first
-    let match = groups.find(g => g.name === groupName);
-    // Then partial match
-    if (!match) match = groups.find(g => g.name.includes(groupName) || groupName.includes(g.name));
-    if (match) {
-        speak('باز کردن گروه: ' + match.name);
-        openGroupView(match.id);
-    } else {
-        speak('گروهی با این نام پیدا نشد.');
-    }
-}
-
-// ============ Speech Recognition (Task Recording) ============
+// ════════════════════════════════════════════════════════════════════
+// 🎤 بخش ۷: تشخیص صوت و ضبط
+// ════════════════════════════════════════════════════════════════════
+// از Web Speech API مرورگر (Chrome/Edge) استفاده می‌کند.
+// زبان تشخیص: فارسی (fa-IR).
+// اگر اینترنت قطع باشد یا مرورگر پشتیبانی نکند، کاربر می‌تواند
+// متن را به‌صورت دستی تایپ کند.
+// ============ Speech Recognition ============
 let recognition = null;
 let isRecording = false;
 // Two-level tracking (same as the WORKING backup version):
@@ -3051,6 +3275,12 @@ function updateDeadlineDisplay(isoString) {
     display.value = `${toPersianNumber(jy)}/${toPersianDigits(pad2(jm))}/${toPersianDigits(pad2(jd))} - ${toPersianDigits(timeStr)} (${wd} ${toPersianDigits(jd)} ${jalaliMonths[jm-1]})`;
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 📅 بخش ۸: انتخاب‌گر تاریخ و ساعت شمسی
+// ════════════════════════════════════════════════════════════════════
+// یک تقویم شمسی برای انتخاب سررسید. کاربر می‌تواند روز و ساعت را
+// جداگانه انتخاب کند. دکمه‌های میان‌بر (۱ ساعت، ۱ روز، ۱ هفته) هم
+// برای سررسیدهای سریع وجود دارند.
 // ============ Persian Datetime Picker ============
 let pickerState = { year: null, month: null, selectedDay: null };
 
@@ -3086,6 +3316,13 @@ function openDatetimePicker() {
 function closeDatetimePicker() {
     // Visually close the picker + remove from the modal stack.
     closeModalByType('datetimePicker');
+    // CRITICAL: Reset the repeat-end-date flag. If the user opened the
+    // picker for the repeat end date but cancelled (didn't click "تأیید"),
+    // the flag would stay true. The next time they open the datetime picker
+    // (e.g., for the regular deadline), confirmDatetimePicker would
+    // mistakenly store the date in the repeat end date field instead of
+    // the regular deadline field.
+    window._pickingRepeatEndDate = false;
     // Pop the modal marker pushed on open.
     navBack();
 }
@@ -3201,6 +3438,18 @@ function confirmDatetimePicker() {
         0, 0
     );
 
+    // If we're picking a repeat end date, store it in the repeat field
+    if (window._pickingRepeatEndDate) {
+        window._pickingRepeatEndDate = false;
+        const isoStr = localDate.toISOString();
+        document.getElementById('repeatEndDate').value = isoStr;
+        document.getElementById('repeatEndDateDisplay').value =
+            toJalaliLong(localDate) + ' - ' + toPersianDigits(pad2(hour) + ':' + pad2(minute));
+        closeDatetimePicker();
+        return;
+    }
+
+    // Normal deadline picking
     // Format as datetime-local string (YYYY-MM-DDTHH:MM in local time)
     const offsetMs = localDate.getTimezoneOffset() * 60000;
     const localDatetimeStr = new Date(localDate.getTime() - offsetMs).toISOString().slice(0, 16);
@@ -3210,6 +3459,9 @@ function confirmDatetimePicker() {
     closeDatetimePicker();
 }
 
+// ════════════════════════════════════════════════════════════════════
+// ➕ بخش ۹: فرآیند افزودن/ویرایش یادآور
+// ════════════════════════════════════════════════════════════════════
 // ============ Add flow ============
 // editTaskId: when set, we're editing an existing task instead of creating a new one.
 // This allows the "Edit" button to pre-fill the form with the task's current data
@@ -3226,6 +3478,9 @@ let editTaskId = null;
 let pendingTaskGroupId = null;
 let pendingPrefilledDeadline = null;
 
+// ────────────────────────────────────────────────────────────────────
+// انتخاب‌گر گروه (برای افزودن از تقویم یا انتقال تسک‌ها)
+// ────────────────────────────────────────────────────────────────────
 // ============ Group Picker (for the calendar + button flow) ============
 // Renders the picker with the current list of groups. Called from
 // addTaskForSelectedDay when the user taps + on the calendar.
@@ -3308,6 +3563,9 @@ function cancelGroupPicker() {
     _groupPickerTitle = 'انتخاب گروه برای یادآور جدید';
 }
 
+// ────────────────────────────────────────────────────────────────────
+// فرآیند ۴ مرحله‌ای حذف گروه (با تأیید چندباره برای جلوگیری از اشتباه)
+// ────────────────────────────────────────────────────────────────────
 // ============ Group Delete Confirmation Flow (4 steps + task-fate) ============
 // State: which group is being deleted, which step we're on (1-4).
 let _groupDeleteTargetId = null;
@@ -3524,6 +3782,19 @@ function startAdding(prefilledDeadline, prefilledText) {
     // Pre-fill text and deadline (used when editing an existing task)
     document.getElementById('itemText').value = prefilledText || '';
     document.getElementById('itemDeadline').value = prefilledDeadline || '';
+    // RESET ALL repeat fields to default — prevents stale values from leaking
+    var rt = document.getElementById('repeatType');
+    var rv = document.getElementById('repeatValue');
+    var re = document.getElementById('repeatEndDate');
+    var rd = document.getElementById('repeatEndDateDisplay');
+    if (rt) rt.value = 'none';
+    if (rv) { rv.value = '1'; rv.style.display = 'none'; }
+    if (re) re.value = '';
+    if (rd) rd.value = '';
+    var ru = document.getElementById('repeatUnit');
+    if (ru) ru.style.display = 'none';
+    var rr = document.getElementById('repeatEndRow');
+    if (rr) rr.style.display = 'none';
     // Update the Persian display of the deadline (if any)
     if (prefilledDeadline) {
         updateDeadlineDisplay(prefilledDeadline);
@@ -3592,16 +3863,28 @@ function editTask(id) {
         showToast('تسک یافت نشد');
         return;
     }
+
+    // If this is a CHILD task (has parentId), ask the user: edit the parent
+    // (which cascades to all children) or just this child?
+    let editId = id;
+    if (item.parentId) {
+        const parent = items.find(i => i.id === item.parentId);
+        if (parent) {
+            const choice = confirm(
+                'این یک تسک تکرارشونده است.\n' +
+                'برای ویرایش تسک اصلی (و همه تکرارها) = بله\n' +
+                'برای ویرایش فقط همین نسخه = خیر'
+            );
+            if (choice) {
+                editId = item.parentId;
+            }
+        }
+    }
+
+    const editItem = items.find(i => i.id === editId) || item;
     // Set the edit flag so saveItem() knows to update instead of create
-    editTaskId = id;
-    // If the task was expanded, the history currently has a state like
-    // {view:'tasks', groupId, expandedId: id}. We want to "collapse" it
-    // visually so the task form opens cleanly on top of the collapsed
-    // tasks view. We use navReplace (not navBack) to swap the history
-    // entry in place — this avoids a popstate race: navBack would fire
-    // popstate AFTER startAdding's navPush, and the popstate handler
-    // would see the taskForm on top of _modalStack and close it, making
-    // the edit form flash and disappear.
+    editTaskId = editId;
+    // If the task was expanded, collapse it visually
     if (expandedId === id) {
         expandedId = null;
         navReplace({ view: 'tasks', groupId: currentGroupId });
@@ -3610,15 +3893,28 @@ function editTask(id) {
     }
     // Convert the existing deadline to datetime-local format
     let prefilledDeadline = '';
-    if (item.deadline) {
-        const d = new Date(item.deadline);
+    if (editItem.deadline) {
+        const d = new Date(editItem.deadline);
         if (!isNaN(d.getTime())) {
             const offsetMs = d.getTimezoneOffset() * 60000;
             prefilledDeadline = new Date(d.getTime() - offsetMs).toISOString().slice(0, 16);
         }
     }
     // Open the new-task modal with the existing text and deadline pre-filled
-    startAdding(prefilledDeadline, item.text);
+    startAdding(prefilledDeadline, editItem.text);
+    // AFTER startAdding (which resets repeat fields), load the parent's
+    // repeat config into the form so the user can see & modify it
+    if (editItem.repeat && editItem.repeat.type !== 'none') {
+        document.getElementById('repeatType').value = editItem.repeat.type;
+        document.getElementById('repeatValue').value = editItem.repeat.value;
+        document.getElementById('repeatEndDate').value = editItem.repeat.endDate;
+        // Show the display
+        const endDate = new Date(editItem.repeat.endDate);
+        if (!isNaN(endDate.getTime())) {
+            document.getElementById('repeatEndDateDisplay').value = toJalaliLong(endDate);
+        }
+        onRepeatTypeChange();
+    }
 }
 
 // Add a new task for the currently selected calendar day.
@@ -3709,6 +4005,187 @@ function cancelModal() {
     navBack();
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🔁 بخش ۱۰: منطق تکرار یادآورها
+// ════════════════════════════════════════════════════════════════════
+// یادآورها می‌توانند تکرارشونده باشند: هر ساعت، هر روز، هر هفته،
+// یا هر ماه (با محاسبهٔ شمسی، نه میلادی). یک یادآور «والد» می‌سازد
+// و بقیه «فرزند» هستند. حذف والد، همهٔ فرزندان را هم حذف می‌کند.
+// ============ Repeat Logic ============
+// Handles the repeat UI in the task form and generates repeated task copies.
+
+function onRepeatTypeChange() {
+    const type = document.getElementById('repeatType').value;
+    const valueInput = document.getElementById('repeatValue');
+    const unitSpan = document.getElementById('repeatUnit');
+    const endRow = document.getElementById('repeatEndRow');
+    if (type === 'none') {
+        valueInput.style.display = 'none';
+        unitSpan.style.display = 'none';
+        endRow.style.display = 'none';
+    } else {
+        valueInput.style.display = 'block';
+        unitSpan.style.display = 'inline';
+        endRow.style.display = 'block';
+        const units = {
+            'hours': 'ساعت',
+            'days': 'روز',
+            'weeks': 'هفته',
+            'months': 'ماه',
+        };
+        unitSpan.textContent = units[type] || '';
+    }
+}
+
+// Open a calendar picker for the repeat end date
+function openRepeatEndDatePicker() {
+    // Reuse the existing datetime picker, but in "date only" mode
+    // for the repeat end date. We store which field we're picking for.
+    window._pickingRepeatEndDate = true;
+    // Use the calendar overlay (simpler — date only, no time)
+    const calOverlay = document.getElementById('calendarOverlay');
+    if (calOverlay) {
+        // Temporarily repurpose the calendar for repeat-end-date selection
+        // We'll use a simpler approach: just open the Jalali calendar picker
+        // that's already used for the datetime picker
+        openDatetimePicker();
+        // Set a flag so confirmDatetimePicker knows we're picking repeat end date
+        window._pickingRepeatEndDate = true;
+    }
+}
+
+// Generate repeated task instances — each child has a parentId linking it
+// to the parent. This enables cascade delete and cascade update.
+//
+// REPEAT LOGIC (corrected to use Jalali calendar):
+//   hours   → add `interval` hours (raw millisecond math, locale-independent)
+//   days    → add `interval` days. Uses Jalali Y/M/D construction to avoid
+//             DST issues (a "day" of exactly 24h can land on a different
+//             hour when DST changes). Hour:minute are preserved from parent.
+//   weeks   → add `interval * 7` days. Same Jalali-day construction. This
+//             PRESERVES the day-of-week (Monday → Monday, Tuesday → Tuesday)
+//             because adding 7 calendar days always lands on the same weekday.
+//   months  → add `interval` JALALI months. Preserves the Jalali day-of-month
+//             (5 خرداد → 5 تیر → 5 مرداد...). If the day-of-month doesn't
+//             exist in the target month (e.g., 31 in اسفند which has 29/30
+//             days), clamp to the last day of that Jalali month. Hour:minute
+//             preserved from parent.
+function generateRepeatedTasks(baseItem, repeatType, repeatValue, repeatEndDate) {
+    if (!repeatType || repeatType === 'none' || !repeatValue || !repeatEndDate) {
+        return [];
+    }
+    const result = [];
+    const interval = parseInt(repeatValue, 10);
+    if (isNaN(interval) || interval < 1) return [];
+
+    // CRITICAL: Validate the end date and base deadline BEFORE entering the
+    // loop. If either is invalid (NaN), the loop condition would always be
+    // false → INFINITE LOOP → OOM crash.
+    const endMs = new Date(repeatEndDate).getTime();
+    if (isNaN(endMs)) {
+        console.error('[generateRepeatedTasks] Invalid repeatEndDate:', repeatEndDate);
+        return [];
+    }
+    if (!baseItem || !baseItem.deadline) {
+        console.error('[generateRepeatedTasks] Missing baseItem.deadline');
+        return [];
+    }
+    const baseDeadline = new Date(baseItem.deadline);
+    if (isNaN(baseDeadline.getTime())) {
+        console.error('[generateRepeatedTasks] Invalid baseItem.deadline:', baseItem.deadline);
+        return [];
+    }
+
+    // Pre-compute the parent's Jalali parts (for monthly recurrence).
+    const [baseJy, baseJm, baseJd] = toJalaliParts(baseDeadline);
+    const baseHour = baseDeadline.getHours();
+    const baseMinute = baseDeadline.getMinutes();
+    const baseSecond = baseDeadline.getSeconds();
+
+    // SAFETY: hard cap on the number of children to prevent runaway loops.
+    const MAX_CHILDREN = 1000;
+    let iterations = 0;
+
+    while (true) {
+        if (iterations++ > MAX_CHILDREN) {
+            console.error('[generateRepeatedTasks] Exceeded MAX_CHILDREN=' + MAX_CHILDREN + ' — aborting to prevent OOM');
+            break;
+        }
+
+        let nextDeadline;
+
+        if (repeatType === 'hours') {
+            // Hourly recurrence — raw millisecond math is fine (no calendar
+            // or DST issues at the hour level for short intervals).
+            nextDeadline = new Date(baseDeadline.getTime() + iterations * interval * 60 * 60 * 1000);
+        } else if (repeatType === 'days') {
+            // Daily recurrence — add N Jalali days (preserve hour:minute).
+            // Construct via Jalali calendar to avoid DST drift.
+            const offsetDays = iterations * interval;
+            // Walk forward from base Jalali date by offsetDays days.
+            const g = advanceJalaliDays(baseJy, baseJm, baseJd, offsetDays);
+            nextDeadline = new Date(g.getUTCFullYear(), g.getUTCMonth(), g.getUTCDate(),
+                                     baseHour, baseMinute, baseSecond, 0);
+        } else if (repeatType === 'weeks') {
+            // Weekly recurrence — add N*7 days. Same Jalali-day construction
+            // as daily. Adding 7 calendar days always lands on the same
+            // WEEKDAY (e.g., Tuesday → Tuesday), which is what the user wants.
+            const offsetDays = iterations * interval * 7;
+            const g = advanceJalaliDays(baseJy, baseJm, baseJd, offsetDays);
+            nextDeadline = new Date(g.getUTCFullYear(), g.getUTCMonth(), g.getUTCDate(),
+                                     baseHour, baseMinute, baseSecond, 0);
+        } else if (repeatType === 'months') {
+            // Monthly recurrence — add `interval` Jalali months to base.
+            // Preserve the Jalali day-of-month (5 خرداد → 5 تیر → ...).
+            // Clamp to last day of target month if the day doesn't exist.
+            const targetMonthIndex = (baseJm - 1) + iterations * interval;
+            let targetJy = baseJy + Math.floor(targetMonthIndex / 12);
+            let targetJm = (targetMonthIndex % 12) + 1;
+            // Handle negative modulo (rare, e.g., going backward — shouldn't
+            // happen here but defensive)
+            if (targetJm < 1) { targetJm += 12; targetJy -= 1; }
+            // Clamp day to the last day of the target Jalali month
+            const maxDay = getDaysInJalaliMonth(targetJy, targetJm);
+            const targetJd = Math.min(baseJd, maxDay);
+            // Convert (targetJy, targetJm, targetJd) to Gregorian
+            const g = jalaliToGregorian(targetJy, targetJm, targetJd);
+            nextDeadline = new Date(g.getUTCFullYear(), g.getUTCMonth(), g.getUTCDate(),
+                                     baseHour, baseMinute, baseSecond, 0);
+        } else {
+            // Unknown repeat type — stop generating
+            return result;
+        }
+
+        // Check end condition (after computing nextDeadline so the loop
+        // terminates correctly).
+        if (nextDeadline.getTime() > endMs) break;
+
+        // Create a CHILD copy — linked to parent via parentId
+        const copy = {
+            id: 'r_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + result.length,
+            text: baseItem.text,
+            createdAt: baseItem.createdAt,
+            deadline: nextDeadline.toISOString(),
+            done: false,
+            groupId: baseItem.groupId,
+            parentId: baseItem.id,  // ← parent-child link
+        };
+        result.push(copy);
+    }
+    return result;
+}
+
+// Advance a Jalali date by `offsetDays` calendar days and return the
+// corresponding Gregorian Date (UTC midnight). Used by daily + weekly
+// recurrence to avoid DST drift when adding 24h × N milliseconds.
+function advanceJalaliDays(jy, jm, jd, offsetDays) {
+    // Convert (jy, jm, jd) to a Gregorian Date (UTC midnight)
+    const g = jalaliToGregorian(jy, jm, jd);
+    // Add offsetDays in UTC (no DST issues since UTC has no DST)
+    g.setUTCDate(g.getUTCDate() + offsetDays);
+    return g;
+}
+
 function saveItem() {
     const text = document.getElementById('itemText').value.trim();
     const deadlineStr = document.getElementById('itemDeadline').value;
@@ -3737,14 +4214,105 @@ function saveItem() {
             editTaskId = null;
             // Fall through to create new
         } else {
-            // Update the existing task's text and deadline
-            // Preserve: id, createdAt, done, completedAt
-            items[idx].text = text;
-            items[idx].deadline = deadline.toISOString();
+            const oldText = items[idx].text;
+            const oldDeadline = items[idx].deadline;
+            const newText = text;
+            const newDeadline = deadline.toISOString();
+            // Update the parent's text and deadline
+            items[idx].text = newText;
+            items[idx].deadline = newDeadline;
+
+            // ===== REPEAT HANDLING ON EDIT =====
+            // ALWAYS read the FORM's repeat settings (not the existing
+            // items[idx].repeat). This handles 3 cases:
+            //   (A) Task had NO repeat + user ADDED one → become a parent +
+            //       generate children.
+            //   (B) Task had a repeat + user CHANGED the config → regenerate
+            //       all children with the new config (cascade update).
+            //   (C) Task had a repeat + user CLEARED it (set to "none") →
+            //       remove all children (cascade delete) + clear parent's
+            //       repeat field.
+            // NOTE: use editTaskId (not editId) — editId is local to editTask.
+            var parentTaskId = editTaskId;
+            var formRepeatType = document.getElementById('repeatType') ?
+                document.getElementById('repeatType').value : 'none';
+            var formRepeatValue = document.getElementById('repeatValue') ?
+                document.getElementById('repeatValue').value : '';
+            var formRepeatEndDate = document.getElementById('repeatEndDate') ?
+                document.getElementById('repeatEndDate').value : '';
+
+            // Wrap in try-catch so a failure in repeat regeneration doesn't
+            // block the parent's text/deadline update from being saved.
+            try {
+                if (formRepeatType && formRepeatType !== 'none' && formRepeatValue && formRepeatEndDate) {
+                    // (A) or (B) — task has a valid repeat config in the form.
+                    // 1. Set the parent's repeat field.
+                    items[idx].repeat = {
+                        type: formRepeatType,
+                        value: parseInt(formRepeatValue, 10),
+                        endDate: formRepeatEndDate,
+                    };
+                    // 2. Remove ALL old children (if any — for case A there
+                    //    are none; for case B there are some).
+                    var filteredItems = items.filter(function(i) {
+                        return i.parentId !== parentTaskId;
+                    });
+                    // 3. Generate NEW children using the new Jalali-aware
+                    //    generateRepeatedTasks (which preserves Jalali
+                    //    day-of-month for monthly repeats and day-of-week
+                    //    for weekly repeats).
+                    var newChildren = generateRepeatedTasks(items[idx], formRepeatType, formRepeatValue, formRepeatEndDate);
+                    for (var ci = 0; ci < newChildren.length; ci++) {
+                        filteredItems.push(newChildren[ci]);
+                    }
+                    // 4. Replace items array (mutate in-place since 'items' is const)
+                    items.length = 0;
+                    for (var fi = 0; fi < filteredItems.length; fi++) {
+                        items.push(filteredItems[fi]);
+                    }
+                    if (newChildren.length > 0) {
+                        showToast(newChildren.length + 1 + ' تسک تکرارشونده ساخته شد');
+                    } else {
+                        // Repeat config is set but no children generated
+                        // (e.g., deadline > end date). Still mark the parent
+                        // as a repeating task so the config is preserved.
+                        console.log('[saveItem edit] repeat configured but 0 children generated');
+                    }
+                } else {
+                    // (C) — user cleared the repeat (or never had one).
+                    // If the task was previously a parent (had children),
+                    // cascade-delete the children. The parent becomes a
+                    // standalone task.
+                    var existingChildren = items.filter(function(i) {
+                        return i.parentId === parentTaskId;
+                    });
+                    if (existingChildren.length > 0) {
+                        // Cascade-delete children
+                        var withoutChildren = items.filter(function(i) {
+                            return i.parentId !== parentTaskId;
+                        });
+                        items.length = 0;
+                        for (var wci = 0; wci < withoutChildren.length; wci++) {
+                            items.push(withoutChildren[wci]);
+                        }
+                        showToast(existingChildren.length + ' تسک تکرارشونده حذف شد');
+                    }
+                    // Clear the parent's repeat field (set to 'none' so the
+                    // UI knows it was previously a parent — or delete entirely)
+                    if (items[idx].repeat) {
+                        items[idx].repeat = { type: 'none', value: 1, endDate: '' };
+                    }
+                }
+            } catch(repErr) {
+                console.error('[saveItem edit] repeat handling failed:', repErr.message, repErr.stack);
+                // Don't block — the parent's text/deadline update will still be saved.
+            }
+
             setDB(items);
             // Recalculate positions for the group (the deadline may have
             // changed, so the task might need to move to a new position).
-            recalcGroupPositions(items[idx].groupId || 'all');
+            try { recalcGroupPositions(items[idx].groupId || 'all'); }
+            catch(e) { console.error('[saveItem edit] recalcGroupPositions failed:', e.message); }
             document.getElementById('modalOverlay').classList.remove('active');
             // Remove from the modal stack and pop the modal marker.
             trackModalClose('taskForm');
@@ -3776,6 +4344,51 @@ function saveItem() {
         // position intentionally NOT set — sort by deadline as fallback
     };
     items.push(newItem);
+
+    // Check repeat settings and generate children if configured
+    var repType = document.getElementById('repeatType');
+    var repVal = document.getElementById('repeatValue');
+    var repEnd = document.getElementById('repeatEndDate');
+    var rType = repType ? repType.value : 'none';
+    var rVal = repVal ? repVal.value : '';
+    var rEnd = repEnd ? repEnd.value : '';
+    console.log('[saveItem] repeat check: type=' + rType + ' value=' + rVal + ' endDate=' + rEnd);
+    // CRITICAL: Wrap the repeat task generation in a try-catch so that even
+    // if anything fails (bad date format, invalid number, etc.), the parent
+    // task is still saved. Previously, an exception here would propagate up
+    // and prevent setDB() from being called — so NEITHER parent NOR
+    // children would be created (the bug the user was reporting).
+    var repeatError = null;
+    try {
+        if (rType && rType !== 'none' && rVal && rEnd) {
+            var repeats = generateRepeatedTasks(newItem, rType, rVal, rEnd);
+            console.log('[saveItem] generated ' + repeats.length + ' repeat children');
+            if (repeats.length > 0) {
+                newItem.repeat = { type: rType, value: parseInt(rVal, 10), endDate: rEnd };
+                // Use a plain for-loop instead of .apply() — some older
+                // Android WebViews have a bug where Function.prototype.apply
+                // with a large array throws "Maximum call stack exceeded"
+                // even when the array is small.
+                for (var ri = 0; ri < repeats.length; ri++) {
+                    items.push(repeats[ri]);
+                }
+                showToast(repeats.length + 1 + ' تسک تکرارشونده ساخته شد');
+            } else {
+                // No children generated (e.g., deadline > end date) — but
+                // still mark the parent as a repeating task so the user can
+                // see the repeat config in the future.
+                newItem.repeat = { type: rType, value: parseInt(rVal, 10), endDate: rEnd };
+                console.log('[saveItem] repeat configured but no children generated (deadline > endDate)');
+            }
+        }
+    } catch(e) {
+        repeatError = e;
+        console.error('[saveItem] repeat generation FAILED:', e.message, e.stack);
+        // Don't show toast here — the parent will still be saved, and the
+        // "یادآور ذخیره شد ✓" toast at the end will be shown.
+        // The repeat config is lost, but at least the parent task is saved.
+    }
+
     setDB(items);
     // Clear the pending-group context (it has been consumed by the new task).
     pendingTaskGroupId = null;
@@ -3783,7 +4396,12 @@ function saveItem() {
     // Recalculate positions for all tasks in the group based on deadline
     // order. This ensures the new task goes to its correct chronological
     // position (not stuck at the end or before positioned tasks).
-    recalcGroupPositions(newTaskGroupId);
+    try {
+        recalcGroupPositions(newTaskGroupId);
+    } catch(e) {
+        console.error('[saveItem] recalcGroupPositions failed:', e.message);
+        // Don't block — the task is already saved.
+    }
 
     document.getElementById('modalOverlay').classList.remove('active');
     // Remove from the modal stack and pop the modal marker.
@@ -3791,11 +4409,27 @@ function saveItem() {
     navBack();
     document.getElementById('itemText').value = '';
     document.getElementById('itemDeadline').value = '';
+    // Reset repeat fields
+    if (document.getElementById('repeatType')) document.getElementById('repeatType').value = 'none';
+    if (document.getElementById('repeatValue')) document.getElementById('repeatValue').value = '1';
+    if (document.getElementById('repeatEndDate')) document.getElementById('repeatEndDate').value = '';
+    if (document.getElementById('repeatEndDateDisplay')) document.getElementById('repeatEndDateDisplay').value = '';
+    onRepeatTypeChange();
 
     fullRender();
     showToast('یادآور ذخیره شد ✓');
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🎨 بخش ۱۱: رنگ‌بندی فوریتی یادآورها
+// ════════════════════════════════════════════════════════════════════
+// رنگ هر یادآور بر اساس زمان باقی‌مانده تا سررسید تعیین می‌شود:
+//   - سبز    : بیش از ۲۴ ساعت مانده (عادی)
+//   - زرد    : ۱۲ تا ۲۴ ساعت مانده (هشدار)
+//   - نارنجی : ۴ تا ۱۲ ساعت مانده (هشدار جدی)
+//   - قرمز   : کمتر از ۴ ساعت مانده (فوری)
+//   - چشمک‌زن: سررسید گذشته (بسیار فوری)
+//   - خاکستری: انجام‌شده
 // ============ Urgency / Color ============
 function getUrgencyLevel(deadline, done) {
     if (done) return 'done';
@@ -3829,6 +4463,9 @@ function formatRemaining(deadline, done) {
     return '< ۱ دقیقه';
 }
 
+// ────────────────────────────────────────────────────────────────────
+// مهاجرت موقعیت تسک‌ها + قابلیت Drag-Drop با SortableJS
+// ────────────────────────────────────────────────────────────────────
 // ============ Migration & Drag-Drop Reordering ============
 
 // Migrate existing tasks: assign position field if missing
@@ -4174,11 +4811,19 @@ function resetAllTaskPositions() {
     if (navigator.vibrate) navigator.vibrate(30);
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🖥️ بخش ۱۲: رندر و مدیریت History
+// ════════════════════════════════════════════════════════════════════
+// این بخش صفحه را به‌روزرسانی می‌کند و دکمهٔ Back موبایل را مدیریت
+// می‌کند (به‌جای خروج از برنامه، در داخل برنامه حرکت می‌کند).
 // ============ Render ============
 let expandedId = null;
 let currentView = 'groups'; // 'groups' or 'tasks'
 let currentGroupId = null;
 
+// ────────────────────────────────────────────────────────────────────
+// مدیریت تاریخچه (History API) برای دکمهٔ Back موبایل
+// ────────────────────────────────────────────────────────────────────
 // ============ History / Mobile Back Button ============
 // We use the History API so the mobile back button navigates inside the app
 // instead of exiting:
@@ -4305,12 +4950,28 @@ window.addEventListener('popstate', (e) => {
     //   2. Nested modals (datetime picker inside task form) + back pressed →
     //      only the topmost (datetime picker) closes; the parent (task form)
     //      stays open. Pressing back again closes the parent.
-    // After closing the topmost modal, if the new history state is ALSO a
-    // modal marker (the parent modal), we're done — don't navigate
-    // underneath. If the new state is groups/tasks, navigate normally
-    // (the modal we just closed was the only one open).
+    //   3. Modal closed via a BUTTON (e.g., user clicked "تأیید" on the
+    //      datetime picker): the close function already removed the modal
+    //      from _modalStack AND called navBack(). When popstate fires, the
+    //      new state is the PARENT modal marker. We must NOT close the
+    //      parent — it's still open and should stay open.
+    //      Detection: state.view === 'modal' AND state.type === topType
+    //      (the parent marker matches the modal still on top of _modalStack).
     if (_modalStack.length > 0) {
         const topType = _modalStack[_modalStack.length - 1];
+
+        // CRITICAL FIX: if the new state is a modal marker whose type matches
+        // the topmost open modal, it means the modal that was on top of
+        // history was already closed manually (and removed from _modalStack)
+        // — we just popped back to the parent marker. The parent modal
+        // should stay open. Do NOT close anything.
+        if (state.view === 'modal' && state.type === topType) {
+            return;
+        }
+
+        // Otherwise, close the topmost modal — it was popped from history
+        // (e.g., user pressed the hardware back button without first
+        // manually closing it).
         closeModalByType(topType);
 
         // If the new state is a modal marker (parent modal), stay in modal
@@ -4387,6 +5048,9 @@ function render() {
     }
 }
 
+// ────────────────────────────────────────────────────────────────────
+// نمایش لیست گروه‌ها (صفحهٔ اصلی)
+// ────────────────────────────────────────────────────────────────────
 // ============ Groups List View ============
 function renderGroupsView() {
     const container = document.getElementById('container');
@@ -4436,6 +5100,9 @@ function renderGroupsView() {
     container.appendChild(addDiv);
 }
 
+// ────────────────────────────────────────────────────────────────────
+// نمایش تسک‌های یک گروه
+// ────────────────────────────────────────────────────────────────────
 // ============ Tasks View ============
 function renderTasksView(groupId) {
     const container = document.getElementById('container');
@@ -4504,6 +5171,27 @@ function renderTasksView(groupId) {
         row.className = 'item-row';
         if (item.done) { const m = document.createElement('div'); m.className='item-done-mark'; m.textContent='✓'; row.appendChild(m); }
         const textEl = document.createElement('div'); textEl.className='item-text'; textEl.textContent=item.text; row.appendChild(textEl);
+        // Group tag: show the task's group name as a colored badge — ONLY in
+        // the "همه کارها" view (where all groups are mixed together). In a
+        // specific group's view, every task belongs to the same group, so
+        // the tag would be redundant.
+        if (groupId === 'all') {
+            const taskGroup = getGroupById(item.groupId || 'all');
+            if (taskGroup && taskGroup.id !== 'all') {
+                const tag = document.createElement('span');
+                tag.className = 'item-group-tag';
+                tag.style.background = taskGroup.color;
+                tag.textContent = taskGroup.name;
+                row.appendChild(tag);
+            } else {
+                // Default "all" group — show a green badge too
+                const tag = document.createElement('span');
+                tag.className = 'item-group-tag';
+                tag.style.background = '#4CAF50';
+                tag.textContent = 'همه کارها';
+                row.appendChild(tag);
+            }
+        }
         const remEl = document.createElement('div'); remEl.className='item-remaining'; remEl.textContent=toPersianDigits(formatRemaining(item.deadline, item.done)); row.appendChild(remEl);
 
         const groups = getGroups();
@@ -4615,31 +5303,64 @@ function toggleDone(id) {
 }
 
 function deleteItem(id) {
-    if (!confirm('این یادآور حذف شود؟')) return;
-    let items = getDB();
-    items = items.filter(i => i.id !== id);
-    setDB(items);
+    const items = getDB();
+    const item = items.find(i => i.id === id);
+    // If this is a PARENT task, also delete all its children
+    const childCount = items.filter(i => i.parentId === id).length;
+    const msg = childCount > 0
+        ? `این تسک و ${childCount} تسک تکرارشونده‌ی آن حذف شوند؟`
+        : 'این یادآور حذف شود؟';
+    if (!confirm(msg)) return;
+    let newItems = items.filter(i => i.id !== id && i.parentId !== id);
+    setDB(newItems);
     if (expandedId === id) {
-        // The deleted task was expanded. Pop its history entry so the back
-        // button doesn't get "stuck" on a now-stale expanded state. popstate
-        // will re-render to the collapsed tasks view.
         expandedId = null;
         navBack();
     } else {
         fullRender();
     }
-    showToast('حذف شد');
+    showToast(childCount > 0 ? `تسک و ${childCount} تکرار حذف شد` : 'حذف شد');
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 💾 بخش ۱۳: ذخیره و بازیابی بک‌آپ
+// ════════════════════════════════════════════════════════════════════
+// بک‌آپ به‌صورت فایل JSON در پوشهٔ Downloads ذخیره می‌شود.
+// کاربر می‌تواند بعداً با دکمهٔ 📥 آن را بازیابی کند.
 // ============ Save Backup to Local Storage Only ============
 // Saves the database + HTML program file to the Downloads folder.
 // Does NOT use navigator.share (no social media sharing).
 // The user explicitly said: "بکاپ گرفتن هم فقط روی فضای ذخیره سازی باشد به شبکه های اجتماعی نمی خواهد بفرستد"
+
+// Confirmation wrapper — asks the user before actually taking the backup.
+// This is needed because the 📤 button is right next to the + (add task)
+// button, and the user was accidentally triggering backups whenever they
+// tried to add a new task.
+function confirmBackup() {
+    const items = getDB();
+    const msg = 'آیا از گرفتن بک‌آپ مطمئن هستید؟\n' +
+        'تعداد تسک‌ها: ' + items.length + '\n' +
+        'فایل در پوشه Downloads ذخیره می‌شود.\n\n' +
+        'برای تأیید = بله\n' +
+        'برای انصراف = خیر';
+    if (confirm(msg)) {
+        saveBackupToLocal();
+    }
+}
+
 function saveBackupToLocal() {
     const items = getDB();
     const customGroups = getGroups().filter(g => g.id !== 'all');
     const dbContent = JSON.stringify({
-        version: 3,
+        // Backup format version history:
+        //   v1 (legacy) — just an array of items
+        //   v2 — { items, groups } wrapper
+        //   v3 — added exportedAt, count, groupsCount, exportedAtJalali
+        //   v4 — preserves all new schema fields (parentId, repeat, pinned,
+        //        position, completedAt) for full round-trip backup/restore.
+        //        The migrateItemsSchema() function on import handles all
+        //        versions gracefully (including v1-v3 backups).
+        version: 4,
         exportedAt: new Date().toISOString(),
         exportedAtJalali: toJalaliLong(new Date()),
         count: items.length,
@@ -4681,6 +5402,9 @@ function downloadBlob(blob, filename) {
     setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
+// ────────────────────────────────────────────────────────────────────
+// بازیابی دیتابیس از فایل JSON
+// ────────────────────────────────────────────────────────────────────
 // ============ Import Database ============
 function importDatabase() {
     const input = document.createElement('input');
@@ -4711,30 +5435,6 @@ function importDatabase() {
                     throw new Error('ساختار فایل نامعتبر است');
                 }
 
-                // Validate items — preserve groupId, position, and completedAt
-                // so the task returns to its own group on restore.
-                const validItems = importedItems.filter(item =>
-                    item && item.id && item.text && item.createdAt && item.deadline
-                ).map(item => {
-                    const out = {
-                        id: String(item.id),
-                        text: String(item.text),
-                        createdAt: String(item.createdAt),
-                        deadline: String(item.deadline),
-                        done: !!item.done,
-                        // Preserve the task's group membership; default to 'all'
-                        // if the field is missing (e.g., v1 legacy backups).
-                        groupId: item.groupId ? String(item.groupId) : 'all',
-                    };
-                    if (item.completedAt) out.completedAt = String(item.completedAt);
-                    // Preserve the task's manual position (drag-drop) and pinned
-                    // flag — so when the backup is restored, tasks that the user
-                    // had manually dragged stay in their dragged position.
-                    if (typeof item.position === 'number') out.position = item.position;
-                    if (item.pinned === true) out.pinned = true;
-                    return out;
-                });
-
                 // Validate imported groups — strip the 'all' group if present
                 // (it's auto-created on this device and shouldn't be duplicated).
                 const validImportedGroups = (importedGroups || [])
@@ -4746,21 +5446,31 @@ function importDatabase() {
                         isDefault: false,
                     }));
 
-                if (validItems.length === 0) {
+                // CRITICAL: Build the SET of valid group IDs FIRST so the
+                // migration function can validate task groupIds against it.
+                // This combines existing groups (if merge) + imported groups.
+                // For REPLACE mode, this is built later (before setDB).
+                // For now, we just pre-validate the items via migrateItemsSchema
+                // WITHOUT the groupIds check — that's done after we know the mode.
+                // First pass: just normalize each item's shape (preserve
+                // parentId, repeat, pinned, position, completedAt).
+                const normalizedItems = migrateItemsSchema(importedItems, null);
+
+                if (normalizedItems.length === 0) {
                     showToast('هیچ یادآور معتبری در فایل یافت نشد');
                     return;
                 }
 
                 const currentItems = getDB();
                 const existingIds = new Set(currentItems.map(i => i.id));
-                const newItems = validItems.filter(i => !existingIds.has(i.id));
-                const dupCount = validItems.length - newItems.length;
+                const newItems = normalizedItems.filter(i => !existingIds.has(i.id));
+                const dupCount = normalizedItems.length - newItems.length;
 
                 // Build dialog message
                 const groupsLine = validImportedGroups.length > 0
                     ? `فایل شامل ${validImportedGroups.length} گروه سفارشی است\n`
                     : '';
-                const msg = `فایل دارای ${validItems.length} یادآور است.\n` +
+                const msg = `فایل دارای ${normalizedItems.length} یادآور است.\n` +
                     groupsLine +
                     `دیتابیس فعلی: ${currentItems.length} مورد\n` +
                     (dupCount > 0 ? `${dupCount} مورد تکراری (با همان شناسه) شناسایی شد\n` : '') +
@@ -4783,13 +5493,26 @@ function importDatabase() {
                     //    (whose group was deleted on this device) is sent to 'all'.
                     const finalGroups = getGroups();
                     const finalGroupIds = new Set(finalGroups.map(g => g.id));
-                    const fixedItems = newItems.map(item => ({
-                        ...item,
-                        groupId: finalGroupIds.has(item.groupId) ? item.groupId : 'all'
-                    }));
+                    // Re-run migration with the final group IDs — this ensures
+                    // orphan tasks go to 'all' and parentIds are re-validated
+                    // against the NEW merged set.
+                    const fixedItems = migrateItemsSchema(newItems, finalGroupIds);
+                    // Also re-validate existing items' parentIds against the
+                    // merged set (an existing child might reference a newly
+                    // imported parent — that's fine, the link is now valid).
+                    const mergedSet = [...currentItems, ...fixedItems];
+                    const allIds = new Set(mergedSet.map(i => i.id));
+                    // Just clean up orphan parentIds on existing items (rare, but safe)
+                    const cleanedCurrent = currentItems.map(item => {
+                        if (item.parentId && !allIds.has(item.parentId)) {
+                            const { parentId, ...rest } = item;
+                            return rest;
+                        }
+                        return item;
+                    });
 
                     // 3. Merge tasks: existing items untouched, new items appended.
-                    const merged = [...currentItems, ...fixedItems];
+                    const merged = [...cleanedCurrent, ...fixedItems];
                     setDB(merged);  // always saves to IDB + OPFS (no downloads)
                     fullRender();
                     const taskCount = fixedItems.length;
@@ -4799,7 +5522,7 @@ function importDatabase() {
                     showToast(parts.join('، ') + ' ✓');
                 } else {
                     // ===== REPLACE MODE =====
-                    if (confirm(`دیتابیس فعلی (${currentItems.length} مورد) با ${validItems.length} مورد جدید جایگزین شود؟`)) {
+                    if (confirm(`دیتابیس فعلی (${currentItems.length} مورد) با ${normalizedItems.length} مورد جدید جایگزین شود؟`)) {
                         // 1. Replace groups: always start with the default 'all'
                         //    group, then append all imported custom groups.
                         const replacedGroups = [
@@ -4809,11 +5532,11 @@ function importDatabase() {
                         setGroups(replacedGroups);
 
                         // 2. Re-validate task groupIds against the new groups.
+                        //    Use the full migration function so all fields
+                        //    (parentId, repeat, pinned, position, completedAt)
+                        //    are preserved and orphan parentIds are cleaned up.
                         const replacedGroupIds = new Set(replacedGroups.map(g => g.id));
-                        const fixedItems = validItems.map(item => ({
-                            ...item,
-                            groupId: replacedGroupIds.has(item.groupId) ? item.groupId : 'all'
-                        }));
+                        const fixedItems = migrateItemsSchema(normalizedItems, replacedGroupIds);
 
                         setDB(fixedItems);  // always saves to IDB + OPFS (no downloads)
                         // Clear sent notifications for items no longer present
@@ -4839,6 +5562,12 @@ function importDatabase() {
     document.body.removeChild(input);
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🔔 بخش ۱۴: اعلان‌ها
+// ════════════════════════════════════════════════════════════════════
+// وقتی سررسید نزدیک می‌شود، اعلان به کاربر نمایش داده می‌شود.
+// سطوح زمانی: ۱ روز، ۶ ساعت، ۱ ساعت، ۳۰ دقیقه، ۱۰ دقیقه، سررسید.
+// هر سطح فقط یک‌بار فرستاده می‌شود (با ذخیره در IndexedDB).
 // ============ Notifications ============
 const NOTIF_KEY = 'sent_notifications_v1';
 let sentNotifications = new Set();
@@ -5013,6 +5742,9 @@ function cleanupOldNotifications() {
     }
 }
 
+// ────────────────────────────────────────────────────────────────────
+// نمایش پیام کوتاه (Toast) در پایین صفحه
+// ────────────────────────────────────────────────────────────────────
 // ============ Toast ============
 let toastTimer;
 function showToast(msg) {
@@ -5023,12 +5755,21 @@ function showToast(msg) {
     toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
 }
 
+// ────────────────────────────────────────────────────────────────────
+// به‌روزرسانی تاریخ هدر (بالا صفحه)
+// ────────────────────────────────────────────────────────────────────
 // ============ Header date ============
 function updateHeaderDate() {
     const el = document.getElementById('headerDate');
     if (el) el.textContent = toPersianDigits(toJalaliLong(new Date()));
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 📅 بخش ۱۴ (ادامه): تقویم شمسی
+// ════════════════════════════════════════════════════════════════════
+// یک تقویم ماهانهٔ شمسی که کاربر می‌تواند روزها را ببیند. روزهایی که
+// یادآور دارند با یک نقطهٔ قرمز مشخص می‌شوند. با کلیک روی هر روز،
+// یادآورهای آن روز نمایش داده می‌شوند.
 // ============ Persian (Shamsi) Calendar ============
 // State: currently displayed year/month, and selected day
 let calState = { year: null, month: null, selectedDay: null };
@@ -5324,6 +6065,10 @@ function renderCalendarDayTasks() {
     });
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🛡️ بخش ۱۵: ثبت سرویس ورکر + تشخیص اتصال اینترنت
+// ════════════════════════════════════════════════════════════════════
+// سرویس ورکر را ثبت می‌کند و آن را به‌روز نگه می‌دارد.
 // ============ Service Worker Registration ============
 async function registerServiceWorker() {
     if (!('serviceWorker' in navigator)) {
@@ -5419,9 +6164,28 @@ if ('serviceWorker' in navigator) {
                 if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 200);
         }
+        // CRITICAL: SW activates a new version → reload the page so the user
+        // gets the new SW fetch strategy + fresh HTML. This is the safety net
+        // in case controllerchange doesn't fire (rare, but happens on some
+        // mobile browsers).
+        if (event.data.type === 'RELOAD_PLEASE') {
+            console.log('[Page] SW requested reload (version=' + event.data.version + ')');
+            if (!isRecording) {
+                window.location.reload();
+            } else {
+                // Defer reload until recording stops
+                console.log('[Page] Recording in progress — deferring reload');
+                window._pendingReload = true;
+            }
+        }
     });
 }
 
+// ────────────────────────────────────────────────────────────────────
+// تشخیص واقعی اتصال اینترنت (نه فقط navigator.onLine)
+// ────────────────────────────────────────────────────────────────────
+// این بخش درخواست واقعی به سرور می‌فرستد تا مطمئن شود اینترنت
+// واقعاً وصل است (نه فقط VPN وصل شده ولی گیت‌هاب در دسترس نیست).
 // ============ Real Reachability Detection ============
 // Performs a REAL network request to verify internet connectivity.
 // Uses a special '_rc' query parameter that tells the Service Worker to
@@ -5437,18 +6201,16 @@ if ('serviceWorker' in navigator) {
 let isReachable = true; // assume reachable initially (avoid unnecessary flashing on load)
 let lastReachabilityCheck = 0;
 let reachabilityCheckInProgress = false;
-const REACHABILITY_CHECK_INTERVAL = 5000; // 5 seconds — the user wants frequent checks
-const REACHABILITY_TIMEOUT = 4000; // 4 seconds timeout (was 5s - stricter)
+const REACHABILITY_CHECK_INTERVAL = 25000; // 25 seconds (must be less than the 30s setInterval)
+const REACHABILITY_TIMEOUT = 3500; // 3.5 seconds timeout
 // Endpoints to test for REAL internet reachability.
-// The program's own HTML file on GitHub Pages is the PRIMARY test — if this
-// is reachable, the user can access the program online. The manifest.json
-// is a secondary same-origin test. The CDN is a tertiary cross-origin test.
-// If ALL fail, the user is truly offline (VPN with no real connectivity,
-// quota exhausted, DNS issues, firewall, GitHub down, etc.) and the header
-// flashes blue-yellow.
+// Use the SMALLEST file first (manifest.json is ~1KB vs the HTML at ~225KB).
+// The HTML is a fallback (some hosts don't have manifest.json). The CDN is
+// a last resort (cross-origin, may have CORS issues).
+// We try them SEQUENTIALLY and stop at the first success.
 const REACHABILITY_ENDPOINTS = [
-    './speech-to-text-reminder.html',  // PRIMARY: the program file itself (GitHub Pages)
-    './manifest.json',                  // SECONDARY: same-origin (GitHub Pages)
+    './manifest.json',                  // PRIMARY: small file, fast
+    './speech-to-text-reminder.html',  // SECONDARY: the program file
     'https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js',  // TERTIARY: external CDN
 ];
 
@@ -5566,6 +6328,9 @@ function clearSWCacheAndReload() {
     }, 2000);
 }
 
+// ────────────────────────────────────────────────────────────────────
+// نمایش وضعیت آنلاین/آفلاین (با چشمک زرد-آبی هدر)
+// ────────────────────────────────────────────────────────────────────
 // ============ Online/Offline Detection ============
 // Silent detection: only flash the header background (blue <-> yellow) when offline.
 // Uses real reachability check (not just navigator.onLine) to detect:
@@ -5608,88 +6373,137 @@ async function reconcileDatabase() {
     }
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🚀 بخش ۱۶: راه‌اندازی اولیهٔ برنامه (هنگام بارگذاری صفحه)
+// ════════════════════════════════════════════════════════════════════
+// این بخش هنگام آماده شدن صفحه اجرا می‌شود و همه‌چیز را راه‌اندازی
+// می‌کند: تشخیص صوت، تقویم، اعلان‌ها، سرویس ورکر، و غیره.
+// ════════════════════════════════════════════════════════════════════
+// 🔒 بخش: سیستم قفل انقضا — پس از ۲۰ فروردین ۱۴۰۵ برنامه قفل می‌شود
+// ════════════════════════════════════════════════════════════════════
+// این بخش مربوط به انقضای استفاده رایگان است:
+//   - برنامه تا ۲۰ فروردین ۱۴۰۵ رایگان کار می‌کند
+//   - بعد از آن، صفحه قفل نمایش داده می‌شود (اکانت اینستاگرام + هشدار)
+//   - اگر کاربر ۲۰ بار پشت سر هم روی «یادآور صوتی» در هدر کلیک کند،
+//     قفل باز می‌شود و برنامه تا ۲۰ فروردین سال بعد کار می‌کند
+//   - قفل باز شده روی همان دستگاه و مرورگر ذخیره می‌شود (localStorage)
+// ════════════════════════════════════════════════════════════════════
+
+// تاریخ انقضای اصلی: ۲۰ فروردین ۱۴۰۵ (شمسی)
+const LOCK_DEADLINE_JALALI = { year: 1405, month: 1, day: 20 };
+
+// کلید localStorage برای ذخیره تاریخ انقضای قفلِ باز شده
+const UNLOCK_KEY = 'yadavar_unlock_expiry_v1';
+
+// متغیرهای شمارش کلیک روی عنوان هدر
+let _headerTapCount = 0;
+let _headerTapTimer = null;
+const HEADER_TAP_TARGET = 20;        // تعداد کلیک لازم برای باز کردن قفل
+const HEADER_TAP_RESET_MS = 3000;    // ریست شمارنده بعد از ۳ ثانیه عدم کلیک
+
+// محاسبه تاریخ انقضای اصلی (۲۰ فروردین ۱۴۰۵ به میلی‌ثانیه)
+// از تابع jalaliToGregorian استفاده می‌کند که در بخش ۴ تعریف شده است.
+function getLockDeadline() {
+    const g = jalaliToGregorian(LOCK_DEADLINE_JALALI.year, LOCK_DEADLINE_JALALI.month, LOCK_DEADLINE_JALALI.day);
+    return g.getTime();
+}
+
+// خواندن تاریخ انقضای قفلِ باز شده از localStorage (اگر وجود دارد)
+// اگر کاربر قبلاً قفل را باز کرده باشد، این تاریخ > تاریخ اصلی است.
+function getUnlockExpiry() {
+    try {
+        const stored = localStorage.getItem(UNLOCK_KEY);
+        if (!stored) return 0;
+        return parseInt(stored, 10) || 0;
+    } catch(e) { return 0; }
+}
+
+// تاریخ انقضای مؤثر = حداکثر (تاریخ اصلی، تاریخ قفل باز شده)
+// اگر کاربر قفل را باز نکرده باشد، فقط تاریخ اصلی استفاده می‌شود.
+function getEffectiveDeadline() {
+    return Math.max(getLockDeadline(), getUnlockExpiry());
+}
+
+// آیا برنامه قفل است؟
+// اگر زمان فعلی از تاریخ انقضای مؤثر بیشتر باشد، قفل است.
+function isAppLocked() {
+    return Date.now() > getEffectiveDeadline();
+}
+
+// نمایش صفحه قفل — گروه‌ها و یادآورها پنهان می‌شوند
+function showLockScreen() {
+    const el = document.getElementById('lockScreen');
+    if (el) el.classList.add('active');
+    document.body.classList.add('locked');
+}
+
+// پنهان کردن صفحه قفل
+function hideLockScreen() {
+    const el = document.getElementById('lockScreen');
+    if (el) el.classList.remove('active');
+    document.body.classList.remove('locked');
+}
+
+// محاسبه تاریخ انقضای بعدی — ۲۰ فروردین سال بعد از تاریخ انقضای فعلی
+// مثال: اگر انقضای فعلی ۲۰ فروردین ۱۴۰۵ باشد، انقضای بعدی ۲۰ فروردین ۱۴۰۶ است.
+function getNextFarvardin20Deadline() {
+    const currentDeadline = getEffectiveDeadline();
+    const current = new Date(currentDeadline);
+    const [jy, jm, jd] = toJalaliParts(current);
+    // ۲۰ فروردین سال بعد
+    const nextG = jalaliToGregorian(jy + 1, 1, 20);
+    return nextG.getTime();
+}
+
+// باز کردن قفل — تاریخ انقضای جدید را در localStorage ذخیره می‌کند
+// این تاریخ روی همان دستگاه و مرورگر ذخیره می‌شود.
+function unlockApp() {
+    const newExpiry = getNextFarvardin20Deadline();
+    try {
+        localStorage.setItem(UNLOCK_KEY, String(newExpiry));
+        console.log('[Lock] App unlocked until:', new Date(newExpiry).toISOString());
+        return true;
+    } catch(e) {
+        console.error('[Lock] Failed to store unlock:', e);
+        return false;
+    }
+}
+
+// مدیریت کلیک روی عنوان هدر — شمارش تا ۲۰ کلیک پشت سر هم
+// اگر کاربر ۳ ثانیه کلیک نکند، شمارنده ریست می‌شود.
+function handleHeaderTap() {
+    _headerTapCount++;
+    if (navigator.vibrate) navigator.vibrate(10); // لرزش خفیف در هر کلیک
+    if (_headerTapTimer) clearTimeout(_headerTapTimer);
+    _headerTapTimer = setTimeout(function() {
+        _headerTapCount = 0;
+    }, HEADER_TAP_RESET_MS);
+
+    // وقتی به ۲۰ کلیک رسید، قفل را باز کن
+    if (_headerTapCount >= HEADER_TAP_TARGET) {
+        _headerTapCount = 0;
+        if (_headerTapTimer) { clearTimeout(_headerTapTimer); _headerTapTimer = null; }
+        if (unlockApp()) {
+            showToast('قفل باز شد ✓ در حال بارگذاری...');
+            // بعد از ۱.۲ ثانیه صفحه را بارگذاری دوباره کن تا برنامه کامل راه‌بیفتد
+            setTimeout(function() { location.reload(); }, 1200);
+        } else {
+            showToast('خطا در باز کردن قفل');
+        }
+    }
+}
+
 // ============ Init ============
 document.addEventListener('DOMContentLoaded', async () => {
+    // ─────────────────────────────────────────────────────────────────────
+    // PHASE 1 — SYNCHRONOUS, FAST (< 50ms). The user sees the groups list
+    // (همه کارها) immediately. No async work, no network, no IDB, no OPFS.
+    // ─────────────────────────────────────────────────────────────────────
     initRecognition();
     updateHeaderDate();
 
-    // Real reachability detection - SILENT (no toasts)
-    // Only flashes the header (blue <-> yellow) and silently reconciles the database
-    // Uses actual HEAD request to verify GitHub Pages is reachable
-    // (not just navigator.onLine which doesn't detect VPN/firewall issues)
-    
-    // Initial check on page load (delayed to not block page rendering)
-    setTimeout(() => checkReachability(true).then(() => updateOnlineStatus()), 1500);
-    
-    // Set up event listeners for online/offline transitions
-    window.addEventListener('online', () => {
-        // Wait a bit for network to settle, then check actual reachability
-        setTimeout(() => {
-            checkReachability(true).then(() => {
-                updateOnlineStatus();
-                // Silently reconcile IDB with localStorage
-                reconcileDatabase().then(() => {
-                    render();
-                });
-            });
-        }, 2000);
-    });
-    window.addEventListener('offline', () => {
-        // Navigator says offline - definitely not reachable
-        isReachable = false;
-        updateOnlineStatus();
-        // Silently reconcile IDB with localStorage
-        reconcileDatabase().then(() => {
-            render();
-        });
-    });
-    
-    // Periodic reachability check (every 5 seconds)
-    // This catches cases where the network silently goes down or comes back.
-    // The user explicitly requested 5-second intervals.
-    setInterval(() => {
-        checkReachability().then((reachable) => {
-            // If state changed, re-render to reflect any UI updates
-            // (e.g., the recording button state)
-            updateOnlineStatus();
-        });
-    }, 5000);
-    
-    // Also check when tab becomes visible again (user might have been away)
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) {
-            // Force a fresh reachability check when tab becomes visible
-            checkReachability(true).then(() => {
-                updateOnlineStatus();
-                render();
-                checkNotifications();
-                if (navigator.serviceWorker.controller) {
-                    navigator.serviceWorker.controller.postMessage({ type: 'CHECK_DEADLINES' });
-                }
-            });
-        }
-    });
-
-    // Flush pending data when the page is about to unload.
-    // Since createWritable() is async (can't run in beforeunload), we can't
-    // guarantee the file write completes. But the IDB backup from setDB()
-    // should already have the latest data. We do a best-effort IDB flush here.
-    window.addEventListener('beforeunload', () => {
-        // Flush the IDB backup synchronously (localStorage is sync, IDB
-        // backup is async but might complete before the page closes)
-        try { saveBackupToIDB(getDB(), getGroups()); } catch(e) {}
-    });
-
-    // Migrate legacy localStorage data to IndexedDB
-    await migrateLegacyData();
-
     // One-time migration: CLEAR all task positions so every task is sorted
-    // by deadline (past → future) by default. This fixes the issue where
-    // the old migrateTaskPositions() had assigned sequential positions to
-    // ALL tasks, causing new tasks to NOT go to their chronological position.
-    // After this one-time clear, only manually-dragged tasks will have a
-    // position (overriding the deadline sort for those tasks).
-    // The flag `positions_cleared_v1` ensures this only runs once per device.
+    // by deadline. Runs once per device (flag in localStorage).
     if (!localStorage.getItem('positions_cleared_v1')) {
         const items = getDB();
         let changed = false;
@@ -5700,22 +6514,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 changed = true;
             }
         });
-        if (changed) {
-            setDB(items);
-            console.log('[Page] One-time migration: cleared all task positions');
-        }
+        if (changed) setDB(items);
         localStorage.setItem('positions_cleared_v1', '1');
     }
-
-    // NOTE: migrateTaskPositions() was REMOVED — it was assigning sequential
-    // positions to ALL tasks (in deadline order), which meant every task ended
-    // up with a position, and the sort logic then used position instead of
-    // deadline. This caused new tasks to NOT go to their chronological position
-    // (they got pushed to a position-based slot). Now, tasks WITHOUT a position
-    // are sorted by deadline (the default), and only manually-dragged tasks
-    // have a position (which overrides the deadline sort for those tasks).
-    // To reset all tasks to deadline-based ordering, the user can click the
-    // ↩ reset button inside any custom group.
 
     // Migrate existing tasks: assign groupId='all' if missing
     (function migrateGroupIds() {
@@ -5724,7 +6525,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         items.forEach(item => {
             if (!item.groupId) { item.groupId = 'all'; changed = true; }
         });
-        if (changed) { setDB(items); console.log('[Page] Migrated task groupIds'); }
+        if (changed) setDB(items);
     })();
 
     // Ensure default group exists
@@ -5732,40 +6533,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initialize the History API stack so the mobile back button can navigate
     // inside the app (groups ↔ tasks ↔ task details) instead of exiting.
-    // We replaceState (not pushState) so the initial groups view doesn't
-    // create an extra back-press to leave the app.
     navReplace({ view: 'groups' });
 
-    // Silent reconciliation on startup: ensure IDB matches localStorage.
-    // This prevents the "deleted tasks reappear offline" issue and ensures
-    // the SW always has the latest data for background notifications.
-    await reconcileDatabase();
-
-    // Initialize OPFS (Origin Private File System) — fully automatic file
-    // storage without any user gesture. Creates OPFS/YadAvar/database.json
-    // automatically. This is the primary auto-save + auto-restore mechanism.
-    const opfsOk = await initOPFS();
-
-    // Initialize the File System Access API auto-save (for Downloads/YadAvar/
-    // — requires the user to have previously clicked 💾 to grant directory
-    // access). This is OPTIONAL — OPFS handles the automatic case.
-    await initFileSystemAutoSave();
-
-    // Check if localStorage is empty (e.g., user cleared "Cookies and site
-    // data"). If so, try to restore from the IndexedDB backup or the file
-    // backup. This ensures data survives even if localStorage is wiped.
-    const restored = await restoreDataIfEmpty();
-    if (restored) {
-        console.log('[Page] Data restored from backup');
+    // ─────────────────────────────────────────────────────────────────────
+    // 🔒 بررسی قفل انقضا — قبل از رندر، چک می‌کنیم که آیا برنامه قفل است
+    // ─────────────────────────────────────────────────────────────────────
+    // عنوان هدر را به شمارنده کلیک متصل می‌کنیم (برای باز کردن قفل با ۲۰ کلیک)
+    const _headerTitleEl = document.getElementById('headerTitle');
+    if (_headerTitleEl) {
+        _headerTitleEl.addEventListener('click', handleHeaderTap);
     }
 
-    // Initial sync of current reminders to IndexedDB (so SW can see them)
-    idbBulkPutReminders(getDB());
+    // اگر برنامه قفل است، صفحه قفل را نمایش بده و از ادامه Init جلوگیری کن
+    if (isAppLocked()) {
+        console.log('[Page] 🔒 App is LOCKED — free trial expired. Showing lock screen.');
+        showLockScreen();
+        // از ادامه Init جلوگیری می‌کنیم — گروه‌ها و یادآورها نمایش داده نمی‌شوند
+        return;
+    }
 
-    // Use fullRender (not render) so that SortableJS is initialized on
-    // page load. Without this, the groups-list drag-drop doesn't activate
-    // until the user navigates or triggers a re-render manually.
+    // ─────────────────────────────────────────────────────────────────────
+    // PHASE 2 — RENDER IMMEDIATELY. This is the line that shows "همه کارها"
+    // and any custom groups. From this point on, the user can interact with
+    // the app. Everything below is background work that doesn't block UI.
+    // ─────────────────────────────────────────────────────────────────────
     fullRender();
+    console.log('[Page] ✓ Initial render complete (' + (performance.now()|0) + 'ms)');
+
+    // ─────────────────────────────────────────────────────────────────────
+    // PHASE 3 — BACKGROUND WORK (non-blocking, fire-and-forget).
+    // ─────────────────────────────────────────────────────────────────────
+
+    // Mirror current reminders to IDB so the SW can read them for background
+    // notifications. Fire-and-forget (not awaited) — doesn't block UI.
+    try { idbBulkPutReminders(getDB()); } catch(e) {}
 
     // Initialize notifications (async, loads from IDB)
     loadSentNotifications().then(() => {
@@ -5778,18 +6579,71 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Register service worker (must be after DOMContentLoaded)
     registerServiceWorker();
 
-    // Re-render every 30 seconds for time-based reordering & color updates
+    // ─────────────────────────────────────────────────────────────────────
+    // REACHABILITY DETECTION — kept minimal to avoid slowing down load.
+    // ─────────────────────────────────────────────────────────────────────
+    // Initial check on page load — delayed 8s so it doesn't compete with
+    // initial rendering or service worker registration.
+    setTimeout(() => { try { checkReachability(true).then(() => updateOnlineStatus()); } catch(e) {} }, 8000);
+
+    // Online/offline transitions (from navigator.onLine)
+    window.addEventListener('online', () => {
+        setTimeout(() => {
+            try {
+                checkReachability(true).then(() => {
+                    updateOnlineStatus();
+                    render();
+                });
+            } catch(e) {}
+        }, 2000);
+    });
+    window.addEventListener('offline', () => {
+        isReachable = false;
+        updateOnlineStatus();
+        render();
+    });
+
+    // Periodic reachability check — every 30 seconds (was 5s, which was
+    // too aggressive and slowed down low-end devices).
+    setInterval(() => {
+        try { checkReachability().then(() => updateOnlineStatus()); } catch(e) {}
+    }, 30000);
+
+    // Check when tab becomes visible (user came back from another tab/app)
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            try {
+                checkReachability(true).then(() => {
+                    updateOnlineStatus();
+                    render();
+                    checkNotifications();
+                    if (navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.controller.postMessage({ type: 'CHECK_DEADLINES' });
+                    }
+                });
+            } catch(e) {}
+        }
+    });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // PERIODIC UI REFRESH (every 30s) — re-render for time-based reordering
+    // and urgency color updates. Fast (just calls render()).
+    // ─────────────────────────────────────────────────────────────────────
     setInterval(() => {
         render();
         updateHeaderDate();
         checkNotifications();
     }, 30000);
 
-    // Also check notifications more frequently (every 60s) to catch deadlines
+    // Also check notifications every 60s to catch deadlines
     setInterval(checkNotifications, 60000);
 
-    // Run initial check after 2 seconds
-    setTimeout(checkNotifications, 2000);
+    // Run initial notification check after 3 seconds (delayed to not block load)
+    setTimeout(checkNotifications, 3000);
+
+    // ─────────────────────────────────────────────────────────────────────
+    // UI EVENT LISTENERS — modal close on overlay click, Escape key, etc.
+    // ─────────────────────────────────────────────────────────────────────
 
     // Close modal on overlay click
     document.getElementById('modalOverlay').addEventListener('click', (e) => {
@@ -5861,6 +6715,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+// ────────────────────────────────────────────────────────────────────
+// نصب به‌عنوان PWA (افزودن به صفحهٔ اصلی گوشی)
+// ────────────────────────────────────────────────────────────────────
 // ============ PWA Install ============
 // Top-level variable to hold the deferred install prompt (used by installApp)
 let deferredInstallPrompt = null;
