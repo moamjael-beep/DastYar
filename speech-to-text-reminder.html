@@ -2177,6 +2177,7 @@ body.locked .header-actions button {
 .contact-row-btn:active { transform: scale(0.92); }
 
 /* فرم تعریف/ویرایش شخص */
+/* 🔧 مانند مودال تنظیمات گروه: flex column با body قابل اسکرول و دکمه‌های ثابت */
 .contact-form-modal {
     max-width: 500px;
     width: 95%;
@@ -2185,11 +2186,71 @@ body.locked .header-actions button {
     flex-direction: column;
     overflow: hidden;
 }
+.contact-form-modal h2 {
+    flex-shrink: 0;
+    margin-bottom: 12px;
+}
 .contact-form-body {
     flex: 1;
     overflow-y: auto;
-    padding: 4px 0;
+    overflow-x: hidden;
+    padding: 4px 0 8px 0;
     -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+/* 🔧 دکمه‌های پایین فرم شخص — ثابت در پایین با flex-shrink: 0 */
+.contact-form-modal .modal-buttons {
+    flex-shrink: 0;
+    background: white;
+    padding: 14px 0 18px 0;
+    margin-top: 8px;
+    border-top: 1px solid #e0e0e0;
+    z-index: 10;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
+}
+/* 🔧 در موبایل: max-height دقیق‌تر */
+@media (max-width: 600px) {
+    .contact-form-modal {
+        max-height: calc(100vh - 100px) !important;
+        width: 95% !important;
+    }
+}
+/* 🔧 مودال جستجو و گزارش هم همان مشکل را دارند */
+.search-form-modal {
+    max-width: 500px;
+    width: 95%;
+    max-height: calc(100vh - 40px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.search-form-modal h2 {
+    flex-shrink: 0;
+    margin-bottom: 12px;
+}
+.search-form-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4px 0 8px 0;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+/* 🔧 دکمه‌های پایین مودال جستجو/گزارش — ثابت */
+.search-form-modal .modal-buttons {
+    flex-shrink: 0;
+    background: white;
+    padding: 14px 0 18px 0;
+    margin-top: 8px;
+    border-top: 1px solid #e0e0e0;
+    z-index: 10;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
+}
+@media (max-width: 600px) {
+    .search-form-modal {
+        max-height: calc(100vh - 100px) !important;
+        width: 95% !important;
+    }
 }
 .contact-form-section {
     margin-bottom: 14px;
@@ -2286,20 +2347,7 @@ body.locked .header-actions button {
 .contact-dynamic-add-btn:active { transform: scale(0.97); }
 
 /* صفحه جستجو و گزارشات */
-.search-form-modal {
-    max-width: 500px;
-    width: 95%;
-    max-height: calc(100vh - 40px);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-.search-form-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 4px 0;
-    -webkit-overflow-scrolling: touch;
-}
+/* 🔧 استایل search-form-modal در بالا تعریف شده — این فقط نتایج */
 .search-results-table {
     width: 100%;
     border-collapse: collapse;
@@ -3057,7 +3105,7 @@ body.locked .header-actions button {
 //         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
 //         Also: backup button now asks for confirmation before saving
 //         (it was being accidentally triggered next to the + button).
-const APP_VERSION = 'v34-2026-10-31-fix-contacts-page';
+const APP_VERSION = 'v35-2026-10-31-fix-contact-form-scroll';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
