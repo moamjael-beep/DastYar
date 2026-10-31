@@ -2618,7 +2618,18 @@ body.locked .header-actions button {
                 <input type="hidden" id="itemDeadline">
                 <button type="button" class="datetime-picker-btn" onclick="openDatetimePicker()" title="باز کردن تقویم شمسی">📅</button>
             </div>
-            <!-- 🔧 کلیدهای پیشنهادی (۱ ساعت تا ۱ هفته) حذف شدند — فقط تقویم شمسی -->
+            <!-- 🔧 کلیدهای میانبر سررسید — بعد از بخش تکرار، قبل از دکمه‌ها -->
+            <div class="quick-deadline">
+                <button class="quick-btn" onclick="setQuickDeadline(1)">۱ ساعت</button>
+                <button class="quick-btn" onclick="setQuickDeadline(3)">۳ ساعت</button>
+                <button class="quick-btn" onclick="setQuickDeadline(24)">۱ روز</button>
+                <button class="quick-btn" onclick="setQuickDeadline(72)">۳ روز</button>
+                <button class="quick-btn" onclick="setQuickDeadline(168)">۱ هفته</button>
+                <button class="quick-btn" onclick="setQuickDeadline(240)">۱۰ روز</button>
+                <button class="quick-btn" onclick="setQuickDeadline(336)">۲ هفته</button>
+                <button class="quick-btn" onclick="setQuickDeadline(360)">۱۵ روز</button>
+                <button class="quick-btn" onclick="setQuickDeadline(720)">۱ ماه</button>
+            </div>
 
             <!-- Repeat options: repeat the task at regular intervals until an end date -->
             <div class="repeat-section" id="repeatSection">
@@ -3097,7 +3108,7 @@ body.locked .header-actions button {
 //         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
 //         Also: backup button now asks for confirmation before saving
 //         (it was being accidentally triggered next to the + button).
-const APP_VERSION = 'v39-2026-10-31-auto-migrate-database';
+const APP_VERSION = 'v41-2026-10-31-jalali-month-deadline';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -5003,24 +5014,90 @@ function updateGroupIconPreview() {
     }
 }
 
-// انتخاب عکس برای هدر گروه
+// 🔧 انتخاب عکس برای هدر گروه — فشرده‌سازی خودکار به زیر ۵۰۰KB
+// اگر عکس بزرگ‌تر از ۵۰۰ کیلوبایت است، به‌طور خودکار با Canvas فشرده می‌شود:
+//   ۱) ابتدا ابعاد را تا حداکثر ۸۰۰px کاهش می‌دهد
+//   ۲) کیفیت JPEG را逐步 کاهش می‌دهد تا زیر ۵۰۰KB شود
+//   ۳) نتیجه را به data URL تبدیل و استفاده می‌کند
 function onGroupHeaderImageSelected(event) {
     const file = event.target.files[0];
     if (!file) return;
-    if (file.size > 500 * 1024) {
-        showToast('حجم عکس باید کمتر از ۵۰۰ کیلوبایت باشد');
-        return;
-    }
+
     const reader = new FileReader();
     reader.onload = function(e) {
-        const group = getGroupById(_groupSettingsTargetId);
-        if (group) {
-            group.headerImage = e.target.result;
-            // ذخیره موقت در حافظه — در saveGroupSettings ذخیره نهایی انجام می‌شود
-            updateGroupIconPreview();
-        }
+        const img = new Image();
+        img.onload = function() {
+            // فشرده‌سازی عکس با Canvas
+            const compressed = compressImage(img, 500 * 1024, 800);
+            const group = getGroupById(_groupSettingsTargetId);
+            if (group) {
+                group.headerImage = compressed;
+                updateGroupIconPreview();
+                showToast('عکس با موفقیت بارگذاری شد ✓');
+            }
+        };
+        img.onerror = function() {
+            showToast('خطا در بارگذاری عکس');
+        };
+        img.src = e.target.result;
+    };
+    reader.onerror = function() {
+        showToast('خطا در خواندن فایل');
     };
     reader.readAsDataURL(file);
+}
+
+// 🔧 فشرده‌سازی عکس با Canvas به زیر حد مشخص‌شده (bytes)
+// img: عنصر Image بارگذاری‌شده
+// maxSize: حداکثر حجم به بایت (مثلاً 500 * 1024 برای ۵۰۰KB)
+// maxDim: حداکثر ابعاد (عرض یا ارتفاع) به پیکسل
+// خروجی: data URL (JPEG)
+function compressImage(img, maxSize, maxDim) {
+    // محاسبه ابعاد نهایی — حفظ نسبت ابعاد
+    let width = img.naturalWidth;
+    let height = img.naturalHeight;
+    if (width > maxDim || height > maxDim) {
+        if (width > height) {
+            height = Math.round(height * maxDim / width);
+            width = maxDim;
+        } else {
+            width = Math.round(width * maxDim / height);
+            height = maxDim;
+        }
+    }
+
+    // رسم روی Canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, width, height);
+
+    // کاهش کیفیت تدریجی تا زیر maxSize شود
+    let quality = 0.9;  // شروع از کیفیت بالا
+    let dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+    while (dataUrl.length > maxSize * 1.37 && quality > 0.1) {
+        // dataUrl طولش ~1.37 برابر حجم واقعی است (base64 overhead)
+        quality -= 0.1;
+        dataUrl = canvas.toDataURL('image/jpeg', quality);
+    }
+
+    // اگر همچنان بزرگ است، ابعاد را بیشتر کاهش بده
+    while (dataUrl.length > maxSize * 1.37 && width > 100 && height > 100) {
+        width = Math.round(width * 0.8);
+        height = Math.round(height * 0.8);
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        dataUrl = canvas.toDataURL('image/jpeg', quality);
+    }
+
+    console.log('[CompressImage] Original:', img.naturalWidth + 'x' + img.naturalHeight,
+                '→ Compressed:', width + 'x' + height,
+                'Quality:', quality.toFixed(1),
+                'Size:', Math.round(dataUrl.length / 1024) + 'KB');
+    return dataUrl;
 }
 
 // حذف عکس هدر گروه
@@ -5297,7 +5374,38 @@ function stopRecording() {
 
 // (merged with the version above)
 
+// 🔧 تنظیم سررسید با کلیدهای میانبر
+// - hours: تعداد ساعت (برای ۱ ساعت تا ۱۵ روز)
+// - برای ۱ ماه (720): از تقویم شمسی استفاده می‌شود تا دقیقاً همان روز ماه بعد باشد
+//   مثلاً ۲ خرداد → ۲ تیر (نه ۳۰ روز تقریبی)
+// - برای ۱ هفته (168) و ۲ هفته (336): ۷ و ۱۴ روز دقیق = همان روز هفته
 function setQuickDeadline(hours) {
+    if (hours === 720) {
+        // 🔧 ۱ ماه بعد — با تقویم شمسی
+        // تاریخ امروز را به شمسی تبدیل می‌کنیم، یک ماه اضافه می‌کنیم،
+        // و دوباره به میلادی تبدیل می‌کنیم. این‌طور دقیقاً همان روز ماه می‌شود.
+        const now = new Date();
+        const [jy, jm, jd] = toJalaliParts(now);
+        let newJy = jy, newJm = jm + 1, newJd = jd;
+        // اگر ماه بعد از ۱۲ گذشت، سال بعد
+        if (newJm > 12) { newJm = 1; newJy++; }
+        // اگر روز ماه در ماه بعد وجود ندارد (مثلاً ۳۱ اسفند → اسفند ۳۰ روز است)
+        // به آخرین روز ماه کاهش بده
+        const maxDay = getDaysInJalaliMonth(newJy, newJm);
+        if (newJd > maxDay) newJd = maxDay;
+        // تبدیل به میلادی
+        const g = jalaliToGregorian(newJy, newJm, newJd);
+        // ساخت Date با ساعت فعلی
+        const dt = new Date(g.getUTCFullYear(), g.getUTCMonth(), g.getUTCDate(),
+                           now.getHours(), now.getMinutes(), 0, 0);
+        const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        document.getElementById('itemDeadline').value = local;
+        updateDeadlineDisplay(local);
+        return;
+    }
+    // برای سایر کلیدها (۱ ساعت تا ۱۵ روز و ۱۰ روز):
+    // ۱ هفته (۱۶۸ ساعت = ۷ روز) و ۲ هفته (۳۳۶ ساعت = ۱۴ روز) دقیقاً
+    // همان روز هفته را می‌دهند چون ۷ و ۱۴ روز دقیق هستند.
     const dt = new Date(Date.now() + hours * 60 * 60 * 1000);
     const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     document.getElementById('itemDeadline').value = local;
