@@ -2016,18 +2016,23 @@ body.locked .header-actions button {
 .group-reset-btn:active { transform: scale(0.92); }
 
 /* وقتی هدر گروه تصویر پس‌زمینه دارد */
+/* 🔧 هدر گروه با عکس پس‌زمینه — sticky حفظ می‌شود (position: relative حذف شد) */
 .group-tasks-header.has-bg-image {
     background-size: cover;
     background-position: center;
-    position: relative;
+    /* position: relative حذف شد — sticky از کلاس والد به ارث می‌رسد */
+    z-index: 100;  /* همان z-index هدر عادی — روی تسک‌ها قرار بگیرد */
 }
+/* لایهٔ تیره روی عکس برای خوانایی متن */
 .group-tasks-header.has-bg-image::before {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0,0,0,0.4);
     border-radius: 10px;
+    z-index: 0;  /* زیر محتوا */
 }
+/* محتوای هدر (دکمه‌ها، عنوان) روی لایهٔ تیره */
 .group-tasks-header.has-bg-image > * {
     position: relative;
     z-index: 1;
@@ -3111,7 +3116,7 @@ body.locked .header-actions button {
 //         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
 //         Also: backup button now asks for confirmation before saving
 //         (it was being accidentally triggered next to the + button).
-const APP_VERSION = 'v43-2026-10-31-fix-header-image-save';
+const APP_VERSION = 'v44-2026-10-31-fix-header-image-sticky';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
