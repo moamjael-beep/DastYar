@@ -2263,7 +2263,7 @@ body.locked .header-actions button {
 //         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
 //         Also: backup button now asks for confirmation before saving
 //         (it was being accidentally triggered next to the + button).
-const APP_VERSION = 'v26-2026-10-31-modal-flex-layout';
+const APP_VERSION = 'v27-2026-10-31-phone-number-parsing-fix';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -2438,7 +2438,7 @@ function toPersianNumberWithSep(num) {
 
 const PERSIAN_NUM_WORDS = {
     'صفر': 0,
-    'یک': 1, 'یکه': 1, 'یه': 1, 'اول': 1,
+    'یک': 1, 'یکه': 1, 'یه': 1, 'یکی': 1, 'اول': 1,
     'دو': 2, 'دوا': 2, 'دوتا': 2,
     'سه': 3, 'سی': 3, 'سه‌تا': 3, 'ستا': 3,
     'چهار': 4, 'چهارتا': 4,
@@ -2578,31 +2578,32 @@ function postProcessPersianNumbers(text) {
 
 const CURRENCY_WORDS = ['تومان', 'تومن', 'ریال', 'دلار', 'یورو', 'درهم', 'پوند', 'یوان'];
 
-// Detect a DIGIT SEQUENCE — consecutive single-digit tokens that should be
-// concatenated as a digit string (instead of summed). This handles:
+// Detect a DIGIT SEQUENCE — consecutive tokens that should be concatenated
+// as a digit string (instead of summed). This handles:
 //   - Phone numbers spoken digit-by-digit: "صفر نه یک پنج" → "0915"
 //   - Multi-group phone numbers: "0915 544 125" → "0915544125"
 //   - Mixed: "صفر 915 544 125" → "0915544125"
 //   - Single phone-number token starting with 0: "0915544125" → "0915544125"
-//     (preserved as-is because parseInt would drop the leading zero)
+//   - 🔧 NEW: Mixed Latin/Persian words: "0915 یکی یکی یکی 64 40" → "09151116440"
+//   - 🔧 NEW: "0915 111 شصت و چهار 40" → "09151116440"
+//     (when speech recognition returns "64" as "شصت و چهار" or "40" as "چهل")
 //
 // A "digit token" is any of:
 //   - A single-digit Persian number WORD (صفر=0, یک=1, دو=2, ..., نه=9)
 //   - A Latin digit string (e.g., "0915", "544", "5")
 //   - A Persian digit string (e.g., "۰۹۱۵", "۵۴۴")
+//   - 🔧 NEW (when already in a sequence): A two-digit Persian number like
+//     "شصت و چهار" (64) is recognized as a COMPOUND: "شصت" (60) + "و" + "چهار" (4) → "64"
+//     NOT "60" + "4" = "604". This is the Persian way of saying 64.
 //
 // The sequence BREAKS on:
-//   - Multi-digit WORDS (ده=10, بیست=20, صد=100, هزار=1000, میلیون=1000000, ...)
-//     These signal that the user is saying a real number, not digit-by-digit.
+//   - Multiplier words (صد=100, هزار=1000, میلیون=1000000, ...)
 //   - Any non-number word
 //
-// "و" (and) is treated as a connector and SKIPPED within a sequence (so
-// "صفر و نه و یک و پنج" still concatenates to "0915"). This is the standard
-// Persian verbal style for reading digits one-by-one.
+// "و" (and) is treated as a connector and SKIPPED within a sequence.
 //
 // A sequence qualifies if it has AT LEAST 2 digit tokens, OR exactly 1 token
-// that is a Latin/Persian digit string starting with "0" (the leading zero
-// signals a phone number — must be preserved, not parsed as an int).
+// that is a Latin/Persian digit string starting with "0".
 //
 // Returns { digitString: "0915544125", endIndex: N } or null.
 function tryParseDigitSequence(tokens, startIdx) {
@@ -2610,6 +2611,15 @@ function tryParseDigitSequence(tokens, startIdx) {
     let collectedCount = 0;
     let firstTokenWasLeadingZeroString = false;
     let i = startIdx;
+
+    // 🔧 کلمات ضرب‌کننده که نباید در digit sequence بیایند (صد، هزار، میلیون، ...)
+    const MULTIPLIER_VALUES = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1000000, 1000000000];
+
+    // 🔧 حالت خاص: اگر آخرین کلمهٔ جمع‌آوری‌شده یک عدد ده‌گانی بود (10, 20, 30, ..., 90)
+    // و کلمهٔ بعدی یک رقم (0-9) است، باید آن رقم را به رقم واحد اضافه کنیم.
+    // مثال: "شصت" (60) + "چهار" (4) → "64" (نه "604")
+    // برای این کار، آخرین رقم جمع‌آوری‌شده را ذخیره می‌کنیم.
+    let lastTensValue = 0;  // آخرین مقدار ده‌گانی (10, 20, ..., 90)
 
     while (i < tokens.length) {
         let word = tokens[i].replace(/[\u200c\u200d]/g, '');
@@ -2624,10 +2634,68 @@ function tryParseDigitSequence(tokens, startIdx) {
         // Persian number word
         let val = PERSIAN_NUM_WORDS[word];
 
-        // Multi-digit word (10+) or multiplier (1000+) — BREAK the sequence.
-        // These signal that the user is saying a real numeric value (e.g.,
-        // "دو میلیون" or "دویست و پنجاه"), not digit-by-digit reading.
-        if (val !== undefined && val >= 10) break;
+        // 🔧 ضرب‌کننده‌ها (صد، هزار، میلیون، ...) → BREAK
+        if (val !== undefined && MULTIPLIER_VALUES.indexOf(val) !== -1) break;
+
+        // 🔧 کلمات ده‌گانی (ده=10, بیست=20, سی=30, چهل=40, پنجاه=50, شصت=60,
+        // هفتاد=70, هشتاد=80, نود=90) — این‌ها رقم ده‌گان هستند.
+        // همچنین کلمات ۱۱-۱۹ (یازده=11, دوازده=12, ...) که هم رقم ده‌گان و هم واحد دارند.
+        // وقتی در حال جمع‌آوری digit sequence هستیم:
+        //   - اگر بعد از یک ده‌گان، یک رقم (0-9) بیاید، باید رقم ده‌گان را با رقم واحد ترکیب کنیم
+        //     مثال: "شصت" (60) + "چهار" (4) → "64" (نه "604")
+        //   - اگر بعد از یک ده‌گان، کلمهٔ غیر عددی بیاید، فقط ده‌گان را اضافه می‌کنیم
+        if (val !== undefined && val >= 10 && val < 100 && collectedCount > 0) {
+            // اگر val یک ده‌گان خالص است (10, 20, 30, ..., 90) و آخرین چیزی که اضافه کردیم
+            // هم یک ده‌گان بود، باید آخرین را حذف کنیم و ترکیب کنیم
+            // اما این پیچیده می‌شود. روش ساده‌تر:
+            // - اگر val مضرب ۱۰ است (10, 20, ..., 90): رقم ده‌گان را استخراج کن
+            //   و در lastTensValue ذخیره کن. هنوز به digits اضافه نکن.
+            // - وقتی بعدش یک رقم (0-9) آمد، lastTensValue + digit را به digits اضافه کن.
+            // - اگر بعدش چیز دیگری آمد، lastTensValue را به‌صورت کامل اضافه کن.
+            if (val % 10 === 0) {
+                // ده‌گان خالص (10, 20, 30, ..., 90)
+                lastTensValue = val;
+                i++;
+                continue;
+            } else {
+                // اعداد ۱۱-۱۹ (یازده=11, دوازده=12, ...) — هم ده‌گان هم واحد دارند
+                // این‌ها را به‌صورت کامل اضافه می‌کنیم
+                // اما اگر lastTensValue داریم، اول آن را اضافه کنیم
+                if (lastTensValue > 0) {
+                    digits += String(lastTensValue);
+                    lastTensValue = 0;
+                    collectedCount++;
+                }
+                digits += String(val);
+                collectedCount++;
+                i++;
+                continue;
+            }
+        }
+
+        // 🔧 اگر lastTensValue داریم و الان یک رقم (0-9) آمد، ترکیب کن
+        if (val !== undefined && val < 10 && lastTensValue > 0) {
+            // مثال: lastTensValue=60, val=4 → "64"
+            digits += String(lastTensValue + val);
+            lastTensValue = 0;
+            collectedCount++;
+            i++;
+            continue;
+        }
+
+        // 🔧 اگر lastTensValue داریم و الان یک Latin/Persian digit string یا کلمهٔ غیر عددی آمد
+        // اول lastTensValue را به digits اضافه کن
+        if (lastTensValue > 0 && val === undefined) {
+            digits += String(lastTensValue);
+            lastTensValue = 0;
+            collectedCount++;
+            // به i++ نمی‌رویم — همین توکن را دوباره بررسی کنیم
+            continue;
+        }
+
+        // 🔧 اعداد ۱۰-۹۹ فارسی در شروع sequence (collectedCount === 0):
+        // اگر اولین توکن یک کلمهٔ چندرقمی فارسی باشد، break می‌کنیم
+        if (val !== undefined && val >= 10 && val < 100 && collectedCount === 0) break;
 
         // Single-digit word (0-9) → append the digit
         if (val !== undefined && val < 10) {
@@ -2637,13 +2705,15 @@ function tryParseDigitSequence(tokens, startIdx) {
             continue;
         }
 
-        // Latin digit string (e.g., "0915", "544", "5") — append all digits.
-        // Note: parseInt would drop leading zeros ("0915" → 915), but for
-        // phone numbers we want to KEEP them. String concatenation does.
+        // Latin digit string (e.g., "0915", "544", "5")
         const latinMatch = word.match(/^(\d+)$/);
         if (latinMatch) {
-            // If this is the FIRST token AND it starts with "0", treat the
-            // whole sequence as a digit string (preserve leading zero).
+            // 🔧 اگر lastTensValue داریم، اول آن را اضافه کن
+            if (lastTensValue > 0) {
+                digits += String(lastTensValue);
+                lastTensValue = 0;
+                collectedCount++;
+            }
             if (collectedCount === 0 && latinMatch[1].charAt(0) === '0') {
                 firstTokenWasLeadingZeroString = true;
             }
@@ -2656,8 +2726,13 @@ function tryParseDigitSequence(tokens, startIdx) {
         // Persian digit string (e.g., "۰۹۱۵", "۵۴۴")
         const persianMatch = word.match(/^([۰-۹]+)$/);
         if (persianMatch) {
+            // 🔧 اگر lastTensValue داریم، اول آن را اضافه کن
+            if (lastTensValue > 0) {
+                digits += String(lastTensValue);
+                lastTensValue = 0;
+                collectedCount++;
+            }
             const latin = word.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
-            // Same leading-zero check for Persian digits
             if (collectedCount === 0 && latin.charAt(0) === '0') {
                 firstTokenWasLeadingZeroString = true;
             }
@@ -2668,13 +2743,25 @@ function tryParseDigitSequence(tokens, startIdx) {
         }
 
         // Non-number word → stop
+        // 🔧 اگر lastTensValue داریم، اول آن را اضافه کن
+        if (lastTensValue > 0) {
+            digits += String(lastTensValue);
+            lastTensValue = 0;
+            collectedCount++;
+        }
         break;
     }
 
+    // 🔧 اگر در پایان lastTensValue داریم، آن را اضافه کن
+    if (lastTensValue > 0) {
+        digits += String(lastTensValue);
+        lastTensValue = 0;
+        collectedCount++;
+    }
+
     // Qualify as a digit sequence if:
-    //   - Collected 2+ tokens (typical phone-number pattern), OR
-    //   - Collected 1 token but it had a leading zero (single-token phone number
-    //     like "0915544125" that speech-recognition output as one string).
+    //   - Collected 2+ tokens, OR
+    //   - Collected 1 token but it had a leading zero
     if (collectedCount < 2 && !firstTokenWasLeadingZeroString) return null;
 
     return { digitString: digits, endIndex: i };
