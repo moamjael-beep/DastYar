@@ -1329,6 +1329,13 @@ body { padding-bottom: 30px; }
     align-items: center;
     gap: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    /* 🔒 فیکس شدن هدر گروه هنگام اسکرول — مثل هدر اصلی برنامه بالای صفحه ثابت می‌ماند.
+       این کار با position: sticky انجام می‌شود. top: 70px یعنی هدر زیر هدر اصلی
+       (که ارتفاعش حدود 70px است) قرار می‌گیرد. z-index بالا برای قرار گرفتن روی تسک‌ها. */
+    position: sticky;
+    position: -webkit-sticky;
+    top: 70px;
+    z-index: 100;
 }
 .back-btn {
     background: rgba(255,255,255,0.25);
@@ -1618,9 +1625,35 @@ body.locked .header-actions button {
 }
 
 /* ============ 🎨 مودال تنظیمات گروه ============ */
+/* 🔧 این مودال قابل اسکرول است تا همهٔ دکمه‌ها (حتی در صفحه‌های کوچک)
+   در دسترس باشند. max-height به 92vh محدود شده و overflow-y: auto
+   باعث می‌شود وقتی محتوا بلندتر از ارتفاع صفحه است، scrollbar ظاهر شود. */
 .group-settings-modal {
     max-width: 420px;
     width: 90%;
+    max-height: 92vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* padding پایین بیشتر برای اینکه دکمه‌های پایین مودال زیر scrollbar نروند */
+    padding-bottom: 32px;
+    /* اسکرول نرم در مرورگرهای مدرن */
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;  /* اسکرول نرم در iOS */
+}
+/* استایل scrollbar مودال (در مرورگرهای مبتنی بر WebKit) */
+.group-settings-modal::-webkit-scrollbar {
+    width: 8px;
+}
+.group-settings-modal::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+.group-settings-modal::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+.group-settings-modal::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
 }
 .group-settings-section {
     margin-bottom: 16px;
@@ -2099,7 +2132,7 @@ body.locked .header-actions button {
 //         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
 //         Also: backup button now asks for confirmation before saving
 //         (it was being accidentally triggered next to the + button).
-const APP_VERSION = 'v20-2026-10-31-group-header-menu';
+const APP_VERSION = 'v21-2026-10-31-more-icons-colors-sticky';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -3283,10 +3316,38 @@ async function restoreDataIfEmpty() {
 // یک گروه پیش‌فرض «همه کارها» همیشه وجود دارد و قابل حذف نیست.
 // ============ Groups Database ============
 const GROUPS_KEY = 'persian_voice_groups_v1';
+// پالت رنگ‌های هدر گروه — شامل رنگ‌های پررنگ، منحصربه‌فرد و متنوع
+// برای انتخاب آسان کاربر. رنگ‌ها به ترتیب: گرم، سرد، خنثی، تیره
 const GROUP_COLORS = [
-    '#FF9800', '#2196F3', '#9C27B0', '#F44336', '#00BCD4',
-    '#FF5722', '#795548', '#607D8B', '#8BC34A', '#E91E63',
-    '#3F51B5', '#009688', '#FFC107', '#673AB7', '#FF6F00',
+    // رنگ‌های گرم (قرمز، نارنجی، زرد)
+    '#F44336', '#E53935', '#D32F2F', '#C62828', '#B71C1C',  // قرمز پررنگ
+    '#FF5722', '#FF6F00', '#E65100', '#BF360C',              // نارنجی پررنگ
+    '#FF9800', '#FB8C00', '#F57C00', '#EF6C00',              // نارنجی
+    '#FFC107', '#FFB300', '#FFA000', '#FF8F00',              // زرد کهربایی
+    // رنگ‌های سبز و فیروزه‌ای
+    '#4CAF50', '#43A047', '#388E3C', '#2E7D32', '#1B5E20',  // سبز پررنگ
+    '#009688', '#00897B', '#00796B', '#00695C',              // فیروزه‌ای پررنگ
+    '#00BCD4', '#00ACC1', '#0097A7', '#00838F',              // فیروزه‌ای روشن
+    // رنگ‌های آبی
+    '#2196F3', '#1E88E5', '#1976D2', '#1565C0', '#0D47A1',  // آبی پررنگ
+    '#3F51B5', '#3949AB', '#303F9F', '#283593',              // ایندیگو
+    '#5C6BC0', '#7986CB',                                     // آبی روشن
+    // رنگ‌های بنفش و ارغوانی
+    '#9C27B0', '#8E24AA', '#7B1FA2', '#6A1B9A', '#4A148C',  // بنفش پررنگ
+    '#673AB7', '#5E35B1', '#512DA8', '#4527A0',              // بنفش تیره
+    // رنگ‌های صورتی و مجلسی
+    '#E91E63', '#D81B60', '#C2185B', '#AD1457', '#880E4F',  // صورتی پررنگ
+    '#FF4081', '#F50057', '#C51162',                         // صورتی نئونی
+    // رنگ‌های قهوه‌ای و خنثی تیره
+    '#795548', '#6D4C41', '#5D4037', '#4E342E', '#3E2723',  // قهوه‌ای تیره
+    '#607D8B', '#546E7A', '#455A64', '#37474F', '#263238',  // خاکستری مایل به آبی
+    // رنگ‌های منحصربه‌فرد
+    '#00E676', '#00C853',                                     // سبز نئونی
+    '#FF3D00', '#DD2C00',                                     // نارنجی-قرمز آتشین
+    '#FFD600', '#FFAB00',                                     // زرد طلایی
+    '#00B8D4', '#0091EA',                                     // آبی فیروزه‌ای روشن
+    '#AA00FF', '#7C4DFF',                                     // بنفش نئونی
+    '#1DE9B6', '#00BFA5',                                     // سبز فیروزه‌ای
 ];
 
 function getGroups() {
@@ -3412,11 +3473,48 @@ let _activeGroupMenu = null;        // آیتم منوی فعال فعلی (DOM 
 let _groupSettingsTargetId = null;  // شناسهٔ گروهی که در حال ویرایش است
 
 // آیکون‌های قابل انتخاب برای هدر گروه
+// شامل آیکون‌های مرتبط با شغل ایمنی، آتش‌نشانی، لباس کار،
+// و کارهای کلی یک نفر در زندگی (خانواده، کار، سلامتی، مالی و ...)
 const GROUP_HEADER_ICONS = [
-    '📋', '📝', '✅', '⭐', '❤️', '🔥', '💡', '🎯',
-    '🏠', '💼', '📚', '🎓', '💰', '🛒', '🍕', '☕',
-    '✈️', '🚗', '⚽', '🎮', '🎵', '🎨', '📷', '💻',
-    '📱', '⌚', '🔑', '📌', '🏷️', '🎁', '🌈', '🌙'
+    // 📋 کلی و سازمانی
+    '📋', '📝', '✅', '⭐', '📌', '🏷️', '📁', '🗂️',
+    // 🏠 خانه و خانواده
+    '🏠', '🏡', '👨‍👩‍👧‍👦', '👶', '💍', '👰', '🤱', '👪',
+    // 💼 کار و اداره
+    '💼', '🏗️', '🏭', '🏢', '📍', '🗃️', '📊', '📈',
+    // 🛡️ ایمنی و محافظت (مهم برای شغل شما)
+    '🛡️', '⚠️', '🚧', '🪖', '🦺', '⛑️', '🔒', '🚨',
+    // 🚒 آتش‌نشانی و اطفاء حریق
+    '🚒', '🔥', '🧯', '🚿', '💨', '🪜', '🪓', '🔧',
+    // 👷 لباس کار و ابزار
+    '👷', '👷‍♂️', '👷‍♀️', '🥽', '🧤', '🎩', '🧑‍🔧', '🧑‍🏭',
+    // 🛠️ ابزار و تجهیزات
+    '🛠️', '⚒️', '🔨', '🔩', '⚙️', '🪛', '🧰', '📏',
+    // 🚗 حمل و نقل
+    '🚗', '🚙', '🚐', '🚛', '🚜', '🛻', '🏍️', '🚲',
+    '✈️', '🚆', '🚇', '🚌', '🚢', '⛵', '🚁', '🛺',
+    // 📚 آموزش و مدرسه
+    '📚', '🎓', '📖', '✏️', '🧮', '🎒', '🏫', '🧑‍🏫',
+    // 💰 مالی و خرید
+    '💰', '💵', '🏦', '💳', '🛒', '🧾', '📈', '💹',
+    // 🍕 خوراک و رستوران
+    '🍕', '☕', '🍽️', '🥘', '🍳', '🛒', '🍷', '🧁',
+    // ⚽ ورزش و سرگرمی
+    '⚽', '🏀', '🎾', '🏈', '🏐', '🥇', '🏋️', '🏃',
+    '🎮', '🎯', '🎳', '🎱', '🧩', '♟️', '🎸', '🎹',
+    // 🎵 هنر و فرهنگ
+    '🎵', '🎨', '📷', '🎬', '🎤', '🎭', '🎪', '🏛️',
+    // 💻 فناوری
+    '💻', '🖥️', '📱', '⌚', '🖨️', '📷', '🔌', '🔋',
+    // ❤️ سلامت و پزشکی
+    '❤️', '🏥', '⚕️', '💊', '🩺', '🦷', '🏃', '🧘',
+    // 🌍 سفر و طبیعت
+    '🌍', '🏖️', '🏔️', '🏕️', '🌳', '🌺', '🌊', '🌙',
+    '🌈', '☀️', '⭐', '🌟', '💫', '🔥', '⚡', '❄️',
+    // 🎁 مناسبتی
+    '🎁', '🎉', '🎂', '🎄', '🎃', '🥳', '🎊', '🎈',
+    // 🔑 کلید و دسترسی
+    '🔑', '🗝️', '🚪', '🔔', '📅', '⏰', '⌛', '⏱️',
 ];
 
 // باز/بسته کردن منوی همبرگری
@@ -5781,11 +5879,8 @@ function renderTasksView(groupId) {
         menuHtml = `<button class="group-menu-btn" title="منوی گروه" onclick="event.stopPropagation(); toggleGroupMenu('${group.id}', this)">☰</button>`;
         dropdownHtml = `
             <div class="group-menu-dropdown" id="group-menu-${group.id}">
-                <button class="group-menu-item" onclick="closeGroupMenu(); editGroupName('${group.id}')">
-                    <span class="menu-icon">✎</span> ویرایش نام گروه
-                </button>
                 <button class="group-menu-item" onclick="openGroupSettings('${group.id}')">
-                    <span class="menu-icon">⚙️</span> تنظیمات گروه (رنگ، آیکون، نمایش)
+                    <span class="menu-icon">⚙️</span> تنظیمات گروه (نام، رنگ، آیکون، نمایش)
                 </button>
                 <button class="group-menu-item" onclick="closeGroupMenu(); resetAllTaskPositions()">
                     <span class="menu-icon">↩</span> بازگردانی ترتیب اصلی تسک‌ها
