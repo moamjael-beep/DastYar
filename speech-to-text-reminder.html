@@ -2597,6 +2597,15 @@ body.locked .header-actions button {
     <div class="modal">
         <h2 id="modalTitle">یادآور جدید</h2>
 
+        <!-- 🔧 دکمه‌های انصراف / ضبط دوباره / ذخیره — در بالای فرم (همیشه قابل مشاهده)
+             در حالت ضبط: فقط انصراف نمایش داده می‌شود
+             در حالت فرم: هر سه دکمه نمایش داده می‌شود -->
+        <div class="modal-buttons" id="formButtons" style="margin-bottom:14px;">
+            <button class="btn btn-secondary" onclick="cancelModal()">انصراف</button>
+            <button class="btn btn-secondary" id="reRecordBtn" onclick="startRecording()" style="display:none;">ضبط دوباره</button>
+            <button class="btn btn-primary" id="saveBtn" onclick="saveItem()" style="display:none;">ذخیره</button>
+        </div>
+
         <div id="recordingSection" class="recording-section" style="display:none;">
             <div class="recording-text">
                 <span class="recording-indicator"></span>
@@ -2618,7 +2627,7 @@ body.locked .header-actions button {
                 <input type="hidden" id="itemDeadline">
                 <button type="button" class="datetime-picker-btn" onclick="openDatetimePicker()" title="باز کردن تقویم شمسی">📅</button>
             </div>
-            <!-- 🔧 کلیدهای میانبر سررسید — بعد از بخش تکرار، قبل از دکمه‌ها -->
+            <!-- 🔧 کلیدهای میانبر سررسید -->
             <div class="quick-deadline">
                 <button class="quick-btn" onclick="setQuickDeadline(1)">۱ ساعت</button>
                 <button class="quick-btn" onclick="setQuickDeadline(3)">۳ ساعت</button>
@@ -2650,12 +2659,6 @@ body.locked .header-actions button {
                     <input type="text" id="repeatEndDateDisplay" class="modal-input datetime-display" readonly placeholder="انتخاب تاریخ پایان تکرار..." onclick="openRepeatEndDatePicker()">
                     <input type="hidden" id="repeatEndDate">
                 </div>
-            </div>
-
-            <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="cancelModal()">انصراف</button>
-                <button class="btn btn-secondary" onclick="startRecording()">ضبط دوباره</button>
-                <button class="btn btn-primary" onclick="saveItem()" id="saveBtn">ذخیره</button>
             </div>
         </div>
     </div>
@@ -3108,7 +3111,7 @@ body.locked .header-actions button {
 //         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
 //         Also: backup button now asks for confirmation before saving
 //         (it was being accidentally triggered next to the + button).
-const APP_VERSION = 'v41-2026-10-31-jalali-month-deadline';
+const APP_VERSION = 'v43-2026-10-31-fix-header-image-save';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -4930,6 +4933,8 @@ function openGroupSettings(groupId) {
     }
 
     _groupSettingsTargetId = groupId;
+    // 🔧 ریست متغیر موقت عکس — هر بار باز کردن تنظیمات، از نو شروع می‌کنیم
+    _tempHeaderImage = null;
 
     // پر کردن فیلدها با مقادیر فعلی گروه
     document.getElementById('groupSettingsName').value = group.name || '';
@@ -4994,31 +4999,38 @@ function openGroupSettings(groupId) {
     document.getElementById('groupSettingsOverlay').classList.add('active');
 }
 
+// 🔧 متغیر موقت برای نگه‌داشتن عکس آپلود‌شده
+// چون getGroupById یک کپی برمی‌گرداند، تغییرات روی آن در saveGroupSettings از دست می‌رود.
+// پس عکس را در این متغیر موقت نگه می‌داریم و در saveGroupSettings از آن استفاده می‌کنیم.
+let _tempHeaderImage = null;
+
 // به‌روزرسانی پیش‌نمایش آیکون (با توجه به آیکون انتخاب‌شده یا عکس)
 function updateGroupIconPreview() {
     const preview = document.getElementById('groupSettingsIconPreview');
     const selectedIcon = document.querySelector('.icon-option.selected');
-    const group = getGroupById(_groupSettingsTargetId);
     if (!preview) return;
 
-    // اگر عکس آپلود شده، آن را نشان بده
-    if (group && group.headerImage) {
-        preview.style.backgroundImage = 'url(' + group.headerImage + ')';
+    // 🔧 اگر عکس آپلود شده (در متغیر موقت)، آن را نشان بده
+    if (_tempHeaderImage) {
+        preview.style.backgroundImage = 'url(' + _tempHeaderImage + ')';
         preview.textContent = '';
-    } else if (selectedIcon) {
-        preview.style.backgroundImage = '';
-        preview.textContent = selectedIcon.dataset.icon;
-    } else if (group && group.headerIcon) {
-        preview.style.backgroundImage = '';
-        preview.textContent = group.headerIcon;
+    } else {
+        // بررسی عکس موجود گروه
+        const group = getGroupById(_groupSettingsTargetId);
+        if (group && group.headerImage) {
+            preview.style.backgroundImage = 'url(' + group.headerImage + ')';
+            preview.textContent = '';
+        } else if (selectedIcon) {
+            preview.style.backgroundImage = '';
+            preview.textContent = selectedIcon.dataset.icon;
+        } else if (group && group.headerIcon) {
+            preview.style.backgroundImage = '';
+            preview.textContent = group.headerIcon;
+        }
     }
 }
 
 // 🔧 انتخاب عکس برای هدر گروه — فشرده‌سازی خودکار به زیر ۵۰۰KB
-// اگر عکس بزرگ‌تر از ۵۰۰ کیلوبایت است، به‌طور خودکار با Canvas فشرده می‌شود:
-//   ۱) ابتدا ابعاد را تا حداکثر ۸۰۰px کاهش می‌دهد
-//   ۲) کیفیت JPEG را逐步 کاهش می‌دهد تا زیر ۵۰۰KB شود
-//   ۳) نتیجه را به data URL تبدیل و استفاده می‌کند
 function onGroupHeaderImageSelected(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -5029,12 +5041,10 @@ function onGroupHeaderImageSelected(event) {
         img.onload = function() {
             // فشرده‌سازی عکس با Canvas
             const compressed = compressImage(img, 500 * 1024, 800);
-            const group = getGroupById(_groupSettingsTargetId);
-            if (group) {
-                group.headerImage = compressed;
-                updateGroupIconPreview();
-                showToast('عکس با موفقیت بارگذاری شد ✓');
-            }
+            // 🔧 ذخیره در متغیر موقت (نه روی group که یک کپی است)
+            _tempHeaderImage = compressed;
+            updateGroupIconPreview();
+            showToast('عکس با موفقیت بارگذاری شد ✓');
         };
         img.onerror = function() {
             showToast('خطا در بارگذاری عکس');
@@ -5102,12 +5112,10 @@ function compressImage(img, maxSize, maxDim) {
 
 // حذف عکس هدر گروه
 function clearGroupHeaderImage() {
-    const group = getGroupById(_groupSettingsTargetId);
-    if (group) {
-        group.headerImage = '';
-        updateGroupIconPreview();
-        showToast('عکس حذف شد (برای ذخیره، دکمهٔ «ذخیره» را بزنید)');
-    }
+    // 🔧 پاک کردن متغیر موقت — در saveGroupSettings خالی ذخیره می‌شود
+    _tempHeaderImage = '';
+    updateGroupIconPreview();
+    showToast('عکس حذف شد (برای ذخیره، دکمهٔ «ذخیره» را بزنید)');
 }
 
 // تغییر وضعیت toggle نمایش در همه کارها
@@ -5140,7 +5148,10 @@ function saveGroupSettings() {
     };
     if (selectedColor) updates.color = selectedColor.dataset.color;
     if (selectedIcon) updates.headerIcon = selectedIcon.dataset.icon;
-    if (group.headerImage !== undefined) updates.headerImage = group.headerImage;
+    // 🔧 اگر عکس آپلود یا حذف شده، از متغیر موقت استفاده کن
+    if (_tempHeaderImage !== null) {
+        updates.headerImage = _tempHeaderImage;
+    }
 
     if (updateGroup(_groupSettingsTargetId, updates)) {
         closeGroupSettings();
@@ -5155,6 +5166,8 @@ function saveGroupSettings() {
 function closeGroupSettings() {
     document.getElementById('groupSettingsOverlay').classList.remove('active');
     _groupSettingsTargetId = null;
+    // 🔧 ریست متغیر موقت عکس
+    _tempHeaderImage = null;
     // پاک کردن value فایل input تا بتوان همان فایل را دوباره انتخاب کرد
     const fileInput = document.getElementById('groupSettingsImageInput');
     if (fileInput) fileInput.value = '';
@@ -5347,6 +5360,9 @@ function startRecording() {
     document.getElementById('recordingSection').style.display = 'block';
     document.getElementById('formSection').style.display = 'none';
     document.getElementById('modalTitle').textContent = 'در حال ضبط صوت';
+    // 🔧 پنهان کردن دکمه‌های «ضبط دوباره» و «ذخیره» در حالت ضبط (فقط انصراف نمایش داده شود)
+    document.getElementById('reRecordBtn').style.display = 'none';
+    document.getElementById('saveBtn').style.display = 'none';
     document.getElementById('addBtn').classList.add('recording');
     try {
         recognition.start();
@@ -6122,6 +6138,9 @@ function showManualMode(message) {
     document.getElementById('recordingSection').style.display = 'block';
     document.getElementById('formSection').style.display = 'none';
     document.getElementById('modalTitle').textContent = 'یادآور جدید';
+    // 🔧 پنهان کردن دکمه‌های «ضبط دوباره» و «ذخیره» در حالت manual mode
+    document.getElementById('reRecordBtn').style.display = 'none';
+    document.getElementById('saveBtn').style.display = 'none';
     const recSection = document.getElementById('recordingSection');
     recSection.innerHTML = `
         <div style="color:#666;font-size:13px;padding:8px 4px 18px;line-height:1.7;text-align:right;">${message}</div>
@@ -6136,6 +6155,9 @@ function showFormSection(forceFocus) {
     document.getElementById('recordingSection').style.display = 'none';
     document.getElementById('formSection').style.display = 'block';
     document.getElementById('modalTitle').textContent = 'یادآور جدید';
+    // 🔧 نمایش دکمه‌های «ضبط دوباره» و «ذخیره» (در حالت فرم)
+    document.getElementById('reRecordBtn').style.display = '';
+    document.getElementById('saveBtn').style.display = '';
     // Only set default deadline if not already set (e.g., when coming from calendar)
     if (!document.getElementById('itemDeadline').value) {
         setQuickDeadline(1);
