@@ -1710,28 +1710,56 @@ body.locked .header-actions button {
 }
 
 /* دکمه‌های انتخاب آیکون */
+/* 🔧 گرید آیکون‌ها کاملاً رسپانسیو است:
+   - auto-fill باعث می‌شود به‌طور خودکار به تعداد لازم در هر ردیف قرار بگیرند
+   - minmax(36px, 1fr) یعنی هر آیکون حداقل ۳۶px و حداکثر کل فضای موجود
+   - فقط اسکرول عمودی (به پایین) لازم است، نه افقی
+   - max-height بیشتر شده (۲۸۰px) تا کاربر آیکون‌های بیشتری را ببیند */
 .icon-picker-grid {
     display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 4px;
+    grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+    gap: 6px;
     margin-top: 8px;
-    max-height: 120px;
+    max-height: 280px;
     overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4px;
+    /* اسکرول نرم در iOS */
+    -webkit-overflow-scrolling: touch;
+}
+/* استایل scrollbar گرید آیکون‌ها */
+.icon-picker-grid::-webkit-scrollbar {
+    width: 6px;
+}
+.icon-picker-grid::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+.icon-picker-grid::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+.icon-picker-grid::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
 }
 .icon-option {
-    width: 32px;
-    height: 32px;
+    width: 100%;
+    aspect-ratio: 1;
+    min-width: 36px;
     border: 2px solid #e0e0e0;
     border-radius: 8px;
     background: white;
     cursor: pointer;
-    font-size: 18px;
+    font-size: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: border-color 0.15s, background 0.15s;
+    transition: border-color 0.15s, background 0.15s, transform 0.15s;
 }
-.icon-option:hover { border-color: #1976D2; }
+.icon-option:hover {
+    border-color: #1976D2;
+    transform: scale(1.05);
+}
 .icon-option.selected {
     border-color: #1976D2;
     background: #e3f2fd;
@@ -2132,7 +2160,7 @@ body.locked .header-actions button {
 //         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
 //         Also: backup button now asks for confirmation before saving
 //         (it was being accidentally triggered next to the + button).
-const APP_VERSION = 'v21-2026-10-31-more-icons-colors-sticky';
+const APP_VERSION = 'v22-2026-10-31-distinct-colors-responsive-icons';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -3316,38 +3344,52 @@ async function restoreDataIfEmpty() {
 // یک گروه پیش‌فرض «همه کارها» همیشه وجود دارد و قابل حذف نیست.
 // ============ Groups Database ============
 const GROUPS_KEY = 'persian_voice_groups_v1';
-// پالت رنگ‌های هدر گروه — شامل رنگ‌های پررنگ، منحصربه‌فرد و متنوع
-// برای انتخاب آسان کاربر. رنگ‌ها به ترتیب: گرم، سرد، خنثی، تیره
+// پالت رنگ‌های هدر گروه — رنگ‌های متمایز و پررنگ
+// از هر طیف رنگی فقط یک رنگ (متمایزترین) نگه داشته شده تا کاربر
+// راحت‌تر انتخاب کند. رنگ‌های مشابه و shadeهای نزدیک حذف شده‌اند.
 const GROUP_COLORS = [
-    // رنگ‌های گرم (قرمز، نارنجی، زرد)
-    '#F44336', '#E53935', '#D32F2F', '#C62828', '#B71C1C',  // قرمز پررنگ
-    '#FF5722', '#FF6F00', '#E65100', '#BF360C',              // نارنجی پررنگ
-    '#FF9800', '#FB8C00', '#F57C00', '#EF6C00',              // نارنجی
-    '#FFC107', '#FFB300', '#FFA000', '#FF8F00',              // زرد کهربایی
-    // رنگ‌های سبز و فیروزه‌ای
-    '#4CAF50', '#43A047', '#388E3C', '#2E7D32', '#1B5E20',  // سبز پررنگ
-    '#009688', '#00897B', '#00796B', '#00695C',              // فیروزه‌ای پررنگ
-    '#00BCD4', '#00ACC1', '#0097A7', '#00838F',              // فیروزه‌ای روشن
-    // رنگ‌های آبی
-    '#2196F3', '#1E88E5', '#1976D2', '#1565C0', '#0D47A1',  // آبی پررنگ
-    '#3F51B5', '#3949AB', '#303F9F', '#283593',              // ایندیگو
-    '#5C6BC0', '#7986CB',                                     // آبی روشن
-    // رنگ‌های بنفش و ارغوانی
-    '#9C27B0', '#8E24AA', '#7B1FA2', '#6A1B9A', '#4A148C',  // بنفش پررنگ
-    '#673AB7', '#5E35B1', '#512DA8', '#4527A0',              // بنفش تیره
-    // رنگ‌های صورتی و مجلسی
-    '#E91E63', '#D81B60', '#C2185B', '#AD1457', '#880E4F',  // صورتی پررنگ
-    '#FF4081', '#F50057', '#C51162',                         // صورتی نئونی
-    // رنگ‌های قهوه‌ای و خنثی تیره
-    '#795548', '#6D4C41', '#5D4037', '#4E342E', '#3E2723',  // قهوه‌ای تیره
-    '#607D8B', '#546E7A', '#455A64', '#37474F', '#263238',  // خاکستری مایل به آبی
-    // رنگ‌های منحصربه‌فرد
-    '#00E676', '#00C853',                                     // سبز نئونی
-    '#FF3D00', '#DD2C00',                                     // نارنجی-قرمز آتشین
-    '#FFD600', '#FFAB00',                                     // زرد طلایی
-    '#00B8D4', '#0091EA',                                     // آبی فیروزه‌ای روشن
-    '#AA00FF', '#7C4DFF',                                     // بنفش نئونی
-    '#1DE9B6', '#00BFA5',                                     // سبز فیروزه‌ای
+    // 🔴 قرمز
+    '#F44336',  // قرمز روشن
+    '#B71C1C',  // قرمز تیره
+    '#FF3D00',  // قرمز-نارنجی آتشین
+    // 🟠 نارنجی
+    '#FF9800',  // نارنجی استاندارد
+    '#E65100',  // نارنجی تیره
+    // 🟡 زرد
+    '#FFC107',  // زرد کهربایی
+    '#FFD600',  // زرد طلایی
+    // 🟢 سبز
+    '#4CAF50',  // سبز روشن
+    '#1B5E20',  // سبز تیره
+    '#00E676',  // سبز نئونی
+    '#8BC34A',  // سبز لیمویی
+    // 🩵 فیروزه‌ای
+    '#00BCD4',  // فیروزه‌ای روشن
+    '#00838F',  // فیروزه‌ای تیره
+    '#1DE9B6',  // سبز فیروزه‌ای نئونی
+    // 🔵 آبی
+    '#2196F3',  // آبی روشن
+    '#0D47A1',  // آبی تیره
+    '#0091EA',  // آبی نئونی
+    // 🟣 بنفش
+    '#9C27B0',  // بنفش روشن
+    '#4A148C',  // بنفش تیره
+    '#AA00FF',  // بنفش نئونی
+    // 🟪 ایندیگو
+    '#3F51B5',  // ایندیگو استاندارد
+    '#283593',  // ایندیگو تیره
+    // 🌸 صورتی
+    '#E91E63',  // صورتی روشن
+    '#880E4F',  // صورتی تیره
+    '#FF4081',  // صورتی نئونی
+    // 🟤 قهوه‌ای
+    '#795548',  // قهوه‌ای روشن
+    '#3E2723',  // قهوه‌ای تیره
+    // ⚫ خاکستری
+    '#607D8B',  // خاکستری مایل به آبی
+    '#263238',  // خاکستری تیره
+    // 🖤 مشکی
+    '#000000',  // مشکی
 ];
 
 function getGroups() {
