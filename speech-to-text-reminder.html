@@ -1531,6 +1531,289 @@ body.locked .header-actions button {
     .lock-screen .lock-icon { font-size: 56px; }
     .lock-screen .lock-warning-text { font-size: 14px; line-height: 1.9; }
 }
+
+/* ============ 🍔 منوی همبرگری هدر گروه ============ */
+/* این استایل‌ها برای منوی همبرگری است که در هدر هر گروه نمایش داده
+   می‌شود و همهٔ دکمه‌های مدیریت گروه را در خود جای می‌دهد:
+   - ویرایش نام گروه
+   - تغییر رنگ هدر
+   - تنظیم آیکون/عکس هدر
+   - نمایش/عدم نمایش در «همه کارها»
+   - بازگردانی ترتیب اصلی تسک‌ها
+   - حذف گروه */
+
+/* دکمهٔ همبرگر (☰) در هدر گروه */
+.group-menu-btn {
+    background: rgba(255,255,255,0.25);
+    border: none;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    transition: background 0.2s, transform 0.2s;
+    flex-shrink: 0;
+}
+.group-menu-btn:hover { background: rgba(255,255,255,0.4); }
+.group-menu-btn:active { transform: scale(0.92); }
+
+/* منوی کشویی همبرگر */
+.group-menu-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 6px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    min-width: 240px;
+    max-width: 280px;
+    z-index: 100;
+    overflow: hidden;
+    display: none;
+    direction: rtl;
+}
+.group-menu-dropdown.active { display: block; animation: menuSlideDown 0.2s ease; }
+@keyframes menuSlideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* آیتم‌های منو */
+.group-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    color: #333;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: right;
+    font-family: inherit;
+    transition: background 0.15s;
+}
+.group-menu-item:hover { background: #f5f5f5; }
+.group-menu-item:active { background: #e0e0e0; }
+.group-menu-item .menu-icon {
+    font-size: 18px;
+    width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+}
+.group-menu-item.danger { color: #d32f2f; }
+.group-menu-item.danger:hover { background: #ffebee; }
+.group-menu-divider {
+    height: 1px;
+    background: #e0e0e0;
+    margin: 4px 0;
+}
+
+/* ============ 🎨 مودال تنظیمات گروه ============ */
+.group-settings-modal {
+    max-width: 420px;
+    width: 90%;
+}
+.group-settings-section {
+    margin-bottom: 16px;
+    padding: 12px;
+    background: #f9f9f9;
+    border-radius: 8px;
+}
+.group-settings-section:last-child { margin-bottom: 0; }
+.group-settings-label {
+    display: block;
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+/* پالت رنگ‌ها */
+.color-palette {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+}
+.color-swatch {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+}
+.color-swatch:hover { transform: scale(1.1); }
+.color-swatch.selected {
+    border-color: #1976D2;
+    transform: scale(1.1);
+}
+
+/* پیش‌نمایش آیکون */
+.icon-preview {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1976D2, #0D47A1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    margin: 8px auto;
+    color: white;
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* دکمه‌های انتخاب آیکون */
+.icon-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    margin-top: 8px;
+    max-height: 120px;
+    overflow-y: auto;
+}
+.icon-option {
+    width: 32px;
+    height: 32px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s, background 0.15s;
+}
+.icon-option:hover { border-color: #1976D2; }
+.icon-option.selected {
+    border-color: #1976D2;
+    background: #e3f2fd;
+}
+
+/* چک‌باکس نمایش در همه کارها */
+.toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 0;
+}
+.toggle-switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: #ccc;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+.toggle-switch.on { background: #4CAF50; }
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+}
+.toggle-switch.on::after { transform: translateX(-20px); }
+
+/* دکمه‌های آپلود/حذف عکس */
+.image-action-btns {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+.image-action-btn {
+    flex: 1;
+    min-width: 80px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    color: #333;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+}
+.image-action-btn:hover { background: #f0f0f0; }
+.image-action-btn.danger { color: #d32f2f; border-color: #ffcdd2; }
+.image-action-btn.danger:hover { background: #ffebee; }
+
+/* آیکون/تصویر هدر گروه (نمایش در هدر) */
+.group-header-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    margin-left: 4px;
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+/* دکمه بازگردانی ترتیب در هدر گروه (همچنان مستقل قابل نمایش) */
+.group-reset-btn {
+    background: rgba(255,255,255,0.25);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    transition: background 0.2s, transform 0.2s;
+    flex-shrink: 0;
+}
+.group-reset-btn:hover { background: rgba(255,255,255,0.4); }
+.group-reset-btn:active { transform: scale(0.92); }
+
+/* وقتی هدر گروه تصویر پس‌زمینه دارد */
+.group-tasks-header.has-bg-image {
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+.group-tasks-header.has-bg-image::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    border-radius: 10px;
+}
+.group-tasks-header.has-bg-image > * {
+    position: relative;
+    z-index: 1;
+}
 </style>
 </head>
 <body>
@@ -1566,7 +1849,8 @@ body.locked .header-actions button {
     <div class="header-actions">
         <button class="icon-btn share-btn install-btn" id="installBtn" onclick="installApp()" title="نصب به عنوان اپلیکیشن" style="display:none;">⬇</button>
         <button class="icon-btn share-btn" id="calBtn" onclick="openCalendar()" title="تقویم شمسی">📅</button>
-        <button class="icon-btn share-btn" id="resetOrderBtn" onclick="resetAllTaskPositions()" title="برگرداندن همه تسک‌ها به ترتیب اصلی">↩</button>
+        <!-- دکمه بازگردانی به هدر گروه‌ها منتقل شد (در منوی همبرگری هر گروه) -->
+<button class="icon-btn share-btn" id="resetOrderBtn" onclick="resetAllTaskPositions()" title="برگرداندن همه تسک‌ها به ترتیب اصلی" style="display:none;">↩</button>
         <button class="icon-btn share-btn" id="importBtn" onclick="importDatabase()" title="وارد کردن دیتابیس از فایل JSON">📥</button>
         <button class="icon-btn share-btn" id="notifBtn" onclick="toggleNotifications()" title="فعال‌سازی اعلان‌ها">🔔<span class="notif-badge"></span></button>
         <button class="icon-btn share-btn" id="shareBtn" onclick="confirmBackup()" title="ذخیره بک‌آپ در فضای ذخیره‌سازی">📤</button>
@@ -1647,6 +1931,58 @@ body.locked .header-actions button {
                 <button class="btn btn-secondary" onclick="startRecording()">ضبط دوباره</button>
                 <button class="btn btn-primary" onclick="saveItem()" id="saveBtn">ذخیره</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     ⚙️ مودال تنظیمات گروه — رنگ، آیکون/عکس، نمایش در همه کارها
+     ════════════════════════════════════════════════════════════════════
+     این مودال وقتی باز می‌شود که کاربر از منوی همبرگری گزینهٔ «تنظیمات
+     گروه» را انتخاب کند. شامل:
+       - ویرایش نام گروه
+       - انتخاب رنگ هدر
+       - انتخاب آیکون (اموجی) یا آپلود عکس برای هدر
+       - انتخاب نمایش/عدم نمایش تسک‌های این گروه در «همه کارها»
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="groupSettingsOverlay">
+    <div class="modal group-settings-modal">
+        <h2 id="groupSettingsTitle">تنظیمات گروه</h2>
+
+        <div class="group-settings-section">
+            <label class="group-settings-label">نام گروه</label>
+            <input type="text" class="modal-input" id="groupSettingsName" placeholder="نام گروه">
+        </div>
+
+        <div class="group-settings-section">
+            <label class="group-settings-label">رنگ هدر گروه</label>
+            <div class="color-palette" id="groupSettingsColors"></div>
+        </div>
+
+        <div class="group-settings-section">
+            <label class="group-settings-label">آیکون یا عکس هدر</label>
+            <div class="icon-preview" id="groupSettingsIconPreview">📋</div>
+            <div class="icon-picker-grid" id="groupSettingsIconGrid"></div>
+            <div class="image-action-btns">
+                <button class="image-action-btn" onclick="document.getElementById('groupSettingsImageInput').click()">📷 آپلود عکس</button>
+                <button class="image-action-btn danger" onclick="clearGroupHeaderImage()">🗑 حذف عکس</button>
+            </div>
+            <input type="file" id="groupSettingsImageInput" accept="image/*" style="display:none" onchange="onGroupHeaderImageSelected(event)">
+            <div style="margin-top: 8px; font-size: 11px; color: #888; text-align: center;">
+                عکس به‌صورت پس‌زمینهٔ هدر نمایش داده می‌شود
+            </div>
+        </div>
+
+        <div class="group-settings-section">
+            <div class="toggle-row">
+                <span class="group-settings-label" style="margin: 0;">نمایش تسک‌های این گروه در «همه کارها»</span>
+                <div class="toggle-switch" id="groupSettingsShowInAll" onclick="toggleGroupShowInAll()"></div>
+            </div>
+        </div>
+
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeGroupSettings()">انصراف</button>
+            <button class="btn btn-primary" onclick="saveGroupSettings()">ذخیره</button>
         </div>
     </div>
 </div>
@@ -1763,7 +2099,7 @@ body.locked .header-actions button {
 //         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
 //         Also: backup button now asks for confirmation before saving
 //         (it was being accidentally triggered next to the + button).
-const APP_VERSION = 'v19-2026-10-31-expiry-lock';
+const APP_VERSION = 'v20-2026-10-31-group-header-menu';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -2976,11 +3312,40 @@ function addGroup(name, color) {
         id: 'g_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
         name: name,
         color: color || GROUP_COLORS[groups.length % GROUP_COLORS.length],
-        isDefault: false
+        isDefault: false,
+        // 🆕 فیلدهای جدید برای شخصی‌سازی هدر گروه:
+        headerIcon: '📋',         // آیکون اموجی پیش‌فرض
+        headerImage: '',          // عکس آپلود‌شده (data URL) — اگر خالی باشد، آیکون نمایش داده می‌شود
+        showInAll: true           // آیا تسک‌های این گروه در «همه کارها» نمایش داده شوند؟
     };
     groups.push(newGroup);
     setGroups(groups);
     return newGroup;
+}
+
+// 🆕 مهاجرت گروه‌های قدیمی: افزودن فیلدهای جدید به گروه‌هایی که این فیلدها را ندارند
+// این تابع هنگام بارگذاری برنامه اجرا می‌شود تا گروه‌های قدیمی هم از قابلیت‌های
+// جدید پشتیبانی کنند.
+function migrateGroupFields() {
+    let groups = getGroups();
+    let changed = false;
+    groups.forEach(g => {
+        if (!g.headerIcon) { g.headerIcon = '📋'; changed = true; }
+        if (g.headerImage === undefined) { g.headerImage = ''; changed = true; }
+        if (g.showInAll === undefined) { g.showInAll = true; changed = true; }
+    });
+    if (changed) setGroups(groups);
+    return changed;
+}
+
+// 🆕 به‌روزرسانی یک گروه (برای ذخیره تنظیمات)
+function updateGroup(id, updates) {
+    const groups = getGroups();
+    const g = groups.find(x => x.id === id);
+    if (!g) return false;
+    Object.assign(g, updates);
+    setGroups(groups);
+    return true;
 }
 
 function deleteGroup(id) {
@@ -3032,6 +3397,253 @@ function editGroupName(groupId) {
         fullRender();
         showToast('نام گروه تغییر کرد ✓');
     }
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+// 🍔 منوی همبرگری هدر گروه + مودال تنظیمات گروه
+// ════════════════════════════════════════════════════════════════════
+// این بخش شامل توابع مدیریت منوی همبرگری (کشویی) و مودال تنظیمات
+// گروه است. هر گروه یک منوی همبرگر در هدر خود دارد که همهٔ دکمه‌های
+// مدیریت گروه را در آن جای داده‌ایم.
+
+// متغیرهای وضعیت منوی همبرگری
+let _activeGroupMenu = null;        // آیتم منوی فعال فعلی (DOM element)
+let _groupSettingsTargetId = null;  // شناسهٔ گروهی که در حال ویرایش است
+
+// آیکون‌های قابل انتخاب برای هدر گروه
+const GROUP_HEADER_ICONS = [
+    '📋', '📝', '✅', '⭐', '❤️', '🔥', '💡', '🎯',
+    '🏠', '💼', '📚', '🎓', '💰', '🛒', '🍕', '☕',
+    '✈️', '🚗', '⚽', '🎮', '🎵', '🎨', '📷', '💻',
+    '📱', '⌚', '🔑', '📌', '🏷️', '🎁', '🌈', '🌙'
+];
+
+// باز/بسته کردن منوی همبرگری
+// فقط یک منو همبرگر می‌تواند همزمان باز باشد.
+function toggleGroupMenu(groupId, btnEl) {
+    // بستن منوی فعال قبلی
+    if (_activeGroupMenu) {
+        _activeGroupMenu.classList.remove('active');
+        _activeGroupMenu = null;
+    }
+
+    // پیدا کردن منوی مربوط به این گروه
+    const menu = document.getElementById('group-menu-' + groupId);
+    if (!menu) return;
+
+    // اگر منوی فعالی که بستیم همین منو بود، دیگر بازش نکن
+    if (menu.classList.contains('active')) return;
+
+    menu.classList.add('active');
+    _activeGroupMenu = menu;
+
+    // بستن منو با کلیک خارج از آن
+    setTimeout(function() {
+        document.addEventListener('click', closeGroupMenuOnOutsideClick, { once: true });
+    }, 10);
+}
+
+// بستن منو با کلیک خارج از آن
+function closeGroupMenuOnOutsideClick(e) {
+    if (!_activeGroupMenu) return;
+    // اگر کلیک داخل منو بود، منو را نبند
+    if (_activeGroupMenu.contains(e.target) || e.target.classList.contains('group-menu-btn')) {
+        // دوباره listener را اضافه کن
+        setTimeout(function() {
+            document.addEventListener('click', closeGroupMenuOnOutsideClick, { once: true });
+        }, 10);
+        return;
+    }
+    _activeGroupMenu.classList.remove('active');
+    _activeGroupMenu = null;
+}
+
+// بستن منوی همبرگری (از داخل منو)
+function closeGroupMenu() {
+    if (_activeGroupMenu) {
+        _activeGroupMenu.classList.remove('active');
+        _activeGroupMenu = null;
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ⚙️ مودال تنظیمات گروه
+// ════════════════════════════════════════════════════════════════════
+
+// باز کردن مودال تنظیمات گروه
+function openGroupSettings(groupId) {
+    closeGroupMenu();  // بستن منوی همبرگری
+
+    const group = getGroupById(groupId);
+    if (!group) {
+        showToast('گروه یافت نشد');
+        return;
+    }
+
+    _groupSettingsTargetId = groupId;
+
+    // پر کردن فیلدها با مقادیر فعلی گروه
+    document.getElementById('groupSettingsName').value = group.name || '';
+    document.getElementById('groupSettingsTitle').textContent = 'تنظیمات گروه: ' + (group.name || '');
+
+    // ساخت پالت رنگ‌ها
+    const colorPalette = document.getElementById('groupSettingsColors');
+    colorPalette.innerHTML = '';
+    GROUP_COLORS.forEach(function(color) {
+        const swatch = document.createElement('div');
+        swatch.className = 'color-swatch' + (group.color === color ? ' selected' : '');
+        swatch.style.background = color;
+        swatch.dataset.color = color;
+        swatch.onclick = function() {
+            // حذف selected از همه
+            colorPalette.querySelectorAll('.color-swatch').forEach(function(s) { s.classList.remove('selected'); });
+            swatch.classList.add('selected');
+        };
+        colorPalette.appendChild(swatch);
+    });
+    // اضافه کردن رنگ فعلی اگر در پالت نیست
+    if (group.color && !GROUP_COLORS.includes(group.color)) {
+        const swatch = document.createElement('div');
+        swatch.className = 'color-swatch selected';
+        swatch.style.background = group.color;
+        swatch.dataset.color = group.color;
+        swatch.onclick = function() {
+            colorPalette.querySelectorAll('.color-swatch').forEach(function(s) { s.classList.remove('selected'); });
+            swatch.classList.add('selected');
+        };
+        colorPalette.appendChild(swatch);
+    }
+
+    // ساخت گرید آیکون‌ها
+    const iconGrid = document.getElementById('groupSettingsIconGrid');
+    iconGrid.innerHTML = '';
+    GROUP_HEADER_ICONS.forEach(function(icon) {
+        const btn = document.createElement('button');
+        btn.className = 'icon-option' + (group.headerIcon === icon ? ' selected' : '');
+        btn.textContent = icon;
+        btn.dataset.icon = icon;
+        btn.onclick = function() {
+            iconGrid.querySelectorAll('.icon-option').forEach(function(o) { o.classList.remove('selected'); });
+            btn.classList.add('selected');
+            updateGroupIconPreview();
+        };
+        iconGrid.appendChild(btn);
+    });
+
+    // به‌روزرسانی پیش‌نمایش آیکون
+    updateGroupIconPreview();
+
+    // به‌روزرسانی toggle showInAll
+    const toggle = document.getElementById('groupSettingsShowInAll');
+    if (group.showInAll !== false) {
+        toggle.classList.add('on');
+    } else {
+        toggle.classList.remove('on');
+    }
+
+    // نمایش مودال
+    document.getElementById('groupSettingsOverlay').classList.add('active');
+}
+
+// به‌روزرسانی پیش‌نمایش آیکون (با توجه به آیکون انتخاب‌شده یا عکس)
+function updateGroupIconPreview() {
+    const preview = document.getElementById('groupSettingsIconPreview');
+    const selectedIcon = document.querySelector('.icon-option.selected');
+    const group = getGroupById(_groupSettingsTargetId);
+    if (!preview) return;
+
+    // اگر عکس آپلود شده، آن را نشان بده
+    if (group && group.headerImage) {
+        preview.style.backgroundImage = 'url(' + group.headerImage + ')';
+        preview.textContent = '';
+    } else if (selectedIcon) {
+        preview.style.backgroundImage = '';
+        preview.textContent = selectedIcon.dataset.icon;
+    } else if (group && group.headerIcon) {
+        preview.style.backgroundImage = '';
+        preview.textContent = group.headerIcon;
+    }
+}
+
+// انتخاب عکس برای هدر گروه
+function onGroupHeaderImageSelected(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (file.size > 500 * 1024) {
+        showToast('حجم عکس باید کمتر از ۵۰۰ کیلوبایت باشد');
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const group = getGroupById(_groupSettingsTargetId);
+        if (group) {
+            group.headerImage = e.target.result;
+            // ذخیره موقت در حافظه — در saveGroupSettings ذخیره نهایی انجام می‌شود
+            updateGroupIconPreview();
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+// حذف عکس هدر گروه
+function clearGroupHeaderImage() {
+    const group = getGroupById(_groupSettingsTargetId);
+    if (group) {
+        group.headerImage = '';
+        updateGroupIconPreview();
+        showToast('عکس حذف شد (برای ذخیره، دکمهٔ «ذخیره» را بزنید)');
+    }
+}
+
+// تغییر وضعیت toggle نمایش در همه کارها
+function toggleGroupShowInAll() {
+    const toggle = document.getElementById('groupSettingsShowInAll');
+    toggle.classList.toggle('on');
+}
+
+// ذخیره تنظیمات گروه
+function saveGroupSettings() {
+    if (!_groupSettingsTargetId) return;
+    const group = getGroupById(_groupSettingsTargetId);
+    if (!group) return;
+
+    // خواندن مقادیر از فرم
+    const newName = document.getElementById('groupSettingsName').value.trim();
+    if (!newName) {
+        showToast('نام گروه نمی‌تواند خالی باشد');
+        return;
+    }
+
+    const selectedColor = document.querySelector('.color-swatch.selected');
+    const selectedIcon = document.querySelector('.icon-option.selected');
+    const showInAll = document.getElementById('groupSettingsShowInAll').classList.contains('on');
+
+    // اعمال تغییرات
+    const updates = {
+        name: newName,
+        showInAll: showInAll
+    };
+    if (selectedColor) updates.color = selectedColor.dataset.color;
+    if (selectedIcon) updates.headerIcon = selectedIcon.dataset.icon;
+    if (group.headerImage !== undefined) updates.headerImage = group.headerImage;
+
+    if (updateGroup(_groupSettingsTargetId, updates)) {
+        closeGroupSettings();
+        fullRender();
+        showToast('تنظیمات گروه ذخیره شد ✓');
+    } else {
+        showToast('خطا در ذخیره تنظیمات');
+    }
+}
+
+// بستن مودال تنظیمات گروه
+function closeGroupSettings() {
+    document.getElementById('groupSettingsOverlay').classList.remove('active');
+    _groupSettingsTargetId = null;
+    // پاک کردن value فایل input تا بتوان همان فایل را دوباره انتخاب کرد
+    const fileInput = document.getElementById('groupSettingsImageInput');
+    if (fileInput) fileInput.value = '';
 }
 
 function getTaskCountByGroup(groupId) {
@@ -5028,18 +5640,9 @@ function render() {
             addBtn.classList.remove('disabled');
         }
     }
-    // Toggle the reset-order button (↩) disabled state:
-    //   - On the groups list view (main page): disabled (no group context)
-    //   - Inside the "همه کارها" group: disabled (read-only ordering)
-    //   - Inside a custom group: enabled (per-group reset)
-    const resetBtn = document.getElementById('resetOrderBtn');
-    if (resetBtn) {
-        if (currentView === 'groups' || currentGroupId === 'all') {
-            resetBtn.classList.add('disabled');
-        } else {
-            resetBtn.classList.remove('disabled');
-        }
-    }
+    // دکمه بازگردانی (↩) از هدر اصلی به منوی همبرگری هر گروه منتقل شد.
+    // این کد برای سازگاری با نسخه‌های قدیمی نگه داشته شده، اما دکمه
+    // در هدر اصلی مخفی است (display:none).
 
     if (currentView === 'groups') {
         renderGroupsView();
@@ -5108,7 +5711,14 @@ function renderTasksView(groupId) {
     const container = document.getElementById('container');
     const group = getGroupById(groupId);
     let items = getDB();
-    if (groupId !== 'all') items = items.filter(i => i.groupId === groupId);
+    if (groupId !== 'all') {
+        items = items.filter(i => i.groupId === groupId);
+    } else {
+        // در گروه «همه کارها»، فقط گروه‌هایی که showInAll !== false هستند نمایش داده می‌شوند
+        const groups = getGroups();
+        const visibleGroupIds = new Set(groups.filter(g => g.showInAll !== false).map(g => g.id));
+        items = items.filter(i => visibleGroupIds.has(i.groupId || 'all'));
+    }
 
     // Sort: not-done first, then by deadline (past → future).
     // In the "همه کارها" group, we ALWAYS sort by deadline (ignore manual
@@ -5133,27 +5743,66 @@ function renderTasksView(groupId) {
 
     container.innerHTML = '';
 
-    // Back button + group title.
-    // Layout (RTL): [◄ back] [TITLE ........flex:1........] [✎] [🗑] [(count pill)]
-    // The count pill is at the far LEFT (matching the groups-list layout where
-    // the count badge is on the left). The edit (✎) and delete (🗑) buttons
-    // sit between the title and the count — close to the count (left side),
-    // NOT on the right side near the title.
-    // They are HIDDEN for the default "همه کارها" group.
+    // Back button + group title + hamburger menu.
+    // Layout (RTL): [◄ back] [icon] [TITLE ........flex:1........] [☰ menu] [(count pill)]
+    //
+    // 🍔 همهٔ دکمه‌های مدیریت گروه در منوی همبرگری (☰) قرار داده شدند:
+    //    - ویرایش نام گروه
+    //    - تنظیمات گروه (رنگ، آیکون/عکس، نمایش در همه کارها)
+    //    - بازگردانی ترتیب اصلی تسک‌ها
+    //    - حذف گروه
+    //
+    // برای گروه پیش‌فرض «همه کارها»، منوی همبرگری نمایش داده نمی‌شود
+    // چون این گروه قابل ویرایش/حذف نیست.
     const header = document.createElement('div');
     header.className = 'group-tasks-header';
-    header.style.background = `linear-gradient(135deg, ${group.color}, ${group.color}DD)`;
     const isDefaultGroup = group.id === 'all';
-    const editBtnHtml = isDefaultGroup
-        ? ''
-        : `<button class="group-edit-btn" title="ویرایش نام گروه" onclick="editGroupName('${group.id}')">✎</button>`;
-    const deleteBtnHtml = isDefaultGroup
-        ? ''
-        : `<button class="group-delete-btn" title="حذف گروه" onclick="startGroupDeleteFlow('${group.id}')">🗑</button>`;
-    // Count as a pill badge (no parentheses — the badge IS the visual container).
+
+    // تنظیم پس‌زمینهٔ هدر: اگر عکس آپلود شده، عکس؛ وگرنه رنگ.
+    if (group.headerImage) {
+        header.classList.add('has-bg-image');
+        header.style.backgroundImage = 'url(' + group.headerImage + ')';
+    } else {
+        header.style.background = `linear-gradient(135deg, ${group.color}, ${group.color}DD)`;
+    }
+
+    // آیکون هدر (در کنار عنوان)
+    const iconHtml = (group.headerIcon && !group.headerImage)
+        ? `<div class="group-header-icon">${group.headerIcon}</div>`
+        : '';
+
+    // دکمهٔ بازگشت
+    const backBtnHtml = `<button class="back-btn" onclick="goToGroups()" title="بازگشت">◄</button>`;
+
+    // منوی همبرگری — فقط برای گروه‌های سفارشی (نه «همه کارها»)
+    let menuHtml = '';
+    let dropdownHtml = '';
+    if (!isDefaultGroup) {
+        menuHtml = `<button class="group-menu-btn" title="منوی گروه" onclick="event.stopPropagation(); toggleGroupMenu('${group.id}', this)">☰</button>`;
+        dropdownHtml = `
+            <div class="group-menu-dropdown" id="group-menu-${group.id}">
+                <button class="group-menu-item" onclick="closeGroupMenu(); editGroupName('${group.id}')">
+                    <span class="menu-icon">✎</span> ویرایش نام گروه
+                </button>
+                <button class="group-menu-item" onclick="openGroupSettings('${group.id}')">
+                    <span class="menu-icon">⚙️</span> تنظیمات گروه (رنگ، آیکون، نمایش)
+                </button>
+                <button class="group-menu-item" onclick="closeGroupMenu(); resetAllTaskPositions()">
+                    <span class="menu-icon">↩</span> بازگردانی ترتیب اصلی تسک‌ها
+                </button>
+                <div class="group-menu-divider"></div>
+                <button class="group-menu-item danger" onclick="closeGroupMenu(); startGroupDeleteFlow('${group.id}')">
+                    <span class="menu-icon">🗑</span> حذف گروه
+                </button>
+            </div>
+        `;
+    }
+
+    // شمارش تسک‌ها
     const countHtml = `<span class="group-task-count">${toPersianNumber(items.length)}</span>`;
-    // Order: back → title (flex:1, pushes the rest to the left) → edit → delete → count
-    header.innerHTML = `<button class="back-btn" onclick="goToGroups()" title="بازگشت">◄</button><span class="group-title">${escapeHtml(group.name)}</span>${editBtnHtml}${deleteBtnHtml}${countHtml}`;
+
+    // چیدمان: back → icon → title (flex:1) → menu → count
+    header.innerHTML = `<div style="position: relative; display: flex; align-items: center; gap: 12px; width: 100%;">${backBtnHtml}${iconHtml}<span class="group-title">${escapeHtml(group.name)}</span>${menuHtml}${dropdownHtml}${countHtml}</div>`;
     container.appendChild(header);
 
     if (items.length === 0) {
@@ -5444,6 +6093,10 @@ function importDatabase() {
                         name: String(g.name),
                         color: g.color ? String(g.color) : '#607D8B',
                         isDefault: false,
+                        // 🆕 پشتیبانی از فیلدهای جدید شخصی‌سازی هدر گروه:
+                        headerIcon: g.headerIcon ? String(g.headerIcon) : '📋',
+                        headerImage: g.headerImage ? String(g.headerImage) : '',
+                        showInAll: g.showInAll !== false
                     }));
 
                 // CRITICAL: Build the SET of valid group IDs FIRST so the
@@ -6530,6 +7183,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Ensure default group exists
     getGroups();
+    // 🆕 مهاجرت فیلدهای جدید گروه (headerIcon, headerImage, showInAll)
+    migrateGroupFields();
 
     // Initialize the History API stack so the mobile back button can navigate
     // inside the app (groups ↔ tasks ↔ task details) instead of exiting.
@@ -6649,6 +7304,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('modalOverlay').addEventListener('click', (e) => {
         if (e.target.id === 'modalOverlay') cancelModal();
     });
+
+    // 🆕 Close group settings modal on overlay click
+    const groupSettingsOverlay = document.getElementById('groupSettingsOverlay');
+    if (groupSettingsOverlay) {
+        groupSettingsOverlay.addEventListener('click', (e) => {
+            if (e.target.id === 'groupSettingsOverlay') closeGroupSettings();
+        });
+    }
 
     // Close calendar on overlay click
     const calOverlay = document.getElementById('calendarOverlay');
