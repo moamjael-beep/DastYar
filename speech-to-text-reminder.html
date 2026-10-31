@@ -2504,6 +2504,11 @@ body.locked .header-actions button {
     margin-top: 8px;
 }
 .phone-action-close:active { transform: scale(0.97); }
+/* 🔧 تقویم شمسی وقتی برای فرم شخص باز می‌شود — z-index بالاتر */
+#datetimePickerOverlay.contact-date-picker {
+    z-index: 10600 !important;
+}
+
 /* شماره تلفن قابل کلیک در جداول */
 .clickable-phone {
     color: #1565C0;
@@ -3092,7 +3097,7 @@ body.locked .header-actions button {
 //         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
 //         Also: backup button now asks for confirmation before saving
 //         (it was being accidentally triggered next to the + button).
-const APP_VERSION = 'v37-2026-10-31-commission-is-product-not-amount';
+const APP_VERSION = 'v39-2026-10-31-auto-migrate-database';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -3967,6 +3972,95 @@ function migrateContacts(rawContacts) {
             notes: Array.isArray(c.notes) ? c.notes.filter(n => n).map(n => String(n)) : [],
             createdAt: c.createdAt ? String(c.createdAt) : new Date().toISOString(),
         }));
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔄 مهاجرت خودکار جامع پایگاه داده
+// ════════════════════════════════════════════════════════════════════
+// این تابع در هر بارگذاری برنامه اجرا می‌شود و اطمینان می‌دهد که
+// همهٔ داده‌ها با ساختار فعلی برنامه هماهنگ هستند.
+//
+// وقتی کاربر نسخهٔ جدید برنامه را در گیت‌هاب می‌گذارد و کاربر قدیمی
+// صفحه را رفرش می‌کند، این تابع:
+//   ۱) تمام آیتم‌ها را از migrateItem() عبور می‌دهد
+//   ۲) تمام گروه‌ها را اعتبارسنجی می‌کند
+//   ۳) تسک‌های قدیمی با groupId='urgent' را به all+urgent تبدیل می‌کند
+//   ۴) گروه‌های سیستمی (all, urgent) را اطمینان می‌دهد وجود دارند
+//   ۵) هیچ داده‌ای از دست نمی‌رود
+//   ۶) idempotent است — اجرای چندباره تغییری ایجاد نمی‌کند
+//
+// ⚠️  وقتی در آینده فیلد جدیدی اضافه کردید:
+//   ۱) در migrateItem() فیلد جدید را اضافه کنید
+//   ۲) در migrateGroup() اگر مربوط به گروه است
+//   ۳) در migrateContacts() اگر مربوط به شخص است
+//   ۴) این تابع خودکار همه چیز را مدیریت می‌کند
+function autoMigrateDatabase() {
+    let changed = false;
+    const log = [];
+
+    // ─── ۱) مهاجرت آیتم‌ها ───
+    const oldItems = getDB();
+    if (oldItems.length > 0) {
+        // عبور تمام آیتم‌ها از migrateItem برای اعتبارسنجی و افزودن فیلدهای ناقص
+        const validGroupIds = new Set(getGroups().map(g => g.id));
+        const newItems = migrateItemsSchema(oldItems, validGroupIds);
+
+        // بررسی آیا تغییری ایجاد شده
+        if (newItems.length !== oldItems.length) {
+            changed = true;
+            log.push('Items count changed: ' + oldItems.length + ' → ' + newItems.length);
+        } else {
+            // بررسی دقیق‌تر: آیا هر آیتم همان ساختار را دارد؟
+            for (let i = 0; i < oldItems.length; i++) {
+                const oldJson = JSON.stringify(oldItems[i]);
+                const newJson = JSON.stringify(newItems[i]);
+                if (oldJson !== newJson) {
+                    changed = true;
+                    log.push('Item structure changed: ' + oldItems[i].id);
+                    break;
+                }
+            }
+        }
+
+        if (changed) {
+            setDB(newItems);
+        }
+    }
+
+    // ─── ۲) مهاجرت تسک‌های قدیمی urgent ───
+    // تسک‌های قدیمی با groupId='urgent' → groupId='all' + urgent=true
+    const items2 = getDB();
+    let urgentChanged = false;
+    items2.forEach(item => {
+        if (item.groupId === 'urgent') {
+            item.groupId = 'all';
+            item.urgent = true;
+            urgentChanged = true;
+        }
+    });
+    if (urgentChanged) {
+        setDB(items2);
+        changed = true;
+        log.push('Converted urgent-group tasks to all+urgent');
+    }
+
+    // ─── ۳) اطمینان از وجود گروه‌های سیستمی ───
+    // getGroups خودکار 'all' و 'urgent' را می‌سازد
+    const groups = getGroups();
+    // migrateGroupFields هم فیلدهای ناقص گروه را اضافه می‌کند
+    migrateGroupFields();
+
+    // ─── ۴) مهاجرت اشخاص (در صورت وجود) ───
+    // اشخاص در localStorage با کلید CONTACTS_KEY ذخیره می‌شوند
+    // نیازی به مهاجرت نیست چون اگر وجود ندارند، آرایه خالی است
+    // و اگر وجود دارند، ساختار آن‌ها توسط migrateContacts هنگام import مدیریت می‌شود
+
+    // ─── لاگ ───
+    if (changed) {
+        console.log('[AutoMigrate] Database migrated:', log.join('; '));
+    } else {
+        console.log('[AutoMigrate] Database up to date — no migration needed');
+    }
 }
 function setDB(items) {
     try {
@@ -7022,6 +7116,45 @@ window.addEventListener('popstate', (e) => {
     //      parent — it's still open and should stay open.
     //      Detection: state.view === 'modal' AND state.type === topType
     //      (the parent marker matches the modal still on top of _modalStack).
+    // 🔧 بررسی صفحات اشخاص — اگر باز هستند، یکی را ببند
+    // صفحات اشخاص از navPush استفاده نمی‌کنند، پس باید جداگانه مدیریت شوند
+    // ترتیب بستن: از بالا به پایین (نتایج → جستجو/گزارش → فرم → لیست)
+    if (document.getElementById('contactReportResultsOverlay') &&
+        document.getElementById('contactReportResultsOverlay').classList.contains('active')) {
+        closeContactReportResults();
+        return;
+    }
+    if (document.getElementById('contactSearchResultsOverlay') &&
+        document.getElementById('contactSearchResultsOverlay').classList.contains('active')) {
+        closeContactSearchResults();
+        return;
+    }
+    if (document.getElementById('contactReportOverlay') &&
+        document.getElementById('contactReportOverlay').classList.contains('active')) {
+        closeContactReport();
+        return;
+    }
+    if (document.getElementById('contactSearchOverlay') &&
+        document.getElementById('contactSearchOverlay').classList.contains('active')) {
+        closeContactSearch();
+        return;
+    }
+    if (document.getElementById('contactFormOverlay') &&
+        document.getElementById('contactFormOverlay').classList.contains('active')) {
+        closeContactForm();
+        return;
+    }
+    if (document.getElementById('phoneActionOverlay') &&
+        document.getElementById('phoneActionOverlay').classList.contains('active')) {
+        closePhoneActionMenu();
+        return;
+    }
+    if (document.getElementById('contactsOverlay') &&
+        document.getElementById('contactsOverlay').classList.contains('active')) {
+        closeContacts();
+        return;
+    }
+
     if (_modalStack.length > 0) {
         const topType = _modalStack[_modalStack.length - 1];
 
@@ -8333,7 +8466,7 @@ function showContactSearchResults(results) {
         body.innerHTML = '<div class="contacts-empty"><div class="contacts-empty-icon">🔍</div><div>هیچ نتیجه‌ای یافت نشد</div></div>';
     } else {
         let html = '<table class="search-results-table"><thead><tr>';
-        html += '<th>ردیف</th><th>نام شرکت</th><th>نام</th><th>سمت</th><th>تلفن</th><th>شروع همکاری</th><th>تولد</th>';
+        html += '<th>ردیف</th><th>نام شرکت</th><th>نام</th><th>سمت</th><th>تلفن</th><th>شروع همکاری</th><th>تولد</th><th>عملیات</th>';
         html += '</tr></thead><tbody>';
         results.forEach((c, idx) => {
             const firstPhone = (c.phones && c.phones.length > 0) ? c.phones[0] : '';
@@ -8345,6 +8478,7 @@ function showContactSearchResults(results) {
             html += '<td>' + renderClickablePhone(firstPhone) + '</td>';
             html += '<td>' + escapeHtml(c.startDate || '—') + '</td>';
             html += '<td>' + escapeHtml(c.birthDate || '—') + '</td>';
+            html += '<td><div class="contact-row-actions"><button class="contact-row-btn" onclick="editContactFromSearch(\'' + c.id + '\')">✏️</button></div></td>';
             html += '</tr>';
         });
         html += '</tbody></table>';
@@ -8356,6 +8490,13 @@ function showContactSearchResults(results) {
 
 function closeContactSearchResults() {
     document.getElementById('contactSearchResultsOverlay').classList.remove('active');
+}
+
+// 🔧 ویرایش شخص از صفحه نتایج جستجو
+// ابتدا صفحه نتایج را می‌بندد، سپس فرم ویرایش را باز می‌کند
+function editContactFromSearch(id) {
+    document.getElementById('contactSearchResultsOverlay').classList.remove('active');
+    openContactForm(id);
 }
 
 // ─── گزارشات ───
@@ -8667,6 +8808,8 @@ function renderClickablePhones(phones) {
 
 function openContactDatePicker(fieldId) {
     _contactDatePickerTarget = fieldId;
+    // 🔧 z-index تقویم را بالاتر ببر تا روی فرم شخص نمایش داده شود
+    document.getElementById('datetimePickerOverlay').classList.add('contact-date-picker');
     // استفاده از تقویم موجود برنامه
     const currentVal = document.getElementById(fieldId).value;
     let initialDate = new Date();
@@ -8712,6 +8855,8 @@ confirmDatetimePicker = function() {
         const dateStr = toPersianNumber(jy) + '/' + toPersianDigits(pad2(jm)) + '/' + toPersianDigits(pad2(jd));
         document.getElementById(_contactDatePickerTarget).value = dateStr;
         _contactDatePickerTarget = null;
+        // 🔧 حذف کلاس contact-date-picker
+        document.getElementById('datetimePickerOverlay').classList.remove('contact-date-picker');
         // بستن picker
         closeModalByType('datetimePicker');
         window._pickingRepeatEndDate = false;
@@ -9509,23 +9654,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     getGroups();
     // 🆕 مهاجرت فیلدهای جدید گروه (headerIcon, headerImage, showInAll)
     migrateGroupFields();
-    // 🔧 مهاجرت تسک‌های قدیمی با groupId: 'urgent' — تبدیل به groupId: 'all' + urgent: true
-    // این برای کاربرانی است که قبلاً در گروه فوری تسک ساخته‌اند و تسک گم شده است
-    (function migrateUrgentTasks() {
-        const items = getDB();
-        let changed = false;
-        items.forEach(item => {
-            if (item.groupId === 'urgent') {
-                item.groupId = 'all';
-                item.urgent = true;
-                changed = true;
-            }
-        });
-        if (changed) {
-            setDB(items);
-            console.log('[Migration] Converted urgent-group tasks to all+urgent');
-        }
-    })();
+    // 🔧 مهاجرت خودکار جامع — همهٔ داده‌ها به ساختار فعلی تبدیل می‌شوند
+    // این تابع در هر بارگذاری برنامه اجرا می‌شود و:
+    //   ۱) تمام آیتم‌ها را از migrateItem عبور می‌دهد (فیلدهای ناقص اضافه می‌شوند)
+    //   ۲) تمام گروه‌ها را اعتبارسنجی می‌کند
+    //   ۳) تسک‌های قدیمی با groupId='urgent' را تبدیل می‌کند
+    //   ۴) گروه‌های 'all' و 'urgent' را اطمینان می‌دهد وجود دارند
+    //   ۵) هیچ داده‌ای از دست نمی‌رود — فقط فیلدهای ناقص با مقدار پیش‌فرض پر می‌شوند
+    //   ۶) idempotent است — اجرای چندباره تغییری ایجاد نمی‌کند
+    //
+    // ⚠️  وقتی در آینده فیلد جدیدی اضافه کردید:
+    //   - در migrateItem() فیلد جدید را اضافه کنید
+    //   - در migrateGroup() اگر مربوط به گروه است
+    //   - در migrateContacts() اگر مربوط به شخص است
+    //   - این تابع خودکار همه چیز را مدیریت می‌کند — نیازی به تغییر اینجا نیست
+    autoMigrateDatabase();
 
     // Initialize the History API stack so the mobile back button can navigate
     // inside the app (groups ↔ tasks ↔ task details) instead of exiting.
