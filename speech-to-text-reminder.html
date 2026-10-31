@@ -1662,59 +1662,96 @@ body.locked .header-actions button {
 }
 
 /* ============ 🎨 مودال تنظیمات گروه ============ */
-/* 🔧 این مودال قابل اسکرول است. دکمه‌های «انصراف» و «ذخیره» پایین مودال
-   با position: sticky فیکس شده‌اند تا همیشه قابل مشاهده باشند.
-   max-height مودال بر اساس ارتفاع موجود در overlay محاسبه می‌شود
-   تا پایین مودال (دکمه‌ها) همیشه در صفحه بماند. */
+/* 🔧 این مودال با flex column ساخته شده است:
+   - h2 (عنوان) ثابت در بالا
+   - .group-settings-body (بخش محتوا) اسکرول می‌شود
+   - .modal-buttons (دکمه‌ها) ثابت در پایین
+
+   این روش مطمئن‌ترین راه برای اینکه دکمه‌ها همیشه کامل قابل مشاهده
+   باشند — در همهٔ مرورگرها (مخصوصاً iOS Safari) درست کار می‌کند.
+
+   max-height مودال بر اساس ارتفاع موجود در overlay محاسبه می‌شود:
+   - دسکتاپ: calc(100vh - 40px)  (overlay padding: 16px هر طرف + حاشیه)
+   - موبایل: calc(100vh - 100px) (overlay padding-top: 70px + padding: 16px + حاشیه)
+*/
 .group-settings-modal {
     max-width: 420px;
     width: 90%;
-    max-height: 92vh;
+    max-height: calc(100vh - 40px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;  /* خود مودال اسکرول ندارد — body اسکرول می‌شود */
+    padding: 22px 22px 0 22px;
+}
+
+/* هدر (h2) مودال — ثابت در بالا */
+.group-settings-modal h2 {
+    flex-shrink: 0;
+    margin-bottom: 16px;
+}
+
+/* 🔧 بخش محتوای مودال — این بخش اسکرول می‌شود.
+   flex: 1 باعث می‌شود این بخش فضای باقی‌مانده بین h2 و دکمه‌ها را پر کند.
+   overflow-y: auto باعث می‌شود وقتی محتوا بلندتر از فضا است، scrollbar ظاهر شود. */
+.group-settings-body {
+    flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 22px 22px 0 22px;
-    scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;  /* اسکرول نرم در iOS */
+    scroll-behavior: smooth;
+    /* padding پایین کمی برای فاصله از دکمه‌ها */
+    padding-bottom: 8px;
 }
-/* استایل scrollbar مودال */
-.group-settings-modal::-webkit-scrollbar {
+/* استایل scrollbar بخش محتوا */
+.group-settings-body::-webkit-scrollbar {
     width: 8px;
 }
-.group-settings-modal::-webkit-scrollbar-track {
+.group-settings-body::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 4px;
 }
-.group-settings-modal::-webkit-scrollbar-thumb {
+.group-settings-body::-webkit-scrollbar-thumb {
     background: #c1c1c1;
     border-radius: 4px;
 }
-.group-settings-modal::-webkit-scrollbar-thumb:hover {
+.group-settings-body::-webkit-scrollbar-thumb:hover {
     background: #a1a1a1;
 }
 
-/* 🔧 دکمه‌های پایین مودال (انصراف/ذخیره) — فیکس شده در پایین مودال
-   با position: sticky همیشه قابل مشاهده هستند، حتی هنگام اسکرول. */
+/* 🔧 دکمه‌های پایین مودال (انصراف/ذخیره) — ثابت در پایین با flex-shrink: 0.
+   این روش مطمئن‌تر از sticky است و دکمه‌ها همیشه کامل دیده می‌شوند. */
 .group-settings-modal .modal-buttons {
-    position: sticky;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    flex-shrink: 0;
     background: white;
-    padding: 12px 0 16px 0;
+    padding: 16px 0 20px 0;
     margin-top: 8px;
     border-top: 1px solid #e0e0e0;
     z-index: 10;
-    box-shadow: 0 -4px 8px rgba(0,0,0,0.05);
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
+    /* margin منفی برای جبران padding مودال — دکمه‌ها کل عرض را پر کنند */
+    margin-left: -22px;
+    margin-right: -22px;
+    padding-left: 22px;
+    padding-right: 22px;
 }
 
-/* 🔧 در موبایل: max-height مودال را بر اساس ارتفاع موجود تنظیم می‌کنیم
-   تا پایین مودال (دکمه‌ها) همیشه در صفحه بماند.
-   overlay در موبایل padding-top: 70px دارد، پس ارتفاع موجود = 100vh - 70px - 16px
-   = calc(100vh - 86px). ما 90px می‌گیریم تا حاشیه باشد. */
+/* 🔧 در موبایل: max-height مودال را دقیق‌تر محاسبه می‌کنیم.
+   overlay در موبایل: padding: 16px (هر چهار طرف) + padding-top: 70px
+   پس ارتفاع واقعی موجود = 100vh - 70px - 16px (پایین) - 16px (بالا) = 100vh - 102px
+   ما 110px می‌گیریم تا حاشیهٔ کافی باشد و دکمه‌ها کامل دیده شوند. */
 @media (max-width: 600px) {
     .group-settings-modal {
-        max-height: calc(100vh - 90px) !important;
+        max-height: calc(100vh - 110px) !important;
         width: 95% !important;
+        padding: 18px 18px 0 18px;
+    }
+    .group-settings-modal .modal-buttons {
+        margin-left: -18px;
+        margin-right: -18px;
+        padding-left: 18px;
+        padding-right: 18px;
+        padding-top: 14px;
+        padding-bottom: 18px;
     }
 }
 .group-settings-section {
@@ -2072,34 +2109,38 @@ body.locked .header-actions button {
     <div class="modal group-settings-modal">
         <h2 id="groupSettingsTitle">تنظیمات گروه</h2>
 
-        <div class="group-settings-section">
-            <label class="group-settings-label">نام گروه</label>
-            <input type="text" class="modal-input" id="groupSettingsName" placeholder="نام گروه">
-        </div>
-
-        <div class="group-settings-section">
-            <label class="group-settings-label">رنگ هدر گروه</label>
-            <div class="color-palette" id="groupSettingsColors"></div>
-        </div>
-
-        <div class="group-settings-section">
-            <label class="group-settings-label">آیکون یا عکس هدر</label>
-            <div class="icon-preview" id="groupSettingsIconPreview">📋</div>
-            <div class="icon-picker-grid" id="groupSettingsIconGrid"></div>
-            <div class="image-action-btns">
-                <button class="image-action-btn" onclick="document.getElementById('groupSettingsImageInput').click()">📷 آپلود عکس</button>
-                <button class="image-action-btn danger" onclick="clearGroupHeaderImage()">🗑 حذف عکس</button>
+        <!-- 🔧 wrapper برای section‌ها — این بخش اسکرول می‌شود، نه خود مودال.
+             دکمه‌های پایین (modal-buttons) ثابت می‌مانند. -->
+        <div class="group-settings-body">
+            <div class="group-settings-section">
+                <label class="group-settings-label">نام گروه</label>
+                <input type="text" class="modal-input" id="groupSettingsName" placeholder="نام گروه">
             </div>
-            <input type="file" id="groupSettingsImageInput" accept="image/*" style="display:none" onchange="onGroupHeaderImageSelected(event)">
-            <div style="margin-top: 8px; font-size: 11px; color: #888; text-align: center;">
-                عکس به‌صورت پس‌زمینهٔ هدر نمایش داده می‌شود
-            </div>
-        </div>
 
-        <div class="group-settings-section">
-            <div class="toggle-row">
-                <span class="group-settings-label" style="margin: 0;">نمایش تسک‌های این گروه در «همه کارها»</span>
-                <div class="toggle-switch" id="groupSettingsShowInAll" onclick="toggleGroupShowInAll()"></div>
+            <div class="group-settings-section">
+                <label class="group-settings-label">رنگ هدر گروه</label>
+                <div class="color-palette" id="groupSettingsColors"></div>
+            </div>
+
+            <div class="group-settings-section">
+                <label class="group-settings-label">آیکون یا عکس هدر</label>
+                <div class="icon-preview" id="groupSettingsIconPreview">📋</div>
+                <div class="icon-picker-grid" id="groupSettingsIconGrid"></div>
+                <div class="image-action-btns">
+                    <button class="image-action-btn" onclick="document.getElementById('groupSettingsImageInput').click()">📷 آپلود عکس</button>
+                    <button class="image-action-btn danger" onclick="clearGroupHeaderImage()">🗑 حذف عکس</button>
+                </div>
+                <input type="file" id="groupSettingsImageInput" accept="image/*" style="display:none" onchange="onGroupHeaderImageSelected(event)">
+                <div style="margin-top: 8px; font-size: 11px; color: #888; text-align: center;">
+                    عکس به‌صورت پس‌زمینهٔ هدر نمایش داده می‌شود
+                </div>
+            </div>
+
+            <div class="group-settings-section">
+                <div class="toggle-row">
+                    <span class="group-settings-label" style="margin: 0;">نمایش تسک‌های این گروه در «همه کارها»</span>
+                    <div class="toggle-switch" id="groupSettingsShowInAll" onclick="toggleGroupShowInAll()"></div>
+                </div>
             </div>
         </div>
 
@@ -2222,7 +2263,7 @@ body.locked .header-actions button {
 //         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
 //         Also: backup button now asks for confirmation before saving
 //         (it was being accidentally triggered next to the + button).
-const APP_VERSION = 'v25-2026-10-31-modal-scroll-icons-toggle';
+const APP_VERSION = 'v26-2026-10-31-modal-flex-layout';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
