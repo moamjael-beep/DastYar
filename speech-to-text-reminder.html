@@ -342,7 +342,7 @@ body { padding-bottom: 30px; }
 }
 .item-text {
     flex: 1;
-    font-size: 13.5px;
+    font-size: 12.5px;  /* 🔧 ریزتر شد تا متن‌های بزرگتر دیده شوند */
     font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
@@ -461,7 +461,7 @@ body { padding-bottom: 30px; }
     text-overflow: clip;
     line-height: 1.8;
     padding: 4px 0 12px 0;
-    font-size: 14.5px;
+    font-size: 13.5px;  /* 🔧 ریزتر شد (از 14.5px به 13.5px) */
     font-weight: 600;
     min-height: 3em;
     /* Allow text selection on the expanded text (for copy/paste) */
@@ -2352,7 +2352,7 @@ body.locked .header-actions button {
 //         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
 //         Also: backup button now asks for confirmation before saving
 //         (it was being accidentally triggered next to the + button).
-const APP_VERSION = 'v29-2026-10-31-urgent-group-and-task-pin';
+const APP_VERSION = 'v30-2026-10-31-fix-urgent-group-task-creation';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -5476,7 +5476,19 @@ function saveItem() {
     // back to deadline-based ordering (position defaults to 999999 for
     // unpositioned tasks, which are then sorted by deadline). The user can
     // manually drag the task later to override its position.
-    const newTaskGroupId = pendingTaskGroupId || currentGroupId || 'all';
+    //
+    // 🔧 حالت خاص: اگر کاربر در گروه «کارهای فوری» (urgent) است و تسک جدید
+    // می‌سازد، تسک را در گروه پیش‌فرض 'all' ذخیره می‌کنیم و urgent: true
+    // تنظیم می‌کنیم. چون گروه 'urgent' یک گروه فیلتر است، نه یک گروه واقعی
+    // — تسک‌ها باید به یک گروه واقعی تعلق داشته باشند تا در «همه کارها»
+    // یا گروه‌های سفارشی نمایش داده شوند.
+    let newTaskGroupId = pendingTaskGroupId || currentGroupId || 'all';
+    let newTaskUrgent = false;
+    if (newTaskGroupId === 'urgent') {
+        // کاربر در گروه «کارهای فوری» است — تسک را در 'all' ذخیره کن و فوری کن
+        newTaskGroupId = 'all';
+        newTaskUrgent = true;
+    }
     const newItem = {
         id: 'r_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
         text: text,
@@ -5484,6 +5496,8 @@ function saveItem() {
         deadline: deadline.toISOString(),
         done: false,
         groupId: newTaskGroupId,
+        // 🔧 اگر در گروه فوری ساخته شده، urgent: true
+        urgent: newTaskUrgent,
         // position intentionally NOT set — sort by deadline as fallback
     };
     items.push(newItem);
@@ -7907,6 +7921,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     getGroups();
     // 🆕 مهاجرت فیلدهای جدید گروه (headerIcon, headerImage, showInAll)
     migrateGroupFields();
+    // 🔧 مهاجرت تسک‌های قدیمی با groupId: 'urgent' — تبدیل به groupId: 'all' + urgent: true
+    // این برای کاربرانی است که قبلاً در گروه فوری تسک ساخته‌اند و تسک گم شده است
+    (function migrateUrgentTasks() {
+        const items = getDB();
+        let changed = false;
+        items.forEach(item => {
+            if (item.groupId === 'urgent') {
+                item.groupId = 'all';
+                item.urgent = true;
+                changed = true;
+            }
+        });
+        if (changed) {
+            setDB(items);
+            console.log('[Migration] Converted urgent-group tasks to all+urgent');
+        }
+    })();
 
     // Initialize the History API stack so the mobile back button can navigate
     // inside the app (groups ↔ tasks ↔ task details) instead of exiting.
