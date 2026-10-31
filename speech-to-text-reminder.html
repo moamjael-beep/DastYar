@@ -2208,6 +2208,13 @@ body.locked .header-actions button {
     z-index: 10;
     box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
 }
+/* 🔧 مودال‌های فرم/جستجو/گزارش اشخاص — z-index بالاتر از contactsOverlay (10000) */
+#contactFormOverlay,
+#contactSearchOverlay,
+#contactReportOverlay {
+    z-index: 10500 !important;
+}
+
 /* 🔧 در موبایل: max-height دقیق‌تر */
 @media (max-width: 600px) {
     .contact-form-modal {
@@ -2765,15 +2772,15 @@ body.locked .header-actions button {
 
             <!-- بخش اشانتیون -->
             <div class="contact-form-section">
-                <div class="contact-form-section-title">💰 اشانتیون</div>
+                <div class="contact-form-section-title">🎁 اشانتیون (کالا)</div>
                 <div class="contact-form-row">
                     <div class="contact-form-field">
-                        <label>اشانتیون خواسته شده</label>
-                        <input type="text" id="contactCommissionAsked" placeholder="مبلغ به تومان">
+                        <label>اشانتیون خواسته شده (کالا)</label>
+                        <input type="text" id="contactCommissionAsked" placeholder="مثال: گوشی سامسونگ">
                     </div>
                     <div class="contact-form-field">
-                        <label>اشانتیون داده شده</label>
-                        <input type="text" id="contactCommissionPaid" placeholder="مبلغ به تومان">
+                        <label>اشانتیون داده شده (کالا)</label>
+                        <input type="text" id="contactCommissionPaid" placeholder="مثال: لپ‌تاپ ایسوس">
                     </div>
                 </div>
                 <div class="contact-form-row">
@@ -2843,22 +2850,12 @@ body.locked .header-actions button {
                 </div>
                 <div class="contact-form-row">
                     <div class="contact-form-field">
-                        <label>اشانتیون خواسته شده (از)</label>
-                        <input type="text" id="searchCommissionAskedMin" placeholder="حداقل مبلغ">
+                        <label>اشانتیون خواسته شده (کالا)</label>
+                        <input type="text" id="searchCommissionAskedMin" placeholder="نام کالا">
                     </div>
                     <div class="contact-form-field">
-                        <label>اشانتیون خواسته شده (تا)</label>
-                        <input type="text" id="searchCommissionAskedMax" placeholder="حداکثر مبلغ">
-                    </div>
-                </div>
-                <div class="contact-form-row">
-                    <div class="contact-form-field">
-                        <label>اشانتیون داده شده (از)</label>
-                        <input type="text" id="searchCommissionPaidMin" placeholder="حداقل مبلغ">
-                    </div>
-                    <div class="contact-form-field">
-                        <label>اشانتیون داده شده (تا)</label>
-                        <input type="text" id="searchCommissionPaidMax" placeholder="حداکثر مبلغ">
+                        <label>اشانتیون داده شده (کالا)</label>
+                        <input type="text" id="searchCommissionPaidMin" placeholder="نام کالا">
                     </div>
                 </div>
                 <div class="contact-form-row">
@@ -2921,22 +2918,12 @@ body.locked .header-actions button {
                 </div>
                 <div class="contact-form-row">
                     <div class="contact-form-field">
-                        <label>اشانتیون خواسته شده (از)</label>
-                        <input type="text" id="reportCommissionAskedMin" placeholder="حداقل">
+                        <label>اشانتیون خواسته شده (کالا)</label>
+                        <input type="text" id="reportCommissionAskedMin" placeholder="نام کالا">
                     </div>
                     <div class="contact-form-field">
-                        <label>تا</label>
-                        <input type="text" id="reportCommissionAskedMax" placeholder="حداکثر">
-                    </div>
-                </div>
-                <div class="contact-form-row">
-                    <div class="contact-form-field">
-                        <label>اشانتیون داده شده (از)</label>
-                        <input type="text" id="reportCommissionPaidMin" placeholder="حداقل">
-                    </div>
-                    <div class="contact-form-field">
-                        <label>تا</label>
-                        <input type="text" id="reportCommissionPaidMax" placeholder="حداکثر">
+                        <label>اشانتیون داده شده (کالا)</label>
+                        <input type="text" id="reportCommissionPaidMin" placeholder="نام کالا">
                     </div>
                 </div>
                 <div class="contact-form-row">
@@ -3105,7 +3092,7 @@ body.locked .header-actions button {
 //         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
 //         Also: backup button now asks for confirmation before saving
 //         (it was being accidentally triggered next to the + button).
-const APP_VERSION = 'v35-2026-10-31-fix-contact-form-scroll';
+const APP_VERSION = 'v37-2026-10-31-commission-is-product-not-amount';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -8048,7 +8035,16 @@ function openContacts() {
 }
 
 function closeContacts() {
+    // 🔧 بستن همهٔ زیر-مودال‌های اشخاص هم (فرم، جستجو، گزارش، نتایج)
+    document.getElementById('contactFormOverlay').classList.remove('active');
+    document.getElementById('contactSearchOverlay').classList.remove('active');
+    document.getElementById('contactSearchResultsOverlay').classList.remove('active');
+    document.getElementById('contactReportOverlay').classList.remove('active');
+    document.getElementById('contactReportResultsOverlay').classList.remove('active');
+    // بستن خود صفحه اشخاص
     document.getElementById('contactsOverlay').classList.remove('active');
+    // ریست حالت ویرایش
+    _editingContactId = null;
 }
 
 // ─── رندر لیست اشخاص ───
@@ -8274,9 +8270,7 @@ function openContactSearch() {
     document.getElementById('searchPosition').value = '';
     document.getElementById('searchPhone').value = '';
     document.getElementById('searchCommissionAskedMin').value = '';
-    document.getElementById('searchCommissionAskedMax').value = '';
     document.getElementById('searchCommissionPaidMin').value = '';
-    document.getElementById('searchCommissionPaidMax').value = '';
     document.getElementById('searchCommissionPercent').value = '';
     document.getElementById('contactSearchOverlay').classList.add('active');
 }
@@ -8292,9 +8286,7 @@ function executeContactSearch() {
         position: document.getElementById('searchPosition').value.trim().toLowerCase(),
         phone: document.getElementById('searchPhone').value.trim().toLowerCase(),
         commissionAskedMin: document.getElementById('searchCommissionAskedMin').value.trim(),
-        commissionAskedMax: document.getElementById('searchCommissionAskedMax').value.trim(),
         commissionPaidMin: document.getElementById('searchCommissionPaidMin').value.trim(),
-        commissionPaidMax: document.getElementById('searchCommissionPaidMax').value.trim(),
         commissionPercent: document.getElementById('searchCommissionPercent').value.trim(),
     };
 
@@ -8319,20 +8311,12 @@ function filterContacts(criteria) {
         contacts = contacts.filter(c => (c.phones || []).some(p => p.toLowerCase().includes(criteria.phone)));
     }
     if (criteria.commissionAskedMin) {
-        const min = parseInt(criteria.commissionAskedMin.replace(/[^0-9]/g, ''), 10);
-        if (!isNaN(min)) contacts = contacts.filter(c => parseInt((c.commissionAsked || '0').replace(/[^0-9]/g, ''), 10) >= min);
-    }
-    if (criteria.commissionAskedMax) {
-        const max = parseInt(criteria.commissionAskedMax.replace(/[^0-9]/g, ''), 10);
-        if (!isNaN(max)) contacts = contacts.filter(c => parseInt((c.commissionAsked || '0').replace(/[^0-9]/g, ''), 10) <= max);
+        // 🔧 اشانتیون کالا است، نه مبلغ — جستجوی متنی
+        contacts = contacts.filter(c => (c.commissionAsked || '').toLowerCase().includes(criteria.commissionAskedMin.toLowerCase()));
     }
     if (criteria.commissionPaidMin) {
-        const min = parseInt(criteria.commissionPaidMin.replace(/[^0-9]/g, ''), 10);
-        if (!isNaN(min)) contacts = contacts.filter(c => parseInt((c.commissionPaid || '0').replace(/[^0-9]/g, ''), 10) >= min);
-    }
-    if (criteria.commissionPaidMax) {
-        const max = parseInt(criteria.commissionPaidMax.replace(/[^0-9]/g, ''), 10);
-        if (!isNaN(max)) contacts = contacts.filter(c => parseInt((c.commissionPaid || '0').replace(/[^0-9]/g, ''), 10) <= max);
+        // 🔧 اشانتیون کالا است، نه مبلغ — جستجوی متنی
+        contacts = contacts.filter(c => (c.commissionPaid || '').toLowerCase().includes(criteria.commissionPaidMin.toLowerCase()));
     }
     if (criteria.commissionPercent) {
         contacts = contacts.filter(c => (c.commissionPercent || '').includes(criteria.commissionPercent));
@@ -8382,9 +8366,7 @@ function openContactReport() {
     document.getElementById('reportPosition').value = '';
     document.getElementById('reportPhone').value = '';
     document.getElementById('reportCommissionAskedMin').value = '';
-    document.getElementById('reportCommissionAskedMax').value = '';
     document.getElementById('reportCommissionPaidMin').value = '';
-    document.getElementById('reportCommissionPaidMax').value = '';
     document.getElementById('reportCommissionPercent').value = '';
     document.getElementById('contactReportOverlay').classList.add('active');
 }
@@ -8400,9 +8382,7 @@ function executeContactReport() {
         position: document.getElementById('reportPosition').value.trim().toLowerCase(),
         phone: document.getElementById('reportPhone').value.trim().toLowerCase(),
         commissionAskedMin: document.getElementById('reportCommissionAskedMin').value.trim(),
-        commissionAskedMax: document.getElementById('reportCommissionAskedMax').value.trim(),
         commissionPaidMin: document.getElementById('reportCommissionPaidMin').value.trim(),
-        commissionPaidMax: document.getElementById('reportCommissionPaidMax').value.trim(),
         commissionPercent: document.getElementById('reportCommissionPercent').value.trim(),
     };
 
@@ -8431,19 +8411,19 @@ function showContactReportResults(results, criteria) {
     if (results.length === 0) {
         html += '<div class="contacts-empty"><div class="contacts-empty-icon">📊</div><div>هیچ نتیجه‌ای برای گزارش یافت نشد</div></div>';
     } else {
-        // خلاصه آماری
-        let totalAsked = 0, totalPaid = 0;
+        // 🔧 اشانتیون کالا است، نه مبلغ — تعداد کالاهای خواسته/داده شده را می‌شماریم
+        let askedCount = 0, paidCount = 0;
         results.forEach(c => {
-            totalAsked += parseInt((c.commissionAsked || '0').replace(/[^0-9]/g, ''), 10) || 0;
-            totalPaid += parseInt((c.commissionPaid || '0').replace(/[^0-9]/g, ''), 10) || 0;
+            if (c.commissionAsked && c.commissionAsked.trim()) askedCount++;
+            if (c.commissionPaid && c.commissionPaid.trim()) paidCount++;
         });
 
         html += '<div class="contact-form-section" style="margin-bottom:12px;">';
         html += '<div class="contact-form-section-title">📈 خلاصه آماری</div>';
         html += '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px;">';
         html += '<div>👥 تعداد اشخاص: <b>' + toPersianNumber(results.length) + '</b></div>';
-        html += '<div>💰 مجموع اشانتیون خواسته شده: <b>' + toPersianNumberWithSep(totalAsked) + '</b></div>';
-        html += '<div>💵 مجموع اشانتیون داده شده: <b>' + toPersianNumberWithSep(totalPaid) + '</b></div>';
+        html += '<div>🎁 دارای اشانتیون خواسته شده: <b>' + toPersianNumber(askedCount) + '</b></div>';
+        html += '<div>🎁 دارای اشانتیون داده شده: <b>' + toPersianNumber(paidCount) + '</b></div>';
         html += '</div></div>';
 
         // جدول کامل
