@@ -2069,7 +2069,7 @@ body.locked .header-actions button {
     position: fixed;
     inset: 0;
     background: #f0f2f5;
-    z-index: 1500;
+    z-index: 10000;  /* 🔧 بالاتر از هدر اصلی (9999) تا هدر روی آن نیاید */
     display: none;
     flex-direction: column;
     direction: rtl;
@@ -2362,7 +2362,7 @@ body.locked .header-actions button {
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.5);
-    z-index: 3000;
+    z-index: 11000;  /* 🔧 بالاتر از contactsOverlay (10000) */
     display: none;
     align-items: flex-end;
     justify-content: center;
@@ -3057,7 +3057,7 @@ body.locked .header-actions button {
 //         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
 //         Also: backup button now asks for confirmation before saving
 //         (it was being accidentally triggered next to the + button).
-const APP_VERSION = 'v33-2026-10-31-backup-restore-v5';
+const APP_VERSION = 'v34-2026-10-31-fix-contacts-page';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -7991,18 +7991,16 @@ function getContactById(id) {
 }
 
 // ─── باز/بستن صفحه اشخاص ───
+// 🔧 ساده‌سازی شده — بدون navPush/navBack که با popstate تداخل داشت
+// صفحه اشخاص یک overlay تمام‌صفحه است، نه یک مودال معمولی
 
 function openContacts() {
     renderContactsList();
     document.getElementById('contactsOverlay').classList.add('active');
-    navPush({ view: 'modal', type: 'contacts' });
-    trackModalOpen('contacts');
 }
 
 function closeContacts() {
     document.getElementById('contactsOverlay').classList.remove('active');
-    closeModalByType('contacts');
-    navBack();
 }
 
 // ─── رندر لیست اشخاص ───
@@ -8080,14 +8078,10 @@ function openContactForm(id) {
     }
 
     document.getElementById('contactFormOverlay').classList.add('active');
-    navPush({ view: 'modal', type: 'contactForm' });
-    trackModalOpen('contactForm');
 }
 
 function closeContactForm() {
     document.getElementById('contactFormOverlay').classList.remove('active');
-    closeModalByType('contactForm');
-    navBack();
     _editingContactId = null;
 }
 
@@ -8237,14 +8231,10 @@ function openContactSearch() {
     document.getElementById('searchCommissionPaidMax').value = '';
     document.getElementById('searchCommissionPercent').value = '';
     document.getElementById('contactSearchOverlay').classList.add('active');
-    navPush({ view: 'modal', type: 'contactSearch' });
-    trackModalOpen('contactSearch');
 }
 
 function closeContactSearch() {
     document.getElementById('contactSearchOverlay').classList.remove('active');
-    closeModalByType('contactSearch');
-    navBack();
 }
 
 function executeContactSearch() {
@@ -8330,14 +8320,10 @@ function showContactSearchResults(results) {
     }
 
     document.getElementById('contactSearchResultsOverlay').classList.add('active');
-    navPush({ view: 'modal', type: 'contactSearchResults' });
-    trackModalOpen('contactSearchResults');
 }
 
 function closeContactSearchResults() {
     document.getElementById('contactSearchResultsOverlay').classList.remove('active');
-    closeModalByType('contactSearchResults');
-    navBack();
 }
 
 // ─── گزارشات ───
@@ -8353,14 +8339,10 @@ function openContactReport() {
     document.getElementById('reportCommissionPaidMax').value = '';
     document.getElementById('reportCommissionPercent').value = '';
     document.getElementById('contactReportOverlay').classList.add('active');
-    navPush({ view: 'modal', type: 'contactReport' });
-    trackModalOpen('contactReport');
 }
 
 function closeContactReport() {
     document.getElementById('contactReportOverlay').classList.remove('active');
-    closeModalByType('contactReport');
-    navBack();
 }
 
 function executeContactReport() {
@@ -8445,14 +8427,10 @@ function showContactReportResults(results, criteria) {
     body.dataset.reportData = JSON.stringify(results);
 
     document.getElementById('contactReportResultsOverlay').classList.add('active');
-    navPush({ view: 'modal', type: 'contactReportResults' });
-    trackModalOpen('contactReportResults');
 }
 
 function closeContactReportResults() {
     document.getElementById('contactReportResultsOverlay').classList.remove('active');
-    closeModalByType('contactReportResults');
-    navBack();
 }
 
 // ─── ذخیره و ارسال گزارش ───
