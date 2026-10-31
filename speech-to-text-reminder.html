@@ -1288,6 +1288,43 @@ body { padding-bottom: 30px; }
     width: 100%;
 }
 .group-name { font-size: 16px; font-weight: 700; }
+
+/* 🔧 آیکون گروه در لیست گروه‌ها (صفحهٔ اصلی) — دایره‌ای با آیکون اموجی یا عکس */
+.group-list-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    margin-left: 12px;  /* در RTL، margin-left یعنی فاصله از سمت چپ آیکون تا متن */
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    border: 2px solid rgba(255,255,255,0.3);
+}
+.group-list-icon span {
+    line-height: 1;
+}
+/* وقتی گروه عکس پس‌زمینه دارد، لایهٔ تیره روی کل آیتم می‌آید تا متن خوانا بماند */
+.group-item-draggable[style*="background-image"] {
+    position: relative;
+}
+.group-item-draggable[style*="background-image"]::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    border-radius: 12px;
+    z-index: 0;
+}
+.group-item-draggable[style*="background-image"] > * {
+    position: relative;
+    z-index: 1;
+}
 .group-count {
     background: rgba(255,255,255,0.25);
     padding: 4px 12px;
@@ -1626,19 +1663,20 @@ body.locked .header-actions button {
 
 /* ============ 🎨 مودال تنظیمات گروه ============ */
 /* 🔧 این مودال قابل اسکرول است. دکمه‌های «انصراف» و «ذخیره» پایین مودال
-   با position: sticky فیکس شده‌اند تا همیشه قابل مشاهده باشند، حتی اگر
-   محتوا بلندتر از ارتفاع صفحه باشد و نیاز به اسکرول باشد. */
+   با position: sticky فیکس شده‌اند تا همیشه قابل مشاهده باشند.
+   max-height مودال بر اساس ارتفاع موجود در overlay محاسبه می‌شود
+   تا پایین مودال (دکمه‌ها) همیشه در صفحه بماند. */
 .group-settings-modal {
     max-width: 420px;
     width: 90%;
     max-height: 92vh;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 22px 22px 0 22px;  /* padding پایین صفر — دکمه‌ها خودشان padding دارند */
+    padding: 22px 22px 0 22px;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;  /* اسکرول نرم در iOS */
 }
-/* استایل scrollbar مودال (در مرورگرهای مبتنی بر WebKit) */
+/* استایل scrollbar مودال */
 .group-settings-modal::-webkit-scrollbar {
     width: 8px;
 }
@@ -1666,8 +1704,18 @@ body.locked .header-actions button {
     margin-top: 8px;
     border-top: 1px solid #e0e0e0;
     z-index: 10;
-    /* یک سایهٔ ظریف برای جدا کردن دکمه‌ها از محتوای بالا */
     box-shadow: 0 -4px 8px rgba(0,0,0,0.05);
+}
+
+/* 🔧 در موبایل: max-height مودال را بر اساس ارتفاع موجود تنظیم می‌کنیم
+   تا پایین مودال (دکمه‌ها) همیشه در صفحه بماند.
+   overlay در موبایل padding-top: 70px دارد، پس ارتفاع موجود = 100vh - 70px - 16px
+   = calc(100vh - 86px). ما 90px می‌گیریم تا حاشیه باشد. */
+@media (max-width: 600px) {
+    .group-settings-modal {
+        max-height: calc(100vh - 90px) !important;
+        width: 95% !important;
+    }
 }
 .group-settings-section {
     margin-bottom: 16px;
@@ -2174,7 +2222,7 @@ body.locked .header-actions button {
 //         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
 //         Also: backup button now asks for confirmation before saving
 //         (it was being accidentally triggered next to the + button).
-const APP_VERSION = 'v24-2026-10-31-trading-programming-icons';
+const APP_VERSION = 'v25-2026-10-31-modal-scroll-icons-toggle';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -3642,22 +3690,28 @@ const GROUP_HEADER_ICONS = [
     '👺', '👻', '👽', '👾'
 ];
 
-// باز/بسته کردن منوی همبرگری
+// باز/بسته کردن منوی همبرگری (toggle)
 // فقط یک منو همبرگر می‌تواند همزمان باز باشد.
+// 🔧 اگر منو باز است و کاربر روی همان دکمه همبرگر کلیک کند، منو بسته می‌شود.
 function toggleGroupMenu(groupId, btnEl) {
-    // بستن منوی فعال قبلی
+    // پیدا کردن منوی مربوط به این گروه
+    const menu = document.getElementById('group-menu-' + groupId);
+    if (!menu) return;
+
+    // 🔧 اگر همین منو الان باز است، آن را ببند (toggle)
+    if (menu.classList.contains('active')) {
+        menu.classList.remove('active');
+        _activeGroupMenu = null;
+        return;
+    }
+
+    // بستن منوی فعال قبلی (اگر منوی دیگری باز بود)
     if (_activeGroupMenu) {
         _activeGroupMenu.classList.remove('active');
         _activeGroupMenu = null;
     }
 
-    // پیدا کردن منوی مربوط به این گروه
-    const menu = document.getElementById('group-menu-' + groupId);
-    if (!menu) return;
-
-    // اگر منوی فعالی که بستیم همین منو بود، دیگر بازش نکن
-    if (menu.classList.contains('active')) return;
-
+    // باز کردن این منو
     menu.classList.add('active');
     _activeGroupMenu = menu;
 
@@ -3668,16 +3722,27 @@ function toggleGroupMenu(groupId, btnEl) {
 }
 
 // بستن منو با کلیک خارج از آن
+// 🔧 اگر کلیک روی دکمه همبرگر بود، کاری نمی‌کنیم چون toggleGroupMenu خودش مدیریت می‌کند.
+// اگر کلیک داخل منو بود، منو را نبند. در غیر این صورت، منو را ببند.
 function closeGroupMenuOnOutsideClick(e) {
     if (!_activeGroupMenu) return;
-    // اگر کلیک داخل منو بود، منو را نبند
-    if (_activeGroupMenu.contains(e.target) || e.target.classList.contains('group-menu-btn')) {
-        // دوباره listener را اضافه کن
+    // اگر کلیک روی دکمه همبرگر بود، کاری نکن (toggleGroupMenu مدیریت می‌کند)
+    if (e.target.classList.contains('group-menu-btn') || e.target.closest('.group-menu-btn')) {
+        // listener را دوباره اضافه کن
         setTimeout(function() {
             document.addEventListener('click', closeGroupMenuOnOutsideClick, { once: true });
         }, 10);
         return;
     }
+    // اگر کلیک داخل منو بود، منو را نبند
+    if (_activeGroupMenu.contains(e.target)) {
+        // listener را دوباره اضافه کن
+        setTimeout(function() {
+            document.addEventListener('click', closeGroupMenuOnOutsideClick, { once: true });
+        }, 10);
+        return;
+    }
+    // کلیک خارج از منو — بستن
     _activeGroupMenu.classList.remove('active');
     _activeGroupMenu = null;
 }
@@ -5885,6 +5950,20 @@ function renderGroupsView() {
 
     container.innerHTML = '';
 
+    // 🔧 تابع کمکی: ساخت HTML آیکون یا عکس گروه برای نمایش در هدر
+    // اگر گروه عکس دارد → عکس به‌صورت پس‌زمینه نمایش داده می‌شود
+    // اگر نه → آیکون (اموجی) در یک دایره نمایش داده می‌شود
+    function getGroupIconHtml(group) {
+        if (group.headerImage) {
+            // عکس به‌صورت پس‌زمینه دایره‌ای
+            return `<div class="group-list-icon" style="background-image: url('${group.headerImage}');"></div>`;
+        } else if (group.headerIcon) {
+            // آیکون اموجی
+            return `<div class="group-list-icon"><span>${group.headerIcon}</span></div>`;
+        }
+        return '';
+    }
+
     // "همه کارها" (green, always first — NOT draggable). We add a marker
     // class so the drag-drop Sortable can recognize it as a fixed item
     // and refuse to drag it or move items above it.
@@ -5892,7 +5971,7 @@ function renderGroupsView() {
     allDiv.className = 'group-item group-item-fixed';
     allDiv.dataset.groupId = 'all';
     allDiv.style.background = 'linear-gradient(135deg, #4CAF50, #2E7D32)';
-    allDiv.innerHTML = `<div class="group-item-row"><span class="group-name">📋 همه کارها</span><span class="group-count">${toPersianNumber(items.length)}</span></div>`;
+    allDiv.innerHTML = `<div class="group-item-row"><div class="group-list-icon"><span>📋</span></div><span class="group-name">همه کارها</span><span class="group-count">${toPersianNumber(items.length)}</span></div>`;
     allDiv.onclick = () => openGroupView('all');
     container.appendChild(allDiv);
 
@@ -5904,8 +5983,18 @@ function renderGroupsView() {
         const div = document.createElement('div');
         div.className = 'group-item group-item-draggable';
         div.dataset.groupId = group.id;
-        div.style.background = `linear-gradient(135deg, ${group.color}, ${group.color}DD)`;
-        div.innerHTML = `<div class="group-item-row"><span class="group-name">${escapeHtml(group.name)}</span><span class="group-count">${toPersianNumber(count)}</span></div>`;
+        // 🔧 اگر گروه عکس دارد، عکس به‌صورت پس‌زمینه کل هدر نمایش داده می‌شود
+        if (group.headerImage) {
+            div.style.backgroundImage = `url('${group.headerImage}')`;
+            div.style.backgroundSize = 'cover';
+            div.style.backgroundPosition = 'center';
+            // لایهٔ تیره برای خوانایی متن
+            div.style.position = 'relative';
+        } else {
+            div.style.background = `linear-gradient(135deg, ${group.color}, ${group.color}DD)`;
+        }
+        const iconHtml = getGroupIconHtml(group);
+        div.innerHTML = `<div class="group-item-row">${iconHtml}<span class="group-name">${escapeHtml(group.name)}</span><span class="group-count">${toPersianNumber(count)}</span></div>`;
         div.onclick = () => openGroupView(group.id);
         container.appendChild(div);
     });
