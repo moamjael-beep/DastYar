@@ -3581,15 +3581,15 @@ body.locked .header-actions button {
             <div style="display:flex;flex-direction:column;gap:8px;">
                 <button onclick="aiPresetCoqui()" style="padding:12px;border-radius:10px;border:2px solid #4CAF50;background:#e8f5e9;cursor:pointer;font-family:inherit;text-align:right;">
                     <b style="color:#2E7D32;font-size:13px;">Persian-tts-coqui</b> <span style="font-size:10px;color:#888;">(220⭐)</span><br>
-                    <span style="font-size:11px;color:#555;">TTS فارسی با Coqui — بهترین کیفیت فارسی</span>
+                    <span style="font-size:11px;color:#555;">TTS فارسی با Coqui — نیاز به سرور</span>
+                </button>
+                <button onclick="aiPresetVoiceRSS()" style="padding:12px;border-radius:10px;border:2px solid #1976D2;background:#e3f2fd;cursor:pointer;font-family:inherit;text-align:right;">
+                    <b style="color:#1565C0;font-size:13px;">VoiceRSS</b> <span style="font-size:10px;color:#4CAF50;">رایگان</span><br>
+                    <span style="font-size:11px;color:#555;">۱۰۰۰ درخواست/روز رایگان، فارسی ✅ — از voicerss.org کلید بگیرید</span>
                 </button>
                 <button onclick="aiPresetKokoro()" style="padding:12px;border-radius:10px;border:2px solid #FF9800;background:#fff3e0;cursor:pointer;font-family:inherit;text-align:right;">
                     <b style="color:#E65100;font-size:13px;">Kokoro Web</b> <span style="font-size:10px;color:#888;">(763⭐)</span><br>
-                    <span style="font-size:11px;color:#555;">رایگان، OpenAI-compatible، بدون کلید API</span>
-                </button>
-                <button onclick="aiPresetTTSMaker()" style="padding:12px;border-radius:10px;border:2px solid #1976D2;background:#e3f2fd;cursor:pointer;font-family:inherit;text-align:right;">
-                    <b style="color:#1565C0;font-size:13px;">TTSMaker</b><br>
-                    <span style="font-size:11px;color:#555;">رایگان آنلاین، ۱۰۰+ زبان، فارسی ✅</span>
+                    <span style="font-size:11px;color:#555;">رایگان، OpenAI-compatible، بدون کلید</span>
                 </button>
             </div>
             <div style="margin-top:8px;font-size:11px;color:#888;">
@@ -3768,7 +3768,7 @@ body.locked .header-actions button {
 //            cross-origin media WITHOUT CORS headers (fetch needs CORS).
 //            Added 8s timeout for Web Speech API (if no onend/onerror, try next).
 //            Added 8s timeout per online URL. Added "در حال خواندن..." toast.
-const APP_VERSION = 'v140-2026-11-05-two-row-header-modal-fix';
+const APP_VERSION = 'v141-2026-11-05-voicerss-fa';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -9007,36 +9007,35 @@ function closeAISettings() {
     document.getElementById('aiSettingsOverlay').classList.remove('active');
 }
 
-// 🔧 پیش‌تنظیم‌ها — پروژه‌های فارسی GitHub
+// 🔧 پیش‌تنظیم‌ها — پروژه‌های فارسی
 function aiPresetCoqui() {
-    // Persian-tts-coqui — نیاز به self-host دارد
-    // GitHub: https://github.com/karim23657/Persian-tts-coqui
     document.getElementById('aiSettingUrl').value = 'http://localhost:5002/api/tts';
     document.getElementById('aiSettingModel').value = 'coqui';
     document.getElementById('aiSettingVoice').value = 'fa';
     document.getElementById('aiSettingKey').value = '';
     document.getElementById('aiSettingKey').placeholder = 'نیازی نیست (self-host)';
-    showToast('Persian-tts-coqui: روی سرور خود نصب کنید — github.com/karim23657/Persian-tts-coqui');
+    localStorage.setItem('ai_provider', 'openai');
+    showToast('Persian-tts-coqui: روی سرور نصب کنید — github.com/karim23657/Persian-tts-coqui');
+}
+function aiPresetVoiceRSS() {
+    // VoiceRSS — رایگان، فارسی، ۱۰۰۰ درخواست/روز
+    // ثبت‌نام: https://voicerss.org
+    document.getElementById('aiSettingUrl').value = 'https://api.voicerss.org/';
+    document.getElementById('aiSettingModel').value = 'voicerss';
+    document.getElementById('aiSettingVoice').value = 'fa-ir';
+    document.getElementById('aiSettingKey').value = '';
+    document.getElementById('aiSettingKey').placeholder = 'کلید رایگان از voicerss.org';
+    localStorage.setItem('ai_provider', 'voicerss');
+    showToast('VoiceRSS: رایگان فارسی — از voicerss.org کلید بگیرید');
 }
 function aiPresetKokoro() {
-    // Kokoro Web — رایگان، OpenAI-compatible
-    // GitHub: https://github.com/eduardolat/kokoro-web
     document.getElementById('aiSettingUrl').value = 'https://voice-generator.pages.dev/v1';
     document.getElementById('aiSettingModel').value = 'tts-1';
     document.getElementById('aiSettingVoice').value = 'af_bella';
     document.getElementById('aiSettingKey').value = 'not-needed';
     document.getElementById('aiSettingKey').placeholder = 'نیازی نیست (رایگان)';
-    showToast('Kokoro: رایگان، بدون کلید — github.com/eduardolat/kokoro-web');
-}
-function aiPresetTTSMaker() {
-    // TTSMaker — رایگان آنلاین فارسی
-    // سایت: https://ttsmaker.com/fa
-    document.getElementById('aiSettingUrl').value = 'https://ttsmaker.com/v1';
-    document.getElementById('aiSettingModel').value = 'tts-1';
-    document.getElementById('aiSettingVoice').value = 'fa-IR';
-    document.getElementById('aiSettingKey').value = '';
-    document.getElementById('aiSettingKey').placeholder = 'از ttsmaker.com کلید رایگان بگیرید';
-    showToast('TTSMaker: رایگان آنلاین فارسی — ttsmaker.com/fa');
+    localStorage.setItem('ai_provider', 'openai');
+    showToast('Kokoro: رایگان — github.com/eduardolat/kokoro-web');
 }
 
 // 🔧 به‌روزرسانی ظاهر دکمه 🤖 بر اساس وجود کلید
@@ -9051,6 +9050,56 @@ function _updateAIKeyBtn() {
 }
 
 // ════════════════════════════════════════════════════════════════════
+// 🗣️ VoiceRSS — رایگان، فارسی، ۱۰۰۰ درخواست/روز
+// ════════════════════════════════════════════════════════════════════
+function _speakWithVoiceRSS(text) {
+    var apiKey = localStorage.getItem('openai_api_key');
+    if (!apiKey) {
+        _speakWithWebSpeech(text);
+        return;
+    }
+    var voice = localStorage.getItem('openai_api_voice') || 'fa-ir';
+    var maxLen = 200;
+    var textToSpeak = text.length > maxLen ? text.substring(0, maxLen) : text;
+    var url = 'https://api.voicerss.org/?key=' + apiKey + '&hl=' + voice + '&src=' + encodeURIComponent(textToSpeak);
+    console.log('[TTS] Using VoiceRSS, voice:', voice);
+    if (_ttsAudio) {
+        try { _ttsAudio.pause(); _ttsAudio.src = ''; } catch(e) {}
+    }
+    _ttsAudio = new Audio(url);
+    _ttsAudio.onplaying = function() { console.log('[TTS] VoiceRSS playing'); };
+    _ttsAudio.onended = function() {
+        console.log('[TTS] VoiceRSS ended');
+        _ttsAudio = null;
+        _resetTTSButton();
+    };
+    _ttsAudio.onerror = function() {
+        console.warn('[TTS] VoiceRSS error');
+        _ttsAudio = null;
+        _resetTTSButton();
+        showToast('خطای VoiceRSS — کلید را بررسی کنید (🤖)');
+    };
+    var p = _ttsAudio.play();
+    if (p && p.catch) {
+        p.catch(function(e) {
+            console.warn('[TTS] VoiceRSS play() failed:', e);
+            _ttsAudio = null;
+            _resetTTSButton();
+            showToast('خطای VoiceRSS');
+        });
+    }
+    // تایم‌اوت ۱۰ ثانیه
+    setTimeout(function() {
+        if (_ttsAudio && _ttsAudio.readyState < 2) {
+            try { _ttsAudio.pause(); _ttsAudio.src = ''; } catch(e) {}
+            _ttsAudio = null;
+            _resetTTSButton();
+            showToast('خطای VoiceRSS — اینترنت را بررسی کنید');
+        }
+    }, 10000);
+}
+
+// ════════════════════════════════════════════════════════════════════
 // 🗣️ موتور ۱: OpenAI TTS — صدای هوش مصنوعی طبیعی فارسی
 // ════════════════════════════════════════════════════════════════════
 async function _speakWithOpenAI(text, isRetry) {
@@ -9058,6 +9107,12 @@ async function _speakWithOpenAI(text, isRetry) {
     if (!apiKey) {
         console.log('[TTS] No API key, trying Web Speech');
         _speakWithWebSpeech(text);
+        return;
+    }
+    // 🔧 اگر provider = voicerss، از فرمت VoiceRSS استفاده کن
+    var provider = localStorage.getItem('ai_provider') || 'openai';
+    if (provider === 'voicerss') {
+        _speakWithVoiceRSS(text);
         return;
     }
     var apiUrl = localStorage.getItem('openai_api_url') || 'https://api.openai.com/v1';
