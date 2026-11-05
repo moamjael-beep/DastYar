@@ -3564,6 +3564,67 @@ body.locked .header-actions button {
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════════
+     🤖 مودال تنظیمات هوش مصنوعی (AI TTS Settings)
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="aiSettingsOverlay" style="z-index: 12000;">
+    <div class="modal" style="max-width: 480px;">
+        <h2>🤖 تنظیمات هوش مصنوعی</h2>
+        <p style="text-align:center;color:#666;font-size:12px;margin-bottom:16px;">برای خواندن صوتی با هوش مصنوعی</p>
+
+        <div class="contact-form-section">
+            <div class="contact-form-section-title">🔑 کلید API</div>
+            <div class="contact-form-field">
+                <input type="text" id="aiSettingKey" placeholder="sk-..." style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:13px;direction:ltr;">
+            </div>
+        </div>
+
+        <div class="contact-form-section">
+            <div class="contact-form-section-title">🌐 آدرس سرور (API URL)</div>
+            <!-- دکمه‌های پیش‌تنظیم -->
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+                <button onclick="aiPresetOpenAI()" style="padding:6px 12px;border-radius:6px;border:1px solid #1976D2;background:#e3f2fd;color:#1565C0;font-size:11px;cursor:pointer;font-family:inherit;">OpenAI</button>
+                <button onclick="aiPresetGoogle()" style="padding:6px 12px;border-radius:6px;border:1px solid #4CAF50;background:#e8f5e9;color:#2E7D32;font-size:11px;cursor:pointer;font-family:inherit;">Google $300 رایگان</button>
+                <button onclick="aiPresetAzure()" style="padding:6px 12px;border-radius:6px;border:1px solid #0078D4;background:#e1f5fe;color:#0061A7;font-size:11px;cursor:pointer;font-family:inherit;">Azure رایگان</button>
+            </div>
+            <div class="contact-form-field">
+                <input type="text" id="aiSettingUrl" placeholder="https://api.openai.com/v1" value="https://api.openai.com/v1" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:13px;direction:ltr;">
+            </div>
+            <div style="margin-top:8px;font-size:11px;color:#888;line-height:1.6;">
+                <b>OpenAI</b>: ارزان‌ترین ($0.015/1K)، صدای طبیعی فارسی ✅<br>
+                <b>Google Cloud</b>: $300 اعتبار رایگان، صدای فارسی ✅<br>
+                <b>Azure</b>: ۵۰۰K کاراکتر/ماه رایگان، صداهای بومی فارسی ✅<br>
+                <span style="color:#e53935;">Qwen/DeepSeek/Z.ai: فارسی TTS پشتیبانی نمی‌کنند</span>
+            </div>
+        </div>
+
+        <div class="contact-form-section">
+            <div class="contact-form-section-title">📦 مدل (Model)</div>
+            <div class="contact-form-field">
+                <input type="text" id="aiSettingModel" placeholder="tts-1" value="tts-1" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:13px;direction:ltr;">
+            </div>
+            <div style="margin-top:4px;font-size:11px;color:#888;">
+                OpenAI: tts-1 (ارزان) یا tts-1-hd (باکیفیت)
+            </div>
+        </div>
+
+        <div class="contact-form-section">
+            <div class="contact-form-section-title">🎤 صدا (Voice)</div>
+            <div class="contact-form-field">
+                <input type="text" id="aiSettingVoice" placeholder="alloy" value="alloy" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:13px;direction:ltr;">
+            </div>
+            <div style="margin-top:4px;font-size:11px;color:#888;">
+                OpenAI: alloy, echo, fable, onyx, nova, shimmer
+            </div>
+        </div>
+
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeAISettings()">انصراف</button>
+            <button class="btn btn-primary" onclick="saveAISettings()">ذخیره</button>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
      📋 مودال انتخاب فرمت گزارش (HTML / PDF / JSON)
      ════════════════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="reportFormatOverlay" style="z-index: 12000;">
@@ -3698,7 +3759,7 @@ body.locked .header-actions button {
 //            cross-origin media WITHOUT CORS headers (fetch needs CORS).
 //            Added 8s timeout for Web Speech API (if no onend/onerror, try next).
 //            Added 8s timeout per online URL. Added "در حال خواندن..." toast.
-const APP_VERSION = 'v135-2026-11-05-tts-429-retry';
+const APP_VERSION = 'v137-2026-11-05-ai-presets';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -8900,39 +8961,63 @@ let _ttsSpeaking = false;
 let _ttsCurrentBtn = null;
 let _ttsAudio = null;
 
-// 🔧 تنظیم کلید و آدرس API هوش مصنوعی
+// 🔧 تنظیمات هوش مصنوعی — مودال پیشرفته
 function setupAIApiKey() {
-    var currentKey = localStorage.getItem('openai_api_key') || '';
-    var currentUrl = localStorage.getItem('openai_api_url') || 'https://api.openai.com/v1';
-    var key = prompt(
-        '🤖 تنظیمات هوش مصنوعی\n\n' +
-        '۱) کلید API را وارد کنید:\n' +
-        '   (از platform.openai.com/api-keys)\n\n' +
-        '۲) اگر OpenAI فیلتر است، در مرحله بعد آدرس پروکسی را وارد کنید.',
-        currentKey
-    );
-    if (key === null) return;
-    if (key.trim()) {
-        localStorage.setItem('openai_api_key', key.trim());
-        // مرحله ۲: آدرس API
-        var url = prompt(
-            'آدرس API را وارد کنید:\n\n' +
-            'پیش‌فرض (اگر فیلتر نیست): https://api.openai.com/v1\n\n' +
-            'اگر فیلتر است، آدرس پروکسی/آینه را وارد کنید.\n' +
-            'مثال پروکسی: https://corsproxy.io/?url=https://api.openai.com/v1',
-            currentUrl
-        );
-        if (url !== null && url.trim()) {
-            localStorage.setItem('openai_api_url', url.trim());
-        }
+    // مقادیر فعلی را در فیلدها قرار بده
+    document.getElementById('aiSettingKey').value = localStorage.getItem('openai_api_key') || '';
+    document.getElementById('aiSettingUrl').value = localStorage.getItem('openai_api_url') || 'https://api.openai.com/v1';
+    document.getElementById('aiSettingModel').value = localStorage.getItem('openai_api_model') || 'tts-1';
+    document.getElementById('aiSettingVoice').value = localStorage.getItem('openai_api_voice') || 'alloy';
+    // نمایش مودال
+    document.getElementById('aiSettingsOverlay').classList.add('active');
+}
+
+function saveAISettings() {
+    var key = document.getElementById('aiSettingKey').value.trim();
+    var url = document.getElementById('aiSettingUrl').value.trim() || 'https://api.openai.com/v1';
+    var model = document.getElementById('aiSettingModel').value.trim() || 'tts-1';
+    var voice = document.getElementById('aiSettingVoice').value.trim() || 'alloy';
+    if (key) {
+        localStorage.setItem('openai_api_key', key);
+        localStorage.setItem('openai_api_url', url);
+        localStorage.setItem('openai_api_model', model);
+        localStorage.setItem('openai_api_voice', voice);
         showToast('تنظیمات هوش مصنوعی ذخیره شد ✓');
-        _updateAIKeyBtn();
     } else {
         localStorage.removeItem('openai_api_key');
         localStorage.removeItem('openai_api_url');
+        localStorage.removeItem('openai_api_model');
+        localStorage.removeItem('openai_api_voice');
         showToast('تنظیمات حذف شد');
-        _updateAIKeyBtn();
     }
+    closeAISettings();
+    _updateAIKeyBtn();
+}
+
+function closeAISettings() {
+    document.getElementById('aiSettingsOverlay').classList.remove('active');
+}
+
+// 🔧 پیش‌تنظیم‌ها — با یک کلیک تنظیمات سرویس پر شود
+function aiPresetOpenAI() {
+    document.getElementById('aiSettingUrl').value = 'https://api.openai.com/v1';
+    document.getElementById('aiSettingModel').value = 'tts-1';
+    document.getElementById('aiSettingVoice').value = 'alloy';
+    document.getElementById('aiSettingKey').placeholder = 'sk-... (از platform.openai.com)';
+}
+function aiPresetGoogle() {
+    document.getElementById('aiSettingUrl').value = 'https://texttospeech.googleapis.com/v1';
+    document.getElementById('aiSettingModel').value = 'tts-1';
+    document.getElementById('aiSettingVoice').value = 'alloy';
+    document.getElementById('aiSettingKey').placeholder = 'Google Cloud API Key (از console.cloud.google.com)';
+    showToast('Google Cloud: $300 اعتبار رایگان — از console.cloud.google.com کلید بگیرید');
+}
+function aiPresetAzure() {
+    document.getElementById('aiSettingUrl').value = 'https://eastus.tts.speech.microsoft.com';
+    document.getElementById('aiSettingModel').value = 'tts-1';
+    document.getElementById('aiSettingVoice').value = 'alloy';
+    document.getElementById('aiSettingKey').placeholder = 'Azure Key (از portal.azure.com)';
+    showToast('Azure: ۵۰۰K کاراکتر/ماه رایگان — صداهای فارسی Dilara و Farid');
 }
 
 // 🔧 به‌روزرسانی ظاهر دکمه 🤖 بر اساس وجود کلید
@@ -8969,9 +9054,9 @@ async function _speakWithOpenAI(text, isRetry) {
             'Authorization': 'Bearer ' + apiKey
         };
         var body = JSON.stringify({
-            model: 'tts-1',
+            model: localStorage.getItem('openai_api_model') || 'tts-1',
             input: text.substring(0, 4096),
-            voice: 'alloy',
+            voice: localStorage.getItem('openai_api_voice') || 'alloy',
             response_format: 'mp3'
         });
         var response = await fetch(speechUrl, {
