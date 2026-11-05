@@ -3768,7 +3768,7 @@ body.locked .header-actions button {
 //            cross-origin media WITHOUT CORS headers (fetch needs CORS).
 //            Added 8s timeout for Web Speech API (if no onend/onerror, try next).
 //            Added 8s timeout per online URL. Added "در حال خواندن..." toast.
-const APP_VERSION = 'v141-2026-11-05-voicerss-fa';
+const APP_VERSION = 'v142-2026-11-05-voicerss-base64';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -9061,42 +9061,57 @@ function _speakWithVoiceRSS(text) {
     var voice = localStorage.getItem('openai_api_voice') || 'fa-ir';
     var maxLen = 200;
     var textToSpeak = text.length > maxLen ? text.substring(0, maxLen) : text;
-    var url = 'https://api.voicerss.org/?key=' + apiKey + '&hl=' + voice + '&src=' + encodeURIComponent(textToSpeak);
-    console.log('[TTS] Using VoiceRSS, voice:', voice);
-    if (_ttsAudio) {
-        try { _ttsAudio.pause(); _ttsAudio.src = ''; } catch(e) {}
-    }
-    _ttsAudio = new Audio(url);
-    _ttsAudio.onplaying = function() { console.log('[TTS] VoiceRSS playing'); };
-    _ttsAudio.onended = function() {
-        console.log('[TTS] VoiceRSS ended');
-        _ttsAudio = null;
-        _resetTTSButton();
-    };
-    _ttsAudio.onerror = function() {
-        console.warn('[TTS] VoiceRSS error');
-        _ttsAudio = null;
-        _resetTTSButton();
-        showToast('خطای VoiceRSS — کلید را بررسی کنید (🤖)');
-    };
-    var p = _ttsAudio.play();
-    if (p && p.catch) {
-        p.catch(function(e) {
-            console.warn('[TTS] VoiceRSS play() failed:', e);
-            _ttsAudio = null;
-            _resetTTSButton();
-            showToast('خطای VoiceRSS');
+    // 🔧 VoiceRSS برای مرورگر نیاز به b64=true دارد (base64 output)
+    // و c=MP3 برای فرمت صدا
+    var url = 'https://api.voicerss.org/?key=' + apiKey + '&hl=' + voice + '&c=MP3&f=44khz_16bit_stereo&b64=true&src=' + encodeURIComponent(textToSpeak);
+    console.log('[TTS] Using VoiceRSS (base64 mode), voice:', voice);
+
+    // از fetch استفاده می‌کنیم تا خطاها بهتر مدیریت شوند
+    fetch(url)
+        .then(function(response) {
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
+            // VoiceRSS با b64=true متن base64 برمی‌گرداند (نه JSON)
+            return response.text();
+        })
+        .then(function(base64Data) {
+            // بررسی: اگر خطا باشد، متن خطا برمی‌گردد (نه base64)
+            if (base64Data.indexOf('ERROR') === 0 || base64Data.indexOf('<') === 0) {
+                throw new Error(base64Data.substring(0, 100));
+            }
+            // ساخت data URL از base64
+            var audioUrl = 'data:audio/mp3;base64,' + base64Data.trim();
+            console.log('[TTS] VoiceRSS audio received, length:', base64Data.length);
+            if (_ttsAudio) {
+                try { _ttsAudio.pause(); _ttsAudio.src = ''; } catch(e) {}
+            }
+            _ttsAudio = new Audio(audioUrl);
+            _ttsAudio.onended = function() {
+                console.log('[TTS] VoiceRSS ended');
+                _ttsAudio = null;
+                _resetTTSButton();
+            };
+            _ttsAudio.onerror = function() {
+                console.warn('[TTS] VoiceRSS audio error');
+                _ttsAudio = null;
+                _speakWithWebSpeech(text);
+            };
+            return _ttsAudio.play();
+        })
+        .catch(function(e) {
+            console.error('[TTS] VoiceRSS failed:', e);
+            var msg = 'خطای VoiceRSS: ';
+            if (e.message && e.message.indexOf('Failed to fetch') >= 0) {
+                msg += 'ارتباط ناموفق — اینترنت یا کلید را بررسی کنید';
+            } else if (e.message && e.message.indexOf('HTTP') === 0) {
+                msg += e.message + ' — کلید را بررسی کنید (🤖)';
+            } else {
+                msg += (e.message || 'نامشخص').substring(0, 80);
+            }
+            showToast(msg);
+            _speakWithWebSpeech(text);
         });
-    }
-    // تایم‌اوت ۱۰ ثانیه
-    setTimeout(function() {
-        if (_ttsAudio && _ttsAudio.readyState < 2) {
-            try { _ttsAudio.pause(); _ttsAudio.src = ''; } catch(e) {}
-            _ttsAudio = null;
-            _resetTTSButton();
-            showToast('خطای VoiceRSS — اینترنت را بررسی کنید');
-        }
-    }, 10000);
 }
 
 // ════════════════════════════════════════════════════════════════════
