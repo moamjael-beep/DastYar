@@ -3588,69 +3588,24 @@ body.locked .header-actions button {
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════════
-     🤖 مودال تنظیمات هوش مصنوعی — پروژه‌های فارسی GitHub
+     🤖 مودال تنظیمات هوش مصنوعی — فقط Gemini API
      ════════════════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="aiSettingsOverlay" style="z-index: 12000;">
-    <div class="modal" style="max-width: 480px; max-height: 90vh; display: flex; flex-direction: column;">
-        <h2 style="flex-shrink:0;">🤖 خواندن صوتی فارسی</h2>
-        <p style="text-align:center;color:#666;font-size:12px;margin-bottom:12px;flex-shrink:0;">پروژه‌های متن‌باز فارسی GitHub</p>
-        <div style="overflow-y:auto; flex:1; padding-bottom:8px;">
-
-        <!-- پروژه‌های فارسی -->
+    <div class="modal" style="max-width: 420px;">
+        <h2>🤖 تنظیمات هوش مصنوعی</h2>
         <div class="contact-form-section">
-            <div class="contact-form-section-title">📚 پروژه‌های فارسی GitHub</div>
-            <div style="display:flex;flex-direction:column;gap:8px;">
-                <button onclick="aiPresetGoogle()" style="padding:12px;border-radius:10px;border:2px solid #4CAF50;background:#e8f5e9;cursor:pointer;font-family:inherit;text-align:right;">
-                    <b style="color:#2E7D32;font-size:13px;">Google Cloud TTS</b> <span style="font-size:10px;color:#4CAF50;">$300 رایگان</span><br>
-                    <span style="font-size:11px;color:#555;">صدای فارسی ✅ — از console.cloud.google.com کلید بگیرید</span>
-                </button>
-                <button onclick="aiPresetAzure()" style="padding:12px;border-radius:10px;border:2px solid #0078D4;background:#e1f5fe;cursor:pointer;font-family:inherit;text-align:right;">
-                    <b style="color:#0061A7;font-size:13px;">Azure TTS</b> <span style="font-size:10px;color:#4CAF50;">۵۰۰K/ماه رایگان</span><br>
-                    <span style="font-size:11px;color:#555;">صداهای فارسی Dilara و Farid ✅ — از portal.azure.com</span>
-                </button>
-                <button onclick="aiPresetCoqui()" style="padding:12px;border-radius:10px;border:2px solid #FF9800;background:#fff3e0;cursor:pointer;font-family:inherit;text-align:right;">
-                    <b style="color:#E65100;font-size:13px;">Persian-tts-coqui</b> <span style="font-size:10px;color:#888;">(220⭐)</span><br>
-                    <span style="font-size:11px;color:#555;">Self-host، رایگان، فارسی ✅</span>
-                </button>
+            <div class="contact-form-section-title">🔑 کلید Gemini API</div>
+            <div class="contact-form-field">
+                <input type="text" id="aiSettingKey" placeholder="کلید API را اینجا وارد کنید..." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:14px;direction:ltr;">
             </div>
-            <div style="margin-top:8px;font-size:11px;color:#888;">
-                📖 لیست کامل: <a href="https://github.com/karim23657/awesome-Persian-Speech" target="_blank" style="color:#1976D2;">awesome-Persian-Speech (100⭐)</a><br>
-                <span style="color:#e53935;">⚠️ VoiceRSS و Kokoro فارسی پشتیبانی نمی‌کنند</span>
+            <div style="margin-top:8px;font-size:11px;color:#888;line-height:1.6;">
+                کلید را از <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#1976D2;">aistudio.google.com/apikey</a> بگیرید (رایگان)<br>
+                این کلید برای دستیار صوتی و خواندن صوتی استفاده می‌شود.
             </div>
         </div>
-
-        <!-- آدرس سرور -->
-        <div class="contact-form-section">
-            <div class="contact-form-section-title">🌐 آدرس سرور (API URL)</div>
-            <div class="contact-form-field">
-                <input type="text" id="aiSettingUrl" placeholder="آدرس سرور TTS..." style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:13px;direction:ltr;">
-            </div>
-        </div>
-
-        <!-- کلید API -->
-        <div class="contact-form-section">
-            <div class="contact-form-section-title">🔑 کلید API (اگر نیاز است)</div>
-            <div class="contact-form-field">
-                <input type="text" id="aiSettingKey" placeholder="کلید API (برای Kokoro نیازی نیست)..." style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:13px;direction:ltr;">
-            </div>
-        </div>
-
-        <!-- مدل و صدا -->
-        <div class="contact-form-row">
-            <div class="contact-form-field">
-                <label>📦 مدل</label>
-                <input type="text" id="aiSettingModel" placeholder="tts-1" value="tts-1" style="width:100%;padding:8px;border:2px solid #e0e0e0;border-radius:6px;font-family:inherit;font-size:13px;direction:ltr;">
-            </div>
-            <div class="contact-form-field">
-                <label>🎤 صدا</label>
-                <input type="text" id="aiSettingVoice" placeholder="alloy" value="alloy" style="width:100%;padding:8px;border:2px solid #e0e0e0;border-radius:6px;font-family:inherit;font-size:13px;direction:ltr;">
-            </div>
-        </div>
-
-        <div class="modal-buttons" style="flex-shrink:0;">
+        <div class="modal-buttons">
             <button class="btn btn-secondary" onclick="closeAISettings()">انصراف</button>
             <button class="btn btn-primary" onclick="saveAISettings()">ذخیره</button>
-        </div>
         </div>
     </div>
 </div>
@@ -3790,7 +3745,7 @@ body.locked .header-actions button {
 //            cross-origin media WITHOUT CORS headers (fetch needs CORS).
 //            Added 8s timeout for Web Speech API (if no onend/onerror, try next).
 //            Added 8s timeout per online URL. Added "در حال خواندن..." toast.
-const APP_VERSION = 'v144-2026-11-05-voice-assistant';
+const APP_VERSION = 'v145-2026-11-05-gemini-only';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -8992,34 +8947,26 @@ let _ttsSpeaking = false;
 let _ttsCurrentBtn = null;
 let _ttsAudio = null;
 
-// 🔧 تنظیمات هوش مصنوعی — مودال پیشرفته
+// 🔧 تنظیمات هوش مصنوعی — فقط کلید Gemini API
 function setupAIApiKey() {
-    // مقادیر فعلی را در فیلدها قرار بده
     document.getElementById('aiSettingKey').value = localStorage.getItem('openai_api_key') || '';
-    document.getElementById('aiSettingUrl').value = localStorage.getItem('openai_api_url') || 'https://api.openai.com/v1';
-    document.getElementById('aiSettingModel').value = localStorage.getItem('openai_api_model') || 'tts-1';
-    document.getElementById('aiSettingVoice').value = localStorage.getItem('openai_api_voice') || 'alloy';
-    // نمایش مودال
     document.getElementById('aiSettingsOverlay').classList.add('active');
 }
 
 function saveAISettings() {
     var key = document.getElementById('aiSettingKey').value.trim();
-    var url = document.getElementById('aiSettingUrl').value.trim() || 'https://api.openai.com/v1';
-    var model = document.getElementById('aiSettingModel').value.trim() || 'tts-1';
-    var voice = document.getElementById('aiSettingVoice').value.trim() || 'alloy';
     if (key) {
         localStorage.setItem('openai_api_key', key);
-        localStorage.setItem('openai_api_url', url);
-        localStorage.setItem('openai_api_model', model);
-        localStorage.setItem('openai_api_voice', voice);
-        showToast('تنظیمات هوش مصنوعی ذخیره شد ✓');
+        // 🔧 همه چیز خودکار تنظیم می‌شود — فقط با یک کلید
+        localStorage.setItem('ai_provider', 'google');
+        localStorage.setItem('openai_api_model', 'fa-IR-Standard-A');
+        localStorage.setItem('openai_api_voice', 'fa-IR');
+        localStorage.setItem('openai_api_url', 'google');
+        showToast('کلید Gemini ذخیره شد ✓ دستیار صوتی آماده است');
     } else {
         localStorage.removeItem('openai_api_key');
-        localStorage.removeItem('openai_api_url');
-        localStorage.removeItem('openai_api_model');
-        localStorage.removeItem('openai_api_voice');
-        showToast('تنظیمات حذف شد');
+        localStorage.removeItem('ai_provider');
+        showToast('کلید حذف شد');
     }
     closeAISettings();
     _updateAIKeyBtn();
@@ -9029,39 +8976,7 @@ function closeAISettings() {
     document.getElementById('aiSettingsOverlay').classList.remove('active');
 }
 
-// 🔧 پیش‌تنظیم‌ها — فقط سرویس‌هایی که فارسی پشتیبانی می‌کنند
-function aiPresetGoogle() {
-    // Google Cloud TTS — $300 رایگان، فارسی ✅
-    document.getElementById('aiSettingUrl').value = 'google';
-    document.getElementById('aiSettingModel').value = 'fa-IR-Standard-A';
-    document.getElementById('aiSettingVoice').value = 'fa-IR';
-    document.getElementById('aiSettingKey').value = '';
-    document.getElementById('aiSettingKey').placeholder = 'Google Cloud API Key (از console.cloud.google.com)';
-    localStorage.setItem('ai_provider', 'google');
-    showToast('Google Cloud: $300 رایگان — Text-to-Speech API را فعال کنید');
-}
-function aiPresetAzure() {
-    // Azure TTS — ۵۰۰K/ماه رایگان، صداهای فارسی Dilara و Farid
-    document.getElementById('aiSettingUrl').value = 'eastus';
-    document.getElementById('aiSettingModel').value = 'fa-IR-DilaraNeural';
-    document.getElementById('aiSettingVoice').value = 'fa-IR-DilaraNeural';
-    document.getElementById('aiSettingKey').value = '';
-    document.getElementById('aiSettingKey').placeholder = 'Azure Key (از portal.azure.com)';
-    localStorage.setItem('ai_provider', 'azure');
-    showToast('Azure: ۵۰۰K/ماه رایگان — صدای فارسی Dilara (زن) یا Farid (مرد)');
-}
-function aiPresetCoqui() {
-    // Persian-tts-coqui — self-host، رایگان
-    document.getElementById('aiSettingUrl').value = 'http://localhost:5002';
-    document.getElementById('aiSettingModel').value = 'coqui';
-    document.getElementById('aiSettingVoice').value = 'fa';
-    document.getElementById('aiSettingKey').value = '';
-    document.getElementById('aiSettingKey').placeholder = 'نیازی نیست (self-host)';
-    localStorage.setItem('ai_provider', 'openai');
-    showToast('Coqui: روی سرور نصب کنید — github.com/karim23657/Persian-tts-coqui');
-}
-
-// 🔧 به‌روزرسانی ظاهر دکمه 🤖 بر اساس وجود کلید
+// 🔧 به‌روزرسانی ظاهر دکمه 🤖
 function _updateAIKeyBtn() {
     var btn = document.getElementById('aiKeyBtn');
     if (!btn) return;
