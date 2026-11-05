@@ -3698,7 +3698,7 @@ body.locked .header-actions button {
 //            cross-origin media WITHOUT CORS headers (fetch needs CORS).
 //            Added 8s timeout for Web Speech API (if no onend/onerror, try next).
 //            Added 8s timeout per online URL. Added "در حال خواندن..." toast.
-const APP_VERSION = 'v133-2026-11-05-openai-tts';
+const APP_VERSION = 'v134-2026-11-05-openai-tts-proxy-error';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -8900,29 +8900,38 @@ let _ttsSpeaking = false;
 let _ttsCurrentBtn = null;
 let _ttsAudio = null;
 
-// 🔧 تنظیم کلید API هوش مصنوعی
+// 🔧 تنظیم کلید و آدرس API هوش مصنوعی
 function setupAIApiKey() {
     var currentKey = localStorage.getItem('openai_api_key') || '';
+    var currentUrl = localStorage.getItem('openai_api_url') || 'https://api.openai.com/v1';
     var key = prompt(
-        '🔑 کلید API هوش مصنوعی (OpenAI) را وارد کنید:\n\n' +
-        'این کلید برای خواندن صوتی با هوش مصنوعی استفاده می‌شود.\n' +
-        'کلید را از https://platform.openai.com/api-keys بگیرید.\n\n' +
-        '(خالی بگذارید تا حذف شود)',
+        '🤖 تنظیمات هوش مصنوعی\n\n' +
+        '۱) کلید API را وارد کنید:\n' +
+        '   (از platform.openai.com/api-keys)\n\n' +
+        '۲) اگر OpenAI فیلتر است، در مرحله بعد آدرس پروکسی را وارد کنید.',
         currentKey
     );
-    if (key !== null) {
-        if (key.trim()) {
-            localStorage.setItem('openai_api_key', key.trim());
-            showToast('کلید API هوش مصنوعی ذخیره شد ✓');
-            // به‌روزرسانی ظاهر دکمه
-            var btn = document.getElementById('aiKeyBtn');
-            if (btn) btn.style.background = 'rgba(76, 175, 80, 0.35)';
-        } else {
-            localStorage.removeItem('openai_api_key');
-            showToast('کلید API حذف شد');
-            var btn = document.getElementById('aiKeyBtn');
-            if (btn) btn.style.background = 'rgba(255,255,255,0.18)';
+    if (key === null) return;
+    if (key.trim()) {
+        localStorage.setItem('openai_api_key', key.trim());
+        // مرحله ۲: آدرس API
+        var url = prompt(
+            'آدرس API را وارد کنید:\n\n' +
+            'پیش‌فرض (اگر فیلتر نیست): https://api.openai.com/v1\n\n' +
+            'اگر فیلتر است، آدرس پروکسی/آینه را وارد کنید.\n' +
+            'مثال پروکسی: https://corsproxy.io/?url=https://api.openai.com/v1',
+            currentUrl
+        );
+        if (url !== null && url.trim()) {
+            localStorage.setItem('openai_api_url', url.trim());
         }
+        showToast('تنظیمات هوش مصنوعی ذخیره شد ✓');
+        _updateAIKeyBtn();
+    } else {
+        localStorage.removeItem('openai_api_key');
+        localStorage.removeItem('openai_api_url');
+        showToast('تنظیمات حذف شد');
+        _updateAIKeyBtn();
     }
 }
 
@@ -8947,25 +8956,41 @@ async function _speakWithOpenAI(text) {
         _speakWithWebSpeech(text);
         return;
     }
-    console.log('[TTS] Using OpenAI TTS');
+    var apiUrl = localStorage.getItem('openai_api_url') || 'https://api.openai.com/v1';
+    // اگر آدرس با پروکسی corsproxy است، ساختار درخواست فرق می‌کند
+    var isCorsProxy = apiUrl.indexOf('corsproxy.io') >= 0;
+    var speechUrl = isCorsProxy
+        ? apiUrl + encodeURIComponent('/audio/speech')
+        : apiUrl + '/audio/speech';
+    console.log('[TTS] Using OpenAI TTS, URL:', speechUrl);
     try {
-        var response = await fetch('https://api.openai.com/v1/audio/speech', {
+        var headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + apiKey
+        };
+        var body = JSON.stringify({
+            model: 'tts-1',
+            input: text.substring(0, 4096),
+            voice: 'alloy',
+            response_format: 'mp3'
+        });
+        var response = await fetch(speechUrl, {
             method: 'POST',
-            headers: {
-                'Authorization': 'Bearer ' + apiKey,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: 'tts-1',
-                input: text.substring(0, 4096),
-                voice: 'alloy',
-                response_format: 'mp3'
-            })
+            headers: headers,
+            body: body
         });
         if (!response.ok) {
-            var errText = await response.text();
-            console.error('[TTS] OpenAI API error:', response.status, errText);
-            throw new Error('HTTP ' + response.status);
+            var errText = '';
+            try { errText = await response.text(); } catch(e) {}
+            var errMsg = 'خطای API (' + response.status + '): ';
+            if (response.status === 401) errMsg += 'کلید API نامعتبر است';
+            else if (response.status === 429) errMsg += 'محدودیت درخواست — بعداً امتحان کنید';
+            else if (response.status === 403) errMsg += 'دسترسی ممنوع — از VPN استفاده کنید';
+            else errMsg += errText.substring(0, 80);
+            console.error('[TTS] OpenAI error:', response.status, errText);
+            showToast(errMsg);
+            _speakWithWebSpeech(text);
+            return;
         }
         var blob = await response.blob();
         console.log('[TTS] OpenAI audio received:', blob.size, 'bytes');
@@ -8989,8 +9014,14 @@ async function _speakWithOpenAI(text) {
         await _ttsAudio.play();
         console.log('[TTS] OpenAI audio playing');
     } catch(e) {
-        console.error('[TTS] OpenAI TTS failed:', e);
-        showToast('خطای API — کلید را بررسی کنید (🤖)');
+        console.error('[TTS] OpenAI fetch failed:', e);
+        var errMsg = 'ارتباط با API ناموفق: ';
+        if (e.message && (e.message.indexOf('Failed to fetch') >= 0 || e.message.indexOf('NetworkError') >= 0)) {
+            errMsg += 'احتمالاً فیلتر است — دکمه 🤖 را بزنید و آدرس پروکسی تنظیم کنید';
+        } else {
+            errMsg += (e.message || 'نامشخص');
+        }
+        showToast(errMsg);
         _speakWithWebSpeech(text);
     }
 }
