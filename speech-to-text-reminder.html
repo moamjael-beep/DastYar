@@ -3590,19 +3590,32 @@ body.locked .header-actions button {
      🤖 مودال تنظیمات هوش مصنوعی — فقط Gemini API
      ════════════════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="aiSettingsOverlay" style="z-index: 12000;">
-    <div class="modal" style="max-width: 420px;">
-        <h2>🤖 تنظیمات هوش مصنوعی</h2>
+    <div class="modal" style="max-width: 420px; max-height: 90vh; display: flex; flex-direction: column;">
+        <h2 style="flex-shrink:0;">🤖 تنظیمات هوش مصنوعی</h2>
+        <div style="overflow-y:auto; flex:1; padding-bottom:8px;">
         <div class="contact-form-section">
             <div class="contact-form-section-title">🔑 کلید Gemini API</div>
             <div class="contact-form-field">
-                <input type="text" id="aiSettingKey" placeholder="کلید API را اینجا وارد کنید..." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:14px;direction:ltr;">
-            </div>
-            <div style="margin-top:8px;font-size:11px;color:#888;line-height:1.6;">
-                کلید را از <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#1976D2;">aistudio.google.com/apikey</a> بگیرید (رایگان)<br>
-                این کلید برای دستیار صوتی و خواندن صوتی استفاده می‌شود.
+                <input type="text" id="aiSettingKey" placeholder="AIza..." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:14px;direction:ltr;">
             </div>
         </div>
-        <div class="modal-buttons">
+        <div class="contact-form-section" style="background:#fff3e0;">
+            <div style="font-size:12px;color:#555;line-height:1.8;">
+                <b>📋 راهنمای فعال‌سازی:</b><br><br>
+                <b>۱) کلید Gemini</b> (برای دستیار صوتی — فهمیدن دستور):<br>
+                ← به <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#1976D2;">aistudio.google.com/apikey</a> بروید<br>
+                ← Create API key → کلید را کپی کنید<br>
+                ← کلید را بالا وارد کنید<br><br>
+                <b>۲) فعال‌سازی خواندن صوتی</b> (برای صحبت کردن دستیار):<br>
+                ← به <a href="https://console.cloud.google.com/apis/library/texttospeech.googleapis.com" target="_blank" style="color:#1976D2;">console.cloud.google.com</a> بروید<br>
+                ← پروژه‌ای که AI Studio ساخته را انتخاب کنید<br>
+                ← دکمه <b>Enable</b> را بزنید<br>
+                ← همان کلید Gemini برای خواندن هم کار می‌کند<br><br>
+                <span style="color:#e53935;">⚠️ اگر مرحله ۲ را انجام ندهید، دستیار می‌فهمد ولی صحبت نمی‌کند</span>
+            </div>
+        </div>
+        </div>
+        <div class="modal-buttons" style="flex-shrink:0;">
             <button class="btn btn-secondary" onclick="closeAISettings()">انصراف</button>
             <button class="btn btn-primary" onclick="saveAISettings()">ذخیره</button>
         </div>
@@ -3744,7 +3757,7 @@ body.locked .header-actions button {
 //            cross-origin media WITHOUT CORS headers (fetch needs CORS).
 //            Added 8s timeout for Web Speech API (if no onend/onerror, try next).
 //            Added 8s timeout per online URL. Added "در حال خواندن..." toast.
-const APP_VERSION = 'v147-2026-11-05-backup-next-to-bell';
+const APP_VERSION = 'v148-2026-11-05-gemini-setup-guide';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
