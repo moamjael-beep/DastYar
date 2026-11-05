@@ -3698,7 +3698,7 @@ body.locked .header-actions button {
 //            cross-origin media WITHOUT CORS headers (fetch needs CORS).
 //            Added 8s timeout for Web Speech API (if no onend/onerror, try next).
 //            Added 8s timeout per online URL. Added "در حال خواندن..." toast.
-const APP_VERSION = 'v134-2026-11-05-openai-tts-proxy-error';
+const APP_VERSION = 'v135-2026-11-05-tts-429-retry';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -8949,7 +8949,7 @@ function _updateAIKeyBtn() {
 // ════════════════════════════════════════════════════════════════════
 // 🗣️ موتور ۱: OpenAI TTS — صدای هوش مصنوعی طبیعی فارسی
 // ════════════════════════════════════════════════════════════════════
-async function _speakWithOpenAI(text) {
+async function _speakWithOpenAI(text, isRetry) {
     var apiKey = localStorage.getItem('openai_api_key');
     if (!apiKey) {
         console.log('[TTS] No API key, trying Web Speech');
@@ -8982,9 +8982,16 @@ async function _speakWithOpenAI(text) {
         if (!response.ok) {
             var errText = '';
             try { errText = await response.text(); } catch(e) {}
+            // 🔧 429: محدودیت درخواست — retry بعد از ۲ ثانیه
+            if (response.status === 429 && !isRetry) {
+                console.warn('[TTS] 429 rate limited, retrying in 2s...');
+                showToast('محدودیت درخواست — تلاش مجدد...');
+                setTimeout(function() { _speakWithOpenAI(text, true); }, 2000);
+                return;
+            }
             var errMsg = 'خطای API (' + response.status + '): ';
-            if (response.status === 401) errMsg += 'کلید API نامعتبر است';
-            else if (response.status === 429) errMsg += 'محدودیت درخواست — بعداً امتحان کنید';
+            if (response.status === 401) errMsg += 'کلید API نامعتبر است — دکمه 🤖';
+            else if (response.status === 429) errMsg += 'اعتبار/محدودیت تمام شده — platform.openai.com/account/billing را بررسی کنید';
             else if (response.status === 403) errMsg += 'دسترسی ممنوع — از VPN استفاده کنید';
             else errMsg += errText.substring(0, 80);
             console.error('[TTS] OpenAI error:', response.status, errText);
