@@ -3029,6 +3029,7 @@ body.locked .header-actions button {
         <button class="icon-btn share-btn" id="importBtn" onclick="importDatabase()" title="وارد کردن دیتابیس از فایل JSON">📥</button>
         <button class="icon-btn share-btn" id="notifBtn" onclick="toggleNotifications()" title="فعال‌سازی اعلان‌ها">🔔<span class="notif-badge"></span></button>
         <button class="icon-btn share-btn" id="aiKeyBtn" onclick="setupAIApiKey()" title="کلید API هوش مصنوعی" style="background: rgba(255,255,255,0.18);">🤖</button>
+        <button class="icon-btn add-btn" id="voiceAssistantBtn" onclick="startVoiceAssistant()" title="دستیار صوتی هوشمند" style="background: linear-gradient(135deg, #FF6F00, #E65100); width:46px; height:46px; font-size:22px;">🎤</button>
         <button class="icon-btn share-btn" id="shareBtn" onclick="confirmBackup()" title="ذخیره بک‌آپ در فضای ذخیره‌سازی">📤</button>
         <button class="icon-btn add-btn" id="addBtn" onclick="startAdding()" title="افزودن یادآور">+</button>
     </div>
@@ -3567,6 +3568,26 @@ body.locked .header-actions button {
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════════
+     🎤 مودال دستیار صوتی هوشمند
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="voiceAssistantOverlay" style="z-index: 12000;">
+    <div class="modal" style="max-width: 420px; max-height: 90vh; display: flex; flex-direction: column;">
+        <h2 style="flex-shrink:0;">🎤 دستیار صوتی</h2>
+        <div id="vaStatus" style="text-align:center;padding:20px 10px;flex-shrink:0;">
+            <div id="vaIcon" style="font-size:48px;margin-bottom:12px;">🎤</div>
+            <div id="vaText" style="font-size:14px;color:#666;">برای شروع صحبت کنید...</div>
+        </div>
+        <div id="vaTranscript" style="background:#f5f5f5;border-radius:8px;padding:12px;margin:8px 0;font-size:13px;min-height:40px;flex-shrink:0;display:none;"></div>
+        <div id="vaResponse" style="background:#e3f2fd;border-radius:8px;padding:12px;margin:8px 0;font-size:13px;min-height:40px;flex-shrink:0;display:none;"></div>
+        <div id="vaAction" style="background:#e8f5e9;border-radius:8px;padding:8px 12px;margin:8px 0;font-size:12px;color:#2E7D32;flex-shrink:0;display:none;"></div>
+        <div style="flex:1;"></div>
+        <div class="modal-buttons" style="flex-shrink:0;">
+            <button class="btn btn-secondary" onclick="closeVoiceAssistant()">بستن</button>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
      🤖 مودال تنظیمات هوش مصنوعی — پروژه‌های فارسی GitHub
      ════════════════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="aiSettingsOverlay" style="z-index: 12000;">
@@ -3579,21 +3600,22 @@ body.locked .header-actions button {
         <div class="contact-form-section">
             <div class="contact-form-section-title">📚 پروژه‌های فارسی GitHub</div>
             <div style="display:flex;flex-direction:column;gap:8px;">
-                <button onclick="aiPresetCoqui()" style="padding:12px;border-radius:10px;border:2px solid #4CAF50;background:#e8f5e9;cursor:pointer;font-family:inherit;text-align:right;">
-                    <b style="color:#2E7D32;font-size:13px;">Persian-tts-coqui</b> <span style="font-size:10px;color:#888;">(220⭐)</span><br>
-                    <span style="font-size:11px;color:#555;">TTS فارسی با Coqui — نیاز به سرور</span>
+                <button onclick="aiPresetGoogle()" style="padding:12px;border-radius:10px;border:2px solid #4CAF50;background:#e8f5e9;cursor:pointer;font-family:inherit;text-align:right;">
+                    <b style="color:#2E7D32;font-size:13px;">Google Cloud TTS</b> <span style="font-size:10px;color:#4CAF50;">$300 رایگان</span><br>
+                    <span style="font-size:11px;color:#555;">صدای فارسی ✅ — از console.cloud.google.com کلید بگیرید</span>
                 </button>
-                <button onclick="aiPresetVoiceRSS()" style="padding:12px;border-radius:10px;border:2px solid #1976D2;background:#e3f2fd;cursor:pointer;font-family:inherit;text-align:right;">
-                    <b style="color:#1565C0;font-size:13px;">VoiceRSS</b> <span style="font-size:10px;color:#4CAF50;">رایگان</span><br>
-                    <span style="font-size:11px;color:#555;">۱۰۰۰ درخواست/روز رایگان، فارسی ✅ — از voicerss.org کلید بگیرید</span>
+                <button onclick="aiPresetAzure()" style="padding:12px;border-radius:10px;border:2px solid #0078D4;background:#e1f5fe;cursor:pointer;font-family:inherit;text-align:right;">
+                    <b style="color:#0061A7;font-size:13px;">Azure TTS</b> <span style="font-size:10px;color:#4CAF50;">۵۰۰K/ماه رایگان</span><br>
+                    <span style="font-size:11px;color:#555;">صداهای فارسی Dilara و Farid ✅ — از portal.azure.com</span>
                 </button>
-                <button onclick="aiPresetKokoro()" style="padding:12px;border-radius:10px;border:2px solid #FF9800;background:#fff3e0;cursor:pointer;font-family:inherit;text-align:right;">
-                    <b style="color:#E65100;font-size:13px;">Kokoro Web</b> <span style="font-size:10px;color:#888;">(763⭐)</span><br>
-                    <span style="font-size:11px;color:#555;">رایگان، OpenAI-compatible، بدون کلید</span>
+                <button onclick="aiPresetCoqui()" style="padding:12px;border-radius:10px;border:2px solid #FF9800;background:#fff3e0;cursor:pointer;font-family:inherit;text-align:right;">
+                    <b style="color:#E65100;font-size:13px;">Persian-tts-coqui</b> <span style="font-size:10px;color:#888;">(220⭐)</span><br>
+                    <span style="font-size:11px;color:#555;">Self-host، رایگان، فارسی ✅</span>
                 </button>
             </div>
             <div style="margin-top:8px;font-size:11px;color:#888;">
-                📖 لیست کامل: <a href="https://github.com/karim23657/awesome-Persian-Speech" target="_blank" style="color:#1976D2;">awesome-Persian-Speech (100⭐)</a>
+                📖 لیست کامل: <a href="https://github.com/karim23657/awesome-Persian-Speech" target="_blank" style="color:#1976D2;">awesome-Persian-Speech (100⭐)</a><br>
+                <span style="color:#e53935;">⚠️ VoiceRSS و Kokoro فارسی پشتیبانی نمی‌کنند</span>
             </div>
         </div>
 
@@ -3768,7 +3790,7 @@ body.locked .header-actions button {
 //            cross-origin media WITHOUT CORS headers (fetch needs CORS).
 //            Added 8s timeout for Web Speech API (if no onend/onerror, try next).
 //            Added 8s timeout per online URL. Added "در حال خواندن..." toast.
-const APP_VERSION = 'v142-2026-11-05-voicerss-base64';
+const APP_VERSION = 'v144-2026-11-05-voice-assistant';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -9007,35 +9029,36 @@ function closeAISettings() {
     document.getElementById('aiSettingsOverlay').classList.remove('active');
 }
 
-// 🔧 پیش‌تنظیم‌ها — پروژه‌های فارسی
+// 🔧 پیش‌تنظیم‌ها — فقط سرویس‌هایی که فارسی پشتیبانی می‌کنند
+function aiPresetGoogle() {
+    // Google Cloud TTS — $300 رایگان، فارسی ✅
+    document.getElementById('aiSettingUrl').value = 'google';
+    document.getElementById('aiSettingModel').value = 'fa-IR-Standard-A';
+    document.getElementById('aiSettingVoice').value = 'fa-IR';
+    document.getElementById('aiSettingKey').value = '';
+    document.getElementById('aiSettingKey').placeholder = 'Google Cloud API Key (از console.cloud.google.com)';
+    localStorage.setItem('ai_provider', 'google');
+    showToast('Google Cloud: $300 رایگان — Text-to-Speech API را فعال کنید');
+}
+function aiPresetAzure() {
+    // Azure TTS — ۵۰۰K/ماه رایگان، صداهای فارسی Dilara و Farid
+    document.getElementById('aiSettingUrl').value = 'eastus';
+    document.getElementById('aiSettingModel').value = 'fa-IR-DilaraNeural';
+    document.getElementById('aiSettingVoice').value = 'fa-IR-DilaraNeural';
+    document.getElementById('aiSettingKey').value = '';
+    document.getElementById('aiSettingKey').placeholder = 'Azure Key (از portal.azure.com)';
+    localStorage.setItem('ai_provider', 'azure');
+    showToast('Azure: ۵۰۰K/ماه رایگان — صدای فارسی Dilara (زن) یا Farid (مرد)');
+}
 function aiPresetCoqui() {
-    document.getElementById('aiSettingUrl').value = 'http://localhost:5002/api/tts';
+    // Persian-tts-coqui — self-host، رایگان
+    document.getElementById('aiSettingUrl').value = 'http://localhost:5002';
     document.getElementById('aiSettingModel').value = 'coqui';
     document.getElementById('aiSettingVoice').value = 'fa';
     document.getElementById('aiSettingKey').value = '';
     document.getElementById('aiSettingKey').placeholder = 'نیازی نیست (self-host)';
     localStorage.setItem('ai_provider', 'openai');
-    showToast('Persian-tts-coqui: روی سرور نصب کنید — github.com/karim23657/Persian-tts-coqui');
-}
-function aiPresetVoiceRSS() {
-    // VoiceRSS — رایگان، فارسی، ۱۰۰۰ درخواست/روز
-    // ثبت‌نام: https://voicerss.org
-    document.getElementById('aiSettingUrl').value = 'https://api.voicerss.org/';
-    document.getElementById('aiSettingModel').value = 'voicerss';
-    document.getElementById('aiSettingVoice').value = 'fa-ir';
-    document.getElementById('aiSettingKey').value = '';
-    document.getElementById('aiSettingKey').placeholder = 'کلید رایگان از voicerss.org';
-    localStorage.setItem('ai_provider', 'voicerss');
-    showToast('VoiceRSS: رایگان فارسی — از voicerss.org کلید بگیرید');
-}
-function aiPresetKokoro() {
-    document.getElementById('aiSettingUrl').value = 'https://voice-generator.pages.dev/v1';
-    document.getElementById('aiSettingModel').value = 'tts-1';
-    document.getElementById('aiSettingVoice').value = 'af_bella';
-    document.getElementById('aiSettingKey').value = 'not-needed';
-    document.getElementById('aiSettingKey').placeholder = 'نیازی نیست (رایگان)';
-    localStorage.setItem('ai_provider', 'openai');
-    showToast('Kokoro: رایگان — github.com/eduardolat/kokoro-web');
+    showToast('Coqui: روی سرور نصب کنید — github.com/karim23657/Persian-tts-coqui');
 }
 
 // 🔧 به‌روزرسانی ظاهر دکمه 🤖 بر اساس وجود کلید
@@ -9050,72 +9073,387 @@ function _updateAIKeyBtn() {
 }
 
 // ════════════════════════════════════════════════════════════════════
-// 🗣️ VoiceRSS — رایگان، فارسی، ۱۰۰۰ درخواست/روز
+// 🎤 دستیار صوتی هوشمند — STT → AI → Action → TTS
 // ════════════════════════════════════════════════════════════════════
-function _speakWithVoiceRSS(text) {
+// این سیستم:
+//   ۱) صحبت کاربر را می‌شنود (Web Speech API)
+//   ۲) متن را به هوش مصنوعی می‌فرستد (Google Gemini / OpenAI)
+//   ۳) هوش مصنوعی دستور را می‌فهمد و اجرا می‌کند
+//   ۴) پاسخ را با صدا می‌گوید (TTS)
+
+let _vaRecognition = null;
+let _vaListening = false;
+
+function startVoiceAssistant() {
     var apiKey = localStorage.getItem('openai_api_key');
     if (!apiKey) {
-        _speakWithWebSpeech(text);
+        showToast('ابتدا کلید API را تنظیم کنید (🤖)');
+        setupAIApiKey();
         return;
     }
-    var voice = localStorage.getItem('openai_api_voice') || 'fa-ir';
-    var maxLen = 200;
-    var textToSpeak = text.length > maxLen ? text.substring(0, maxLen) : text;
-    // 🔧 VoiceRSS برای مرورگر نیاز به b64=true دارد (base64 output)
-    // و c=MP3 برای فرمت صدا
-    var url = 'https://api.voicerss.org/?key=' + apiKey + '&hl=' + voice + '&c=MP3&f=44khz_16bit_stereo&b64=true&src=' + encodeURIComponent(textToSpeak);
-    console.log('[TTS] Using VoiceRSS (base64 mode), voice:', voice);
+    // نمایش مودال
+    document.getElementById('voiceAssistantOverlay').classList.add('active');
+    // ریست
+    document.getElementById('vaTranscript').style.display = 'none';
+    document.getElementById('vaResponse').style.display = 'none';
+    document.getElementById('vaAction').style.display = 'none';
+    document.getElementById('vaIcon').textContent = '🎤';
+    document.getElementById('vaText').textContent = 'در حال شنیدن... صحبت کنید';
+    // شروع STT
+    _vaStartListening();
+}
 
-    // از fetch استفاده می‌کنیم تا خطاها بهتر مدیریت شوند
-    fetch(url)
-        .then(function(response) {
-            if (!response.ok) {
-                throw new Error('HTTP ' + response.status);
-            }
-            // VoiceRSS با b64=true متن base64 برمی‌گرداند (نه JSON)
-            return response.text();
-        })
-        .then(function(base64Data) {
-            // بررسی: اگر خطا باشد، متن خطا برمی‌گردد (نه base64)
-            if (base64Data.indexOf('ERROR') === 0 || base64Data.indexOf('<') === 0) {
-                throw new Error(base64Data.substring(0, 100));
-            }
-            // ساخت data URL از base64
-            var audioUrl = 'data:audio/mp3;base64,' + base64Data.trim();
-            console.log('[TTS] VoiceRSS audio received, length:', base64Data.length);
-            if (_ttsAudio) {
-                try { _ttsAudio.pause(); _ttsAudio.src = ''; } catch(e) {}
-            }
-            _ttsAudio = new Audio(audioUrl);
-            _ttsAudio.onended = function() {
-                console.log('[TTS] VoiceRSS ended');
-                _ttsAudio = null;
-                _resetTTSButton();
-            };
-            _ttsAudio.onerror = function() {
-                console.warn('[TTS] VoiceRSS audio error');
-                _ttsAudio = null;
-                _speakWithWebSpeech(text);
-            };
-            return _ttsAudio.play();
-        })
-        .catch(function(e) {
-            console.error('[TTS] VoiceRSS failed:', e);
-            var msg = 'خطای VoiceRSS: ';
-            if (e.message && e.message.indexOf('Failed to fetch') >= 0) {
-                msg += 'ارتباط ناموفق — اینترنت یا کلید را بررسی کنید';
-            } else if (e.message && e.message.indexOf('HTTP') === 0) {
-                msg += e.message + ' — کلید را بررسی کنید (🤖)';
+function _vaStartListening() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        document.getElementById('vaText').textContent = 'مرورگر از تشخیص صوت پشتیبانی نمی‌کند';
+        return;
+    }
+    if (!isReachable) {
+        document.getElementById('vaText').textContent = 'اینترنت در دسترس نیست';
+        return;
+    }
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    _vaRecognition = new SR();
+    _vaRecognition.lang = 'fa-IR';
+    _vaRecognition.continuous = false;
+    _vaRecognition.interimResults = true;
+
+    var finalText = '';
+
+    _vaRecognition.onresult = function(event) {
+        var interim = '';
+        for (var i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+                finalText += event.results[i][0].transcript;
             } else {
-                msg += (e.message || 'نامشخص').substring(0, 80);
+                interim += event.results[i][0].transcript;
             }
-            showToast(msg);
-            _speakWithWebSpeech(text);
-        });
+        }
+        var display = finalText || interim;
+        if (display.trim()) {
+            document.getElementById('vaTranscript').textContent = display;
+            document.getElementById('vaTranscript').style.display = 'block';
+        }
+    };
+
+    _vaRecognition.onerror = function(event) {
+        console.error('[VA] STT error:', event.error);
+        document.getElementById('vaText').textContent = 'خطا: ' + event.error;
+        _vaListening = false;
+    };
+
+    _vaRecognition.onend = function() {
+        _vaListening = false;
+        if (finalText.trim()) {
+            document.getElementById('vaIcon').textContent = '🤖';
+            document.getElementById('vaText').textContent = 'در حال پردازش...';
+            // ارسال به هوش مصنوعی
+            _vaProcessCommand(finalText.trim());
+        } else {
+            document.getElementById('vaIcon').textContent = '🎤';
+            document.getElementById('vaText').textContent = 'چیزی شنیده نشد. دوباره تلاش کنید';
+        }
+    };
+
+    try {
+        _vaRecognition.start();
+        _vaListening = true;
+    } catch(e) {
+        console.error('[VA] start failed:', e);
+    }
 }
 
 // ════════════════════════════════════════════════════════════════════
-// 🗣️ موتور ۱: OpenAI TTS — صدای هوش مصنوعی طبیعی فارسی
+// 🧠 پردازش دستور با هوش مصنوعی (Google Gemini)
+// ════════════════════════════════════════════════════════════════════
+async function _vaProcessCommand(userText) {
+    var apiKey = localStorage.getItem('openai_api_key');
+    var provider = localStorage.getItem('ai_provider') || 'google';
+
+    // ساخت context برنامه برای هوش مصنوعی
+    var items = getDB();
+    var groups = getGroups();
+    var taskList = items.slice(0, 20).map(function(i) {
+        return { id: i.id, text: i.text, done: i.done, urgent: i.urgent, groupId: i.groupId };
+    });
+    var groupList = groups.map(function(g) {
+        return { id: g.id, name: g.name };
+    });
+
+    var systemPrompt = 'تو یک دستیار صوتی فارسی برای برنامه «یادآور صوتی» هستی. ' +
+        'کاربر به فارسی صحبت می‌کند و تو باید دستورش را بفهمی و اجرا کنی. ' +
+        'پاسخ را به صورت JSON بده با این ساختار:\n' +
+        '{"reply": "پاسخ فارسی کوتاه", "action": "نام دستور", "params": {}}\n\n' +
+        'دستورات قابل اجرا:\n' +
+        '- create_task: params={text, deadline_type("1h","3h","1d","3d","1w"), group_id, urgent(true/false)}\n' +
+        '- delete_task: params={task_id}\n' +
+        '- mark_done: params={task_id}\n' +
+        '- mark_urgent: params={task_id}\n' +
+        '- list_tasks: params={}\n' +
+        '- none: params={} (وقتی دستور قابل اجرا نیست)\n\n' +
+        'تسک‌های فعلی:\n' + JSON.stringify(taskList) + '\n\n' +
+        'گروه‌ها:\n' + JSON.stringify(groupList) + '\n\n' +
+        'نکته: deadline_type اختیاری است (پیش‌فرض "1d"). group_id اختیاری است (پیش‌فرض "all").\n' +
+        'پاسخ همیشه فارسی و کوتاه باشد.';
+
+    try {
+        var response, data;
+        if (provider === 'google') {
+            // Google Gemini API
+            var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
+            response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: systemPrompt + '\n\nکاربر گفت: ' + userText }] }],
+                    generationConfig: { responseMimeType: 'application/json' }
+                })
+            });
+            data = await response.json();
+            var aiText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0].text;
+            if (!aiText) throw new Error('پاسخ نامعتبر از هوش مصنوعی');
+        } else {
+            // OpenAI-compatible API
+            var apiUrl = localStorage.getItem('openai_api_url') || 'https://api.openai.com/v1';
+            response = await fetch(apiUrl + '/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + apiKey
+                },
+                body: JSON.stringify({
+                    model: localStorage.getItem('openai_api_model') || 'gpt-4o-mini',
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: userText }
+                    ],
+                    response_format: { type: 'json_object' }
+                })
+            });
+            data = await response.json();
+            aiText = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+            if (!aiText) throw new Error('پاسخ نامعتبر از هوش مصنوعی');
+        }
+
+        console.log('[VA] AI response:', aiText);
+        var result = JSON.parse(aiText);
+
+        // نمایش پاسخ
+        document.getElementById('vaResponse').textContent = result.reply || '';
+        document.getElementById('vaResponse').style.display = 'block';
+
+        // اجرای دستور
+        if (result.action && result.action !== 'none') {
+            var actionMsg = _vaExecuteAction(result.action, result.params || {});
+            document.getElementById('vaAction').textContent = '✓ ' + actionMsg;
+            document.getElementById('vaAction').style.display = 'block';
+        }
+
+        // صحبت کردن پاسخ
+        document.getElementById('vaIcon').textContent = '💬';
+        document.getElementById('vaText').textContent = 'در حال پاسخ...';
+        _vaSpeak(result.reply || 'فهمیدم');
+
+    } catch(e) {
+        console.error('[VA] AI failed:', e);
+        document.getElementById('vaText').textContent = 'خطا: ' + (e.message || '').substring(0, 60);
+        document.getElementById('vaIcon').textContent = '❌';
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ⚡ اجرای دستور هوش مصنوعی
+// ════════════════════════════════════════════════════════════════════
+function _vaExecuteAction(action, params) {
+    var items = getDB();
+    switch(action) {
+        case 'create_task':
+            var hours = { '1h': 1, '3h': 3, '1d': 24, '3d': 72, '1w': 168 };
+            var h = hours[params.deadline_type] || 24;
+            var deadline = new Date(Date.now() + h * 3600000).toISOString();
+            var newItem = {
+                id: 'r_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                text: params.text || 'یادآور',
+                createdAt: new Date().toISOString(),
+                deadline: deadline,
+                done: false,
+                groupId: params.group_id || 'all',
+                urgent: params.urgent === true
+            };
+            items.push(newItem);
+            setDB(items);
+            fullRender();
+            return 'یادآور ایجاد شد: ' + (params.text || '');
+
+        case 'delete_task':
+            var before = items.length;
+            items = items.filter(function(i) { return i.id !== params.task_id; });
+            setDB(items);
+            fullRender();
+            return before > items.length ? 'تسک حذف شد' : 'تسک یافت نشد';
+
+        case 'mark_done':
+            items.forEach(function(i) {
+                if (i.id === params.task_id) {
+                    i.done = true;
+                    i.completedAt = new Date().toISOString();
+                }
+            });
+            setDB(items);
+            fullRender();
+            return 'تسک انجام شد';
+
+        case 'mark_urgent':
+            items.forEach(function(i) {
+                if (i.id === params.task_id) i.urgent = true;
+            });
+            setDB(items);
+            fullRender();
+            return 'تسک فوری شد';
+
+        case 'list_tasks':
+            var pending = items.filter(function(i) { return !i.done; });
+            return pending.length + ' تسک انجام‌نشده';
+
+        default:
+            return 'دستور نامشخص';
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🗣️ صحبت کردن پاسخ (TTS)
+// ════════════════════════════════════════════════════════════════════
+function _vaSpeak(text) {
+    if (!text) {
+        document.getElementById('vaIcon').textContent = '✓';
+        document.getElementById('vaText').textContent = 'پایان';
+        return;
+    }
+    // استفاده از TTS موجود (Google/Azure/OpenAI)
+    _ttsSpeaking = true;
+    var provider = localStorage.getItem('ai_provider') || 'google';
+    if (provider === 'google') {
+        _speakWithGoogleCloud(text);
+    } else if (provider === 'azure') {
+        _speakWithAzure(text);
+    } else {
+        _speakWithOpenAI(text);
+    }
+    // بعد از چند ثانیه مودال را آماده استفاده دوباره کن
+    setTimeout(function() {
+        document.getElementById('vaIcon').textContent = '🎤';
+        document.getElementById('vaText').textContent = 'صحبت کنید برای دستور بعدی...';
+        _ttsSpeaking = false;
+    }, text.length * 200 + 2000);
+}
+
+function closeVoiceAssistant() {
+    if (_vaListening && _vaRecognition) {
+        try { _vaRecognition.stop(); } catch(e) {}
+        _vaListening = false;
+    }
+    if (_ttsSpeaking) {
+        _stopAllTTS();
+    }
+    document.getElementById('voiceAssistantOverlay').classList.remove('active');
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🗣️ VoiceRSS — حذف شد (فارسی پشتیبانی نمی‌کند)
+// ════════════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════════
+// 🗣️ Google Cloud TTS — $300 رایگان، فارسی ✅
+// ════════════════════════════════════════════════════════════════════
+function _speakWithGoogleCloud(text) {
+    var apiKey = localStorage.getItem('openai_api_key');
+    if (!apiKey) { _speakWithWebSpeech(text); return; }
+    var voiceName = localStorage.getItem('openai_api_model') || 'fa-IR-Standard-A';
+    var langCode = localStorage.getItem('openai_api_voice') || 'fa-IR';
+    var url = 'https://texttospeech.googleapis.com/v1/text:synthesize?key=' + apiKey;
+    console.log('[TTS] Using Google Cloud TTS, voice:', voiceName);
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            input: { text: text.substring(0, 5000) },
+            voice: { languageCode: langCode, name: voiceName },
+            audioConfig: { audioEncoding: 'MP3', speakingRate: 0.9 }
+        })
+    })
+    .then(function(response) {
+        if (!response.ok) {
+            return response.text().then(function(t) { throw new Error('HTTP ' + response.status + ': ' + t.substring(0, 80)); });
+        }
+        return response.json();
+    })
+    .then(function(data) {
+        if (!data.audioContent) throw new Error('No audio in response');
+        var audioUrl = 'data:audio/mp3;base64,' + data.audioContent;
+        console.log('[TTS] Google audio received');
+        if (_ttsAudio) { try { _ttsAudio.pause(); _ttsAudio.src = ''; } catch(e) {} }
+        _ttsAudio = new Audio(audioUrl);
+        _ttsAudio.onended = function() { _ttsAudio = null; _resetTTSButton(); };
+        _ttsAudio.onerror = function() { _ttsAudio = null; _speakWithWebSpeech(text); };
+        return _ttsAudio.play();
+    })
+    .catch(function(e) {
+        console.error('[TTS] Google TTS failed:', e);
+        var msg = 'خطای Google: ';
+        if (e.message && e.message.indexOf('Failed to fetch') >= 0) msg += 'ارتباط ناموفق — فیلتر؟';
+        else msg += (e.message || '').substring(0, 80);
+        showToast(msg);
+        _speakWithWebSpeech(text);
+    });
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🗣️ Azure TTS — ۵۰۰K/ماه رایگان، صداهای فارسی Dilara و Farid ✅
+// ════════════════════════════════════════════════════════════════════
+function _speakWithAzure(text) {
+    var apiKey = localStorage.getItem('openai_api_key');
+    if (!apiKey) { _speakWithWebSpeech(text); return; }
+    var region = localStorage.getItem('openai_api_url') || 'eastus';
+    var voiceName = localStorage.getItem('openai_api_model') || 'fa-IR-DilaraNeural';
+    var url = 'https://' + region + '.tts.speech.microsoft.com/cognitiveservices/v1';
+    var ssml = '<speak version="1.0" xml:lang="fa-IR"><voice name="' + voiceName + '">' + text.substring(0, 5000).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</voice></speak>';
+    console.log('[TTS] Using Azure TTS, voice:', voiceName, 'region:', region);
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Ocp-Apim-Subscription-Key': apiKey,
+            'Content-Type': 'application/ssml+xml',
+            'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3'
+        },
+        body: ssml
+    })
+    .then(function(response) {
+        if (!response.ok) {
+            return response.text().then(function(t) { throw new Error('HTTP ' + response.status + ': ' + t.substring(0, 80)); });
+        }
+        return response.blob();
+    })
+    .then(function(blob) {
+        console.log('[TTS] Azure audio received:', blob.size, 'bytes');
+        var audioUrl = URL.createObjectURL(blob);
+        if (_ttsAudio) { try { _ttsAudio.pause(); _ttsAudio.src = ''; } catch(e) {} }
+        _ttsAudio = new Audio(audioUrl);
+        _ttsAudio.onended = function() { URL.revokeObjectURL(audioUrl); _ttsAudio = null; _resetTTSButton(); };
+        _ttsAudio.onerror = function() { URL.revokeObjectURL(audioUrl); _ttsAudio = null; _speakWithWebSpeech(text); };
+        return _ttsAudio.play();
+    })
+    .catch(function(e) {
+        console.error('[TTS] Azure TTS failed:', e);
+        var msg = 'خطای Azure: ';
+        if (e.message && e.message.indexOf('Failed to fetch') >= 0) msg += 'ارتباط ناموفق — فیلتر؟';
+        else msg += (e.message || '').substring(0, 80);
+        showToast(msg);
+        _speakWithWebSpeech(text);
+    });
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🗣️ موتور ۱: OpenAI-compatible TTS
 // ════════════════════════════════════════════════════════════════════
 async function _speakWithOpenAI(text, isRetry) {
     var apiKey = localStorage.getItem('openai_api_key');
@@ -9124,10 +9462,19 @@ async function _speakWithOpenAI(text, isRetry) {
         _speakWithWebSpeech(text);
         return;
     }
-    // 🔧 اگر provider = voicerss، از فرمت VoiceRSS استفاده کن
+    // 🔧 بررسی provider: google، azure، یا openai-compatible
     var provider = localStorage.getItem('ai_provider') || 'openai';
+    if (provider === 'google') {
+        _speakWithGoogleCloud(text);
+        return;
+    }
+    if (provider === 'azure') {
+        _speakWithAzure(text);
+        return;
+    }
     if (provider === 'voicerss') {
-        _speakWithVoiceRSS(text);
+        // VoiceRSS فارسی پشتیبانی نمی‌کند — مستقیم به Web Speech برو
+        _speakWithWebSpeech(text);
         return;
     }
     var apiUrl = localStorage.getItem('openai_api_url') || 'https://api.openai.com/v1';
