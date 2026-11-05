@@ -130,12 +130,12 @@ body { padding-bottom: 30px; }
     top: 0;
     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     color: white;
-    padding: 14px 16px;
+    padding: 10px 16px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.15);
     z-index: 9999;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 8px;
     transition: background 0.3s;
 }
 .header.offline {
@@ -154,16 +154,19 @@ body { padding-bottom: 30px; }
 }
 .header-info {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
 }
 .header h1 { font-size: 17px; font-weight: 700; }
 .header-date { font-size: 12px; opacity: 0.9; }
 
 .header-actions {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
+    flex-wrap: wrap;
+    width: 100%;
 }
 .icon-btn {
     background: white;
@@ -3567,9 +3570,10 @@ body.locked .header-actions button {
      🤖 مودال تنظیمات هوش مصنوعی — پروژه‌های فارسی GitHub
      ════════════════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="aiSettingsOverlay" style="z-index: 12000;">
-    <div class="modal" style="max-width: 480px;">
-        <h2>🤖 خواندن صوتی فارسی</h2>
-        <p style="text-align:center;color:#666;font-size:12px;margin-bottom:16px;">پروژه‌های متن‌باز فارسی GitHub</p>
+    <div class="modal" style="max-width: 480px; max-height: 90vh; display: flex; flex-direction: column;">
+        <h2 style="flex-shrink:0;">🤖 خواندن صوتی فارسی</h2>
+        <p style="text-align:center;color:#666;font-size:12px;margin-bottom:12px;flex-shrink:0;">پروژه‌های متن‌باز فارسی GitHub</p>
+        <div style="overflow-y:auto; flex:1; padding-bottom:8px;">
 
         <!-- پروژه‌های فارسی -->
         <div class="contact-form-section">
@@ -3621,9 +3625,10 @@ body.locked .header-actions button {
             </div>
         </div>
 
-        <div class="modal-buttons">
+        <div class="modal-buttons" style="flex-shrink:0;">
             <button class="btn btn-secondary" onclick="closeAISettings()">انصراف</button>
             <button class="btn btn-primary" onclick="saveAISettings()">ذخیره</button>
+        </div>
         </div>
     </div>
 </div>
@@ -3763,7 +3768,7 @@ body.locked .header-actions button {
 //            cross-origin media WITHOUT CORS headers (fetch needs CORS).
 //            Added 8s timeout for Web Speech API (if no onend/onerror, try next).
 //            Added 8s timeout per online URL. Added "در حال خواندن..." toast.
-const APP_VERSION = 'v139-2026-11-05-fa-github-only';
+const APP_VERSION = 'v140-2026-11-05-two-row-header-modal-fix';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
