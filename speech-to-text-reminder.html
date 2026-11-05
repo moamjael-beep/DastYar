@@ -3583,8 +3583,17 @@ body.locked .header-actions button {
             <!-- دکمه‌های پیش‌تنظیم -->
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
                 <button onclick="aiPresetOpenAI()" style="padding:6px 12px;border-radius:6px;border:1px solid #1976D2;background:#e3f2fd;color:#1565C0;font-size:11px;cursor:pointer;font-family:inherit;">OpenAI</button>
-                <button onclick="aiPresetGoogle()" style="padding:6px 12px;border-radius:6px;border:1px solid #4CAF50;background:#e8f5e9;color:#2E7D32;font-size:11px;cursor:pointer;font-family:inherit;">Google $300 رایگان</button>
+                <button onclick="aiPresetGoogle()" style="padding:6px 12px;border-radius:6px;border:1px solid #4CAF50;background:#e8f5e9;color:#2E7D32;font-size:11px;cursor:pointer;font-family:inherit;">Google $300</button>
                 <button onclick="aiPresetAzure()" style="padding:6px 12px;border-radius:6px;border:1px solid #0078D4;background:#e1f5fe;color:#0061A7;font-size:11px;cursor:pointer;font-family:inherit;">Azure رایگان</button>
+                <button onclick="aiPresetKokoro()" style="padding:6px 12px;border-radius:6px;border:1px solid #FF9800;background:#fff3e0;color:#E65100;font-size:11px;cursor:pointer;font-family:inherit;">Kokoro رایگان</button>
+            </div>
+            <!-- لینک پروژه‌های فارسی GitHub -->
+            <div style="margin-top:6px;font-size:11px;color:#666;line-height:1.8;">
+                <b>پروژه‌های فارسی GitHub:</b><br>
+                <a href="https://github.com/karim23657/Persian-tts-coqui" target="_blank" style="color:#1976D2;">Persian-tts-coqui (220⭐)</a> — TTS فارسی با Coqui<br>
+                <a href="https://github.com/karim23657/awesome-Persian-Speech" target="_blank" style="color:#1976D2;">awesome-Persian-Speech (100⭐)</a> — لیست کامل<br>
+                <a href="https://github.com/eduardolat/kokoro-web" target="_blank" style="color:#1976D2;">Kokoro Web (763⭐)</a> — OpenAI-compatible، رایگان<br>
+                <a href="https://ttsmaker.com/fa" target="_blank" style="color:#1976D2;">TTSMaker</a> — رایگان آنلاین فارسی
             </div>
             <div class="contact-form-field">
                 <input type="text" id="aiSettingUrl" placeholder="https://api.openai.com/v1" value="https://api.openai.com/v1" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:13px;direction:ltr;">
@@ -3759,7 +3768,7 @@ body.locked .header-actions button {
 //            cross-origin media WITHOUT CORS headers (fetch needs CORS).
 //            Added 8s timeout for Web Speech API (if no onend/onerror, try next).
 //            Added 8s timeout per online URL. Added "در حال خواندن..." toast.
-const APP_VERSION = 'v137-2026-11-05-ai-presets';
+const APP_VERSION = 'v138-2026-11-05-kokoro-github-fa-tts';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -9018,6 +9027,17 @@ function aiPresetAzure() {
     document.getElementById('aiSettingVoice').value = 'alloy';
     document.getElementById('aiSettingKey').placeholder = 'Azure Key (از portal.azure.com)';
     showToast('Azure: ۵۰۰K کاراکتر/ماه رایگان — صداهای فارسی Dilara و Farid');
+}
+function aiPresetKokoro() {
+    // Kokoro Web — رایگان، OpenAI-compatible، قابل self-host
+    // دمو: https://voice-generator.pages.dev
+    // GitHub: https://github.com/eduardolat/kokoro-web
+    document.getElementById('aiSettingUrl').value = 'https://voice-generator.pages.dev/v1';
+    document.getElementById('aiSettingModel').value = 'tts-1';
+    document.getElementById('aiSettingVoice').value = 'af_bella';
+    document.getElementById('aiSettingKey').value = 'not-needed';
+    document.getElementById('aiSettingKey').placeholder = 'نیازی نیست (رایگان)';
+    showToast('Kokoro: رایگان، OpenAI-compatible — برای فارسی ممکن است نیاز به self-host باشد');
 }
 
 // 🔧 به‌روزرسانی ظاهر دکمه 🤖 بر اساس وجود کلید
