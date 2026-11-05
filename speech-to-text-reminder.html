@@ -3761,7 +3761,7 @@ body.locked .header-actions button {
 //            cross-origin media WITHOUT CORS headers (fetch needs CORS).
 //            Added 8s timeout for Web Speech API (if no onend/onerror, try next).
 //            Added 8s timeout per online URL. Added "در حال خواندن..." toast.
-const APP_VERSION = 'v149-2026-11-05-groq-free';
+const APP_VERSION = 'v150-2026-11-05-groq-speaks';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -9299,8 +9299,8 @@ function _vaSpeak(text) {
     } else if (provider === 'azure') {
         _speakWithAzure(text);
     } else if (provider === 'groq') {
-        // Groq TTS ندارد — از Web Speech استفاده کن
-        _speakWithWebSpeech(text);
+        // Groq TTS ندارد — از Google Translate TTS رایگان استفاده کن
+        _speakWithGoogleTranslateTTS(text);
     } else {
         _speakWithOpenAI(text);
     }
@@ -9309,7 +9309,46 @@ function _vaSpeak(text) {
         document.getElementById('vaIcon').textContent = '🎤';
         document.getElementById('vaText').textContent = 'صحبت کنید برای دستور بعدی...';
         _ttsSpeaking = false;
-    }, text.length * 200 + 2000);
+    }, text.length * 200 + 3000);
+}
+
+// 🔧 Google Translate TTS — رایگان، فارسی، بدون کلید API
+// برای کاربران Groq که TTS ندارند
+function _speakWithGoogleTranslateTTS(text) {
+    var maxLen = 200;
+    var textToSpeak = text.length > maxLen ? text.substring(0, maxLen) : text;
+    var url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=fa&client=tw-ob&q=' + encodeURIComponent(textToSpeak);
+    console.log('[TTS] Using Google Translate TTS for voice assistant');
+    if (_ttsAudio) {
+        try { _ttsAudio.pause(); _ttsAudio.src = ''; } catch(e) {}
+    }
+    _ttsAudio = new Audio(url);
+    _ttsAudio.onended = function() {
+        console.log('[TTS] Google Translate TTS ended');
+        _ttsAudio = null;
+    };
+    _ttsAudio.onerror = function() {
+        console.warn('[TTS] Google Translate TTS error — trying Web Speech');
+        _ttsAudio = null;
+        _speakWithWebSpeech(text);
+    };
+    var p = _ttsAudio.play();
+    if (p && p.catch) {
+        p.catch(function(e) {
+            console.warn('[TTS] play() failed, trying Web Speech:', e);
+            _ttsAudio = null;
+            _speakWithWebSpeech(text);
+        });
+    }
+    // تایم‌اوت ۸ ثانیه
+    setTimeout(function() {
+        if (_ttsAudio && _ttsAudio.readyState < 2) {
+            console.warn('[TTS] Google Translate TTS timeout');
+            try { _ttsAudio.pause(); _ttsAudio.src = ''; } catch(e) {}
+            _ttsAudio = null;
+            _speakWithWebSpeech(text);
+        }
+    }, 8000);
 }
 
 function closeVoiceAssistant() {
