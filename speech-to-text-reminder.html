@@ -3593,27 +3593,31 @@ body.locked .header-actions button {
     <div class="modal" style="max-width: 420px; max-height: 90vh; display: flex; flex-direction: column;">
         <h2 style="flex-shrink:0;">🤖 تنظیمات هوش مصنوعی</h2>
         <div style="overflow-y:auto; flex:1; padding-bottom:8px;">
+
+        <!-- انتخاب سرویس -->
         <div class="contact-form-section">
-            <div class="contact-form-section-title">🔑 کلید Gemini API</div>
+            <div class="contact-form-section-title">📚 انتخاب سرویس (رایگان، بدون کردیت کارت)</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                <button onclick="aiSelectGroq()" id="btnGroq" style="padding:12px;border-radius:10px;border:2px solid #FF6F00;background:#fff3e0;cursor:pointer;font-family:inherit;text-align:right;">
+                    <b style="color:#E65100;font-size:13px;">⚡ Groq (پیشنهادی)</b><br>
+                    <span style="font-size:11px;color:#555;">۱۰۰۰ درخواست/روز رایگان — بدون کردیت کارت — بسیار سریع</span>
+                </button>
+                <button onclick="aiSelectGemini()" id="btnGemini" style="padding:12px;border-radius:10px;border:2px solid #1976D2;background:#e3f2fd;cursor:pointer;font-family:inherit;text-align:right;">
+                    <b style="color:#1565C0;font-size:13px;">🤖 Google Gemini</b><br>
+                    <span style="font-size:11px;color:#555;">رایگان — نیاز به فعال‌سازی Text-to-Speech در Google Cloud</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- کلید API -->
+        <div class="contact-form-section">
+            <div class="contact-form-section-title">🔑 کلید API</div>
             <div class="contact-form-field">
-                <input type="text" id="aiSettingKey" placeholder="AIza..." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:14px;direction:ltr;">
+                <input type="text" id="aiSettingKey" placeholder="کلید API را اینجا وارد کنید..." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:14px;direction:ltr;">
             </div>
+            <div id="aiGuide" style="margin-top:8px;font-size:11px;color:#888;line-height:1.6;"></div>
         </div>
-        <div class="contact-form-section" style="background:#fff3e0;">
-            <div style="font-size:12px;color:#555;line-height:1.8;">
-                <b>📋 راهنمای فعال‌سازی:</b><br><br>
-                <b>۱) کلید Gemini</b> (برای دستیار صوتی — فهمیدن دستور):<br>
-                ← به <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#1976D2;">aistudio.google.com/apikey</a> بروید<br>
-                ← Create API key → کلید را کپی کنید<br>
-                ← کلید را بالا وارد کنید<br><br>
-                <b>۲) فعال‌سازی خواندن صوتی</b> (برای صحبت کردن دستیار):<br>
-                ← به <a href="https://console.cloud.google.com/apis/library/texttospeech.googleapis.com" target="_blank" style="color:#1976D2;">console.cloud.google.com</a> بروید<br>
-                ← پروژه‌ای که AI Studio ساخته را انتخاب کنید<br>
-                ← دکمه <b>Enable</b> را بزنید<br>
-                ← همان کلید Gemini برای خواندن هم کار می‌کند<br><br>
-                <span style="color:#e53935;">⚠️ اگر مرحله ۲ را انجام ندهید، دستیار می‌فهمد ولی صحبت نمی‌کند</span>
-            </div>
-        </div>
+
         </div>
         <div class="modal-buttons" style="flex-shrink:0;">
             <button class="btn btn-secondary" onclick="closeAISettings()">انصراف</button>
@@ -3757,7 +3761,7 @@ body.locked .header-actions button {
 //            cross-origin media WITHOUT CORS headers (fetch needs CORS).
 //            Added 8s timeout for Web Speech API (if no onend/onerror, try next).
 //            Added 8s timeout per online URL. Added "در حال خواندن..." toast.
-const APP_VERSION = 'v148-2026-11-05-gemini-setup-guide';
+const APP_VERSION = 'v149-2026-11-05-groq-free';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -8959,22 +8963,53 @@ let _ttsSpeaking = false;
 let _ttsCurrentBtn = null;
 let _ttsAudio = null;
 
-// 🔧 تنظیمات هوش مصنوعی — فقط کلید Gemini API
+// 🔧 تنظیمات هوش مصنوعی — Groq یا Gemini
 function setupAIApiKey() {
     document.getElementById('aiSettingKey').value = localStorage.getItem('openai_api_key') || '';
+    var provider = localStorage.getItem('ai_provider') || '';
+    if (provider === 'groq') {
+        aiSelectGroq();
+    } else if (provider === 'google') {
+        aiSelectGemini();
+    }
     document.getElementById('aiSettingsOverlay').classList.add('active');
+}
+
+function aiSelectGroq() {
+    localStorage.setItem('ai_provider', 'groq');
+    localStorage.setItem('openai_api_url', 'https://api.groq.com/openai/v1');
+    localStorage.setItem('openai_api_model', 'llama-3.3-70b-versatile');
+    localStorage.setItem('openai_api_voice', 'alloy');
+    document.getElementById('aiGuide').innerHTML =
+        '<b>📋 راهنمای Groq:</b><br>' +
+        '۱) به <a href="https://console.groq.com/keys" target="_blank" style="color:#1976D2;">console.groq.com/keys</a> بروید<br>' +
+        '۲) ثبت‌نام کنید (رایگان، <b>بدون کردیت کارت</b>)<br>' +
+        '۳) Create API Key → کلید را کپی کنید<br>' +
+        '۴) کلید را بالا وارد کنید → ذخیره<br><br>' +
+        '<span style="color:#4CAF50;">✅ دستیار صوتی: می‌فهمد و اجرا می‌کند</span><br>' +
+        '<span style="color:#FF9800;">⚠️ خواندن صوتی: از صدای سیستمی استفاده می‌کند</span>';
+}
+
+function aiSelectGemini() {
+    localStorage.setItem('ai_provider', 'google');
+    localStorage.setItem('openai_api_url', 'google');
+    localStorage.setItem('openai_api_model', 'fa-IR-Standard-A');
+    localStorage.setItem('openai_api_voice', 'fa-IR');
+    document.getElementById('aiGuide').innerHTML =
+        '<b>📋 راهنمای Gemini:</b><br>' +
+        '۱) کلید از <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#1976D2;">aistudio.google.com/apikey</a><br>' +
+        '۲) برای خواندن صوتی: <a href="https://console.cloud.google.com/apis/library/texttospeech.googleapis.com" target="_blank" style="color:#1976D2;">Text-to-Speech API</a> را فعال کنید<br><br>' +
+        '<span style="color:#4CAF50;">✅ دستیار صوتی: می‌فهمد و اجرا می‌کند</span><br>' +
+        '<span style="color:#4CAF50;">✅ خواندن صوتی: صدای فارسی طبیعی (با فعال‌سازی TTS)</span>';
 }
 
 function saveAISettings() {
     var key = document.getElementById('aiSettingKey').value.trim();
     if (key) {
         localStorage.setItem('openai_api_key', key);
-        // 🔧 همه چیز خودکار تنظیم می‌شود — فقط با یک کلید
-        localStorage.setItem('ai_provider', 'google');
-        localStorage.setItem('openai_api_model', 'fa-IR-Standard-A');
-        localStorage.setItem('openai_api_voice', 'fa-IR');
-        localStorage.setItem('openai_api_url', 'google');
-        showToast('کلید Gemini ذخیره شد ✓ دستیار صوتی آماده است');
+        // provider و تنظیمات قبلاً توسط aiSelectGroq/aiSelectGemini تنظیم شده
+        var provider = localStorage.getItem('ai_provider') || 'groq';
+        showToast(provider === 'groq' ? 'کلید Groq ذخیره شد ✓' : 'کلید Gemini ذخیره شد ✓');
     } else {
         localStorage.removeItem('openai_api_key');
         localStorage.removeItem('ai_provider');
@@ -9124,7 +9159,7 @@ async function _vaProcessCommand(userText) {
         'پاسخ همیشه فارسی و کوتاه باشد.';
 
     try {
-        var response, data;
+        var response, data, aiText;
         if (provider === 'google') {
             // Google Gemini API
             var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
@@ -9137,11 +9172,12 @@ async function _vaProcessCommand(userText) {
                 })
             });
             data = await response.json();
-            var aiText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0].text;
-            if (!aiText) throw new Error('پاسخ نامعتبر از هوش مصنوعی');
+            aiText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0].text;
+            if (!aiText) throw new Error('پاسخ نامعتبر از Gemini');
         } else {
-            // OpenAI-compatible API
-            var apiUrl = localStorage.getItem('openai_api_url') || 'https://api.openai.com/v1';
+            // Groq / OpenAI-compatible API
+            var apiUrl = localStorage.getItem('openai_api_url') || 'https://api.groq.com/openai/v1';
+            var modelName = localStorage.getItem('openai_api_model') || 'llama-3.3-70b-versatile';
             response = await fetch(apiUrl + '/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -9149,7 +9185,7 @@ async function _vaProcessCommand(userText) {
                     'Authorization': 'Bearer ' + apiKey
                 },
                 body: JSON.stringify({
-                    model: localStorage.getItem('openai_api_model') || 'gpt-4o-mini',
+                    model: modelName,
                     messages: [
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userText }
@@ -9159,7 +9195,7 @@ async function _vaProcessCommand(userText) {
             });
             data = await response.json();
             aiText = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-            if (!aiText) throw new Error('پاسخ نامعتبر از هوش مصنوعی');
+            if (!aiText) throw new Error('پاسخ نامعتبر از ' + provider);
         }
 
         console.log('[VA] AI response:', aiText);
@@ -9256,13 +9292,15 @@ function _vaSpeak(text) {
         document.getElementById('vaText').textContent = 'پایان';
         return;
     }
-    // استفاده از TTS موجود (Google/Azure/OpenAI)
     _ttsSpeaking = true;
-    var provider = localStorage.getItem('ai_provider') || 'google';
+    var provider = localStorage.getItem('ai_provider') || 'groq';
     if (provider === 'google') {
         _speakWithGoogleCloud(text);
     } else if (provider === 'azure') {
         _speakWithAzure(text);
+    } else if (provider === 'groq') {
+        // Groq TTS ندارد — از Web Speech استفاده کن
+        _speakWithWebSpeech(text);
     } else {
         _speakWithOpenAI(text);
     }
