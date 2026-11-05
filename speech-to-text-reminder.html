@@ -3028,10 +3028,9 @@ body.locked .header-actions button {
 <button class="icon-btn share-btn" id="resetOrderBtn" onclick="resetAllTaskPositions()" title="برگرداندن همه تسک‌ها به ترتیب اصلی" style="display:none;">↩</button>
         <button class="icon-btn share-btn" id="importBtn" onclick="importDatabase()" title="وارد کردن دیتابیس از فایل JSON">📥</button>
         <button class="icon-btn share-btn" id="notifBtn" onclick="toggleNotifications()" title="فعال‌سازی اعلان‌ها">🔔<span class="notif-badge"></span></button>
+        <button class="icon-btn share-btn" id="shareBtn" onclick="confirmBackup()" title="ذخیره بک‌آپ در فضای ذخیره‌سازی">📤</button>
         <button class="icon-btn share-btn" id="aiKeyBtn" onclick="setupAIApiKey()" title="کلید API هوش مصنوعی" style="background: rgba(255,255,255,0.18);">🤖</button>
         <button class="icon-btn add-btn" id="voiceAssistantBtn" onclick="startVoiceAssistant()" title="دستیار صوتی هوشمند" style="background: linear-gradient(135deg, #FF6F00, #E65100); width:46px; height:46px; font-size:22px;">🎤</button>
-        <button class="icon-btn share-btn" id="shareBtn" onclick="confirmBackup()" title="ذخیره بک‌آپ در فضای ذخیره‌سازی">📤</button>
-        <button class="icon-btn add-btn" id="addBtn" onclick="startAdding()" title="افزودن یادآور">+</button>
     </div>
 </div>
 
@@ -3745,7 +3744,7 @@ body.locked .header-actions button {
 //            cross-origin media WITHOUT CORS headers (fetch needs CORS).
 //            Added 8s timeout for Web Speech API (if no onend/onerror, try next).
 //            Added 8s timeout per online URL. Added "در حال خواندن..." toast.
-const APP_VERSION = 'v145-2026-11-05-gemini-only';
+const APP_VERSION = 'v147-2026-11-05-backup-next-to-bell';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
