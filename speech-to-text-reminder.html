@@ -77,13 +77,12 @@
 <!-- preconnect: به مرورگر می‌گوید پیشاپیش به سرور CDN وصل شود تا
      بارگذاری فونت سریع‌تر انجام شود. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
-<!-- فونت فارسی «وزیرمتن» از CDN. اگر بارگذاری شکست خورد، حذف می‌شود
-     و مرورگر از فونت جایگزین (Tahoma) استفاده می‌کند. -->
+<!-- فونت فارسی «وزیرمتن» از CDN -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" media="all" onerror="this.remove()">
+<!-- 🗣️ کتابخانه ResponsiveVoice برای خواندن صوتی فارسی (بدون نیاز به صدای سیستمی) -->
+<script src="https://code.responsivevoice.org/1.21.0/responsivevoice.js?key=FREE-KEY"></script>
 <!-- ────────────────────────────────────────────────────────────────────
      📦 کتابخانهٔ SortableJS برای قابلیت «کشیدن و رها کردن» (Drag & Drop)
-     یادآورها و گروه‌ها. اگر CDN اصلی (jsdelivr) در دسترس نبود، به‌صورت
-     خودکار از CDN جایگزین (unpkg) بارگذاری می‌شود.
      ──────────────────────────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"
         onerror="this.onerror=null; var fb=document.createElement('script'); fb.src='https://unpkg.com/sortablejs@1.15.0/Sortable.min.js'; document.head.appendChild(fb);"></script>
@@ -238,6 +237,122 @@ body { padding-bottom: 30px; }
     filter: grayscale(0.7);
     pointer-events: none;
 }
+
+/* 🔧 دکمهٔ شناور افزودن تسک (floating add button)
+   - عیناً همان استایل دکمهٔ + هدر را دارد
+   - ثابت (fixed) در وسط سمت چپ صفحه
+   - فقط در حالت نمایش تسک‌های یک گروه (tasks view) ظاهر می‌شود
+   - در حالت ضبط، قرمز و پالس می‌زند (مانند دکمهٔ هدر) */
+/* 🔧 دکمه شناور افزودن تسک — بزرگ‌تر با افکت تپنده زیبا همیشگی */
+.floating-add-btn {
+    position: fixed;
+    left: 100px;
+    bottom: 200px;
+    z-index: 9000;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2196F3, #1976D2);
+    color: white;
+    border: none;
+    font-size: 38px;
+    font-weight: 300;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(33,150,243,0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 3px solid rgba(255,255,255,0.5);
+    /* 🔧 افکت تپنده همیشگی — بزرگ‌تر و سریع‌تر */
+    animation: floatingIdle 1.5s ease-in-out infinite;
+}
+.floating-add-btn:active {
+    transform: scale(0.9);
+    animation: none;
+}
+.floating-add-btn.recording {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+    box-shadow: 0 6px 20px rgba(244,67,54,0.5);
+    animation: floatingRecordPulse 1s ease-in-out infinite;
+}
+.floating-add-btn.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: grayscale(0.7);
+    pointer-events: none;
+    animation: none;
+}
+/* 🔧 افکت تپنده همیشگی — بزرگ‌تر و سریع‌تر */
+@keyframes floatingIdle {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 6px 20px rgba(33,150,243,0.4);
+    }
+    50% {
+        transform: scale(1.2);
+        box-shadow: 0 10px 35px rgba(33,150,243,0.7);
+    }
+}
+/* 🔧 افکت تپنده هنگام ضبط — قرمز با سرعت بیشتر */
+@keyframes floatingRecordPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 6px 20px rgba(244,67,54,0.5);
+    }
+    50% {
+        transform: scale(1.22);
+        box-shadow: 0 10px 38px rgba(244,67,54,0.8);
+    }
+}
+/* در صفحات کوچک */
+@media (max-width: 480px) {
+    .floating-add-btn { width: 60px; height: 60px; font-size: 32px; left: 60px; bottom: 140px; }
+}
+
+/* 🔧 دکمه شناور افزودن شخص — بزرگ‌تر با افکت تپنده زیبا همیشگی */
+.floating-contact-btn {
+    position: fixed;
+    left: 100px;
+    bottom: 200px;
+    z-index: 10050;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4CAF50, #388E3C);
+    color: white;
+    border: none;
+    font-size: 34px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(76,175,80,0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 3px solid rgba(255,255,255,0.5);
+    /* 🔧 افکت تپنده همیشگی */
+    animation: floatingContactIdle 1.5s ease-in-out infinite;
+}
+.floating-contact-btn:active {
+    transform: scale(0.9);
+    animation: none;
+}
+/* 🔧 افکت تپنده همیشگی برای دکمه اشخاص — بزرگ‌تر و سریع‌تر */
+@keyframes floatingContactIdle {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 6px 20px rgba(76,175,80,0.4);
+    }
+    50% {
+        transform: scale(1.2);
+        box-shadow: 0 10px 35px rgba(76,175,80,0.7);
+    }
+}
+@media (max-width: 480px) {
+    .floating-contact-btn { width: 60px; height: 60px; font-size: 28px; left: 60px; bottom: 140px; }
+}
 /* Disabled state for the reset-order button (↩). Used on the groups list
    view AND inside the "همه کارها" group — there's no manual ordering to
    reset in either case. */
@@ -378,13 +493,16 @@ body { padding-bottom: 30px; }
    - کم‌رنگ وقتی پین نیست (opacity: 0.4)
    - پررنگ وقتی پین شده (opacity: 1, با چرخش و رنگ زرد)
    - با کلیک روی آن، تسک پین/نپین می‌شود */
+/* 🔧 دکمه پین — کوچک‌تر، داخل یک دایره خاکستری روشن.
+   وقتی پین نیست: دایره خاکستری روشن، آیکون کم‌رنگ.
+   وقتی پین شده: دایره سفید/آبی روشن، آیکون پررنگ با چرخش. */
 .task-pin-btn {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     border: none;
-    background: transparent;
+    background: rgba(200, 200, 200, 0.35);
     cursor: pointer;
-    font-size: 18px;
+    font-size: 13px;
     line-height: 1;
     display: flex;
     align-items: center;
@@ -393,28 +511,38 @@ body { padding-bottom: 30px; }
     padding: 0;
     border-radius: 50%;
     transition: transform 0.2s, background 0.2s, opacity 0.2s;
-    opacity: 0.4;  /* کم‌رنگ وقتی پین نیست */
+    opacity: 0.55;  /* کم‌رنگ وقتی پین نیست */
     -webkit-tap-highlight-color: transparent;
 }
 .task-pin-btn:hover {
-    opacity: 0.7;
-    background: rgba(255,255,255,0.15);
+    opacity: 0.8;
+    background: rgba(200, 200, 200, 0.5);
 }
 .task-pin-btn:active {
     transform: scale(0.85);
 }
-/* وقتی تسک پین شده است */
+/* وقتی تسک پین شده است — دایره زیر آن سفید می‌شود */
 .task-pin-btn.pinned {
     opacity: 1;  /* پررنگ */
+    background: rgba(255, 255, 255, 0.9);  /* دایره سفید */
     transform: rotate(-40deg);  /* چرخش آیکون پین */
-    filter: drop-shadow(0 0 4px rgba(255, 235, 59, 0.8));
 }
 .task-pin-btn.pinned:hover {
-    background: rgba(255, 235, 59, 0.2);
+    background: rgba(255, 255, 255, 1);  /* سفید کامل در hover */
 }
-/* نشانگر پین شده بودن تسک — یک نوار رنگی کوچک در سمت راست تسک */
+/* 🔧 وقتی تسک فوری است — دایره پس‌زمینه آیکون پین زرد می‌شود */
+.task-pin-btn.urgent {
+    background: #FFC107;  /* زرد */
+}
+.task-pin-btn.urgent.pinned {
+    background: #FFC107;  /* زرد — حتی اگر پین هم باشد */
+}
+.task-pin-btn.urgent:hover {
+    background: #FFD54F;  /* زرد روشن‌تر در hover */
+}
+/* نشانگر پین شده بودن تسک — نوار کناری حذف شد (درخواست کاربر) */
 .item.pinned-task {
-    box-shadow: 0 2px 6px rgba(0,0,0,0.12), inset 4px 0 0 #FFEB3B;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
 }
 .item-done-mark {
     width: 22px;
@@ -533,13 +661,13 @@ body { padding-bottom: 30px; }
     justify-content: center;
 }
 .action-btn {
-    flex: 1 1 0;  /* 3 buttons per row, equal width */
+    flex: 1 1 0;  /* buttons share the row equally, wrapping on small screens */
     background: rgba(255,255,255,0.2);
     border: none;
     color: inherit;
-    padding: 14px 8px;
+    padding: 14px 6px;
     border-radius: 10px;
-    font-size: 14px;
+    font-size: 13px;
     font-family: inherit;
     font-weight: 700;
     cursor: pointer;
@@ -553,14 +681,16 @@ body { padding-bottom: 30px; }
     justify-content: center;
 }
 .action-btn.danger { background: rgba(0,0,0,0.35); }
+/* 🔧 دکمه «انصراف» — خاکستری روشن برای تمایز */
+.action-btn.secondary { background: rgba(0,0,0,0.18); font-size: 12px; }
 .action-btn:active { transform: scale(0.95); }
 
 /* On very small screens, buttons wrap to 2 per row */
-@media (max-width: 380px) {
+@media (max-width: 480px) {
     .action-btn {
         flex: 0 0 calc(50% - 4px);
         font-size: 12px;
-        padding: 12px 6px;
+        padding: 12px 4px;
     }
 }
 
@@ -643,6 +773,8 @@ body { padding-bottom: 30px; }
     justify-content: center;
     padding: 16px;
     backdrop-filter: blur(2px);
+    /* 🔧 وقتی مودال باز است، صفحه زیر آن اسکرول نشود */
+    overflow: hidden;
 }
 .modal-overlay.active { display: flex; }
 .modal {
@@ -654,6 +786,9 @@ body { padding-bottom: 30px; }
     max-height: 92vh;
     overflow-y: auto;
     animation: slideUp 0.3s;
+    /* 🔧 جلوگیری از حرکت صفحه زیر مودال هنگام اسکرول در مودال */
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }
 @keyframes slideUp {
     from { transform: translateY(30px); opacity: 0; }
@@ -1368,11 +1503,42 @@ body { padding-bottom: 30px; }
     z-index: 1;
 }
 .group-count {
+    /* 🔧 دایره‌ای — تعداد تسک‌های انجام‌نشدهٔ گروه (بدون احتساب انجام‌شده‌ها) */
     background: rgba(255,255,255,0.25);
-    padding: 4px 12px;
-    border-radius: 20px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 6px;
+    border-radius: 50%;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+/* 🔧 اعداد پین‌شده (قرمز) و فوری (زرد) بدون دایره، در کنار شمارندهٔ اصلی */
+.group-badge-pinned {
+    color: #FFD600;  /* 🔧 زرد — طبق درخواست کاربر */
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    -webkit-text-stroke: 0.5px #000;  /* 🔧 بوردر مشکی برای دیده شدن روی پس‌زمینه زرد */
+}
+.group-badge-urgent {
+    color: #FFD600;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-right: 8px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    -webkit-text-stroke: 0.5px #000;  /* 🔧 بوردر مشکی برای دیده شدن روی پس‌زمینه زرد */
+}
+/* 🔧 گروهی که از نمایش در «همه کارها» منع شده — بوردر نقطه‌چین مشکی */
+.group-item-hidden-from-all {
+    border: 3px dashed #000 !important;
+    box-sizing: border-box;
 }
 /* Draggable group items (custom groups in the groups list). Slightly
    different cursor + touch-action so users can long-press to drag. */
@@ -1386,21 +1552,64 @@ body { padding-bottom: 30px; }
     cursor: pointer;
     /* 🔧 بوردر مشکی ضخیم برای گروه‌های «همه کارها» و «کارهای فوری» */
     border: 3px solid #000 !important;
-    /* 🔧 sticky — با اسکرول گروه‌ها به پایین، این دو گروه ثابت می‌مانند */
+    /* 🔧 طبق درخواست کاربر: این گروه‌ها در جای خود فیکس می‌شوند (sticky)
+       و با اسکرول حرکت نمی‌کنند. */
     position: sticky;
     position: -webkit-sticky;
-    top: 78px;  /* زیر هدر اصلی (~70px) با کمی فاصله */
+    top: 0;
     z-index: 50;
 }
-/* 🔧 گروه «کارهای فوری» زیر «همه کارها» قرار می‌گیرد */
+/* 🔧 گروه «کارهای فوری» زیر «همه کارها» فیکس می‌شود.
+   ارتفاع هر group-item: padding(16+16) + min-height(60) + border(3+3) = 98px
+   + gap (6px) = 104px. ولی چون margin-bottom صفر شده، 98px کافی است.
+   مقدار کمی بیشتر (4px) برای فاصلهٔ استاندارد. */
 .group-item-fixed.group-urgent {
-    top: 138px;  /* زیر «همه کارها» (~60px ارتفاع + 78px top) */
+    top: 102px;
+    z-index: 49;
 }
-/* 🔧 پس‌زمینهٔ کمی مات برای خوانایی هنگام اسکرول */
+/* 🔧 پس‌زمینهٔ کمی مات برای خوانایی */
 .group-item-fixed {
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
 }
+/* 🔧 wrapper دایره تعداد + آیکون یادداشت — به هم می‌چسبند */
+.group-count-notes-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
+}
+.group-count-notes-wrapper .group-count {
+    border-radius: 50% 0 0 50%;  /* فقط سمت راست گرد (در RTL سمت چپ دایره) */
+    margin-right: -1px;  /* کمی هم‌پوشانی برای چسبیدن */
+}
+.group-count-notes-wrapper .group-notes-btn {
+    border-radius: 0 50% 50% 0;  /* فقط سمت چپ گرد (در RTL سمت راست دایره) */
+    margin-right: 0;
+    margin-left: 0;
+}
+/* 🔧 دکمه یادداشت در هدر هر گروه */
+.group-notes-btn {
+    background: rgba(255,255,255,0.25);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    transition: background 0.2s, transform 0.2s;
+    flex-shrink: 0;
+    margin-right: 4px;
+}
+.group-notes-btn:hover { background: rgba(255,255,255,0.4); }
+.group-notes-btn:active { transform: scale(0.92); }
+
 /* Visual hint that the group is being dragged */
 .group-item.sortable-ghost { opacity: 0.4; }
 .group-item.sortable-chosen { box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
@@ -1416,39 +1625,62 @@ body { padding-bottom: 30px; }
     line-height: 1;
 }
 .group-tasks-header {
-    padding: 14px 16px;
-    border-radius: 10px;
+    padding: 14px 20px;
+    border-radius: 12px;
     color: white;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     display: flex;
     align-items: center;
-    gap: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    /* 🔒 فیکس شدن هدر گروه هنگام اسکرول — مثل هدر اصلی برنامه بالای صفحه ثابت می‌ماند.
-       این کار با position: sticky انجام می‌شود. top: 70px یعنی هدر زیر هدر اصلی
-       (که ارتفاعش حدود 70px است) قرار می‌گیرد. z-index بالا برای قرار گرفتن روی تسک‌ها. */
+    gap: 10px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+    min-height: 100px;
+    width: 100%;
     position: sticky;
     position: -webkit-sticky;
-    top: 70px;
+    top: 0;
     z-index: 100;
+    transition: transform 0.2s;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
 }
 .back-btn {
     background: rgba(255,255,255,0.25);
     border: none;
     color: white;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    font-size: 18px;
+    font-size: 22px;
     cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.2s;
+}
+.back-btn:hover { background: rgba(255,255,255,0.4); }
+.back-btn:active { transform: scale(0.92); }
+
+/* 🔧 محدوده لمس نامرئی بزرگ — کل سمت راست هدر را پوشش می‌دهد (سمت دکمه برگشت) */
+/* 🔧 قبلاً left:0 بود که در RTL روی منو (☰) می‌افتاد و باعث پرش به صفحه اصلی می‌شد */
+.back-touch-area {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 120px;
+    height: 100%;
+    z-index: 5;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
 }
 .group-title {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
-    /* flex: 1 pushes the edit/delete buttons AND the count pill to the LEFT
-       side (in RTL), matching the groups-list layout where the name is on
-       the right and the count badge is on the left. The edit/delete buttons
-       sit between the title and the count, close to the count (left side). */
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1493,14 +1725,22 @@ body { padding-bottom: 30px; }
 }
 .group-delete-btn:hover { background: rgba(244,67,54,0.6); }
 .group-delete-btn:active { transform: scale(0.92); }
-/* Task count in the group header — pill badge style, matching the groups-list
-   .group-count badge (same background, padding, border-radius, font). */
+/* Task count in the group header — circular badge, matching the groups-list
+   .group-count badge. 🔧 فقط تعداد تسک‌های انجام‌نشده (بدون احتساب انجام‌شده‌ها)
+   در دایره نمایش داده می‌شود. اعداد پین (قرمز) و فوری (زرد) بدون دایره
+   در کنار آن قرار می‌گیرند. */
 .group-task-count {
     background: rgba(255,255,255,0.25);
-    padding: 4px 12px;
-    border-radius: 20px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 6px;
+    border-radius: 50%;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
     flex-shrink: 0;
 }
 .group-selector-row { margin-top: 4px; }
@@ -1515,6 +1755,69 @@ body { padding-bottom: 30px; }
     cursor: pointer;
 }
 .group-selector option { background: #333; color: white; }
+
+/* ============ 📋 مودال انتخاب فرمت گزارش ============ */
+.report-format-modal { max-width: 400px; }
+.report-format-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.report-format-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    border-radius: 12px;
+    background: #f5f5f5;
+    border: 2px solid #e0e0e0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.report-format-option:active { transform: scale(0.98); }
+.report-format-option.selected {
+    background: #e3f2fd;
+    border-color: #2196F3;
+}
+.report-format-icon {
+    font-size: 32px;
+    flex-shrink: 0;
+    width: 48px;
+    text-align: center;
+}
+.report-format-info { flex: 1; }
+.report-format-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #333;
+}
+.report-format-desc {
+    font-size: 12px;
+    color: #888;
+    margin-top: 2px;
+}
+.report-format-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.report-format-option.selected .report-format-check {
+    background: #2196F3;
+    border-color: #2196F3;
+}
+.report-format-option.selected .report-format-check::after {
+    content: '✓';
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+}
 
 /* ============ 🔒 صفحه قفل انقضا ============ */
 /* این استایل‌ها برای صفحه‌ای است که بعد از ۲۰ فروردین ۱۴۰۵ نمایش داده
@@ -1652,7 +1955,7 @@ body.locked .header-actions button {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    font-size: 20px;
+    font-size: 18px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1665,21 +1968,20 @@ body.locked .header-actions button {
 .group-menu-btn:hover { background: rgba(255,255,255,0.4); }
 .group-menu-btn:active { transform: scale(0.92); }
 
-/* منوی کشویی همبرگر */
+/* منوی کشویی همبرگری.
+   منو به body منتقل می‌شود (با جاوا اسکریپت) تا از هرگونه overflow والدی
+   در امان باشد. موقعیت و عرض با جاوا اسکریپت تنظیم می‌شود. */
 .group-menu-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 6px;
+    position: fixed;
     background: white;
     border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-    min-width: 240px;
-    max-width: 280px;
-    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    z-index: 10000;
     overflow: hidden;
     display: none;
     direction: rtl;
+    box-sizing: border-box;
+    padding: 8px 0;
 }
 .group-menu-dropdown.active { display: block; animation: menuSlideDown 0.2s ease; }
 @keyframes menuSlideDown {
@@ -1866,6 +2168,26 @@ body.locked .header-actions button {
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
+/* 🔧 پیش‌نمایش عکس پس‌زمینه (جدا از آیکون) */
+.image-preview {
+    width: 100%;
+    height: 80px;
+    border-radius: 10px;
+    background: #f0f0f0;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 8px 0;
+    border: 2px dashed #ccc;
+    overflow: hidden;
+}
+.image-preview .image-preview-placeholder {
+    color: #999;
+    font-size: 13px;
+}
+
 /* دکمه‌های انتخاب آیکون */
 /* 🔧 گرید آیکون‌ها کاملاً رسپانسیو است:
    - auto-fill باعث می‌شود به‌طور خودکار به تعداد لازم در هر ردیف قرار بگیرند
@@ -1979,19 +2301,20 @@ body.locked .header-actions button {
 
 /* آیکون/تصویر هدر گروه (نمایش در هدر) */
 .group-header-icon {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.25);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 22px;
     flex-shrink: 0;
-    margin-left: 4px;
+    margin-left: 8px;
     background-size: cover;
     background-position: center;
     box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    border: 2px solid rgba(255,255,255,0.3);
 }
 
 /* دکمه بازگردانی ترتیب در هدر گروه (همچنان مستقل قابل نمایش) */
@@ -2029,7 +2352,7 @@ body.locked .header-actions button {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0,0,0,0.4);
-    border-radius: 10px;
+    border-radius: 12px;  /* 🔧 مطابق با border-radius هدر (12px) تا از سرریز گوشه‌ها جلوگیری شود */
     z-index: 0;  /* زیر محتوا */
 }
 /* محتوای هدر (دکمه‌ها، عنوان) روی لایهٔ تیره */
@@ -2064,9 +2387,108 @@ body.locked .header-actions button {
 .urgent-checkbox-label span {
     line-height: 1.4;
 }
-/* وقتی تسک فوری است، یک نوار زرد در سمت چپ نشان بده */
+/* 🔧 وقتی تسک فوری است — نوار زرد حذف شد (درخواست کاربر)
+   فقط دایره پس‌زمینه آیکون پین زرد می‌شود (در CSS پایین‌تر) */
 .item.urgent-task {
-    box-shadow: 0 2px 6px rgba(0,0,0,0.12), inset 4px 0 0 #FFC107 !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+/* 🔧 وقتی تسک هم پین و هم فوری است */
+.item.pinned-task.urgent-task {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+
+/* ============ 📝 صفحه یادداشت ============ */
+.notes-overlay {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    z-index: 10000;
+    display: none;
+    flex-direction: column;
+    direction: rtl;
+}
+.notes-overlay.active { display: flex; }
+.notes-header {
+    position: sticky;
+    top: 0;
+    background: linear-gradient(135deg, #FF9800, #F57C00);
+    color: white;
+    padding: 14px 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.notes-header h2 { font-size: 17px; font-weight: 700; }
+.notes-body {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0;
+}
+/* 🔧 محتوای یادداشت: صفحه سفید با خطوط دفتر (خطوط افقی بی‌نهایت) */
+.notes-content {
+    min-height: 100%;
+    padding: 20px;
+    font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+    font-size: 15px;
+    line-height: 2.2;
+    color: #333;
+    outline: none;
+    /* خطوط دفتر: هر خط یک خط افقی */
+    background-image: linear-gradient(to bottom, transparent 0, transparent calc(2.2em - 1px), #e0e0e0 calc(2.2em - 1px), #e0e0e0 2.2em);
+    background-size: 100% 2.2em;
+    background-attachment: local;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+.notes-content:empty::before {
+    content: 'اینجا بنویسید یا میکروفون را بزنید...';
+    color: #aaa;
+    pointer-events: none;
+}
+/* 🔧 تاریخ و ساعت اول هر پاراگراف — قرمز */
+.notes-date {
+    color: #d32f2f;
+    font-weight: 700;
+}
+/* 🔧 میکروفون شناور — سمت چپ، وسط صفحه */
+.notes-mic-btn {
+    position: fixed;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #FF9800;
+    color: white;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease, background 0.2s;
+    border: 2px solid rgba(255,255,255,0.4);
+}
+.notes-mic-btn:active { transform: translateY(-50%) scale(0.92); }
+.notes-mic-btn.recording {
+    background: #f44336;
+    animation: notesMicPulse 1.2s infinite;
+}
+@keyframes notesMicPulse {
+    0%, 100% { transform: translateY(-50%) scale(1); box-shadow: 0 0 0 0 rgba(244,67,54,0.6); }
+    50% { transform: translateY(-50%) scale(1.08); box-shadow: 0 0 0 12px rgba(244,67,54,0); }
+}
+@media (max-width: 480px) {
+    .notes-mic-btn { width: 52px; height: 52px; font-size: 24px; left: 14px; }
+    .notes-content { font-size: 14px; padding: 14px; }
 }
 
 /* ============ 👥 بانک اطلاعاتی اشخاص (CRM) ============ */
@@ -2333,6 +2755,24 @@ body.locked .header-actions button {
     direction: rtl;
 }
 .contact-dynamic-item input:focus { outline: none; border-color: #1976D2; }
+
+/* 🔧 رادیو «موبایل اصلی» کنار هر شماره تلفن */
+.contact-phone-primary {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    font-size: 10px;
+    color: #666;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.contact-phone-primary input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #1976D2;
+}
 .contact-dynamic-remove {
     background: #ffebee;
     border: none;
@@ -2486,8 +2926,13 @@ body.locked .header-actions button {
 .phone-action-item:hover { background: #e3f2fd; }
 .phone-action-item:active { transform: scale(0.95); }
 .phone-action-icon {
-    font-size: 28px;
     line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.phone-action-icon svg {
+    display: block;
 }
 .phone-action-label {
     font-size: 11px;
@@ -2574,15 +3019,24 @@ body.locked .header-actions button {
     <div class="header-actions">
         <button class="icon-btn share-btn install-btn" id="installBtn" onclick="installApp()" title="نصب به عنوان اپلیکیشن" style="display:none;">⬇</button>
         <button class="icon-btn share-btn" id="calBtn" onclick="openCalendar()" title="تقویم شمسی">📅</button>
-        <button class="icon-btn share-btn" id="contactsBtn" onclick="openContacts()" title="بانک اطلاعاتی اشخاص">👥</button>
+        <button class="icon-btn share-btn" id="contactsBtn" onclick="openContacts()" title="بانک اطلاعاتی اشخاص"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></button>
+        <button class="icon-btn share-btn" id="notesBtn" onclick="openNotes()" title="یادداشت">📝</button>
         <!-- دکمه بازگردانی به هدر گروه‌ها منتقل شد (در منوی همبرگری هر گروه) -->
 <button class="icon-btn share-btn" id="resetOrderBtn" onclick="resetAllTaskPositions()" title="برگرداندن همه تسک‌ها به ترتیب اصلی" style="display:none;">↩</button>
         <button class="icon-btn share-btn" id="importBtn" onclick="importDatabase()" title="وارد کردن دیتابیس از فایل JSON">📥</button>
         <button class="icon-btn share-btn" id="notifBtn" onclick="toggleNotifications()" title="فعال‌سازی اعلان‌ها">🔔<span class="notif-badge"></span></button>
+        <button class="icon-btn share-btn" id="aiKeyBtn" onclick="setupAIApiKey()" title="کلید API هوش مصنوعی" style="background: rgba(255,255,255,0.18);">🤖</button>
         <button class="icon-btn share-btn" id="shareBtn" onclick="confirmBackup()" title="ذخیره بک‌آپ در فضای ذخیره‌سازی">📤</button>
         <button class="icon-btn add-btn" id="addBtn" onclick="startAdding()" title="افزودن یادآور">+</button>
     </div>
 </div>
+
+<!-- 🔧 دکمهٔ شناور افزودن تسک — فقط در حالت نمایش تسک‌های یک گروه ظاهر می‌شود.
+     عیناً همان عملکرد دکمهٔ + هدر را دارد ولی در وسط سمت چپ صفحه شناور است. -->
+<button class="floating-add-btn" id="floatingAddBtn" onclick="startAdding()" title="افزودن یادآور">+</button>
+
+<!-- 🔧 دکمهٔ شناور افزودن شخص جدید — فقط در صفحه اشخاص ظاهر می‌شود. -->
+<button class="floating-contact-btn" id="floatingContactBtn" onclick="openContactForm()" title="افزودن شخص جدید">➕</button>
 
 <div class="container" id="container">
     <div class="empty">
@@ -2697,16 +3151,27 @@ body.locked .header-actions button {
             </div>
 
             <div class="group-settings-section">
-                <label class="group-settings-label">آیکون یا عکس هدر</label>
+                <label class="group-settings-label">آیکون گروه</label>
+                <!-- 🔧 پیش‌نمایش آیکون — همیشه آیکون انتخاب‌شده را نشان می‌دهد
+                     (مستقل از عکس پس‌زمینه) -->
                 <div class="icon-preview" id="groupSettingsIconPreview">📋</div>
                 <div class="icon-picker-grid" id="groupSettingsIconGrid"></div>
+            </div>
+
+            <div class="group-settings-section">
+                <label class="group-settings-label">عکس پس‌زمینه هدر</label>
+                <!-- 🔧 پیش‌نمایش عکس پس‌زمینه — جدا از آیکون.
+                     اگر عکس باشد، تصویر کوچک نشان داده می‌شود؛ وگرنه placeholder. -->
+                <div class="image-preview" id="groupSettingsImagePreview">
+                    <span class="image-preview-placeholder">بدون عکس</span>
+                </div>
                 <div class="image-action-btns">
                     <button class="image-action-btn" onclick="document.getElementById('groupSettingsImageInput').click()">📷 آپلود عکس</button>
                     <button class="image-action-btn danger" onclick="clearGroupHeaderImage()">🗑 حذف عکس</button>
                 </div>
                 <input type="file" id="groupSettingsImageInput" accept="image/*" style="display:none" onchange="onGroupHeaderImageSelected(event)">
                 <div style="margin-top: 8px; font-size: 11px; color: #888; text-align: center;">
-                    عکس به‌صورت پس‌زمینهٔ هدر نمایش داده می‌شود
+                    عکس فقط به‌عنوان پس‌زمینهٔ هدر استفاده می‌شود (آیکون جداگانه است)
                 </div>
             </div>
 
@@ -2841,6 +3306,25 @@ body.locked .header-actions button {
             <button class="btn btn-primary" onclick="saveContact()">ذخیره</button>
         </div>
     </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     📝 صفحه یادداشت — یک صفحه سفید تمام‌صفحه با خطوط دفتر و میکروفون شناور
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="notes-overlay" id="notesOverlay">
+    <div class="notes-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <button class="contacts-back-btn" onclick="closeNotes()" title="بازگشت">◄</button>
+            <h2>📝 یادداشت</h2>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <button class="contacts-action-btn" onclick="clearNotes()" title="پاک کردن همه">🗑 پاک</button>
+        </div>
+    </div>
+    <div class="notes-body">
+        <div id="notesContent" class="notes-content" contenteditable="true" spellcheck="false"></div>
+    </div>
+    <button class="notes-mic-btn" id="notesMicBtn" onclick="toggleNotesRecording()" title="ضبط صوت">🎤</button>
 </div>
 
 <!-- مودال جستجوی اشخاص -->
@@ -3015,6 +3499,7 @@ body.locked .header-actions button {
                 <div id="calMonthYear"></div>
                 <div class="cal-title-row">
                     <button class="cal-today-btn" onclick="goToToday()">امروز</button>
+                    <button class="cal-add-day-btn" onclick="openDayNotes()" title="یادداشت روز انتخاب‌شده" style="background: #FF9800;">📝</button>
                     <button class="cal-add-day-btn" id="calAddDayBtn" onclick="addTaskForSelectedDay()" title="افزودن یادآور برای روز انتخاب‌شده">+</button>
                 </div>
             </div>
@@ -3078,6 +3563,46 @@ body.locked .header-actions button {
     </div>
 </div>
 
+<!-- ════════════════════════════════════════════════════════════════════
+     📋 مودال انتخاب فرمت گزارش (HTML / PDF / JSON)
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="reportFormatOverlay" style="z-index: 12000;">
+    <div class="modal report-format-modal">
+        <h2 id="reportFormatTitle">💾 ذخیره گزارش</h2>
+        <p style="text-align:center;color:#666;font-size:13px;margin-bottom:16px;">یک فرمت را انتخاب کنید:</p>
+        <div class="report-format-options">
+            <div class="report-format-option" data-format="html" onclick="selectReportFormat('html')">
+                <div class="report-format-icon">📄</div>
+                <div class="report-format-info">
+                    <div class="report-format-name">HTML</div>
+                    <div class="report-format-desc">صفحه وب قابل مشاهده در مرورگر</div>
+                </div>
+                <div class="report-format-check" id="reportFormatCheckHtml"></div>
+            </div>
+            <div class="report-format-option" data-format="pdf" onclick="selectReportFormat('pdf')">
+                <div class="report-format-icon">📑</div>
+                <div class="report-format-info">
+                    <div class="report-format-name">PDF</div>
+                    <div class="report-format-desc">فایل PDF (از طریق پنجره چاپ)</div>
+                </div>
+                <div class="report-format-check" id="reportFormatCheckPdf"></div>
+            </div>
+            <div class="report-format-option" data-format="json" onclick="selectReportFormat('json')">
+                <div class="report-format-icon">🗂️</div>
+                <div class="report-format-info">
+                    <div class="report-format-name">JSON</div>
+                    <div class="report-format-desc">دیتابیس کامل اشخاص (داده خام)</div>
+                </div>
+                <div class="report-format-check" id="reportFormatCheckJson"></div>
+            </div>
+        </div>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="cancelReportFormat()">انصراف</button>
+            <button class="btn btn-primary" id="reportFormatConfirmBtn" onclick="confirmReportFormat()" disabled>تأیید</button>
+        </div>
+    </div>
+</div>
+
 <script>
 // ════════════════════════════════════════════════════════════════════
 // 🧩 بخش ۳: تنظیمات و متغیرهای عمومی JavaScript
@@ -3116,7 +3641,64 @@ body.locked .header-actions button {
 //         preserved). Money amounts still use separator (۲٬۰۰۰٬۰۰۰).
 //         Also: backup button now asks for confirmation before saving
 //         (it was being accidentally triggered next to the + button).
-const APP_VERSION = 'v44-2026-10-31-fix-header-image-sticky';
+//   v116 - RESPONSIVEVOICE TTS FALLBACK: the "🔊 بخوان" (Read Aloud) button
+//         now uses a dual-engine strategy. If the device has a Persian system
+//         voice → Web Speech API (fast, offline). If NOT (e.g., Android
+//         without Persian in the language list) → ResponsiveVoice (online,
+//         has its own built-in Persian voice 'persian_female'). This solves
+//         the user's problem where their Android didn't have Persian in the
+//         language list and the old code only said "install Persian in
+//         Android settings" — now it just works, no installation needed.
+//   v117 - GOOGLE TRANSLATE TTS: v116 didn't work because ResponsiveVoice with
+//         FREE-KEY fails after 1 second (no valid key). Now uses Google Translate
+//         TTS as the PRIMARY online method — it's free, needs NO API key, and
+//         returns real Persian MP3 audio via a simple URL:
+//         translate.google.com/translate_tts?tl=fa&q=TEXT
+//         The audio is played via an <audio> element. ResponsiveVoice is kept
+//         only as a last-resort fallback. This finally makes "🔊 بخوان" work
+//         on Android devices without Persian installed.
+//   v118 - LINEAR TTS FALLBACK: v117 skipped Web Speech API when no Persian
+//         system voice was found, going straight to Google TTS (which may be
+//         blocked in some regions). Now ALWAYS tries Web Speech API FIRST —
+//         many Android devices with Google TTS engine CAN speak Persian even
+//         if no Persian voice appears in getVoices(). Falls back linearly:
+//         Web Speech → Google TTS → ResponsiveVoice → error message.
+//         Uses a Set to prevent infinite fallback loops. Adds quick-end
+//         detection (if speech ends in <500ms for long text, it's a silent
+//         failure → try next engine).
+//   v119 - CORS PROXY TTS: v118's Google TTS via <audio> element failed
+//         silently (CORS or regional block). Now uses fetch() + blob approach
+//         with MULTIPLE fallback URLs:
+//         1) Direct Google Translate TTS
+//         2) corsproxy.io CORS proxy
+//         3) allorigins.win CORS proxy
+//         4) codetabs.com CORS proxy
+//         5) StreamElements TTS (different service, different servers)
+//         If one URL fails, automatically tries the next. The CORS proxies
+//         fetch the audio from their servers (which can reach Google) and
+//         return it with CORS headers, bypassing both CORS and regional
+//         blocks.
+//   v120 - MULTI-FIX: 5 fixes in one version:
+//         1) TTS: Removed "quick-end detection" that was incorrectly treating
+//            short Web Speech API output as a silent failure. Now if onend
+//            fires, it's considered a success.
+//         2) Pin task: Save/restore scroll position — page no longer jumps
+//            to top when pinning a task.
+//         3) Urgent checkbox: Same scroll fix — page stays in place when
+//            toggling urgent.
+//         4) Floating + button: Hidden when group settings menu/modal is
+//            open, shown when closed. New _refreshFloatingAddBtn() helper.
+//         5) Internal group header: Enlarged all elements to match external
+//            header — back button 28→40px, title 11→16px, count 24→32px,
+//            menu button 28→36px, icon 28→40px.
+//   v121 - TWO-ROW HEADER + AUDIO TTS:
+//         1) Internal group header is now TWO rows: title centered on top,
+//            buttons (back, icon, menu, count) on bottom row. min-height 110px.
+//         2) TTS: Switched from fetch() to <audio> elements — <audio> can play
+//            cross-origin media WITHOUT CORS headers (fetch needs CORS).
+//            Added 8s timeout for Web Speech API (if no onend/onerror, try next).
+//            Added 8s timeout per online URL. Added "در حال خواندن..." toast.
+const APP_VERSION = 'v133-2026-11-05-openai-tts';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -3224,6 +3806,15 @@ function toJalaliLong(date) {
     const [jy, jm, jd] = toJalaliParts(date);
     const wd = jalaliWeekdays[d.getDay()];
     return `${wd} ${jd} ${jalaliMonths[jm-1]} ${toPersianNumber(jy)} - ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+// 🔧 فقط تاریخ و روز هفته (بدون ساعت) — برای یادداشت‌ها
+// مثال: «چهارشنبه 12 آبان 1405»
+function toJalaliDateOnly(date) {
+    const d = new Date(date);
+    const [jy, jm, jd] = toJalaliParts(date);
+    const wd = jalaliWeekdays[d.getDay()];
+    return `${wd} ${jd} ${jalaliMonths[jm-1]} ${toPersianNumber(jy)}`;
 }
 
 function toJalaliFull(date) {
@@ -3387,8 +3978,16 @@ function postProcessPersianNumbers(text) {
                 // هزار — multiply segment
                 total += (segment || 1) * 1000;
                 segment = 0;
-            } else if (val >= 100) {
-                // Hundreds (صد, دویست, etc.)
+            } else if (val === 100) {
+                // 🔧 صد — اگر segment > 0 است، ضرب کن؛ وگرنه 100
+                // مثال: "سه صد" → segment=3, val=100 → segment = 3*100 = 300
+                if (segment > 0) {
+                    segment = segment * 100;
+                } else {
+                    segment = 100;
+                }
+            } else if (val >= 200 && val <= 900) {
+                // دویست، سیصد، چهارصد، پانصد، ششصد، هفتصد، هشتصد، نهصد
                 segment += val;
             } else {
                 // Units and tens (0-99)
@@ -3621,33 +4220,106 @@ function tryParseDigitSequence(tokens, startIdx) {
 }
 
 function tryParseNumberSeq(tokens, startIdx) {
-    let total = 0, segment = 0, foundAny = false, i = startIdx;
+    // 🔧 بازنویسی کامل — منطق صحیح تلفظ فارسی اعداد
+    //
+    // در فارسی، ساختار اعداد به این شکل است:
+    //   [ضرب‌کننده بزرگ] + [هزار] + [صدگان] + [ده‌گان] + [یک‌گان]
+    //
+    // مثال: "دو میلیون و دویست و پنجاه و شش هزار و هفتصد و نود و هشت"
+    //   = 2×1,000,000 + 256×1,000 + 798
+    //   = 2,000,000 + 256,000 + 798
+    //   = 2,256,798
+    //
+    // مثال: "سه صد و بیست و پنج"
+    //   = 3×100 + 20 + 5 = 325
+    //
+    // مثال: "نه صد و نود و نه میلیون"
+    //   = 999 × 1,000,000 = 999,000,000
+    //
+    // منطق صحیح:
+    //   1. وقتی کلمه «صد» می‌آید، اگر segment > 0 است، segment = segment × 100
+    //      در غیر این صورت segment = 100
+    //   2. وقتی «هزار» می‌آید: total += segment × 1000; segment = 0
+    //   3. وقتی «میلیون» می‌آید: total += segment × 1,000,000; segment = 0
+    //   4. وقتی «میلیارد» می‌آید: total += segment × 1,000,000,000; segment = 0
+    //   5. کلمات «دویست»، «سیصد»، «نهصد» و... مستقیماً به segment اضافه می‌شوند
+    //   6. کلمات ۱۰-۹۹ (بیست، سی، چهل...) به segment اضافه می‌شوند
+    //   7. کلمات ۰-۹ (صفر، یک، دو...) به segment اضافه می‌شوند
+
+    let total = 0;
+    let segment = 0;
+    let foundAny = false;
+    let i = startIdx;
+
     while (i < tokens.length) {
         let word = tokens[i].replace(/[\u200c\u200d]/g, '');
         word = word.replace(/تا$/, '').replace(/[.,،؛:!؟()«»]/g, '');
-        // "و" (and) is ambiguous in Persian: it can be a number connector
-        // (e.g., "صد و بیست" = 120) or a sentence conjunction (e.g., "دو نفر
-        // و سه نفر" = two people AND three people). We only treat it as a
-        // connector when we're already inside a number sequence (foundAny).
-        // This prevents "و" from being silently consumed between two
-        // separate number phrases.
-        if (word === 'و' || word === 'وا') {
+
+        // "و" connector
+        if (word === 'و' || word === 'وا' || word === 'وَ') {
             if (foundAny) { i++; continue; }
             else { break; }
         }
+
         let val = PERSIAN_NUM_WORDS[word];
-        if (val === undefined) { const m = word.match(/^(\d+)$/); if (m) val = parseInt(m[1],10); }
-        if (val === undefined) { const pm = word.match(/^([۰-۹]+)$/); if (pm) { val = parseInt(word.replace(/[۰-۹]/g, d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)), 10); } }
+
+        // Latin digits
+        if (val === undefined) {
+            const m = word.match(/^(\d+)$/);
+            if (m) val = parseInt(m[1], 10);
+        }
+
+        // Persian digits
+        if (val === undefined) {
+            const pm = word.match(/^([۰-۹]+)$/);
+            if (pm) {
+                val = parseInt(word.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)), 10);
+            }
+        }
+
         if (val !== undefined) {
             foundAny = true;
-            if (val >= 1000000) { total += (segment||1)*val; segment=0; }
-            else if (val === 1000) { total += (segment||1)*1000; segment=0; }
-            else if (val >= 100) { segment += val; }
-            else { segment += val; }
+
+            if (val === 1000000000) {
+                // میلیارد — ضرب‌کننده بزرگ
+                total += (segment || 1) * val;
+                segment = 0;
+            } else if (val === 1000000) {
+                // میلیون — ضرب‌کننده بزرگ
+                total += (segment || 1) * val;
+                segment = 0;
+            } else if (val === 1000) {
+                // هزار — ضرب‌کننده
+                total += (segment || 1) * 1000;
+                segment = 0;
+            } else if (val === 100) {
+                // 🔧 صد — اگر segment > 0 است، ضرب کن؛ وگرنه 100
+                // مثال: "سه صد" → segment=3, val=100 → segment = 3*100 = 300
+                // مثال: "صد" → segment=0, val=100 → segment = 100
+                if (segment > 0) {
+                    segment = segment * 100;
+                } else {
+                    segment = 100;
+                }
+            } else if (val >= 200 && val <= 900) {
+                // دویست، سیصد، چهارصد، پانصد، ششصد، هفتصد، هشتصد، نهصد
+                // این‌ها مستقیماً به segment اضافه می‌شوند
+                // مثال: "دویست و پنجاه" → segment = 200 + 50 = 250
+                segment += val;
+            } else {
+                // 0-99 — به segment اضافه می‌شوند
+                // مثال: "بیست و پنج" → segment = 20 + 5 = 25
+                segment += val;
+            }
             i++;
-        } else { break; }
+        } else {
+            break;
+        }
     }
+
     if (!foundAny) return null;
+
+    // 🔧 جمع کردن segment باقی‌مانده با total
     return { value: total + segment, endIndex: i };
 }
 
@@ -3852,8 +4524,8 @@ function getDB() {
 function migrateItem(item) {
     if (!item || !item.id || !item.text || !item.createdAt || !item.deadline) return null;
 
+    // 🔧 شروع با فیلدهای ضروری
     const out = {
-        // فیلدهای ضروری
         id: String(item.id),
         text: String(item.text),
         createdAt: String(item.createdAt),
@@ -3873,14 +4545,21 @@ function migrateItem(item) {
     }
 
     // 🔧 سیستم پین (Pin)
-    if (item.pinned === true) out.pinned = true;
-    if (item.pinnedAt) out.pinnedAt = item.pinnedAt;
-    if (typeof item.pinnedOrder === 'number' && isFinite(item.pinnedOrder)) {
+    // 🔧 طبق درخواست کاربر: تسک‌های انجام‌شده نباید پین‌شده یا فوری باشند.
+    // این قانون در migrateItem اعمال می‌شود تا داده‌های قدیمی (از نسخه‌های
+    // قبلی که این قانون را نداشتند) هم هنگام بارگذاری پاکسازی شوند:
+    // مقادیر pinned، pinnedAt، pinnedOrder و urgent فقط در صورتی کپی
+    // می‌شوند که تسک انجام‌نشده باشد.
+    // 🔧 بررسی با == (نه ===) تا مقادیر truthy قدیمی (مثل "true" یا 1) هم
+    // به‌عنوان true تلقی شوند.
+    if (item.pinned == true && !out.done) out.pinned = true;
+    if (item.pinnedAt && !out.done) out.pinnedAt = item.pinnedAt;
+    if (typeof item.pinnedOrder === 'number' && isFinite(item.pinnedOrder) && !out.done) {
         out.pinnedOrder = item.pinnedOrder;
     }
 
-    // 🔧 فیلد فوری (Urgent)
-    if (item.urgent === true) out.urgent = true;
+    // 🔧 فیلد فوری (Urgent) — بررسی با == برای پذیرش مقادیر قدیمی
+    if (item.urgent == true && !out.done) out.urgent = true;
 
     // parentId — لینک به والد برای فرزندان تکرارشونده
     if (item.parentId && typeof item.parentId === 'string' && item.parentId !== item.id) {
@@ -3902,6 +4581,31 @@ function migrateItem(item) {
         }
     }
 
+    // 🔧 v6: حفظ تمام فیلدهای ناشناخته (forward-compatibility)
+    // اگر فیلد جدیدی در آینده اضافه شود، در بک‌آپ ذخیره می‌شود و هنگام
+    // بازیابی نیز حفظ می‌شود. این تضمین می‌کند که هیچ داده‌ای از دست نرود.
+    const knownKeys = new Set([
+        'id', 'text', 'createdAt', 'deadline', 'done', 'groupId',
+        'completedAt', 'position',
+        'pinned', 'pinnedAt', 'pinnedOrder',
+        'urgent', 'parentId', 'repeat'
+    ]);
+    for (const key of Object.keys(item)) {
+        if (!knownKeys.has(key) && out[key] === undefined) {
+            // فقط فیلدهای primitive (string, number, boolean) و آرایه/آبجکت ساده
+            const val = item[key];
+            if (val !== null && val !== undefined) {
+                try {
+                    // تست serializable بودن
+                    JSON.stringify(val);
+                    out[key] = val;
+                } catch(e) {
+                    // نادیده بگیر
+                }
+            }
+        }
+    }
+
     return out;
 }
 
@@ -3914,7 +4618,7 @@ function migrateGroup(group) {
     // چون خودکار ساخته می‌شوند
     if (group.id === 'all' || group.id === 'urgent') return null;
 
-    return {
+    const out = {
         id: String(group.id),
         name: String(group.name),
         color: group.color ? String(group.color) : '#607D8B',
@@ -3924,6 +4628,25 @@ function migrateGroup(group) {
         headerImage: group.headerImage ? String(group.headerImage) : '',
         showInAll: group.showInAll !== false  // پیش‌فرض: true
     };
+
+    // 🔧 v6: حفظ تمام فیلدهای ناشناخته گروه (forward-compatibility)
+    const knownGroupKeys = new Set([
+        'id', 'name', 'color', 'isDefault',
+        'headerIcon', 'headerImage', 'showInAll'
+    ]);
+    for (const key of Object.keys(group)) {
+        if (!knownGroupKeys.has(key) && out[key] === undefined) {
+            const val = group[key];
+            if (val !== null && val !== undefined) {
+                try {
+                    JSON.stringify(val);
+                    out[key] = val;
+                } catch(e) {}
+            }
+        }
+    }
+
+    return out;
 }
 
 // مهاجرت کامل لیست items + groups به ساختار فعلی
@@ -3976,21 +4699,43 @@ function migrateContacts(rawContacts) {
     if (!Array.isArray(rawContacts)) return [];
     return rawContacts
         .filter(c => c && c.id && c.name)
-        .map(c => ({
-            id: String(c.id),
-            company: c.company ? String(c.company) : '',
-            name: String(c.name),
-            position: c.position ? String(c.position) : '',
-            startDate: c.startDate ? String(c.startDate) : '',
-            birthDate: c.birthDate ? String(c.birthDate) : '',
-            commissionAsked: c.commissionAsked ? String(c.commissionAsked) : '',
-            commissionPaid: c.commissionPaid ? String(c.commissionPaid) : '',
-            commissionPercent: c.commissionPercent ? String(c.commissionPercent) : '',
-            phones: Array.isArray(c.phones) ? c.phones.filter(p => p).map(p => String(p)) : [],
-            addresses: Array.isArray(c.addresses) ? c.addresses.filter(a => a).map(a => String(a)) : [],
-            notes: Array.isArray(c.notes) ? c.notes.filter(n => n).map(n => String(n)) : [],
-            createdAt: c.createdAt ? String(c.createdAt) : new Date().toISOString(),
-        }));
+        .map(c => {
+            const out = {
+                id: String(c.id),
+                company: c.company ? String(c.company) : '',
+                name: String(c.name),
+                position: c.position ? String(c.position) : '',
+                startDate: c.startDate ? String(c.startDate) : '',
+                birthDate: c.birthDate ? String(c.birthDate) : '',
+                commissionAsked: c.commissionAsked ? String(c.commissionAsked) : '',
+                commissionPaid: c.commissionPaid ? String(c.commissionPaid) : '',
+                commissionPercent: c.commissionPercent ? String(c.commissionPercent) : '',
+                phones: Array.isArray(c.phones) ? c.phones.filter(p => p).map(p => String(p)) : [],
+                primaryPhone: c.primaryPhone ? String(c.primaryPhone) : '',  // 🔧 موبایل اصلی
+                addresses: Array.isArray(c.addresses) ? c.addresses.filter(a => a).map(a => String(a)) : [],
+                notes: Array.isArray(c.notes) ? c.notes.filter(n => n).map(n => String(n)) : [],
+                createdAt: c.createdAt ? String(c.createdAt) : new Date().toISOString(),
+            };
+            // 🔧 v6: حفظ تمام فیلدهای ناشناخته (forward-compatibility)
+            const knownContactKeys = new Set([
+                'id', 'company', 'name', 'position',
+                'startDate', 'birthDate',
+                'commissionAsked', 'commissionPaid', 'commissionPercent',
+                'phones', 'primaryPhone', 'addresses', 'notes', 'createdAt'
+            ]);
+            for (const key of Object.keys(c)) {
+                if (!knownContactKeys.has(key) && out[key] === undefined) {
+                    const val = c[key];
+                    if (val !== null && val !== undefined) {
+                        try {
+                            JSON.stringify(val);
+                            out[key] = val;
+                        } catch(e) {}
+                    }
+                }
+            }
+            return out;
+        });
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -4870,6 +5615,8 @@ function toggleGroupMenu(groupId, btnEl) {
     if (menu.classList.contains('active')) {
         menu.classList.remove('active');
         _activeGroupMenu = null;
+        // 🔧 نمایش کلید + شناور وقتی منو بسته شد
+        _refreshFloatingAddBtn();
         return;
     }
 
@@ -4879,9 +5626,42 @@ function toggleGroupMenu(groupId, btnEl) {
         _activeGroupMenu = null;
     }
 
-    // باز کردن این منو
+    // 🔧 منو را به body منتقل کن تا از هرگونه overflow والدی در امان باشد.
+    // این کار تضمین می‌کند که منو بریده نمی‌شود و همیشه قابل مشاهده است.
+    if (menu.parentNode !== document.body) {
+        document.body.appendChild(menu);
+    }
+
+    // 🔧 موقعیت‌دهی منو: مستقیماً زیر هدر، با عرض هدر.
+    // ابتدا منو را فعال می‌کنیم تا بتوانیم عرض آن را محاسبه کنیم.
+    menu.style.visibility = 'hidden';
     menu.classList.add('active');
+
+    if (btnEl) {
+        // پیدا کردن هدر (والد دکمه همبرگر)
+        const headerEl = btnEl.closest('.group-tasks-header');
+        if (headerEl) {
+            const rect = headerEl.getBoundingClientRect();
+            // عرض منو = عرض هدر (با حداقل ۲۴۰px و حداکثر ۳۲۰px)
+            const menuWidth = Math.max(240, Math.min(320, rect.width));
+            // در RTL، منو راست‌چین است. موقعیت چپ = لبهٔ راست هدر منهای عرض منو.
+            let leftPos = rect.right - menuWidth;
+            // اگر از سمت چپ صفحه بیرون زد، به لبهٔ چپ بچسبان
+            if (leftPos < 8) leftPos = 8;
+            // موقعیت عمودی: ۴px زیر هدر
+            const topPos = rect.bottom + 4;
+            menu.style.left = leftPos + 'px';
+            menu.style.top = topPos + 'px';
+            menu.style.width = menuWidth + 'px';
+        }
+    }
+
+    // اکنون منو را قابل مشاهده کن
+    menu.style.visibility = 'visible';
     _activeGroupMenu = menu;
+    // 🔧 پنهان کردن کلید + شناور وقتی منو باز است
+    var fab = document.getElementById('floatingAddBtn');
+    if (fab) fab.style.display = 'none';
 
     // بستن منو با کلیک خارج از آن
     setTimeout(function() {
@@ -4913,6 +5693,8 @@ function closeGroupMenuOnOutsideClick(e) {
     // کلیک خارج از منو — بستن
     _activeGroupMenu.classList.remove('active');
     _activeGroupMenu = null;
+    // 🔧 نمایش کلید + شناور وقتی منو بسته شد
+    _refreshFloatingAddBtn();
 }
 
 // بستن منوی همبرگری (از داخل منو)
@@ -4921,6 +5703,8 @@ function closeGroupMenu() {
         _activeGroupMenu.classList.remove('active');
         _activeGroupMenu = null;
     }
+    // 🔧 نمایش کلید + شناور وقتی منو بسته شد
+    _refreshFloatingAddBtn();
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -4991,6 +5775,8 @@ function openGroupSettings(groupId) {
 
     // به‌روزرسانی پیش‌نمایش آیکون
     updateGroupIconPreview();
+    // 🔧 به‌روزرسانی پیش‌نمایش عکس پس‌زمینه (جدا از آیکون)
+    updateGroupImagePreview();
 
     // به‌روزرسانی toggle showInAll
     const toggle = document.getElementById('groupSettingsShowInAll');
@@ -5002,6 +5788,9 @@ function openGroupSettings(groupId) {
 
     // نمایش مودال
     document.getElementById('groupSettingsOverlay').classList.add('active');
+    // 🔧 پنهان کردن کلید + شناور وقتی مودال تنظیمات باز است
+    var fab = document.getElementById('floatingAddBtn');
+    if (fab) fab.style.display = 'none';
 }
 
 // 🔧 متغیر موقت برای نگه‌داشتن عکس آپلود‌شده
@@ -5009,29 +5798,43 @@ function openGroupSettings(groupId) {
 // پس عکس را در این متغیر موقت نگه می‌داریم و در saveGroupSettings از آن استفاده می‌کنیم.
 let _tempHeaderImage = null;
 
-// به‌روزرسانی پیش‌نمایش آیکون (با توجه به آیکون انتخاب‌شده یا عکس)
+// به‌روزرسانی پیش‌نمایش آیکون — همیشه آیکون انتخاب‌شده را نشان می‌دهد.
+// 🔧 طبق درخواست کاربر: آیکون و عکس کاملاً مستقل هستند. آیکون در جای خودش
+// نمایش داده می‌شود و عکس در پیش‌نمایش جداگانهٔ عکس پس‌زمینه.
 function updateGroupIconPreview() {
     const preview = document.getElementById('groupSettingsIconPreview');
     const selectedIcon = document.querySelector('.icon-option.selected');
     if (!preview) return;
-
-    // 🔧 اگر عکس آپلود شده (در متغیر موقت)، آن را نشان بده
-    if (_tempHeaderImage) {
-        preview.style.backgroundImage = 'url(' + _tempHeaderImage + ')';
-        preview.textContent = '';
+    // پاک کردن پس‌زمینهٔ preview آیکون (دیگر عکس اینجا نشان داده نمی‌شود)
+    preview.style.backgroundImage = '';
+    if (selectedIcon) {
+        preview.textContent = selectedIcon.dataset.icon;
     } else {
-        // بررسی عکس موجود گروه
+        const group = getGroupById(_groupSettingsTargetId);
+        preview.textContent = (group && group.headerIcon) ? group.headerIcon : '📋';
+    }
+}
+
+// 🔧 به‌روزرسانی پیش‌نمایش عکس پس‌زمینه (جدا از آیکون)
+function updateGroupImagePreview() {
+    const preview = document.getElementById('groupSettingsImagePreview');
+    if (!preview) return;
+    // تشخیص عکس فعلی: اول متغیر موقت، بعد عکس موجود گروه
+    let imageUrl = '';
+    if (_tempHeaderImage) {
+        imageUrl = _tempHeaderImage;
+    } else {
         const group = getGroupById(_groupSettingsTargetId);
         if (group && group.headerImage) {
-            preview.style.backgroundImage = 'url(' + group.headerImage + ')';
-            preview.textContent = '';
-        } else if (selectedIcon) {
-            preview.style.backgroundImage = '';
-            preview.textContent = selectedIcon.dataset.icon;
-        } else if (group && group.headerIcon) {
-            preview.style.backgroundImage = '';
-            preview.textContent = group.headerIcon;
+            imageUrl = group.headerImage;
         }
+    }
+    if (imageUrl) {
+        preview.style.backgroundImage = 'url(' + imageUrl + ')';
+        preview.innerHTML = '';
+    } else {
+        preview.style.backgroundImage = '';
+        preview.innerHTML = '<span class="image-preview-placeholder">بدون عکس</span>';
     }
 }
 
@@ -5048,7 +5851,7 @@ function onGroupHeaderImageSelected(event) {
             const compressed = compressImage(img, 500 * 1024, 800);
             // 🔧 ذخیره در متغیر موقت (نه روی group که یک کپی است)
             _tempHeaderImage = compressed;
-            updateGroupIconPreview();
+            updateGroupImagePreview();
             showToast('عکس با موفقیت بارگذاری شد ✓');
         };
         img.onerror = function() {
@@ -5119,7 +5922,7 @@ function compressImage(img, maxSize, maxDim) {
 function clearGroupHeaderImage() {
     // 🔧 پاک کردن متغیر موقت — در saveGroupSettings خالی ذخیره می‌شود
     _tempHeaderImage = '';
-    updateGroupIconPreview();
+    updateGroupImagePreview();
     showToast('عکس حذف شد (برای ذخیره، دکمهٔ «ذخیره» را بزنید)');
 }
 
@@ -5176,6 +5979,8 @@ function closeGroupSettings() {
     // پاک کردن value فایل input تا بتوان همان فایل را دوباره انتخاب کرد
     const fileInput = document.getElementById('groupSettingsImageInput');
     if (fileInput) fileInput.value = '';
+    // 🔧 نمایش کلید + شناور وقتی مودال بسته شد
+    _refreshFloatingAddBtn();
 }
 
 function getTaskCountByGroup(groupId) {
@@ -5265,6 +6070,9 @@ function initRecognition() {
         if (isRecording) {
             isRecording = false;
             document.getElementById('addBtn').classList.remove('recording');
+            // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
+            const fab = document.getElementById('floatingAddBtn');
+            if (fab) fab.classList.remove('recording');
             if (currentSessionText.trim()) {
                 allFinalText = (allFinalText + ' ' + currentSessionText).trim().replace(/\s+/g, ' ');
                 currentSessionText = '';
@@ -5285,7 +6093,13 @@ function initRecognition() {
                 }
                 return 'دسترسی به میکروفون رد شد. در تنظیمات مرورگر اجازه دهید.';
             case 'network':
-                return null;
+                // 🔧 خطای شبکه — احتمالاً اینترنت قطع شده هنگام ضبط
+                // isReachable را به‌روزرسانی کن تا هدر آفلاین شود
+                if (isReachable) {
+                    isReachable = false;
+                    updateOnlineStatus();
+                }
+                return 'اتصال اینترنت قطع شد. ضبط متوقف شد. می‌توانید متن را تایپ کنید.';
             case 'audio-capture':
                 return 'میکروفون پیدا نشد. یک میکروفون وصل کنید.';
             case 'language-not-supported':
@@ -5318,6 +6132,9 @@ function initRecognition() {
                             console.error('Restart failed twice', e2);
                             isRecording = false;
                             document.getElementById('addBtn')?.classList.remove('recording');
+                            // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
+                            const fabR = document.getElementById('floatingAddBtn');
+                            if (fabR) fabR.classList.remove('recording');
                             document.getElementById('itemText').value = addNumericAfterWords(allFinalText);
                             showFormSection(true);
                             showToast('ضبط قطع شد. می‌توانید متن را تایپ کنید یا دوباره ضبط کنید.');
@@ -5343,14 +6160,23 @@ function startRecording() {
     // flashing blue-yellow (offline / no real internet — VPN with no
     // connectivity, quota exhausted, GitHub unreachable, etc.), skip
     // recording and go directly to manual typing.
+    // 🔧 طبق درخواست کاربر: در حالت آفلاین، دکمه‌های «ضبط دوباره» و
+    // «ذخیره» همچنان نمایش داده شوند (کاربر می‌تواند متن را تایپ کند
+    // یا دوباره ضبط را امتحان کند). عنوان و متن ویرایش نیز حفظ می‌شود.
     if (!isReachable) {
         document.getElementById('modalOverlay').classList.add('active');
         document.getElementById('recordingSection').style.display = 'none';
         document.getElementById('formSection').style.display = 'block';
-        document.getElementById('modalTitle').textContent = 'یادآور جدید';
+        // 🔧 حفظ عنوان (ویرایش یا جدید) و نمایش دکمه‌ها
+        const isEditing = !!editTaskId;
+        document.getElementById('modalTitle').textContent = isEditing ? 'ویرایش یادآور' : 'یادآور جدید';
+        const saveBtn = document.getElementById('saveBtn');
+        if (saveBtn) saveBtn.textContent = isEditing ? 'ثبت ویرایش' : 'ذخیره';
+        document.getElementById('reRecordBtn').style.display = '';
+        document.getElementById('saveBtn').style.display = '';
         if (!document.getElementById('itemDeadline').value) setQuickDeadline(1);
         else updateDeadlineDisplay(document.getElementById('itemDeadline').value);
-        showToast('اینترنت در دسترس نیست. متن را تایپ کنید.');
+        showToast('اینترنت در دسترس نیست. ضبط صوت کار نمی‌کند. متن را تایپ کنید.');
         setTimeout(() => document.getElementById('itemText').focus(), 100);
         return;
     }
@@ -5369,6 +6195,9 @@ function startRecording() {
     document.getElementById('reRecordBtn').style.display = 'none';
     document.getElementById('saveBtn').style.display = 'none';
     document.getElementById('addBtn').classList.add('recording');
+    // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
+    const fab2 = document.getElementById('floatingAddBtn');
+    if (fab2) fab2.classList.add('recording');
     try {
         recognition.start();
     } catch(e) {
@@ -5376,6 +6205,9 @@ function startRecording() {
         showToast('خطا در شروع ضبط');
         isRecording = false;
         document.getElementById('addBtn').classList.remove('recording');
+        // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
+        const fab3 = document.getElementById('floatingAddBtn');
+        if (fab3) fab3.classList.remove('recording');
         showFormSection();
     }
 }
@@ -5383,6 +6215,9 @@ function startRecording() {
 function stopRecording() {
     isRecording = false;
     document.getElementById('addBtn').classList.remove('recording');
+    // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
+    const fabStop = document.getElementById('floatingAddBtn');
+    if (fabStop) fabStop.classList.remove('recording');
     if (recognition) { try { recognition.stop(); } catch(e) {} }
     // Commit current session and apply number conversion on final text
     if (currentSessionText.trim()) {
@@ -5390,7 +6225,7 @@ function stopRecording() {
         currentSessionText = '';
     }
     document.getElementById('itemText').value = addNumericAfterWords(allFinalText);
-    setTimeout(() => showFormSection(), 250);
+    setTimeout(() => { showFormSection(); checkPendingReload(); }, 250);
 }
 
 // (merged with the version above)
@@ -5492,6 +6327,14 @@ function openDatetimePicker() {
 }
 
 function closeDatetimePicker() {
+    // 🔧 اگر تقویم برای فیلدِ تاریخِ شخص باز شده بود و حالا بسته می‌شود
+    // (تأیید یا انصراف)، فلگ را تنظیم کن تا popstate فرم شخص را نبندد
+    // و حالت تقویمِ شخص را ریست کن.
+    if (_contactDatePickerTarget) {
+        _contactDatePickerTarget = null;
+        document.getElementById('datetimePickerOverlay').classList.remove('contact-date-picker');
+        _skipContactOverlayCloseOnPopstate = true;
+    }
     // Visually close the picker + remove from the modal stack.
     closeModalByType('datetimePicker');
     // CRITICAL: Reset the repeat-end-date flag. If the user opened the
@@ -5683,6 +6526,11 @@ function openGroupPicker() {
     groups.forEach(group => {
         // In moveTasks mode, exclude the group being deleted
         if (_groupPickerMode === 'moveTasks' && group.id === _groupPickerExcluded) return;
+        // 🔧 گروه «کارهای فوری» یک گروه نمایشی است — در لیست انتخاب
+        // گروه برای ساخت تسک جدید یا انتقال تسک نشان داده نمی‌شود.
+        // کاربر باید با روشن کردن چک‌باکس «فوری» در جزئیات تسک، آن را
+        // به این گروه نمایشی اضافه کند.
+        if (group.id === 'urgent') return;
         const count = group.id === 'all'
             ? items.length
             : items.filter(i => i.groupId === group.id).length;
@@ -5937,6 +6785,27 @@ function deleteGroupRecord(id) {
     return true;
 }
 
+// 🔧 تابع کمکی: قفل کردن اسکرول body هنگام باز بودن مودال
+let _savedBodyOverflow = '';
+function lockBodyScroll() {
+    _savedBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    // 🔧 جلوگیری از حرکت صفحه با touch در موبایل
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.top = '-' + window.scrollY + 'px';
+}
+function unlockBodyScroll() {
+    if (document.body.style.position === 'fixed') {
+        const scrollY = document.body.style.top;
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.top = '';
+        document.body.style.overflow = _savedBodyOverflow || '';
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+    }
+}
+
 function startAdding(prefilledDeadline, prefilledText) {
     // The + button is disabled on the groups list view — a new task needs
     // to know which group to be assigned to. If the user somehow invokes
@@ -5954,6 +6823,8 @@ function startAdding(prefilledDeadline, prefilledText) {
         return;
     }
     document.getElementById('modalOverlay').classList.add('active');
+    // 🔧 قفل اسکرول body — صفحه زیر مودال حرکت نکند
+    lockBodyScroll();
     // Push a modal marker so back closes the form (instead of navigating).
     navPush({ view: 'modal', type: 'taskForm' });
     trackModalOpen('taskForm');
@@ -5988,7 +6859,12 @@ function startAdding(prefilledDeadline, prefilledText) {
     if (isEditing) {
         document.getElementById('recordingSection').style.display = 'none';
         document.getElementById('formSection').style.display = 'block';
+        // 🔧 نمایش دکمه‌های «ضبط دوباره» و «ذخیره» در حالت ویرایش
+        // (بدون این خط، فقط دکمهٔ «انصراف» دیده می‌شد)
+        document.getElementById('reRecordBtn').style.display = '';
+        document.getElementById('saveBtn').style.display = '';
         if (!prefilledDeadline) setQuickDeadline(1);
+        else updateDeadlineDisplay(prefilledDeadline);
         // Focus the textarea so user can immediately edit the text
         setTimeout(() => {
             const textArea = document.getElementById('itemText');
@@ -6004,20 +6880,28 @@ function startAdding(prefilledDeadline, prefilledText) {
         // Direct manual mode
         document.getElementById('recordingSection').style.display = 'none';
         document.getElementById('formSection').style.display = 'block';
+        // 🔧 نمایش دکمهٔ «ذخیره» (و پنهان کردن «ضبط دوباره» چون ضبط پشتیبانی نمی‌شود)
+        document.getElementById('reRecordBtn').style.display = 'none';
+        document.getElementById('saveBtn').style.display = '';
         if (!prefilledDeadline) setQuickDeadline(1);
         showToast('مرورگر از ضبط پشتیبانی نمی‌کند. متن را تایپ کنید.');
         setTimeout(() => document.getElementById('itemText').focus(), 100);
         return;
     }
     // If the header is flashing blue-yellow (offline / no real internet),
-    // skip recording and go directly to manual typing — don't attempt
-    // voice recognition at all (it would fail or hang without real
-    // connectivity).
+    // skip auto-recording and go directly to manual typing.
+    // 🔧 طبق درخواست کاربر: در حالت آفلاین همهٔ کلیدها (انصراف، ضبط دوباره،
+    // ذخیره) کامل نمایش داده شوند، اما ضبط صوت کار نکند. اگر کاربر روی
+    // «ضبط دوباره» کلیک کند، startRecording() آفلاین بودن را تشخیص داده و
+    // پیام مناسب نمایش می‌دهد.
     if (!isReachable) {
         document.getElementById('recordingSection').style.display = 'none';
         document.getElementById('formSection').style.display = 'block';
+        // 🔧 نمایش همهٔ دکمه‌ها در حالت آفلاین
+        document.getElementById('reRecordBtn').style.display = '';
+        document.getElementById('saveBtn').style.display = '';
         if (!prefilledDeadline) setQuickDeadline(1);
-        showToast('اینترنت در دسترس نیست. متن را تایپ کنید.');
+        showToast('اینترنت در دسترس نیست. متن را تایپ کنید یا ضبط را امتحان کنید.');
         setTimeout(() => document.getElementById('itemText').focus(), 100);
         return;
     }
@@ -6098,6 +6982,24 @@ function editTask(id) {
 // Add a new task for the currently selected calendar day.
 // Closes the calendar modal, opens the new-task modal with the deadline pre-filled,
 // and starts voice recording (when supported on a secure context).
+// 🔧 باز کردن یادداشت برای یک روز خاص از تقویم
+// هر روز تقویم یادداشت مستقل خودش را دارد (مثل یادداشت گروه‌ها)
+function openDayNotes() {
+    if (!calState || !calState.selectedDay) {
+        showToast('ابتدا یک روز را در تقویم انتخاب کنید');
+        return;
+    }
+    // ساخت کلید یکتا برای این روز: day_1405_8_12
+    var dayKey = 'day_' + calState.year + '_' + calState.month + '_' + calState.selectedDay;
+    // ساخت عنوان: «📝 یادداشت — 12 آبان 1405»
+    var dateStr = toPersianDigits(calState.selectedDay) + ' ' + jalaliMonths[calState.month - 1] + ' ' + toPersianNumber(calState.year);
+    // بستن تقویم و باز کردن یادداشت
+    closeCalendar();
+    setTimeout(function() {
+        openNotes(dayKey, '📝 یادداشت — ' + dateStr);
+    }, 200);
+}
+
 function addTaskForSelectedDay() {
     if (!calState || !calState.selectedDay) {
         showToast('ابتدا یک روز را در تقویم انتخاب کنید');
@@ -6159,7 +7061,11 @@ function showManualMode(message) {
 function showFormSection(forceFocus) {
     document.getElementById('recordingSection').style.display = 'none';
     document.getElementById('formSection').style.display = 'block';
-    document.getElementById('modalTitle').textContent = 'یادآور جدید';
+    // 🔧 حفظ عنوان و متن دکمهٔ ذخیره در حالت ویرایش
+    const isEditing = !!editTaskId;
+    document.getElementById('modalTitle').textContent = isEditing ? 'ویرایش یادآور' : 'یادآور جدید';
+    const saveBtn = document.getElementById('saveBtn');
+    if (saveBtn) saveBtn.textContent = isEditing ? 'ثبت ویرایش' : 'ذخیره';
     // 🔧 نمایش دکمه‌های «ضبط دوباره» و «ذخیره» (در حالت فرم)
     document.getElementById('reRecordBtn').style.display = '';
     document.getElementById('saveBtn').style.display = '';
@@ -6180,13 +7086,21 @@ function cancelModal() {
     if (isRecording) {
         isRecording = false;
         document.getElementById('addBtn').classList.remove('recording');
+        const fabCancel = document.getElementById('floatingAddBtn');
+        if (fabCancel) fabCancel.classList.remove('recording');
         if (recognition) { try { recognition.stop(); } catch(e) {} }
     }
-    // Visually close the form + remove from the modal stack + reset edit flag.
-    // closeModalByType also handles the side-effects (stop recording, reset editTaskId).
     closeModalByType('taskForm');
-    // Pop the modal marker pushed on startAdding.
+    unlockBodyScroll();
     navBack();
+    // 🔧 render برای به‌روزرسانی دکمه شناور + صفحه
+    if (typeof sortableInstance !== 'undefined' && sortableInstance) {
+        try { sortableInstance.destroy(); } catch(e) {}
+        sortableInstance = null;
+    }
+    render();
+    setTimeout(initSortable, 50);
+    setTimeout(checkPendingReload, 500);
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -6446,7 +7360,15 @@ function saveItem() {
                     //    day-of-month for monthly repeats and day-of-week
                     //    for weekly repeats).
                     var newChildren = generateRepeatedTasks(items[idx], formRepeatType, formRepeatValue, formRepeatEndDate);
+                    // 🔧 طبق درخواست کاربر: شماره‌گذاری تسک‌های تکرارشونده.
+                    // والد (کمترین تاریخ) = شماره ۱، فرزندان = ۲، ۳، ...
+                    var editBaseText = items[idx].text;
+                    // حذف شمارهٔ قبلی اگر وجود داشت (برای ویرایش مجدد)
+                    editBaseText = editBaseText.replace(/^[\d۰-۹]+\s*-\s*/, '');
+                    items[idx].text = '۱ - ' + editBaseText;
                     for (var ci = 0; ci < newChildren.length; ci++) {
+                        var editChildNum = toPersianNumber(ci + 2);
+                        newChildren[ci].text = editChildNum + ' - ' + editBaseText;
                         filteredItems.push(newChildren[ci]);
                     }
                     // 4. Replace items array (mutate in-place since 'items' is const)
@@ -6498,13 +7420,22 @@ function saveItem() {
             try { recalcGroupPositions(items[idx].groupId || 'all'); }
             catch(e) { console.error('[saveItem edit] recalcGroupPositions failed:', e.message); }
             document.getElementById('modalOverlay').classList.remove('active');
+            // 🔧 باز کردن قفل اسکرول body
+            unlockBodyScroll();
             // Remove from the modal stack and pop the modal marker.
             trackModalClose('taskForm');
             navBack();
             document.getElementById('itemText').value = '';
             document.getElementById('itemDeadline').value = '';
             editTaskId = null;  // Clear the edit flag
-            fullRender();
+            // 🔧 از fullRender استفاده نمی‌کنیم تا اسکرول نپرد
+            // به‌جای آن render را مستقیم صدا می‌زنیم
+            if (typeof sortableInstance !== 'undefined' && sortableInstance) {
+                try { sortableInstance.destroy(); } catch(e) {}
+                sortableInstance = null;
+            }
+            render();
+            setTimeout(initSortable, 50);
             showToast('تسک ویرایش شد ✓');
             return;
         }
@@ -6563,11 +7494,16 @@ function saveItem() {
             console.log('[saveItem] generated ' + repeats.length + ' repeat children');
             if (repeats.length > 0) {
                 newItem.repeat = { type: rType, value: parseInt(rVal, 10), endDate: rEnd };
-                // Use a plain for-loop instead of .apply() — some older
-                // Android WebViews have a bug where Function.prototype.apply
-                // with a large array throws "Maximum call stack exceeded"
-                // even when the array is small.
+                // 🔧 طبق درخواست کاربر: شماره‌گذاری تسک‌های تکرارشونده.
+                // والد (کمترین تاریخ) = شماره ۱، فرزندان = ۲، ۳، ...
+                // مثال: «۱ - قرارداد خونه»، «۲ - قرارداد خونه»، ...
+                var baseText = newItem.text;
+                // حذف شمارهٔ قبلی اگر وجود داشت (برای ویرایش)
+                baseText = baseText.replace(/^[\d۰-۹]+\s*-\s*/, '');
+                newItem.text = '۱ - ' + baseText;
                 for (var ri = 0; ri < repeats.length; ri++) {
+                    var childNum = toPersianNumber(ri + 2);  // فرزندان از ۲ شروع می‌شوند
+                    repeats[ri].text = childNum + ' - ' + baseText;
                     items.push(repeats[ri]);
                 }
                 showToast(repeats.length + 1 + ' تسک تکرارشونده ساخته شد');
@@ -6602,6 +7538,8 @@ function saveItem() {
     }
 
     document.getElementById('modalOverlay').classList.remove('active');
+    // 🔧 باز کردن قفل اسکرول body
+    unlockBodyScroll();
     // Remove from the modal stack and pop the modal marker.
     trackModalClose('taskForm');
     navBack();
@@ -6614,7 +7552,13 @@ function saveItem() {
     if (document.getElementById('repeatEndDateDisplay')) document.getElementById('repeatEndDateDisplay').value = '';
     onRepeatTypeChange();
 
-    fullRender();
+    // 🔧 از fullRender استفاده نمی‌کنیم تا اسکرول نپرد
+    if (typeof sortableInstance !== 'undefined' && sortableInstance) {
+        try { sortableInstance.destroy(); } catch(e) {}
+        sortableInstance = null;
+    }
+    render();
+    setTimeout(initSortable, 50);
     showToast('یادآور ذخیره شد ✓');
 }
 
@@ -6784,7 +7728,7 @@ function initGroupsSortable(container) {
             chosenClass: 'sortable-chosen',
             dragClass: 'sortable-drag',
             // Don't drag the fixed "همه کارها" item or the "add new group" button.
-            filter: '.group-item-fixed, .add-group',
+            filter: '.group-item-fixed, .add-group, .group-notes-btn',
             preventOnFilter: false,  // allow clicks on filtered elements
             // Long-press on touch to start drag (so tap-to-open still works).
             // 300ms is a good balance — feels responsive but doesn't conflict with tap.
@@ -6889,12 +7833,10 @@ function saveNewOrder(draggedId) {
         }
     });
 
-    // 🔧 ذخیرهٔ ترتیب پین‌ها (pinnedOrder)
-    // ترتیب در DOM همان ترتیب نمایش است — پین‌ها به همین ترتیب ذخیره می‌شوند
-    pinnedIds.forEach((id, idx) => {
-        const it = items.find(i => i.id === id);
-        if (it) it.pinnedOrder = idx;
-    });
+    // 🔧 ذخیرهٔ ترتیب پین‌ها (pinnedOrder) — ❌ حذف شد.
+    // طبق درخواست کاربر: ترتیب پین‌ها همیشه بر اساس زمان پین‌شدن (pinnedAt)
+    // تعیین می‌شود. drag-drop دیگر ترتیب پین‌ها را تغییر نمی‌دهد.
+    // فقط ترتیب غیرپین‌ها ذخیره می‌شود.
 
     // 🔧 ذخیرهٔ ترتیب لمسی غیرپین‌ها (position)
     notDoneIds.forEach((id, idx) => {
@@ -7044,17 +7986,17 @@ function togglePinTask(taskId) {
     const item = items.find(i => i.id === taskId);
     if (!item) return;
 
-    if (item.pinned) {
-        // نپین کردن — حذف pinned, pinnedAt, pinnedOrder
+    if (item.pinned === true) {
+        // 🔧 نپین کردن — فیلدهای pinned کاملاً حذف می‌شوند (delete + null)
+        // تا هیچ اثری از پین باقی نماند و کلاس pinned-task قطعاً حذف شود.
         try { delete item.pinned; } catch(e) {}
-        item.pinned = undefined;
+        item.pinned = null;
         try { delete item.pinnedAt; } catch(e) {}
-        item.pinnedAt = undefined;
+        item.pinnedAt = null;
         try { delete item.pinnedOrder; } catch(e) {}
-        item.pinnedOrder = undefined;
+        item.pinnedOrder = null;
         // حذف position هم برای اینکه به ترتیب لمسی/زمانی برگردد
         try { delete item.position; } catch(e) {}
-        item.position = undefined;
     } else {
         // پین کردن
         item.pinned = true;
@@ -7064,15 +8006,27 @@ function togglePinTask(taskId) {
     setDB(items);
     // محاسبهٔ مجدد ترتیب پین‌ها در این گروه
     recalcPinnedOrder(item.groupId || 'all');
-    fullRender();
+    // 🔧 حفظ موقعیت اسکرول — صفحه به بالای گروه نپرد
+    var savedScrollY = window.scrollY;
+    if (typeof sortableInstance !== 'undefined' && sortableInstance) {
+        try { sortableInstance.destroy(); } catch(e) {}
+        sortableInstance = null;
+    }
+    render();
+    setTimeout(function() {
+        initSortable();
+        window.scrollTo(0, savedScrollY);
+    }, 50);
     if (navigator.vibrate) navigator.vibrate(20);
-    showToast(item.pinned ? '📌 پین شد' : '📌 پین برداشته شد');
+    showToast(item.pinned === true ? '📌 پین شد' : '📌 پین برداشته شد');
 }
 
 // محاسبهٔ مجدد pinnedOrder برای تمام پین‌های یک گروه
-// پین‌ها به ترتیب زمان پین شدن (pinnedAt) مرتب می‌شوند:
-// آخرین پین‌شده (pinnedAt بزرگ‌تر) → pinnedOrder کمتر (بالاتر در لیست)
-// کاربر می‌تواند بعداً با drag-drop ترتیب پین‌ها را تغییر دهد
+// 🔧 طبق درخواست کاربر: پین‌ها همیشه بر اساس زمان پین شدن مرتب می‌شوند.
+// تسکی که تازه پین شده همیشه بالاترین (pinnedOrder = 0) قرار می‌گیرد،
+// فارغ از زمان سررسید. فقط تسکی که بعداً پین شود بالاتر می‌رود.
+// ترتیب دستی (drag-drop) دیگر برای پین‌ها اعمال نمی‌شود — همیشه زمان
+// پین ملاک است.
 function recalcPinnedOrder(groupId) {
     const items = getDB();
     let pinnedItems;
@@ -7084,18 +8038,14 @@ function recalcPinnedOrder(groupId) {
     }
     // مرتب‌سازی بر اساس pinnedAt (نزولی: آخرین پین‌شده اول)
     pinnedItems.sort((a, b) => (b.pinnedAt || 0) - (a.pinnedAt || 0));
-    // اگر کاربر قبلاً با drag-drop ترتیب پین‌ها را تغییر داده (pinnedOrder دارد),
-    // آن ترتیب را حفظ کن. ولی برای پین‌های جدید که pinnedOrder ندارند،
-    // به‌طور خودکار بر اساس pinnedAt تنظیم کن.
-    const hasManualOrder = pinnedItems.some(i => typeof i.pinnedOrder === 'number');
-    if (!hasManualOrder) {
-        // هیچ ترتیب دستی نیست — بر اساس pinnedAt تنظیم کن
-        pinnedItems.forEach((item, idx) => {
-            const orig = items.find(i => i.id === item.id);
-            if (orig) orig.pinnedOrder = idx;
-        });
-        setDB(items);
-    }
+    // 🔧 همیشه pinnedOrder را بر اساس ترتیب pinnedAt تنظیم کن.
+    // این تضمین می‌کند که تسک تازه پین‌شده همیشه pinnedOrder = 0 (بالاترین)
+    // می‌گیرد و بقیه یک واحد پایین‌تر شیفت می‌کنند.
+    pinnedItems.forEach((item, idx) => {
+        const orig = items.find(i => i.id === item.id);
+        if (orig) orig.pinnedOrder = idx;
+    });
+    setDB(items);
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -7142,14 +8092,25 @@ function openGroupView(groupId) {
     expandedId = null;
     navPush({ view: 'tasks', groupId: groupId });
     fullRender();
+    // 🔧 اسکرول به بالای صفحه تا هدر داخلی گروه کاملاً مشخص و زیر هدر اصلی قرار گیرد
+    window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
 // Open a task's details (expands it). Pushes a history entry so back
 // collapses the task instead of leaving the group.
 function openTaskDetails(taskId) {
+    const prevExpandedId = expandedId;
     expandedId = taskId;
     navPush({ view: 'tasks', groupId: currentGroupId, expandedId: taskId });
     render();
+    // 🔧 اگر قبلاً تسک باز نبود، اسکرول نکن تا تسک در جای خودش بماند.
+    // اگر قبلاً تسک دیگری باز بود، به تسک جدید اسکرول کن.
+    if (prevExpandedId !== null && prevExpandedId !== taskId) {
+        setTimeout(function() {
+            const el = document.querySelector('.item[data-id="' + taskId + '"]');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+    }
 }
 
 // Pop the top history entry. Used when collapsing an expanded task or going
@@ -7216,6 +8177,9 @@ function closeModalByType(type) {
                 isRecording = false;
                 const addBtn = document.getElementById('addBtn');
                 if (addBtn) addBtn.classList.remove('recording');
+                // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
+                const fabClose = document.getElementById('floatingAddBtn');
+                if (fabClose) fabClose.classList.remove('recording');
                 if (typeof recognition !== 'undefined' && recognition) {
                     try { recognition.stop(); } catch(e) {}
                 }
@@ -7238,12 +8202,18 @@ function closeModalByType(type) {
 window.addEventListener('popstate', (e) => {
     const state = e.state || { view: 'groups' };
 
+    // 🔧 اگر منوی همبرگری باز است، آن را ببست
+    if (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu) {
+        closeGroupMenu();
+    }
+
     // ===== Modal handling =====
     // If ANY modal is open, close ONLY the topmost one. This handles:
     //   1. Single modal open + back pressed → modal closes, underlying view stays.
-    //   2. Nested modals (datetime picker inside task form) + back pressed →
-    //      only the topmost (datetime picker) closes; the parent (task form)
-    //      stays open. Pressing back again closes the parent.
+    //   2. Nested modals (datetime picker inside task form, or datetime picker
+    //      inside contact form) + back pressed → only the topmost (datetime
+    //      picker) closes; the parent (task form / contact form) stays open.
+    //      Pressing back again closes the parent.
     //   3. Modal closed via a BUTTON (e.g., user clicked "تأیید" on the
     //      datetime picker): the close function already removed the modal
     //      from _modalStack AND called navBack(). When popstate fires, the
@@ -7251,6 +8221,62 @@ window.addEventListener('popstate', (e) => {
     //      parent — it's still open and should stay open.
     //      Detection: state.view === 'modal' AND state.type === topType
     //      (the parent marker matches the modal still on top of _modalStack).
+
+    // 🔧 اگر این popstate نتیجهٔ تأیید/انصراف تاریخ در فرم شخص است (فلگ
+    // تنظیم شده)، صفحات/فرم‌های شخص نبسته شوند. فقط فلگ را ریست کن و
+    // از منطق بستن صفحهٔ شخص صرف‌نظر کن.
+    if (_skipContactOverlayCloseOnPopstate) {
+        _skipContactOverlayCloseOnPopstate = false;
+        // هنوز ممکن است مودال‌های دیگر (مثل تقویم) روی استک باشند؛
+        // اگر استک مودال خالی است و state مربوط به شخص است، فقط برگرد.
+        if (_modalStack.length > 0) {
+            const topType = _modalStack[_modalStack.length - 1];
+            if (state.view === 'modal' && state.type === topType) {
+                return;
+            }
+            closeModalByType(topType);
+            if (state.view === 'modal') return;
+        }
+        // صفحات شخص همچنان باز هستند؛ نیازی به fullRender نیست.
+        return;
+    }
+
+    // 🔧 ابتدا استک مودال‌ها را بررسی کن — اگر مودالی (مثل تقویم) روی
+    // صفحهٔ شخص باز است، با زدن back فقط همان مودال بسته شود، نه صفحهٔ شخص.
+    // این ترتیب مهم است: مودال‌های روی استک قبل از صفحات شخص بررسی می‌شوند.
+    if (_modalStack.length > 0) {
+        const topType = _modalStack[_modalStack.length - 1];
+
+        // CRITICAL FIX: if the new state is a modal marker whose type matches
+        // the topmost open modal, it means the modal that was on top of
+        // history was already closed manually (and removed from _modalStack)
+        // — we just popped back to the parent marker. The parent modal
+        // should stay open. Do NOT close anything.
+        if (state.view === 'modal' && state.type === topType) {
+            return;
+        }
+
+        // Otherwise, close the topmost modal — it was popped from history
+        // (e.g., user pressed the hardware back button without first
+        // manually closing it).
+        closeModalByType(topType);
+
+        // If the new state is a modal marker (parent modal), stay in modal
+        // mode — don't navigate underneath, don't re-render.
+        if (state.view === 'modal') {
+            return;
+        }
+
+        // اگر state مربوط به صفحهٔ شخص است (یعنی مودال روی صفحهٔ شخص
+        // باز بوده)، پس از بستن مودال، صفحهٔ شخص باید باز بماند.
+        if (state.view === 'contacts' || state.view === 'contactForm') {
+            return;
+        }
+
+        // Otherwise, the new state is the underlying view (groups/tasks).
+        // Fall through to the normal navigation below.
+    }
+
     // 🔧 بررسی صفحات اشخاص — اگر باز هستند، یکی را ببند
     // صفحات اشخاص از navPush استفاده نمی‌کنند، پس باید جداگانه مدیریت شوند
     // ترتیب بستن: از بالا به پایین (نتایج → جستجو/گزارش → فرم → لیست)
@@ -7284,40 +8310,40 @@ window.addEventListener('popstate', (e) => {
         closePhoneActionMenu();
         return;
     }
+    if (document.getElementById('notesOverlay') &&
+        document.getElementById('notesOverlay').classList.contains('active')) {
+        closeNotes();
+        return;
+    }
     if (document.getElementById('contactsOverlay') &&
         document.getElementById('contactsOverlay').classList.contains('active')) {
         closeContacts();
         return;
     }
 
-    if (_modalStack.length > 0) {
-        const topType = _modalStack[_modalStack.length - 1];
-
-        // CRITICAL FIX: if the new state is a modal marker whose type matches
-        // the topmost open modal, it means the modal that was on top of
-        // history was already closed manually (and removed from _modalStack)
-        // — we just popped back to the parent marker. The parent modal
-        // should stay open. Do NOT close anything.
-        if (state.view === 'modal' && state.type === topType) {
-            return;
-        }
-
-        // Otherwise, close the topmost modal — it was popped from history
-        // (e.g., user pressed the hardware back button without first
-        // manually closing it).
-        closeModalByType(topType);
-
-        // If the new state is a modal marker (parent modal), stay in modal
-        // mode — don't navigate underneath, don't re-render.
-        if (state.view === 'modal') {
-            return;
-        }
-
-        // Otherwise, the new state is the underlying view (groups/tasks).
-        // Fall through to the normal navigation below.
-    }
-
     // ===== Normal navigation =====
+    // 🔧 اگر مودال فرم تسک باز است یا تازه بسته شده، هیچ اسکرول و fullRender انجام نده
+    const taskFormJustClosed = (state.view === 'tasks' && _modalStack.length === 0 && prevView === 'tasks');
+    if (state.view === 'modal') {
+        // مودال باز است — هیچ کار نکن
+        return;
+    }
+    if (taskFormJustClosed) {
+        // مودال تازه بسته شده — فقط state را به‌روز کن، بدون fullRender و بدون اسکرول
+        // render قبلاً توسط saveItem یا cancelModal انجام شده
+        if (state.view === 'groups') {
+            currentView = 'groups';
+            currentGroupId = null;
+            expandedId = null;
+        } else if (state.view === 'tasks') {
+            currentView = 'tasks';
+            currentGroupId = state.groupId || null;
+            expandedId = state.expandedId || null;
+        }
+        return;
+    }
+    const prevView = currentView;
+    const prevGroup = currentGroupId;
     if (state.view === 'groups') {
         currentView = 'groups';
         currentGroupId = null;
@@ -7326,11 +8352,16 @@ window.addEventListener('popstate', (e) => {
         currentView = 'tasks';
         currentGroupId = state.groupId || null;
         expandedId = state.expandedId || null;
-    } else if (state.view === 'modal') {
-        // Reached via forward button (rare). Don't navigate underneath.
-        return;
     }
-    fullRender();
+    // 🔧 اسکرول به بالا فقط وقتی ویو اصلی تغییر کرده (groups ↔ tasks)
+    const viewChanged = (prevView !== currentView);
+    const groupChanged = (prevGroup !== currentGroupId);
+    if (viewChanged || groupChanged) {
+        fullRender();
+        window.scrollTo({ top: 0, behavior: 'auto' });
+    } else {
+        fullRender();
+    }
 });
 
 function fullRender() {
@@ -7348,11 +8379,38 @@ function fullRender() {
     setTimeout(initSortable, 50);
 }
 
+// 🔧 تابع کمکی: به‌روزرسانی نمایش کلید + شناور
+// کلید + شناور فقط وقتی نمایش داده می‌شود که:
+//   - در حالت تسک‌ها باشیم (نه لیست گروه‌ها)
+//   - هیچ فرمی باز نباشد (فرم تسک، فرم شخص، مودال تنظیمات گروه)
+//   - هیچ منویی باز نباشد (منوی همبرگری گروه)
+//   - جزئیات هیچ تسکی باز نباشد
+function _refreshFloatingAddBtn() {
+    var fab = document.getElementById('floatingAddBtn');
+    if (!fab) return;
+    var taskFormOpen = document.getElementById('modalOverlay') && document.getElementById('modalOverlay').classList.contains('active');
+    var detailsOpen = (expandedId !== null);
+    var groupSettingsOpen = document.getElementById('groupSettingsOverlay') && document.getElementById('groupSettingsOverlay').classList.contains('active');
+    var groupMenuOpen = (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu);
+    if (currentView === 'tasks' && !taskFormOpen && !detailsOpen && !groupSettingsOpen && !groupMenuOpen) {
+        fab.style.display = 'flex';
+    } else {
+        fab.style.display = 'none';
+        fab.classList.remove('recording');
+    }
+}
+
 function render() {
+    // 🔧 حفظ موقعیت اسکرول — جلوگیری از پرش صفحه
+    // render() محتوای container را جایگزین می‌کند که ممکن است
+    // موقعیت اسکرول را ریست کند. با ذخیره و بازیابی، پرش را حذف می‌کنیم.
+    // این مشکل سه مورد را حل می‌کند:
+    //   ۱) باز کردن تسک → پرش به بالا
+    //   ۲) اسکرول روی تسک‌ها → پرش به بالا (هر ۳۰ ثانیه render صدا زده می‌شود)
+    //   ۳) مشاهده جزئیات تسک → پرش به بالا
+    var savedScrollY = window.scrollY;
+
     // Toggle the + button's disabled state based on the current view.
-    // On the groups list view, the + button is disabled (clicking it would
-    // not know which group to assign the new task to). Inside a group's
-    // tasks view, the + button is enabled.
     const addBtn = document.getElementById('addBtn');
     if (addBtn) {
         if (currentView === 'groups') {
@@ -7361,15 +8419,16 @@ function render() {
             addBtn.classList.remove('disabled');
         }
     }
-    // دکمه بازگردانی (↩) از هدر اصلی به منوی همبرگری هر گروه منتقل شد.
-    // این کد برای سازگاری با نسخه‌های قدیمی نگه داشته شده، اما دکمه
-    // در هدر اصلی مخفی است (display:none).
+    _refreshFloatingAddBtn();
 
     if (currentView === 'groups') {
         renderGroupsView();
     } else {
         renderTasksView(currentGroupId);
     }
+
+    // 🔧 بازیابی موقعیت اسکرول — صفحه در جای خود بماند
+    window.scrollTo(0, savedScrollY);
 }
 
 // ────────────────────────────────────────────────────────────────────
@@ -7383,51 +8442,96 @@ function renderGroupsView() {
 
     container.innerHTML = '';
 
-    // 🔧 تابع کمکی: ساخت HTML آیکون یا عکس گروه برای نمایش در هدر
-    // اگر گروه عکس دارد → عکس به‌صورت پس‌زمینه نمایش داده می‌شود
-    // اگر نه → آیکون (اموجی) در یک دایره نمایش داده می‌شود
+    // 🔧 تابع کمکی: ساخت HTML آیکون گروه برای نمایش در هدر
+    // 🔧 طبق درخواست کاربر: آیکون (اموجی) همیشه در دایرهٔ آیکون نمایش داده
+    // می‌شود. عکس فقط به‌صورت پس‌زمینهٔ کل هدر استفاده می‌شود و جای آیکون
+    // را نمی‌گیرد.
     function getGroupIconHtml(group) {
-        if (group.headerImage) {
-            // عکس به‌صورت پس‌زمینه دایره‌ای
-            return `<div class="group-list-icon" style="background-image: url('${group.headerImage}');"></div>`;
-        } else if (group.headerIcon) {
-            // آیکون اموجی
-            return `<div class="group-list-icon"><span>${group.headerIcon}</span></div>`;
+        const icon = group.headerIcon || '📋';
+        return `<div class="group-list-icon"><span>${icon}</span></div>`;
+    }
+
+    // 🔧 تابع کمکی: ساخت HTML نشان‌های شمارش برای یک گروه
+    // — دایره: تعداد تسک‌های انجام‌نشدهٔ این گروه (بدون احتساب انجام‌شده‌ها)
+    // — عدد قرمز (بدون دایره): تعداد پین‌شده‌های انجام‌نشده
+    // — عدد زرد (بدون دایره، با فاصله): تعداد فوری‌های انجام‌نشده
+    // پارامترها:
+    //   groupItems: آرایهٔ تسک‌های این گروه (قبل از فیلتر انجام‌شده)
+    //   opts: { showUrgentBadge: bool } — برای گروه «کارهای فوری» که خودش
+    //         فوری است، badge فوری نشان داده نمی‌شود (زیرتکراری است).
+    function buildGroupBadges(groupItems, opts, groupId) {
+        const o = opts || {};
+        const showUrgentBadge = o.showUrgentBadge !== false;
+        const showPinnedBadge = o.showPinnedBadge !== false;
+        const gid = groupId || '';
+        const notDone = groupItems.filter(i => !i.done);
+        const notDoneCount = notDone.length;
+        // 🔧 بررسی با == true برای پذیرش مقادیر قدیمی
+        const pinnedCount = notDone.filter(i => i.pinned == true).length;
+        const urgentCount = notDone.filter(i => i.urgent == true).length;
+        let html = '';
+        if (showPinnedBadge && pinnedCount > 0) {
+            html += `<span class="group-badge-pinned">📌${toPersianNumber(pinnedCount)}</span>`;
         }
-        return '';
+        if (showUrgentBadge && urgentCount > 0) {
+            html += `<span class="group-badge-urgent">🚨${toPersianNumber(urgentCount)}</span>`;
+        }
+        // 🔧 دایره تعداد تسک‌ها به آیکون یادداشت می‌چسبد — هر دو در یک wrapper
+        html += `<div class="group-count-notes-wrapper"><span class="group-count">${toPersianNumber(notDoneCount)}</span><button class="group-notes-btn" onclick="event.stopPropagation(); openNotes('${gid}')" title="یادداشت">📝</button></div>`;
+        return html;
     }
 
     // "همه کارها" (green, always first — NOT draggable). We add a marker
     // class so the drag-drop Sortable can recognize it as a fixed item
     // and refuse to drag it or move items above it.
+    // 🔧 در هدر «همه کارها»، فقط تسک‌های گروه‌هایی که showInAll !== false
+    // هستند شمرده می‌شوند — تسک‌های پین/فوری گروه‌های مخفی‌شده شامل نمی‌شوند.
+    const visibleGroupIdsForAll = new Set(groups.filter(g => g.showInAll !== false).map(g => g.id));
+    const allVisibleItems = items.filter(i => visibleGroupIdsForAll.has(i.groupId || 'all'));
     const allDiv = document.createElement('div');
     allDiv.className = 'group-item group-item-fixed';
     allDiv.dataset.groupId = 'all';
     allDiv.style.background = 'linear-gradient(135deg, #4CAF50, #2E7D32)';
-    allDiv.innerHTML = `<div class="group-item-row"><div class="group-list-icon"><span>📋</span></div><span class="group-name">همه کارها</span><span class="group-count">${toPersianNumber(items.length)}</span></div>`;
+    allDiv.innerHTML = `<div class="group-item-row"><div class="group-list-icon"><span>📋</span></div><span class="group-name">همه کارها</span>${buildGroupBadges(allVisibleItems, {}, 'all')}</div>`;
     allDiv.onclick = () => openGroupView('all');
     container.appendChild(allDiv);
 
     // 🔧 "کارهای فوری" (yellow, second — NOT draggable, sticky)
-    // این گروه تسک‌هایی که علامت «فوری» خورده‌اند را نمایش می‌دهد
-    const urgentCount = items.filter(i => i.urgent === true).length;
+    const urgentItems = items.filter(i => i.urgent === true);
     const urgentDiv = document.createElement('div');
     urgentDiv.className = 'group-item group-item-fixed group-urgent';
     urgentDiv.dataset.groupId = 'urgent';
     urgentDiv.style.background = 'linear-gradient(135deg, #FFC107, #FF8F00)';
-    urgentDiv.innerHTML = `<div class="group-item-row"><div class="group-list-icon"><span>🚨</span></div><span class="group-name">کارهای فوری</span><span class="group-count">${toPersianNumber(urgentCount)}</span></div>`;
+    urgentDiv.innerHTML = `<div class="group-item-row"><div class="group-list-icon"><span>🚨</span></div><span class="group-name">کارهای فوری</span>${buildGroupBadges(urgentItems, { showUrgentBadge: false, showPinnedBadge: false }, 'urgent')}</div>`;
     urgentDiv.onclick = () => openGroupView('urgent');
     container.appendChild(urgentDiv);
+
+    // 🔧 فیکس کردن «همه کارها» و «کارهای فوری» زیر هدر اصلی برنامه.
+    // ارتفاع هدر اصلی را محاسبه می‌کنیم و top این دو گروه را تنظیم می‌کنیم.
+    // «همه کارها» در top = ارتفاع هدر اصلی، «کارهای فوری» در top = ارتفاع هدر اصلی + ارتفاع «همه کارها».
+    const mainHeader = document.querySelector('.header');
+    if (mainHeader) {
+        const headerHeight = mainHeader.offsetHeight;
+        allDiv.style.top = headerHeight + 'px';
+        // ارتفاع «همه کارها»: padding(16+16) + min-height(60) + border(3+3) = 98px + gap(6px) = 104px
+        // اما برای دقت بیشتر، offsetHeight «همه کارها» را محاسبه می‌کنیم
+        const allHeight = allDiv.offsetHeight;
+        urgentDiv.style.top = (headerHeight + allHeight + 6) + 'px';  // ۶px فاصله-gap
+    }
 
     // Other groups — draggable (re-orderable). The SortableJS instance
     // (initGroupsSortable, called from fullRender when currentView==='groups')
     // saves the new order to localStorage on drag-end.
     // 🔧 گروه‌های 'all' و 'urgent' در این لیست نیستند (فیلتر می‌شوند)
     groups.filter(g => g.id !== 'all' && g.id !== 'urgent').forEach(group => {
-        const count = items.filter(i => i.groupId === group.id).length;
+        const groupItems = items.filter(i => i.groupId === group.id);
         const div = document.createElement('div');
         div.className = 'group-item group-item-draggable';
         div.dataset.groupId = group.id;
+        // 🔧 اگر گروه از نمایش در «همه کارها» منع شده، بوردر نقطه‌چین مشکی بگیرد
+        if (group.showInAll === false) {
+            div.classList.add('group-item-hidden-from-all');
+        }
         // 🔧 اگر گروه عکس دارد، عکس به‌صورت پس‌زمینه کل هدر نمایش داده می‌شود
         if (group.headerImage) {
             div.style.backgroundImage = `url('${group.headerImage}')`;
@@ -7439,7 +8543,7 @@ function renderGroupsView() {
             div.style.background = `linear-gradient(135deg, ${group.color}, ${group.color}DD)`;
         }
         const iconHtml = getGroupIconHtml(group);
-        div.innerHTML = `<div class="group-item-row">${iconHtml}<span class="group-name">${escapeHtml(group.name)}</span><span class="group-count">${toPersianNumber(count)}</span></div>`;
+        div.innerHTML = `<div class="group-item-row">${iconHtml}<span class="group-name">${escapeHtml(group.name)}</span>${buildGroupBadges(groupItems, {}, group.id)}</div>`;
         div.onclick = () => openGroupView(group.id);
         container.appendChild(div);
     });
@@ -7474,8 +8578,11 @@ function renderTasksView(groupId) {
         const visibleGroupIds = new Set(groups.filter(g => g.showInAll !== false).map(g => g.id));
         items = items.filter(i => visibleGroupIds.has(i.groupId || 'all'));
     } else if (groupId === 'urgent') {
-        // 🔧 در گروه «کارهای فوری»، فقط تسک‌هایی که urgent === true هستند نمایش داده می‌شوند
-        items = items.filter(i => i.urgent === true);
+        // 🔧 در گروه «کارهای فوری»، تمام تسک‌های فوری (از همهٔ گروه‌ها)
+        // نمایش داده می‌شوند — فارغ از اینکه گروهشان در «همه کارها» مخفی
+        // است یا نه. این گروه یک نمای ویژه است که همهٔ فوری‌ها را نشان می‌دهد.
+        // 🔧 بررسی با == true برای پذیرش مقادیر قدیمی (مثل "true" یا 1)
+        items = items.filter(i => i.urgent == true);
     } else {
         // گروه‌های سفارشی — فقط تسک‌های همین گروه
         items = items.filter(i => i.groupId === groupId);
@@ -7491,25 +8598,28 @@ function renderTasksView(groupId) {
     items.sort((a, b) => {
         // ۱. انجام‌شده‌ها در پایین
         if (a.done !== b.done) return a.done ? 1 : -1;
-        // ۲. پین‌ها اول
+        // ۲. اگر هر دو انجام‌شده هستند: بر اساس تاریخ و ساعت انجام شدن
+        //    جدیدترین انجام (بالا) ← قدیمی‌ترین انجام (پایین)
+        if (a.done && b.done) {
+            const aCompleted = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+            const bCompleted = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+            return bCompleted - aCompleted;  // نزولی: جدیدترین بالا
+        }
+        // ۳. پین‌ها اول (فقط برای انجام‌نشده)
         const aPinned = a.pinned === true;
         const bPinned = b.pinned === true;
         if (aPinned && !bPinned) return -1;
         if (!aPinned && bPinned) return 1;
         if (aPinned && bPinned) {
-            // هر دو پین هستند — بر اساس pinnedOrder
             const aOrder = (typeof a.pinnedOrder === 'number') ? a.pinnedOrder : 999999;
             const bOrder = (typeof b.pinnedOrder === 'number') ? b.pinnedOrder : 999999;
             if (aOrder !== bOrder) return aOrder - bOrder;
-            // اگر pinnedOrder ندارند، بر اساس pinnedAt (نزولی)
             return (b.pinnedAt || 0) - (a.pinnedAt || 0);
         }
-        // ۳. تسک‌های غیرپین
+        // ۴. تسک‌های غیرپین (انجام‌نشده)
         if (groupId === 'all' || groupId === 'urgent') {
-            // در «همه کارها» و «کارهای فوری» فقط deadline (drag-drop ندارند)
             return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
         } else {
-            // در گروه‌های سفارشی: اول position (drag-drop)، بعد deadline
             const aPos = (typeof a.position === 'number') ? a.position : 999999;
             const bPos = (typeof b.position === 'number') ? b.position : 999999;
             if (aPos !== bPos) return aPos - bPos;
@@ -7542,8 +8652,10 @@ function renderTasksView(groupId) {
         header.style.background = `linear-gradient(135deg, ${group.color}, ${group.color}DD)`;
     }
 
-    // آیکون هدر (در کنار عنوان)
-    const iconHtml = (group.headerIcon && !group.headerImage)
+    // 🔧 آیکون هدر (در کنار عنوان) — همیشه نمایش داده می‌شود، حتی اگر
+    // عکس پس‌زمینه تنظیم شده باشد. عکس فقط پس‌زمینه است و جای آیکون را
+    // نمی‌گیرد.
+    const iconHtml = group.headerIcon
         ? `<div class="group-header-icon">${group.headerIcon}</div>`
         : '';
 
@@ -7571,12 +8683,40 @@ function renderTasksView(groupId) {
         `;
     }
 
-    // شمارش تسک‌ها
-    const countHtml = `<span class="group-task-count">${toPersianNumber(items.length)}</span>`;
+    // 🔧 شمارش تسک‌ها — دایره (انجام‌نشده) + عدد قرمز پین + عدد زرد فوری
+    // برای گروه «کارهای فوری»، badge فوری نشان داده نمی‌شود (زیرتکراری است).
+    // 🔧 بررسی با == true برای پذیرش مقادیر قدیمی
+    const notDoneItems = items.filter(i => !i.done);
+    const notDoneCount = notDoneItems.length;
+    const pinnedCount = notDoneItems.filter(i => i.pinned == true).length;
+    const urgentCount = notDoneItems.filter(i => i.urgent == true).length;
+    const isUrgentGroup = (groupId === 'urgent');
+    let countHtml = '';
+    if (pinnedCount > 0) {
+        countHtml += `<span class="group-badge-pinned">📌${toPersianNumber(pinnedCount)}</span>`;
+    }
+    if (!isUrgentGroup && urgentCount > 0) {
+        countHtml += `<span class="group-badge-urgent">🚨${toPersianNumber(urgentCount)}</span>`;
+    }
+    countHtml += `<span class="group-task-count">${toPersianNumber(notDoneCount)}</span>`;
 
     // چیدمان: back → icon → title (flex:1) → menu → count
-    header.innerHTML = `<div style="position: relative; display: flex; align-items: center; gap: 12px; width: 100%;">${backBtnHtml}${iconHtml}<span class="group-title">${escapeHtml(group.name)}</span>${menuHtml}${dropdownHtml}${countHtml}</div>`;
+    // 🔧 منوی کشویی (dropdownHtml) مستقیماً در هدر قرار می‌گیرد (نه داخل
+    // wrapper داخلی). چون منو position: fixed دارد، موقعیت آن مستقل از
+    // والد DOM است و با جاوا اسکریپت تنظیم می‌شود.
+    header.innerHTML = `<div style="display: flex; flex-direction: column; width: 100%; gap: 8px;">
+        <div style="text-align: center; font-size: 16px; font-weight: 700; color: white; padding: 2px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(group.name)}</div>
+        <div style="display: flex; align-items: center; gap: 10px;">${backBtnHtml}${iconHtml}<div style="flex: 1;"></div>${menuHtml}${countHtml}</div>
+    </div><div class="back-touch-area" onclick="event.stopPropagation(); goToGroups()"></div>${dropdownHtml}`;
     container.appendChild(header);
+
+    // 🔧 فیکس کردن هدر داخلی زیر هدر اصلی برنامه.
+    // ارتفاع هدر اصلی را محاسبه می‌کنیم و top هدر داخلی را برابر آن تنظیم می‌کنیم.
+    const mainHeader = document.querySelector('.header');
+    if (mainHeader) {
+        const headerHeight = mainHeader.offsetHeight;
+        header.style.top = headerHeight + 'px';
+    }
 
     if (items.length === 0) {
         container.innerHTML += '<div class="empty"><div class="empty-icon">📝</div><div>هیچ کاری در این گروه نیست<br>دکمه + را بزنید</div></div>';
@@ -7586,9 +8726,11 @@ function renderTasksView(groupId) {
     items.forEach((item) => {
         const level = getUrgencyLevel(item.deadline, item.done);
         const div = document.createElement('div');
-        // 🔧 اگر تسک پین شده، کلاس pinned-task اضافه کن (نوار زرد در سمت راست)
+        // 🔧 اگر تسک پین شده، کلاس pinned-task اضافه کن (نوار آبی در سمت راست)
         // 🔧 اگر تسک فوری است، کلاس urgent-task اضافه کن (نوار زرد در سمت چپ)
-        div.className = `item ${level}` + (expandedId === item.id ? ' expanded' : '') + (item.pinned ? ' pinned-task' : '') + (item.urgent ? ' urgent-task' : '');
+        // 🔧 بررسی دقیق === true تا تسک‌هایی که urgent ندارند یا false شده‌اند
+        // قطعاً نوار زرد نداشته باشند.
+        div.className = `item ${level}` + (expandedId === item.id ? ' expanded' : '') + (item.pinned === true ? ' pinned-task' : '') + (item.urgent === true ? ' urgent-task' : '');
         div.dataset.id = item.id;
 
         const row = document.createElement('div');
@@ -7620,7 +8762,7 @@ function renderTasksView(groupId) {
         // 🔧 آیکون پین — سمت چپ (در RTL، آخرین عنصر در row)
         // کم‌رنگ وقتی پین نیست، پررنگ (با چرخش) وقتی پین شده
         const pinBtn = document.createElement('button');
-        pinBtn.className = 'task-pin-btn' + (item.pinned ? ' pinned' : '');
+        pinBtn.className = 'task-pin-btn' + (item.pinned ? ' pinned' : '') + (item.urgent == true ? ' urgent' : '');
         pinBtn.title = item.pinned ? 'حذف پین' : 'پین کردن';
         pinBtn.textContent = '📌';
         pinBtn.onclick = function(e) {
@@ -7630,7 +8772,11 @@ function renderTasksView(groupId) {
         row.appendChild(pinBtn);
 
         const groups = getGroups();
-        const groupOpts = groups.map(g => `<option value="${g.id}" ${g.id === (item.groupId || 'all') ? 'selected' : ''}>${escapeHtml(g.name)}</option>`).join('');
+        // 🔧 گروه «کارهای فوری» یک گروه نمایشی است و نباید در dropdown
+        // انتخاب گروه (در جزئیات تسک) ظاهر شود. کاربر باید به‌جای انتخاب
+        // این گروه، چک‌باکس «فوری» را روشن کند.
+        const selectableGroups = groups.filter(g => g.id !== 'urgent');
+        const groupOpts = selectableGroups.map(g => `<option value="${g.id}" ${g.id === (item.groupId || 'all') ? 'selected' : ''}>${escapeHtml(g.name)}</option>`).join('');
 
         const details = document.createElement('div');
         details.className = 'item-details';
@@ -7641,7 +8787,7 @@ function renderTasksView(groupId) {
             ${item.completedAt ? `<div class="detail-row"><span class="detail-label">روز انجام:</span><span class="detail-value">${toJalaliLong(item.completedAt)}</span></div>` : ''}
             <div class="detail-row group-selector-row"><span class="detail-label">گروه:</span><select class="group-selector" onchange="changeTaskGroup('${item.id}', this.value)">${groupOpts}</select></div>
             <div class="detail-row urgent-toggle-row"><span class="detail-label">🚨 فوری:</span><label class="urgent-checkbox-label"><input type="checkbox" class="urgent-checkbox" ${item.urgent ? 'checked' : ''} onchange="toggleTaskUrgent('${item.id}')"> <span>این تسک در گروه «کارهای فوری» نمایش داده شود</span></label></div>
-            <div class="item-actions"><button class="action-btn" data-action="edit">✏️ ویرایش</button><button class="action-btn" data-action="toggle">${item.done ? '↩ بازگردانی' : '✓ انجام شد'}</button><button class="action-btn danger" data-action="delete">🗑 حذف</button></div>
+            <div class="item-actions"><button class="action-btn" data-action="read">🔊 بخوان</button><button class="action-btn" data-action="edit">✏️ ویرایش</button><button class="action-btn" data-action="toggle">${item.done ? '↩ بازگردانی' : '✓ انجام شد'}</button><button class="action-btn danger" data-action="delete">🗑 حذف</button><button class="action-btn secondary" data-action="cancel">✕ انصراف</button></div>
         `;
         div.appendChild(row);
         div.appendChild(details);
@@ -7650,7 +8796,11 @@ function renderTasksView(groupId) {
             if (action === 'toggle') { e.stopPropagation(); toggleDone(item.id); return; }
             if (action === 'delete') { e.stopPropagation(); deleteItem(item.id); return; }
             if (action === 'edit') { e.stopPropagation(); editTask(item.id); return; }
-            if (e.target.closest('.action-btn') || e.target.closest('.group-selector') || e.target.closest('.urgent-checkbox-label') || e.target.classList.contains('urgent-checkbox')) return;
+            // 🔧 دکمه «🔊 بخوان» — متن تسک را با صدا می‌خواند
+            if (action === 'read') { e.stopPropagation(); readTaskAloud(item.text, e.target); return; }
+            // 🔧 دکمه «انصراف» — جزئیات تسک را می‌بندد (مانند کلیک روی تسک)
+            if (action === 'cancel') { e.stopPropagation(); toggleExpand(item.id); return; }
+            if (e.target.closest('.action-btn') || e.target.closest('.group-selector') || e.target.closest('.urgent-checkbox-label') || e.target.classList.contains('urgent-checkbox') || e.target.closest('.item-details') || e.target.closest('.deadline-box') || e.target.closest('.detail-row')) return;
             toggleExpand(item.id);
         });
         container.appendChild(div);
@@ -7659,17 +8809,27 @@ function renderTasksView(groupId) {
 }
 
 function goToGroups() {
-    // If we're inside a group's tasks view, use history.back() so that
-    // popstate restores the previous (groups) view. This makes the in-app
-    // ◄ back button behave exactly like the mobile hardware back button.
-    if (currentView === 'tasks') {
-        navBack();
-        return;
+    // 🔧 اگر منوی همبرگری باز است، ابتدا آن را ببند
+    if (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu) {
+        closeGroupMenu();
     }
+    // 🔧 مستقیماً به صفحه گروه‌ها برو — بدون history.back()
+    // قبلاً از navBack() (history.back()) استفاده می‌کرد که بعضی مواقع
+    // در موبایل کار نمی‌کرد و نیاز به ۴-۵ بار زدن دکمه بود.
+    // حالا مستقیماً currentView را تغییر می‌دهیم و fullRender می‌کنیم.
     currentView = 'groups';
     currentGroupId = null;
     expandedId = null;
+    // توقف sortable برای جلوگیری از تداخل
+    if (typeof sortableInstance !== 'undefined' && sortableInstance) {
+        try { sortableInstance.destroy(); } catch(e) {}
+        sortableInstance = null;
+    }
+    // جایگزینی تاریخ فعلی با state گروه‌ها (برای دکمه back موبایل)
+    navReplace({ view: 'groups' });
     fullRender();
+    // 🔧 اسکرول به بالا هنگام تغییر ویو اصلی (groups ↔ tasks)
+    window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
 function changeTaskGroup(taskId, newGroupId) {
@@ -7681,23 +8841,237 @@ function changeTaskGroup(taskId, newGroupId) {
 function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
 
 function toggleExpand(id) {
+    // 🔧 حفظ موقعیت اسکرول — صفحه نپرد
+    var savedScrollY = window.scrollY;
     if (expandedId === id) {
-        // Currently expanded → collapse. Use history.back() so popstate
-        // re-renders without expansion and the mobile back button behaves
-        // identically to collapsing via tap.
-        navBack();
-    } else if (expandedId === null) {
-        // Expanding from collapsed → push a new history entry so that
-        // back returns to the collapsed tasks view.
-        openTaskDetails(id);
-    } else {
-        // Switching from one expanded task to another: just replace the
-        // current history entry (no extra back-press needed to leave).
-        expandedId = id;
-        navReplace({ view: 'tasks', groupId: currentGroupId, expandedId: id });
+        // 🔧 بستن جزئیات — بدون اسکرول
+        expandedId = null;
         render();
+        setTimeout(function() { window.scrollTo(0, savedScrollY); }, 0);
+    } else if (expandedId === null) {
+        // باز کردن جزئیات
+        expandedId = id;
+        render();
+        _scrollTaskBelowHeader(id);
+    } else {
+        // سوییچ از یک تسک باز به تسک دیگر
+        expandedId = id;
+        render();
+        _scrollTaskBelowHeader(id);
     }
 }
+
+// 🔧 تابع کمکی: اسکرول صفحه تا بالای تسک دقیقاً زیر هدر گروه قرار گیرد
+// 🔧 فقط اگر تسک قابل مشاهده نیست اسکرول کن — اگر قابل مشاهده است، اسکرول نکن
+function _scrollTaskBelowHeader(taskId) {
+    setTimeout(function() {
+        const taskEl = document.querySelector('.item[data-id="' + taskId + '"]');
+        const headerEl = document.querySelector('.group-tasks-header');
+        if (!taskEl || !headerEl) return;
+        const taskRect = taskEl.getBoundingClientRect();
+        const headerRect = headerEl.getBoundingClientRect();
+
+        // 🔧 اگر تسک قبلاً زیر هدر و قابل مشاهده است، اسکرول نکن
+        // (جلوگیری از پرش غیرضروری)
+        if (taskRect.top >= headerRect.bottom && taskRect.bottom <= window.innerHeight) {
+            return;  // تسک قابل مشاهده است — نیازی به اسکرول نیست
+        }
+
+        const offset = taskRect.top - headerRect.bottom;
+        if (Math.abs(offset) > 2) {
+            window.scrollBy({ top: offset, behavior: 'smooth' });
+        }
+    }, 150);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🤖 خواندن متن با هوش مصنوعی (OpenAI TTS) — v133
+// ════════════════════════════════════════════════════════════════════
+// این سیستم از OpenAI API برای تبدیل متن به گفتار با صدای طبیعی استفاده می‌کند.
+// کلید API در localStorage ذخیره می‌شود (دکمه 🤖 در هدر).
+//
+// این زیرساخت برای آینده آماده است — بعداً می‌توان آن را به دستیار صوتی
+// هوشمند توسعه داد که:
+//   - با کاربر صحبت کند (Chat API)
+//   - کارهای برنامه را خودکار انجام دهد (ایجاد/ویرایش/حذف تسک)
+//   - یادآوری و مشاوره دهد
+
+let _ttsSpeaking = false;
+let _ttsCurrentBtn = null;
+let _ttsAudio = null;
+
+// 🔧 تنظیم کلید API هوش مصنوعی
+function setupAIApiKey() {
+    var currentKey = localStorage.getItem('openai_api_key') || '';
+    var key = prompt(
+        '🔑 کلید API هوش مصنوعی (OpenAI) را وارد کنید:\n\n' +
+        'این کلید برای خواندن صوتی با هوش مصنوعی استفاده می‌شود.\n' +
+        'کلید را از https://platform.openai.com/api-keys بگیرید.\n\n' +
+        '(خالی بگذارید تا حذف شود)',
+        currentKey
+    );
+    if (key !== null) {
+        if (key.trim()) {
+            localStorage.setItem('openai_api_key', key.trim());
+            showToast('کلید API هوش مصنوعی ذخیره شد ✓');
+            // به‌روزرسانی ظاهر دکمه
+            var btn = document.getElementById('aiKeyBtn');
+            if (btn) btn.style.background = 'rgba(76, 175, 80, 0.35)';
+        } else {
+            localStorage.removeItem('openai_api_key');
+            showToast('کلید API حذف شد');
+            var btn = document.getElementById('aiKeyBtn');
+            if (btn) btn.style.background = 'rgba(255,255,255,0.18)';
+        }
+    }
+}
+
+// 🔧 به‌روزرسانی ظاهر دکمه 🤖 بر اساس وجود کلید
+function _updateAIKeyBtn() {
+    var btn = document.getElementById('aiKeyBtn');
+    if (!btn) return;
+    if (localStorage.getItem('openai_api_key')) {
+        btn.style.background = 'rgba(76, 175, 80, 0.35)';
+    } else {
+        btn.style.background = 'rgba(255,255,255,0.18)';
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🗣️ موتور ۱: OpenAI TTS — صدای هوش مصنوعی طبیعی فارسی
+// ════════════════════════════════════════════════════════════════════
+async function _speakWithOpenAI(text) {
+    var apiKey = localStorage.getItem('openai_api_key');
+    if (!apiKey) {
+        console.log('[TTS] No API key, trying Web Speech');
+        _speakWithWebSpeech(text);
+        return;
+    }
+    console.log('[TTS] Using OpenAI TTS');
+    try {
+        var response = await fetch('https://api.openai.com/v1/audio/speech', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + apiKey,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'tts-1',
+                input: text.substring(0, 4096),
+                voice: 'alloy',
+                response_format: 'mp3'
+            })
+        });
+        if (!response.ok) {
+            var errText = await response.text();
+            console.error('[TTS] OpenAI API error:', response.status, errText);
+            throw new Error('HTTP ' + response.status);
+        }
+        var blob = await response.blob();
+        console.log('[TTS] OpenAI audio received:', blob.size, 'bytes');
+        var audioUrl = URL.createObjectURL(blob);
+        if (_ttsAudio) {
+            try { _ttsAudio.pause(); _ttsAudio.src = ''; } catch(e) {}
+        }
+        _ttsAudio = new Audio(audioUrl);
+        _ttsAudio.onended = function() {
+            console.log('[TTS] OpenAI audio ended');
+            URL.revokeObjectURL(audioUrl);
+            _ttsAudio = null;
+            _resetTTSButton();
+        };
+        _ttsAudio.onerror = function() {
+            console.warn('[TTS] OpenAI audio error');
+            URL.revokeObjectURL(audioUrl);
+            _ttsAudio = null;
+            _speakWithWebSpeech(text);
+        };
+        await _ttsAudio.play();
+        console.log('[TTS] OpenAI audio playing');
+    } catch(e) {
+        console.error('[TTS] OpenAI TTS failed:', e);
+        showToast('خطای API — کلید را بررسی کنید (🤖)');
+        _speakWithWebSpeech(text);
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🗣️ موتور ۲: Web Speech API — fallback (آفلاین)
+// ════════════════════════════════════════════════════════════════════
+function _speakWithWebSpeech(text) {
+    if (!('speechSynthesis' in window)) {
+        _resetTTSButton();
+        showToast('خواندن صوتی پشتیبانی نمی‌شود — کلید 🤖 را تنظیم کنید');
+        return;
+    }
+    console.log('[TTS] Trying Web Speech API');
+    try {
+        window.speechSynthesis.cancel();
+        var utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'fa-IR';
+        utter.rate = 0.9;
+        var timeout = setTimeout(function() {
+            if (_ttsSpeaking) {
+                try { window.speechSynthesis.cancel(); } catch(e) {}
+                _resetTTSButton();
+                showToast('خواندن کار نکرد — کلید 🤖 را تنظیم کنید');
+            }
+        }, 5000);
+        utter.onstart = function() { clearTimeout(timeout); };
+        utter.onend = function() { clearTimeout(timeout); _resetTTSButton(); };
+        utter.onerror = function() {
+            clearTimeout(timeout);
+            _resetTTSButton();
+            showToast('خواندن کار نکرد — کلید 🤖 را تنظیم کنید');
+        };
+        window.speechSynthesis.speak(utter);
+    } catch(e) {
+        _resetTTSButton();
+        showToast('خواندن کار نکرد');
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🎯 تابع اصلی
+// ════════════════════════════════════════════════════════════════════
+function readTaskAloud(text, btnEl) {
+    if (_ttsSpeaking) {
+        _stopAllTTS();
+        return;
+    }
+    if (!text || !text.trim()) {
+        showToast('متن خالی است');
+        return;
+    }
+    _ttsCurrentBtn = btnEl;
+    _ttsSpeaking = true;
+    if (btnEl) {
+        btnEl.textContent = '⏹ توقف';
+        btnEl.classList.add('danger');
+    }
+    // شروع با OpenAI TTS (اگر کلید موجود) یا Web Speech (fallback)
+    _speakWithOpenAI(text);
+}
+
+function _stopAllTTS() {
+    if (_ttsAudio) {
+        try { _ttsAudio.pause(); _ttsAudio.currentTime = 0; _ttsAudio.src = ''; } catch(e) {}
+        _ttsAudio = null;
+    }
+    if ('speechSynthesis' in window) {
+        try { window.speechSynthesis.cancel(); } catch(e) {}
+    }
+    _resetTTSButton();
+}
+
+function _resetTTSButton() {
+    _ttsSpeaking = false;
+    if (_ttsCurrentBtn) {
+        _ttsCurrentBtn.textContent = '🔊 بخوان';
+        _ttsCurrentBtn.classList.remove('danger');
+    }
+}
+
 
 function toggleDone(id) {
     const items = getDB();
@@ -7710,6 +9084,15 @@ function toggleDone(id) {
     if (item.done) {
         // Set completion date/time at the moment of clicking "Done"
         item.completedAt = new Date().toISOString();
+        // 🔧 طبق درخواست کاربر: هنگام انجام شدن تسک، پین‌شدگی و فوری بودن
+        // آن پاک شوند. تسک انجام‌شده دیگر نیازی به پین یا فوری بودن ندارد.
+        item.pinned = false;
+        item.pinnedAt = null;
+        // pinnedOrder را هم پاک می‌کنیم تا ترتیب پین‌ها به‌هم نخورد
+        if ('pinnedOrder' in item) { try { delete item.pinnedOrder; } catch(e) {} item.pinnedOrder = null; }
+        // 🔧 فوری بودن هم کاملاً حذف می‌شود (delete + null)
+        try { delete item.urgent; } catch(e) {}
+        item.urgent = null;
     } else {
         // EXPLICITLY clear all completion-related fields when reverting.
         // Use BOTH delete AND = null to be absolutely sure the field is cleared.
@@ -7734,7 +9117,18 @@ function toggleDone(id) {
     }
 
     setDB(items);
-    fullRender();
+    // 🔧 حفظ موقعیت اسکرول — صفحه نپرد
+    var savedScrollY = window.scrollY;
+    expandedId = null;
+    if (typeof sortableInstance !== 'undefined' && sortableInstance) {
+        try { sortableInstance.destroy(); } catch(e) {}
+        sortableInstance = null;
+    }
+    render();
+    setTimeout(function() {
+        initSortable();
+        window.scrollTo(0, savedScrollY);
+    }, 50);
     showToast(item.done ? 'انجام شد ✓' : 'بازگردانی شد');
 }
 
@@ -7745,17 +9139,28 @@ function toggleTaskUrgent(id) {
     const items = getDB();
     const item = items.find(i => i.id === id);
     if (!item) return;
-    if (item.urgent) {
-        // حذف فوری
+    if (item.urgent === true) {
+        // 🔧 حذف فوری — فیلد urgent کاملاً حذف می‌شود (delete + null) تا
+        // هیچ اثری از آن باقی نماند و کلاس urgent-task قطعاً حذف شود.
         try { delete item.urgent; } catch(e) {}
-        item.urgent = undefined;
+        item.urgent = null;
     } else {
         // افزودن فوری
         item.urgent = true;
     }
     setDB(items);
-    fullRender();
-    showToast(item.urgent ? '🚨 فوری شد' : 'فوری برداشته شد');
+    // 🔧 حفظ موقعیت اسکرول — صفحه به بالای گروه نپرد
+    var savedScrollY = window.scrollY;
+    if (typeof sortableInstance !== 'undefined' && sortableInstance) {
+        try { sortableInstance.destroy(); } catch(e) {}
+        sortableInstance = null;
+    }
+    render();
+    setTimeout(function() {
+        initSortable();
+        window.scrollTo(0, savedScrollY);
+    }, 50);
+    showToast(item.urgent === true ? '🚨 فوری شد' : 'فوری برداشته شد');
     if (navigator.vibrate) navigator.vibrate(20);
 }
 
@@ -7785,12 +9190,18 @@ function deleteItem(id) {
     if (!confirm(msg)) return;
     let newItems = items.filter(i => i.id !== id && i.parentId !== id);
     setDB(newItems);
-    if (expandedId === id) {
-        expandedId = null;
-        navBack();
-    } else {
-        fullRender();
+    // 🔧 حفظ موقعیت اسکرول — صفحه نپرد
+    var savedScrollY = window.scrollY;
+    expandedId = null;
+    if (typeof sortableInstance !== 'undefined' && sortableInstance) {
+        try { sortableInstance.destroy(); } catch(e) {}
+        sortableInstance = null;
     }
+    render();
+    setTimeout(function() {
+        initSortable();
+        window.scrollTo(0, savedScrollY);
+    }, 50);
     showToast(childCount > 0 ? `تسک و ${childCount} تکرار حذف شد` : 'حذف شد');
 }
 
@@ -7825,21 +9236,18 @@ function saveBackupToLocal() {
     const customGroups = getGroups().filter(g => g.id !== 'all' && g.id !== 'urgent');
     const contacts = getContacts();
 
-    // 🔧 نسخه v5: شامل تمام فیلدهای جدید
-    //   - urgent (فوری)
-    //   - pinned, pinnedAt, pinnedOrder (سیستم پین)
-    //   - headerIcon, headerImage, showInAll (شخصی‌سازی هدر گروه)
-    //   - contacts (بانک اطلاعاتی اشخاص)
-    //   - appVersion (نسخه برنامه برای مهاجرت هوشمند)
+    // 🔧 جمع‌آوری تمام یادداشت‌ها از localStorage (یادداشت عمومی + هر گروه)
+    const notes = {};
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.indexOf('yadavar_notes_v1') === 0) {
+            notes[key] = localStorage.getItem(key);
+        }
+    }
+
+    // 🔧 نسخه v7: شامل یادداشت‌های هر گروه + تمام داده‌های قبلی
     const dbContent = JSON.stringify({
-        // Backup format version history:
-        //   v1 (legacy) — just an array of items
-        //   v2 — { items, groups } wrapper
-        //   v3 — added exportedAt, count, groupsCount, exportedAtJalali
-        //   v4 — preserves parentId, repeat, pinned, position, completedAt
-        //   v5 — + urgent, pinnedAt, pinnedOrder, headerIcon, headerImage,
-        //        showInAll, contacts, appVersion
-        version: 5,
+        version: 7,
         appVersion: APP_VERSION,
         exportedAt: new Date().toISOString(),
         exportedAtJalali: toJalaliLong(new Date()),
@@ -7848,7 +9256,12 @@ function saveBackupToLocal() {
         contactsCount: contacts.length,
         groups: customGroups,
         items: items,
-        contacts: contacts
+        contacts: contacts,
+        notes: notes,  // 🔧 v7: یادداشت‌های هر گروه
+        settings: {
+            appVersion: APP_VERSION,
+            notificationPermission: ('Notification' in window) ? Notification.permission : 'unsupported'
+        }
     }, null, 2);
     const dbBlob = new Blob([dbContent], { type: 'application/json' });
     // Filename: YadAvar_YYYYMMDDHHmm.json where the date/time is Jalali (Shamsi).
@@ -7923,6 +9336,14 @@ function importDatabase() {
                     // 🔧 v5+: استخراج contacts
                     if (Array.isArray(data.contacts)) {
                         importedContacts = data.contacts;
+                    }
+                    // 🔧 v7+: استخراج یادداشت‌ها و بازیابی در localStorage
+                    if (data.notes && typeof data.notes === 'object') {
+                        for (const noteKey in data.notes) {
+                            if (noteKey.indexOf('yadavar_notes_v1') === 0) {
+                                localStorage.setItem(noteKey, data.notes[noteKey]);
+                            }
+                        }
                     }
                 } else {
                     throw new Error('ساختار فایل نامعتبر است');
@@ -8015,7 +9436,15 @@ function importDatabase() {
                     showToast(parts.join('، ') + ' ✓');
                 } else {
                     // ===== REPLACE MODE =====
-                    if (confirm(`دیتابیس فعلی (${currentItems.length} مورد) با ${normalizedItems.length} مورد جدید جایگزین شود؟`)) {
+                    // 🔧 جایگزینی کامل: تمام تسک‌ها، گروه‌ها، اشخاص، عکس‌ها،
+                    // رنگ‌ها، آیکون‌ها، پین‌ها و فوری‌ها از بک‌آپ جایگزین می‌شوند.
+                    const replaceMsg = `⚠️ جایگزینی کامل دیتابیس\n\n` +
+                        `دیتابیس فعلی: ${currentItems.length} یادآور، ${validImportedGroups.length} گروه، ${getContacts().length} شخص\n` +
+                        `بک‌آپ: ${normalizedItems.length} یادآور، ${validImportedGroups.length} گروه، ${validImportedContacts.length} شخص\n\n` +
+                        `تمام داده‌های فعلی حذف و با بک‌آپ جایگزین می‌شود.\n` +
+                        `(شامل عکس‌ها، رنگ‌ها، آیکون‌ها، پین‌ها و فوری‌ها)\n\n` +
+                        `برای تأیید = بله`;
+                    if (confirm(replaceMsg)) {
                         // 1. جایگزینی گروه‌ها — گروه‌های سیستمی (all, urgent) خودکار ساخته می‌شوند
                         //    فقط گروه‌های سفارشی از بک‌آپ می‌آیند
                         const replacedGroups = [
@@ -8035,15 +9464,23 @@ function importDatabase() {
                         setDB(fixedItems);
                         clearSentNotificationsFor(fixedItems);
 
-                        // 3. 🔧 جایگزینی contacts
-                        if (validImportedContacts.length > 0) {
-                            setContacts(validImportedContacts);
+                        // 3. 🔧 جایگزینی کامل contacts — حتی اگر بک‌آپ خالی باشد
+                        //    (برای شبیه‌سازی دقیق برنامهٔ صفر)
+                        setContacts(validImportedContacts);
+
+                        // 4. 🔧 اگر بک‌آپ v6 است و settings دارد، notification permission
+                        //    را درخواست کن (اگر قبلاً granted بوده)
+                        if (data && data.settings && data.settings.notificationPermission === 'granted') {
+                            if ('Notification' in window && Notification.permission !== 'granted') {
+                                try { Notification.requestPermission(); } catch(e) {}
+                            }
                         }
 
                         fullRender();
                         const parts = ['دیتابیس جایگزین شد'];
+                        parts.push(`${fixedItems.length} یادآور`);
                         if (validImportedGroups.length > 0) parts.push(`${validImportedGroups.length} گروه`);
-                        if (validImportedContacts.length > 0) parts.push(`${validImportedContacts.length} شخص`);
+                        parts.push(`${validImportedContacts.length} شخص`);
                         showToast(parts.join('، ') + ' ✓');
                     }
                 }
@@ -8300,6 +9737,10 @@ function getContactById(id) {
 function openContacts() {
     renderContactsList();
     document.getElementById('contactsOverlay').classList.add('active');
+    // 🔧 نمایش دکمهٔ شناور افزودن شخص جدید
+    const fcb = document.getElementById('floatingContactBtn');
+    if (fcb) fcb.style.display = 'flex';
+    history.pushState({ view: 'contacts' }, '');
 }
 
 function closeContacts() {
@@ -8311,8 +9752,28 @@ function closeContacts() {
     document.getElementById('contactReportResultsOverlay').classList.remove('active');
     // بستن خود صفحه اشخاص
     document.getElementById('contactsOverlay').classList.remove('active');
+    // 🔧 مخفی کردن دکمهٔ شناور افزودن شخص جدید
+    const fcb = document.getElementById('floatingContactBtn');
+    if (fcb) fcb.style.display = 'none';
     // ریست حالت ویرایش
     _editingContactId = null;
+}
+
+// 🔧 تابع کمکی: دکمهٔ شناور افزودن شخص را فقط وقتی نشان بده که صفحهٔ
+// اشخاص باز است و هیچ زیر-صفحه‌ای (فرم/جستجو/گزارش/نتایج) روی آن باز نیست.
+function refreshFloatingContactBtn() {
+    const fcb = document.getElementById('floatingContactBtn');
+    if (!fcb) return;
+    const contactsOpen = document.getElementById('contactsOverlay').classList.contains('active');
+    if (!contactsOpen) { fcb.style.display = 'none'; return; }
+    const childOpen =
+        document.getElementById('contactFormOverlay').classList.contains('active') ||
+        document.getElementById('contactSearchOverlay').classList.contains('active') ||
+        document.getElementById('contactSearchResultsOverlay').classList.contains('active') ||
+        document.getElementById('contactReportOverlay').classList.contains('active') ||
+        document.getElementById('contactReportResultsOverlay').classList.contains('active') ||
+        document.getElementById('phoneActionOverlay').classList.contains('active');
+    fcb.style.display = childOpen ? 'none' : 'flex';
 }
 
 // ─── رندر لیست اشخاص ───
@@ -8336,13 +9797,14 @@ function renderContactsList() {
     html += '</tr></thead><tbody>';
 
     contacts.forEach((c, idx) => {
-        const firstPhone = (c.phones && c.phones.length > 0) ? c.phones[0] : '';
+        // 🔧 اگر primaryPhone وجود دارد، آن را نمایش بده؛ وگرنه اولین تلفن
+        const displayPhone = c.primaryPhone || ((c.phones && c.phones.length > 0) ? c.phones[0] : '');
         html += '<tr>';
         html += '<td>' + toPersianNumber(idx + 1) + '</td>';
         html += '<td>' + escapeHtml(c.company || '—') + '</td>';
         html += '<td>' + escapeHtml(c.name || '—') + '</td>';
         html += '<td>' + escapeHtml(c.position || '—') + '</td>';
-        html += '<td>' + renderClickablePhone(firstPhone) + '</td>';
+        html += '<td>' + renderClickablePhone(displayPhone) + '</td>';
         html += '<td><div class="contact-row-actions">';
         html += '<button class="contact-row-btn" onclick="editContact(\'' + c.id + '\')">✏️</button>';
         html += '<button class="contact-row-btn danger" onclick="deleteContact(\'' + c.id + '\')">🗑</button>';
@@ -8371,8 +9833,9 @@ function openContactForm(id) {
         document.getElementById('contactBirthDate').value = c.birthDate || '';
         document.getElementById('contactCommissionAsked').value = c.commissionAsked || '';
         document.getElementById('contactCommissionPaid').value = c.commissionPaid || '';
-        document.getElementById('contactCommissionPercent').value = c.commissionPercent || '';
-        renderDynamicList('contactPhonesList', c.phones || [], 'تلفن');
+        // 🔧 اگر درصد کارپردازی خالی است، ۰ نمایش داده شود (پیش‌فرض)
+        document.getElementById('contactCommissionPercent').value = c.commissionPercent || '0';
+        renderDynamicList('contactPhonesList', c.phones || [], 'تلفن', c.primaryPhone);
         renderDynamicList('contactAddressesList', c.addresses || [], 'آدرس');
         renderDynamicList('contactNotesList', c.notes || [], 'توضیح');
     } else {
@@ -8383,24 +9846,32 @@ function openContactForm(id) {
         document.getElementById('contactBirthDate').value = '';
         document.getElementById('contactCommissionAsked').value = '';
         document.getElementById('contactCommissionPaid').value = '';
-        document.getElementById('contactCommissionPercent').value = '';
+        // 🔧 پیش‌فرض ۰ برای درصد کارپردازی (طبق درخواست کاربر)
+        document.getElementById('contactCommissionPercent').value = '0';
         renderDynamicList('contactPhonesList', [''], 'تلفن');
         renderDynamicList('contactAddressesList', [''], 'آدرس');
         renderDynamicList('contactNotesList', [''], 'توضیح');
     }
 
     document.getElementById('contactFormOverlay').classList.add('active');
+    history.pushState({ view: 'contactForm' }, '');
+    refreshFloatingContactBtn();
 }
 
 function closeContactForm() {
     document.getElementById('contactFormOverlay').classList.remove('active');
     _editingContactId = null;
+    refreshFloatingContactBtn();
+    // 🔧 اگر reload در انتظار است، حالا که فرم بسته شد اجرا کن
+    setTimeout(checkPendingReload, 500);
 }
 
 // ─── لیست‌های پویا (تلفن، آدرس، توضیح) ───
 
-function renderDynamicList(listId, items, placeholder) {
+// 🔧 رندر لیست پویا — برای تلفن‌ها، رادیو «موبایل اصلی» هم اضافه می‌شود
+function renderDynamicList(listId, items, placeholder, primaryValue) {
     const list = document.getElementById(listId);
+    const isPhoneList = (listId === 'contactPhonesList');
     list.innerHTML = '';
     if (items.length === 0) items = [''];
     items.forEach((val, idx) => {
@@ -8412,6 +9883,33 @@ function renderDynamicList(listId, items, placeholder) {
         input.placeholder = placeholder;
         input.dataset.idx = idx;
         div.appendChild(input);
+
+        // 🔧 اگر لیست تلفن است، رادیو «موبایل اصلی» اضافه کن
+        if (isPhoneList) {
+            const primaryLabel = document.createElement('label');
+            primaryLabel.className = 'contact-phone-primary';
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = 'primaryPhone';
+            radio.value = val;
+            // اگر این شماره = primaryPhone، checked کن
+            if (primaryValue && val === primaryValue) {
+                radio.checked = true;
+            }
+            // وقتی کاربر رادیو را تغییر می‌دهد، value آن را با input هماهنگ کن
+            input.addEventListener('input', function() {
+                if (radio.checked) {
+                    radio.value = input.value;
+                }
+            });
+            radio.addEventListener('change', function() {
+                radio.value = input.value;
+            });
+            primaryLabel.appendChild(radio);
+            primaryLabel.appendChild(document.createTextNode('موبایل اصلی'));
+            div.appendChild(primaryLabel);
+        }
+
         const removeBtn = document.createElement('button');
         removeBtn.className = 'contact-dynamic-remove';
         removeBtn.textContent = '×';
@@ -8429,7 +9927,7 @@ function renderDynamicList(listId, items, placeholder) {
 }
 
 function addContactPhone() {
-    addDynamicItem('contactPhonesList', 'تلفن');
+    addDynamicItem('contactPhonesList', 'تلفن', true);
 }
 function addContactAddress() {
     addDynamicItem('contactAddressesList', 'آدرس');
@@ -8438,7 +9936,7 @@ function addContactNote() {
     addDynamicItem('contactNotesList', 'توضیح');
 }
 
-function addDynamicItem(listId, placeholder) {
+function addDynamicItem(listId, placeholder, isPhone) {
     const list = document.getElementById(listId);
     const div = document.createElement('div');
     div.className = 'contact-dynamic-item';
@@ -8446,6 +9944,28 @@ function addDynamicItem(listId, placeholder) {
     input.type = 'text';
     input.placeholder = placeholder;
     div.appendChild(input);
+
+    // 🔧 اگر لیست تلفن است، رادیو «موبایل اصلی» اضافه کن
+    if (isPhone) {
+        const primaryLabel = document.createElement('label');
+        primaryLabel.className = 'contact-phone-primary';
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'primaryPhone';
+        radio.value = '';
+        input.addEventListener('input', function() {
+            if (radio.checked) {
+                radio.value = input.value;
+            }
+        });
+        radio.addEventListener('change', function() {
+            radio.value = input.value;
+        });
+        primaryLabel.appendChild(radio);
+        primaryLabel.appendChild(document.createTextNode('موبایل اصلی'));
+        div.appendChild(primaryLabel);
+    }
+
     const removeBtn = document.createElement('button');
     removeBtn.className = 'contact-dynamic-remove';
     removeBtn.textContent = '×';
@@ -8464,11 +9984,20 @@ function addDynamicItem(listId, placeholder) {
 function getDynamicListValues(listId) {
     const list = document.getElementById(listId);
     const values = [];
-    list.querySelectorAll('input').forEach(input => {
+    list.querySelectorAll('input[type="text"]').forEach(input => {
         const val = input.value.trim();
         if (val) values.push(val);
     });
     return values;
+}
+
+// 🔧 گرفتن شماره موبایل اصلی از رادیو انتخاب‌شده
+function getPrimaryPhone() {
+    const checkedRadio = document.querySelector('#contactPhonesList input[type="radio"]:checked');
+    if (checkedRadio) {
+        return checkedRadio.value.trim();
+    }
+    return '';
 }
 
 // ─── ذخیره شخص ───
@@ -8490,6 +10019,7 @@ function saveContact() {
         commissionPaid: document.getElementById('contactCommissionPaid').value.trim(),
         commissionPercent: document.getElementById('contactCommissionPercent').value.trim(),
         phones: getDynamicListValues('contactPhonesList'),
+        primaryPhone: getPrimaryPhone(),  // 🔧 موبایل اصلی
         addresses: getDynamicListValues('contactAddressesList'),
         notes: getDynamicListValues('contactNotesList'),
     };
@@ -8541,10 +10071,13 @@ function openContactSearch() {
     document.getElementById('searchCommissionPaidMin').value = '';
     document.getElementById('searchCommissionPercent').value = '';
     document.getElementById('contactSearchOverlay').classList.add('active');
+    history.pushState({ view: 'contactSearch' }, '');
+    refreshFloatingContactBtn();
 }
 
 function closeContactSearch() {
     document.getElementById('contactSearchOverlay').classList.remove('active');
+    refreshFloatingContactBtn();
 }
 
 function executeContactSearch() {
@@ -8604,13 +10137,14 @@ function showContactSearchResults(results) {
         html += '<th>ردیف</th><th>نام شرکت</th><th>نام</th><th>سمت</th><th>تلفن</th><th>شروع همکاری</th><th>تولد</th><th>عملیات</th>';
         html += '</tr></thead><tbody>';
         results.forEach((c, idx) => {
-            const firstPhone = (c.phones && c.phones.length > 0) ? c.phones[0] : '';
+            // 🔧 اگر primaryPhone وجود دارد، آن را نمایش بده
+            const displayPhone = c.primaryPhone || ((c.phones && c.phones.length > 0) ? c.phones[0] : '');
             html += '<tr>';
             html += '<td>' + toPersianNumber(idx + 1) + '</td>';
             html += '<td>' + escapeHtml(c.company || '—') + '</td>';
             html += '<td>' + escapeHtml(c.name || '—') + '</td>';
             html += '<td>' + escapeHtml(c.position || '—') + '</td>';
-            html += '<td>' + renderClickablePhone(firstPhone) + '</td>';
+            html += '<td>' + renderClickablePhone(displayPhone) + '</td>';
             html += '<td>' + escapeHtml(c.startDate || '—') + '</td>';
             html += '<td>' + escapeHtml(c.birthDate || '—') + '</td>';
             html += '<td><div class="contact-row-actions"><button class="contact-row-btn" onclick="editContactFromSearch(\'' + c.id + '\')">✏️</button></div></td>';
@@ -8621,10 +10155,13 @@ function showContactSearchResults(results) {
     }
 
     document.getElementById('contactSearchResultsOverlay').classList.add('active');
+    history.pushState({ view: 'contactSearchResults' }, '');
+    refreshFloatingContactBtn();
 }
 
 function closeContactSearchResults() {
     document.getElementById('contactSearchResultsOverlay').classList.remove('active');
+    refreshFloatingContactBtn();
 }
 
 // 🔧 ویرایش شخص از صفحه نتایج جستجو
@@ -8645,10 +10182,13 @@ function openContactReport() {
     document.getElementById('reportCommissionPaidMin').value = '';
     document.getElementById('reportCommissionPercent').value = '';
     document.getElementById('contactReportOverlay').classList.add('active');
+    history.pushState({ view: 'contactReport' }, '');
+    refreshFloatingContactBtn();
 }
 
 function closeContactReport() {
     document.getElementById('contactReportOverlay').classList.remove('active');
+    refreshFloatingContactBtn();
 }
 
 function executeContactReport() {
@@ -8679,8 +10219,8 @@ function showContactReportResults(results, criteria) {
     html += '</div>';
 
     html += '<div class="report-actions">';
-    html += '<button class="report-action-btn" onclick="saveContactReport()">💾 ذخیره فایل</button>';
-    html += '<button class="report-action-btn" onclick="shareContactReport()">📤 ارسال</button>';
+    html += '<button class="report-action-btn" onclick="saveContactReportPrompt()">💾 ذخیره</button>';
+    html += '<button class="report-action-btn" onclick="shareContactReportPrompt()">📤 ارسال</button>';
     html += '<button class="report-action-btn" onclick="printContactReport()">🖨️ چاپ</button>';
     html += '</div>';
 
@@ -8731,29 +10271,100 @@ function showContactReportResults(results, criteria) {
     body.dataset.reportData = JSON.stringify(results);
 
     document.getElementById('contactReportResultsOverlay').classList.add('active');
+    history.pushState({ view: 'contactReportResults' }, '');
+    refreshFloatingContactBtn();
 }
 
 function closeContactReportResults() {
     document.getElementById('contactReportResultsOverlay').classList.remove('active');
+    refreshFloatingContactBtn();
 }
 
 // ─── ذخیره و ارسال گزارش ───
 
-function saveContactReport() {
+// 🔧 تابع کمکی: تولید محتوای HTML گزارش (مشترک بین چاپ، ذخیره HTML، و ارسال)
+function generateReportHTML() {
     const body = document.getElementById('contactReportResultsBody');
     const results = JSON.parse(body.dataset.reportData || '[]');
     const now = new Date();
-    const [jy, jm, jd] = toJalaliParts(now);
-    const ts = '' + jy + pad2(jm) + pad2(jd) + pad2(now.getHours()) + pad2(now.getMinutes());
+    const jalaliDate = toJalaliLong(now);
 
-    const reportContent = JSON.stringify({
+    let html = '<!DOCTYPE html><html dir="rtl" lang="fa"><head><meta charset="utf-8">';
+    html += '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
+    html += '<title>گزارش اشخاص</title>';
+    html += '<style>';
+    html += 'body{font-family:Tahoma,Arial,sans-serif;padding:20px;direction:rtl;background:#fff;color:#333;}';
+    html += 'h1{text-align:center;color:#1976D2;margin-bottom:5px;font-size:18px;}';
+    html += '.report-date{text-align:center;color:#666;font-size:12px;margin-bottom:20px;}';
+    html += 'table{width:100%;border-collapse:collapse;font-size:11px;}';
+    html += 'th{background:#1976D2;color:white;padding:8px 6px;text-align:right;border:1px solid #1565C0;}';
+    html += 'td{border:1px solid #ddd;padding:6px;text-align:right;}';
+    html += 'tr:nth-child(even){background:#f9f9f9;}';
+    html += 'tr:hover{background:#e3f2fd;}';
+    html += '.phone-link{color:#1976D2;text-decoration:none;}';
+    html += '@media print{body{padding:0;}h1{font-size:14px;}table{font-size:10px;}}';
+    html += '</style></head><body>';
+    html += '<h1>📊 گزارش بانک اطلاعاتی اشخاص</h1>';
+    html += '<div class="report-date">تاریخ تولید: ' + jalaliDate + ' — تعداد: ' + toPersianNumber(results.length) + ' نفر</div>';
+    html += body.innerHTML;
+    html += '</body></html>';
+    return html;
+}
+
+// 🔧 تابع کمکی: تولید محتوای JSON گزارش
+function generateReportJSON() {
+    const body = document.getElementById('contactReportResultsBody');
+    const results = JSON.parse(body.dataset.reportData || '[]');
+    const now = new Date();
+    return JSON.stringify({
         type: 'contacts_report',
         generatedAt: now.toISOString(),
         count: results.length,
         contacts: results
     }, null, 2);
+}
 
-    const blob = new Blob([reportContent], { type: 'application/json' });
+// 🔧 تابع کمکی: دریافت timestamp برای نام فایل
+function getReportTimestamp() {
+    const now = new Date();
+    const [jy, jm, jd] = toJalaliParts(now);
+    return '' + jy + pad2(jm) + pad2(jd) + pad2(now.getHours()) + pad2(now.getMinutes());
+}
+
+// 🔧 ذخیره گزارش به صورت HTML
+function saveContactReportHTML() {
+    const ts = getReportTimestamp();
+    const html = generateReportHTML();
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ContactsReport_' + ts + '.html';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    showToast('گزارش HTML ذخیره شد ✓');
+}
+
+// 🔧 ذخیره گزارش به صورت PDF (با استفاده از print → Save as PDF)
+function saveContactReportPDF() {
+    const html = generateReportHTML();
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(html);
+    printWindow.document.close();
+    setTimeout(() => {
+        printWindow.print();
+    }, 300);
+    showToast('برای ذخیره PDF، در پنجره چاپ «Save as PDF» را انتخاب کنید');
+}
+
+// 🔧 ذخیره گزارش به صورت JSON (دیتابیس قبلی)
+function saveContactReportJSON() {
+    const ts = getReportTimestamp();
+    const json = generateReportJSON();
+    const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -8763,56 +10374,397 @@ function saveContactReport() {
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 2000);
-    showToast('گزارش ذخیره شد ✓');
+    showToast('گزارش JSON ذخیره شد ✓');
 }
 
-function shareContactReport() {
-    const body = document.getElementById('contactReportResultsBody');
-    const results = JSON.parse(body.dataset.reportData || '[]');
+// 🔧 متغیرهای مودال انتخاب فرمت گزارش
+let _reportFormatMode = null;  // 'save' یا 'share'
+let _reportFormatSelected = null;  // 'html', 'pdf', 'json'
 
-    // تولید متن گزارش برای اشتراک‌گذاری
-    let text = '📊 گزارش بانک اطلاعاتی اشخاص\n';
-    text += 'تعداد: ' + results.length + ' نفر\n\n';
-    results.forEach((c, idx) => {
-        text += (idx + 1) + '. ' + (c.name || '—');
-        if (c.company) text += ' (' + c.company + ')';
-        text += '\n';
-        if (c.position) text += '   سمت: ' + c.position + '\n';
-        if (c.phones && c.phones.length > 0) text += '   تلفن: ' + c.phones.join('، ') + '\n';
-        if (c.commissionAsked) text += '   اشانتیون خواسته: ' + c.commissionAsked + '\n';
-        if (c.commissionPaid) text += '   اشانتیون داده: ' + c.commissionPaid + '\n';
-        text += '\n';
+// 🔧 باز کردن مودال انتخاب فرمت — زیبا با ۳ گزینه قابل کلیک
+function showReportFormatModal(mode) {
+    _reportFormatMode = mode;  // 'save' یا 'share'
+    _reportFormatSelected = null;
+    // عنوان مودال
+    document.getElementById('reportFormatTitle').textContent =
+        (mode === 'save') ? '💾 ذخیره گزارش' : '📤 ارسال گزارش';
+    // ریست انتخاب‌ها
+    document.querySelectorAll('.report-format-option').forEach(el => {
+        el.classList.remove('selected');
     });
+    // غیرفعال کردن دکمه تأیید
+    document.getElementById('reportFormatConfirmBtn').disabled = true;
+    // نمایش مودال
+    document.getElementById('reportFormatOverlay').classList.add('active');
+}
 
-    if (navigator.share) {
-        navigator.share({
-            title: 'گزارش اشخاص',
-            text: text
-        }).catch(() => {
-            // اگر اشتراک‌گذاری شکست خورد، فایل دانلود کن
-            saveContactReport();
-        });
-    } else {
-        // مرورگر از share پشتیبانی نمی‌کند — فایل دانلود کن
-        saveContactReport();
+// 🔧 انتخاب یک فرمت — هایلایت می‌کند
+function selectReportFormat(format) {
+    _reportFormatSelected = format;
+    // حذف selected از همه
+    document.querySelectorAll('.report-format-option').forEach(el => {
+        el.classList.remove('selected');
+    });
+    // اضافه کردن selected به گزینه انتخاب‌شده
+    const selected = document.querySelector('.report-format-option[data-format="' + format + '"]');
+    if (selected) selected.classList.add('selected');
+    // فعال کردن دکمه تأیید
+    document.getElementById('reportFormatConfirmBtn').disabled = false;
+}
+
+// 🔧 تأیید انتخاب — اجرای عملیات
+function confirmReportFormat() {
+    if (!_reportFormatSelected) return;
+    const format = _reportFormatSelected;
+    const mode = _reportFormatMode;
+    // بستن مودال
+    document.getElementById('reportFormatOverlay').classList.remove('active');
+    _reportFormatSelected = null;
+    _reportFormatMode = null;
+    // اجرای عملیات
+    if (mode === 'save') {
+        if (format === 'html') saveContactReportHTML();
+        else if (format === 'pdf') saveContactReportPDF();
+        else if (format === 'json') saveContactReportJSON();
+    } else if (mode === 'share') {
+        shareContactReportFile(format);
     }
 }
 
+// 🔧 انصراف از مودال
+function cancelReportFormat() {
+    document.getElementById('reportFormatOverlay').classList.remove('active');
+    _reportFormatSelected = null;
+    _reportFormatMode = null;
+}
+
+// 🔧 ذخیره فایل — مودال زیبا
+function saveContactReportPrompt() {
+    showReportFormatModal('save');
+}
+
+// 🔧 ارسال گزارش — مودال زیبا
+function shareContactReportPrompt() {
+    showReportFormatModal('share');
+}
+
+// 🔧 ارسال فایل گزارش برای پیام‌رسان‌ها
+function shareContactReportFile(format) {
+    const ts = getReportTimestamp();
+    let blob, fileName, mimeType;
+
+    if (format === 'html') {
+        const html = generateReportHTML();
+        blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        fileName = 'ContactsReport_' + ts + '.html';
+        mimeType = 'text/html';
+    } else if (format === 'pdf') {
+        // PDF با پنجره چاپ تولید می‌شود — اینجا فایل HTML می‌فرستیم اما نام آن PDF است
+        // (چون تولید PDF واقعی نیاز به کتابخانه دارد)
+        const html = generateReportHTML();
+        blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        fileName = 'ContactsReport_' + ts + '.html';
+        mimeType = 'text/html';
+        showToast('برای PDF، فایل HTML ارسال می‌شود — گیرنده می‌تواند آن را چاپ و PDF کند');
+    } else if (format === 'json') {
+        const json = generateReportJSON();
+        blob = new Blob([json], { type: 'application/json' });
+        fileName = 'ContactsReport_' + ts + '.json';
+        mimeType = 'application/json';
+    }
+
+    const file = new File([blob], fileName, { type: mimeType });
+
+    if (navigator.share) {
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            navigator.share({
+                title: 'گزارش اشخاص',
+                text: '📊 گزارش بانک اطلاعاتی اشخاص',
+                files: [file]
+            }).catch(() => {
+                // اگر اشتراک‌گذاری شکست خورد، فایل دانلود کن
+                downloadBlob(blob, fileName);
+            });
+        } else {
+            // مرورگر از اشتراک‌گذاری فایل پشتیبانی نمی‌کند — فایل دانلود کن
+            downloadBlob(blob, fileName);
+        }
+    } else {
+        // مرورگر از share پشتیبانی نمی‌کند — فایل دانلود کن
+        downloadBlob(blob, fileName);
+    }
+}
+
+// 🔧 تابع کمکی: دانلود Blob
+function downloadBlob(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
 function printContactReport() {
-    const body = document.getElementById('contactReportResultsBody');
+    const html = generateReportHTML();
     const printWindow = window.open('', '_blank');
-    printWindow.document.write('<html dir="rtl"><head><title>گزارش اشخاص</title>');
-    printWindow.document.write('<style>body{font-family:Tahoma,sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;font-size:11px;}th,td{border:1px solid #ddd;padding:6px;text-align:right;}th{background:#1976D2;color:white;}</style>');
-    printWindow.document.write('</head><body>');
-    printWindow.document.write(body.innerHTML);
-    printWindow.document.write('</body></html>');
+    printWindow.document.write(html);
     printWindow.document.close();
-    printWindow.print();
+    setTimeout(() => {
+        printWindow.print();
+    }, 300);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 📝 صفحه یادداشت — دفترچه یادداشت با خطوط دفتر و میکروفون شناور
+// ════════════════════════════════════════════════════════════════════
+const NOTES_KEY = 'yadavar_notes_v1';
+let _notesRecognition = null;
+let _notesRecording = false;
+let _notesTargetGroup = null;  // 🔧 گروه فعلی یادداشت (null = یادداشت عمومی)
+
+// 🔧 ساخت کلید localStorage برای یک گروه خاص
+function getNotesKey(groupId) {
+    if (!groupId) return NOTES_KEY;
+    return NOTES_KEY + '_' + groupId;
+}
+
+// باز کردن صفحه یادداشت — با groupId اختیاری
+function openNotes(groupId, customTitle) {
+    _notesTargetGroup = groupId || null;
+    const content = document.getElementById('notesContent');
+    // بارگذاری یادداشت‌های ذخیره‌شده برای این گروه/روز
+    const key = getNotesKey(_notesTargetGroup);
+    const saved = localStorage.getItem(key) || '';
+    content.innerHTML = saved;
+    // 🔧 عنوان صفحه یادداشت
+    const titleEl = document.querySelector('.notes-header h2');
+    if (titleEl) {
+        if (customTitle) {
+            titleEl.textContent = customTitle;
+        } else if (_notesTargetGroup) {
+            const group = getGroupById(_notesTargetGroup);
+            const groupName = group ? group.name : 'گروه';
+            titleEl.textContent = '📝 یادداشت — ' + groupName;
+        } else {
+            titleEl.textContent = '📝 یادداشت';
+        }
+    }
+    document.getElementById('notesOverlay').classList.add('active');
+    history.pushState({ view: 'notes' }, '');
+    // اسکرول به بالا
+    setTimeout(() => {
+        const body = document.querySelector('.notes-body');
+        if (body) body.scrollTop = 0;
+        // فوکوس به محتوا
+        content.focus();
+    }, 100);
+}
+
+// بستن صفحه یادداشت
+function closeNotes() {
+    // ذخیره یادداشت‌ها برای گروه فعلی
+    const content = document.getElementById('notesContent');
+    const key = getNotesKey(_notesTargetGroup);
+    localStorage.setItem(key, content.innerHTML);
+    // توقف ضبط اگر فعال است
+    if (_notesRecording) {
+        toggleNotesRecording();
+    }
+    document.getElementById('notesOverlay').classList.remove('active');
+}
+
+// پاک کردن همه یادداشت‌ها
+function clearNotes() {
+    if (!confirm('همه یادداشت‌های این صفحه پاک شوند؟')) return;
+    const content = document.getElementById('notesContent');
+    content.innerHTML = '';
+    const key = getNotesKey(_notesTargetGroup);
+    localStorage.setItem(key, '');
+    showToast('یادداشت‌ها پاک شد');
+}
+
+// ذخیره خودکار یادداشت‌ها هنگام تایپ
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        const content = document.getElementById('notesContent');
+        if (content) {
+            content.addEventListener('input', function() {
+                const key = getNotesKey(_notesTargetGroup);
+                localStorage.setItem(key, content.innerHTML);
+            });
+        }
+    }, 500);
+});
+
+// ضبط/توقف صوت برای یادداشت
+// 🔧 ضبط با سیکل‌های متوالی ادامه می‌یابد تا زمانی که کاربر دوباره میکروفون را لمس کند.
+// تمام متن‌های نهایی در حافظه جمع می‌شوند و فقط وقتی کاربر توقف می‌زند،
+// کل متن به‌عنوان یک پاراگراف (تاریخ - متن کامل) در بالای صفحه نوشته می‌شود.
+let _notesAccumulatedText = '';  // 🔧 متن جمع‌آوری‌شده در طول ضبط
+let _notesAddedIndices = new Set();  // 🔧 ایندکس‌های پردازش‌شده برای جلوگیری از تکرار
+
+function toggleNotesRecording() {
+    if (_notesRecording) {
+        // 🔧 توقف ضبط — کل متن جمع‌آوری‌شده را به‌عنوان یک پاراگراف بنویس
+        _notesRecording = false;
+        document.getElementById('notesMicBtn').classList.remove('recording');
+        if (_notesRecognition) {
+            try { _notesRecognition.stop(); } catch(e) {}
+        }
+        // 🔧 اگر متنی جمع‌آوری شده، آن را طبق قوانین جدید بنویس:
+        //   - اولین ضبط هر روز: خط تاریخ (بدون ساعت) → خط بعد متن
+        //   - ضبط‌های بعدی همان روز: فقط متن (خط به خط اضافه شود)
+        //   - اعداد فارسی گفتاری به دیجیت تبدیل می‌شوند (مثل تسک‌ها)
+        //   - جدیدترین روز همیشه در بالای صفحه، روزهای قبل به پایین شیفت می‌شوند
+        if (_notesAccumulatedText.trim()) {
+            // 🔧 تبدیل اعداد فارسی گفتاری به دیجیت (مانند تسک‌ها)
+            // مثال: «دو میلیون تومان» → «۲٬۰۰۰٬۰۰۰ تومان»
+            //       «صفر نه یک پنج» → «۰۹۱۵»
+            var text = addNumericAfterWords(_notesAccumulatedText.trim());
+            var todayDate = toPersianDigits(toJalaliDateOnly(new Date()));
+            var content = document.getElementById('notesContent');
+            
+            // بررسی: آیا اولین تاریخ موجود با امروز یکی است؟
+            var dateSpans = content.querySelectorAll('.notes-date');
+            var firstDateSpan = dateSpans.length > 0 ? dateSpans[0] : null;
+            var sameDay = firstDateSpan && firstDateSpan.textContent.trim() === todayDate;
+            
+            if (sameDay) {
+                // همان روز — متن را در خط جدید اضافه کن
+                var insertBefore = (dateSpans.length > 1) ? dateSpans[1] : null;
+                var textNode = document.createTextNode(text);
+                if (insertBefore) {
+                    // قبل از تاریخ روز بعدی: <br> + متن + <br> قبل از تاریخ درج کن
+                    // ترتیب: textNode قبل از <br>، تا متن روی خط خودش بیاید
+                    var br = document.createElement('br');
+                    content.insertBefore(br, insertBefore);
+                    content.insertBefore(textNode, br);
+                } else {
+                    // انتهای محتوا: اگر آخرین عنصر <br> نیست، یک <br> اضافه کن
+                    var lastChild = content.lastChild;
+                    if (!lastChild || lastChild.nodeName !== 'BR') {
+                        content.appendChild(document.createElement('br'));
+                    }
+                    content.appendChild(textNode);
+                }
+            } else {
+                // روز جدید — تاریخ در خط اول، متن در خط بعد
+                var dateSpan = document.createElement('span');
+                dateSpan.className = 'notes-date';
+                dateSpan.textContent = todayDate;
+                var br1 = document.createElement('br');
+                var textNode = document.createTextNode(text);
+                var br2 = document.createElement('br');
+                if (content.firstChild) {
+                    content.insertBefore(br2, content.firstChild);
+                    content.insertBefore(textNode, br2);
+                    content.insertBefore(br1, textNode);
+                    content.insertBefore(dateSpan, br1);
+                } else {
+                    content.appendChild(dateSpan);
+                    content.appendChild(br1);
+                    content.appendChild(textNode);
+                }
+            }
+            
+            localStorage.setItem(getNotesKey(_notesTargetGroup), content.innerHTML);
+            _notesAccumulatedText = '';
+            showToast('یادداشت ثبت شد ✓');
+        }
+        return;
+    }
+    // شروع ضبط
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        showToast('مرورگر از تشخیص صوت پشتیبانی نمی‌کند');
+        return;
+    }
+    // بررسی اتصال اینترنت
+    if (typeof isReachable !== 'undefined' && !isReachable) {
+        showToast('اینترنت در دسترس نیست. ضبط کار نمی‌کند.');
+        return;
+    }
+    // 🔧 ریست متن جمع‌آوری‌شده و ایندکس‌ها
+    _notesAccumulatedText = '';
+    _notesAddedIndices = new Set();
+    _notesStartRecognitionCycle();
+    _notesRecording = true;
+    document.getElementById('notesMicBtn').classList.add('recording');
+    showToast('ضبط شروع شد — صحبت کنید (برای پایان دوباره میکروفون را بزنید)');
+}
+
+// 🔧 یک سیکل تشخیص صوت را شروع می‌کند.
+// وقتی سیکل تمام می‌شود (onend)، اگر هنوز در حال ضبط هستیم، سیکل بعدی شروع می‌شود.
+function _notesStartRecognitionCycle() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    _notesRecognition = new SpeechRecognition();
+    _notesRecognition.lang = 'fa-IR';
+    _notesRecognition.continuous = true;
+    // 🔧 interimResults = false تا فقط نتایج نهایی دریافت شوند (بدون تکرار)
+    _notesRecognition.interimResults = false;
+    // 🔧 ریست ایندکس‌های پردازش‌شده برای هر سیکل جدید
+    _notesAddedIndices = new Set();
+
+    _notesRecognition.onresult = function(event) {
+        // 🔧 فقط نتایج نهایی را پردازش کن — و فقط یک‌بار برای هر ایندکس
+        // (با استفاده از Set برای جلوگیری از تکرار)
+        for (let i = 0; i < event.results.length; i++) {
+            if (event.results[i].isFinal && !_notesAddedIndices.has(i)) {
+                _notesAccumulatedText += event.results[i][0].transcript + ' ';
+                _notesAddedIndices.add(i);
+            }
+        }
+    };
+
+    _notesRecognition.onerror = function(event) {
+        console.error('Notes recognition error:', event.error);
+        if (event.error === 'network') {
+            showToast('خطای شبکه. اینترنت را بررسی کنید.');
+            _notesRecording = false;
+            document.getElementById('notesMicBtn').classList.remove('recording');
+        }
+        // خطاهای دیگر (no-speech، audio-capture) را نادیده می‌گیریم — سیکل بعدی ادامه می‌دهد
+    };
+
+    _notesRecognition.onend = function() {
+        // 🔧 اگر هنوز در حال ضبط هستیم، سیکل بعدی را شروع کن (سیکل‌های متوالی)
+        if (_notesRecording) {
+            setTimeout(function() {
+                if (_notesRecording) {
+                    try { _notesRecognition.start(); } catch(e) {
+                        setTimeout(function() {
+                            if (_notesRecording) {
+                                try { _notesRecognition.start(); } catch(e2) {}
+                            }
+                        }, 300);
+                    }
+                }
+            }, 100);
+        }
+    };
+
+    try {
+        _notesRecognition.start();
+    } catch(e) {
+        console.error(e);
+        setTimeout(function() {
+            if (_notesRecording) {
+                try { _notesRecognition.start(); } catch(e2) {}
+            }
+        }, 300);
+    }
 }
 
 // ─── انتخاب تاریخ شمسی برای فیلدهای شخص ───
 
 let _contactDatePickerTarget = null;
+// 🔧 فلگ یک‌بار‌مصرف: وقتی تقویمِ تاریخِ شخص تأیید می‌شود، این فلگ
+// تنظیم می‌شود تا هندلر popstate بداند که نباید فرم/صفحهٔ شخص را ببندد.
+// بدون این فلگ، پس از انتخاب تاریخ، فرم شخص ناگهان بسته می‌شد.
+let _skipContactOverlayCloseOnPopstate = false;
 
 // ════════════════════════════════════════════════════════════════════
 // 📞 منوی انتخاب عملیات تلفن
@@ -8853,55 +10805,158 @@ function openPhoneActionMenu(phone) {
     const grid = document.getElementById('phoneActionGrid');
     grid.innerHTML = '';
 
-    // لیست عملیات: [آیکون, برچسب, URL]
+    // 🔧 آیکون‌های SVG واقعی شبکه‌های پیام‌رسان
+    // و URLهای deep link برای فراخوانی اپلیکیشن نصب‌شده روی موبایل
+    // اگر اپلیکیشن نصب نباشد، مرورگر به‌طور خودکار به نسخه وب می‌رود
+    
+    // شماره با کد کشور برای واتساپ (98 به‌جای 0)
+    const intlPhone = cleanPhone.replace(/^0/, '98');
+
     const actions = [
-        ['📞', 'تماس', 'tel:' + cleanPhone],
-        ['💬', 'پیامک', 'sms:' + cleanPhone],
-        ['✈️', 'تلگرام', 'https://t.me/+' + cleanPhone],
-        ['🟢', 'واتساپ', 'https://wa.me/' + cleanPhone.replace(/^0/, '98')],
-        ['🤖', 'ایتا', 'https://eitaa.com/#send?to=' + cleanPhone],
-        ['🟣', 'روبیکا', 'https://rubika.ir/'],
-        ['🔵', 'بله', 'https://ble.ir/'],
-        ['🔴', 'سروش', 'https://splus.ir/'],
-        ['📋', 'کپی شماره', 'copy:' + cleanPhone],
+        {
+            svg: '<svg width="28" height="28" viewBox="0 0 24 24" fill="#4CAF50"><path d="M20 15.5c-1.25 0-2.45-.2-3.57-.57-.35-.11-.74-.03-1.02.24l-2.2 2.2c-2.83-1.44-5.15-3.75-6.59-6.59l2.2-2.21c.28-.27.36-.66.25-1.01C8.7 6.45 8.5 5.25 8.5 4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.5c0-.55-.45-1-1-1z"/></svg>',
+            label: 'تماس',
+            url: 'tel:' + cleanPhone
+        },
+        {
+            svg: '<svg width="28" height="28" viewBox="0 0 24 24" fill="#2196F3"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>',
+            label: 'پیامک',
+            url: 'sms:' + cleanPhone
+        },
+        {
+            svg: '<svg width="28" height="28" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#2AABEE"/><path d="M12 6c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm2.5 8.5l-4 1.5 1.5-4 4-1.5-1.5 4z" fill="#fff"/></svg>',
+            label: 'تلگرام',
+            url: 'tg://msg?to=' + cleanPhone,
+            fallback: 'https://t.me/+' + cleanPhone
+        },
+        {
+            svg: '<svg width="28" height="28" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#25D366"/><path d="M12 6c-3.3 0-6 2.7-6 6 0 1.1.3 2.1.8 3L6 18l3.2-.8c.8.5 1.8.8 2.8.8 3.3 0 6-2.7 6-6s-2.7-6-6-6zm0 11c-1 0-1.9-.3-2.7-.7l-.2-.1-1.9.5.5-1.8-.1-.2c-.5-.8-.7-1.7-.7-2.7 0-2.8 2.2-5 5-5s5 2.2 5 5-2.2 5-5 5z" fill="#fff"/></svg>',
+            label: 'واتساپ',
+            url: 'whatsapp://send?phone=' + intlPhone,
+            fallback: 'https://wa.me/' + intlPhone
+        },
+        {
+            // 🔧 ایتا: Chrome Intent با package name — اپلیکیشن را باز می‌کند
+            // منبع: apkpure.com — package: ir.eitaa.messenger
+            // اگر نصب نباشد، fallback به نسخه وب با شماره (web.eitaa.com/?0098...)
+            svg: '<svg width="28" height="28" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#2A9D8F"/><path d="M12 6c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm-2 9V9l5 3-5 3z" fill="#fff"/></svg>',
+            label: 'ایتا',
+            intentUrl: 'intent://#Intent;package=ir.eitaa.messenger;S.browser_fallback_url=' + encodeURIComponent('https://web.eitaa.com/?00' + intlPhone) + ';end',
+            copyPhone: true
+        },
+        {
+            // 🔧 روبیکا: Chrome Intent با package name
+            // منبع: apkpure.com — package: ir.resaneh1.iptv
+            svg: '<svg width="28" height="28" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#8E24AA"/><path d="M12 6c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 10c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4z" fill="#fff"/></svg>',
+            label: 'روبیکا',
+            intentUrl: 'intent://#Intent;package=ir.resaneh1.iptv;S.browser_fallback_url=' + encodeURIComponent('https://rubika.ir/') + ';end',
+            copyPhone: true
+        },
+        {
+            // 🔧 بله: Chrome Intent با package name
+            // منبع: apkpure.com — package: ir.nasim
+            svg: '<svg width="28" height="28" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#00BCD4"/><path d="M12 6c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 10c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4z" fill="#fff"/></svg>',
+            label: 'بله',
+            intentUrl: 'intent://#Intent;package=ir.nasim;S.browser_fallback_url=' + encodeURIComponent('https://ble.ir/') + ';end',
+            copyPhone: true
+        },
+        {
+            // 🔧 سروش: Chrome Intent با package name
+            // منبع: apkpure.com — package: mobi.mmdt.ottplus
+            svg: '<svg width="28" height="28" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#E53935"/><path d="M12 6c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 10c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4z" fill="#fff"/></svg>',
+            label: 'سروش',
+            intentUrl: 'intent://#Intent;package=mobi.mmdt.ottplus;S.browser_fallback_url=' + encodeURIComponent('https://splus.ir/') + ';end',
+            copyPhone: true
+        },
+        {
+            svg: '<svg width="28" height="28" viewBox="0 0 24 24" fill="#607D8B"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-1 9H9v-2h9v2z"/></svg>',
+            label: 'کپی شماره',
+            url: 'copy:' + cleanPhone
+        },
     ];
 
     actions.forEach(function(action) {
-        const icon = action[0];
-        const label = action[1];
-        const url = action[2];
-
         const item = document.createElement('a');
         item.className = 'phone-action-item';
-        item.href = url;
-        if (url.startsWith('http')) {
+
+        // 🔧 تعیین href بر اساس نوع action
+        if (action.intentUrl) {
+            item.href = action.intentUrl;
+        } else if (action.url) {
+            item.href = action.url;
+        } else {
+            item.href = '#';
+        }
+
+        if (action.fallback || (action.url && action.url.startsWith('http'))) {
             item.target = '_blank';
             item.rel = 'noopener noreferrer';
         }
 
-        // حالت خاص برای کپی
-        if (url.startsWith('copy:')) {
-            item.href = '#';
-            item.onclick = function(e) {
+        // 🔧 onclick handler — سه حالت: کپی، Chrome Intent، deep link با fallback
+        item.onclick = function(e) {
+            // حالت ۱: کپی شماره
+            if (action.url && action.url.startsWith('copy:')) {
                 e.preventDefault();
                 copyToClipboard(cleanPhone);
                 closePhoneActionMenu();
                 showToast('شماره کپی شد ✓');
-            };
-        }
+                return;
+            }
 
-        item.innerHTML = '<div class="phone-action-icon">' + icon + '</div>' +
-                         '<div class="phone-action-label">' + label + '</div>';
+            // حالت ۲: Chrome Intent (شبکه‌های ایرانی)
+            // preventDefault نمی‌کنیم — اجازه می‌دهیم لینک intent به‌طور طبیعی باز شود
+            // Chrome خودش fallback را مدیریت می‌کند
+            if (action.intentUrl) {
+                if (action.copyPhone) {
+                    copyToClipboard(cleanPhone);
+                    showToast('شماره کپی شد — در برنامه پیست کنید');
+                }
+                setTimeout(closePhoneActionMenu, 300);
+                return; // اجازه دهیم لینک باز شود
+            }
+
+            // حالت ۳: deep link با fallback (تلگرام و واتساپ)
+            if (action.fallback) {
+                e.preventDefault();
+                if (action.copyPhone) {
+                    copyToClipboard(cleanPhone);
+                }
+                // تلاش برای باز کردن اپلیکیشن
+                window.open(action.url, '_blank');
+                // بعد از ۱.۵ ثانیه، اگر اپلیکیشن باز نشد، fallback
+                setTimeout(function() {
+                    if (!document.hidden) {
+                        window.open(action.fallback, '_blank');
+                        if (action.copyPhone) {
+                            showToast('شماره کپی شد — در برنامه پیست کنید');
+                        }
+                    }
+                }, 1500);
+                setTimeout(closePhoneActionMenu, 500);
+                return;
+            }
+
+            // حالت ۴: لینک‌های ساده (tel:, sms:) — اجازه دهیم باز شوند
+            // preventDefault نمی‌کنیم
+            setTimeout(closePhoneActionMenu, 300);
+        };
+
+        item.innerHTML = '<div class="phone-action-icon">' + action.svg + '</div>' +
+                         '<div class="phone-action-label">' + action.label + '</div>';
         grid.appendChild(item);
     });
 
     // نمایش منو
     document.getElementById('phoneActionOverlay').classList.add('active');
+    history.pushState({ view: 'phoneAction' }, '');
+    refreshFloatingContactBtn();
 }
 
 // بستن منوی انتخاب عملیات تلفن
 function closePhoneActionMenu() {
     document.getElementById('phoneActionOverlay').classList.remove('active');
+    refreshFloatingContactBtn();
 }
 
 // کپی به کلیپ‌بورد (fallback برای مرورگرهای قدیمی)
@@ -8992,6 +11047,8 @@ confirmDatetimePicker = function() {
         _contactDatePickerTarget = null;
         // 🔧 حذف کلاس contact-date-picker
         document.getElementById('datetimePickerOverlay').classList.remove('contact-date-picker');
+        // 🔧 فلگ را تنظیم کن تا popstate فرم/صفحهٔ شخص را نبندد
+        _skipContactOverlayCloseOnPopstate = true;
         // بستن picker
         closeModalByType('datetimePicker');
         window._pickingRepeatEndDate = false;
@@ -9369,9 +11426,21 @@ async function registerServiceWorker() {
             // Reload to get the new code from the updated SW cache.
             // This is critical: without the reload, the page runs OLD code
             // (from the previous SW's cache) even after the new SW activates.
-            if (!isRecording) {
-                window.location.reload();
+            // 🔧 اگر در حال ضبط یا ویرایش فرم هستیم، reload را به تعویق بینداز
+            // تا داده‌های کاربر از دست نرود.
+            if (isRecording) {
+                console.log('[Page] Recording in progress, deferring reload');
+                setTimeout(() => location.reload(), 5000);
+                return;
             }
+            const taskFormOpen = document.getElementById('modalOverlay') && document.getElementById('modalOverlay').classList.contains('active');
+            const contactFormOpen = document.getElementById('contactFormOverlay') && document.getElementById('contactFormOverlay').classList.contains('active');
+            if (taskFormOpen || contactFormOpen) {
+                console.log('[Page] Form open, deferring reload');
+                setTimeout(() => location.reload(), 10000);
+                return;
+            }
+            window.location.reload();
         });
 
         // Wait for SW to be active
@@ -9427,15 +11496,34 @@ if ('serviceWorker' in navigator) {
         // mobile browsers).
         if (event.data.type === 'RELOAD_PLEASE') {
             console.log('[Page] SW requested reload (version=' + event.data.version + ')');
-            if (!isRecording) {
-                window.location.reload();
-            } else {
-                // Defer reload until recording stops
+            // 🔧 اگر در حال ضبط یا ویرایش فرم هستیم، reload را به تعویق بینداز
+            if (isRecording) {
                 console.log('[Page] Recording in progress — deferring reload');
                 window._pendingReload = true;
+                return;
             }
+            const taskFormOpen = document.getElementById('modalOverlay') && document.getElementById('modalOverlay').classList.contains('active');
+            const contactFormOpen = document.getElementById('contactFormOverlay') && document.getElementById('contactFormOverlay').classList.contains('active');
+            if (taskFormOpen || contactFormOpen) {
+                console.log('[Page] Form open — deferring reload');
+                window._pendingReload = true;
+                return;
+            }
+            window.location.reload();
         }
     });
+}
+
+// 🔧 تابع کمکی: اگر reload در انتظار است و هیچ فرمی باز نیست، reload کن
+function checkPendingReload() {
+    if (!window._pendingReload) return;
+    const taskFormOpen = document.getElementById('modalOverlay') && document.getElementById('modalOverlay').classList.contains('active');
+    const contactFormOpen = document.getElementById('contactFormOverlay') && document.getElementById('contactFormOverlay').classList.contains('active');
+    if (!taskFormOpen && !contactFormOpen && !isRecording) {
+        console.log('[Page] Performing pending reload now');
+        window._pendingReload = false;
+        window.location.reload();
+    }
 }
 
 // ────────────────────────────────────────────────────────────────────
@@ -9551,11 +11639,22 @@ async function checkReachability(force = false) {
 // Clear all Service Worker caches and reload the page from the network.
 // Called when transitioning from offline to online — ensures the user gets
 // the latest GitHub version, not a stale cached copy.
+// 🔧 اگر کاربر در حال تایپ/ویرایش یک یادآور است (مودال فرم باز است)،
+// reload به تعویق می‌افتد تا داده‌های کاربر از دست نرود.
 function clearSWCacheAndReload() {
     if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
         // No SW controller — just reload
         console.log('[clearSWCacheAndReload] No SW controller, reloading...');
         location.reload();
+        return;
+    }
+    // 🔧 اگر مودال فرم تسک یا فرم شخص باز است، reload را به تعویق بینداز
+    const taskFormOpen = document.getElementById('modalOverlay') && document.getElementById('modalOverlay').classList.contains('active');
+    const contactFormOpen = document.getElementById('contactFormOverlay') && document.getElementById('contactFormOverlay').classList.contains('active');
+    if (taskFormOpen || contactFormOpen) {
+        console.log('[clearSWCacheAndReload] Form is open, deferring reload...');
+        // ۵ دقیق بعد دوباره امتحان کن — کاربر احتمالاً تا آن موقع فرم را بسته باشد
+        setTimeout(() => clearSWCacheAndReload(), 300000);
         return;
     }
     // Listen for the SW's CACHE_CLEARED confirmation message
@@ -9845,6 +11944,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize notifications (async, loads from IDB)
     loadSentNotifications().then(() => {
         updateNotifButton();
+        _updateAIKeyBtn();
         cleanupOldNotifications();
         checkNotifications();
     });
