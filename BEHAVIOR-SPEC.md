@@ -45,7 +45,7 @@
 #   ۴. اگر کاربر رفتار جدیدی درخواست کرد، آن را به این فایل اضافه کن
 #   ۵. اگر کاربر خواست یک رفتار تغییر کند، این فایل را آپدیت کن
 #
-# آخرین به‌روزرسانی: v133 — ۱۴۰۵ آبان ۱۷
+# آخرین به‌روزرسانی: v134 — ۱۴۰۵ آبان ۱۷
 # ════════════════════════════════════════════════════════════════════
 #
 # ════════════════════════════════════════════════════════════════════
@@ -268,6 +268,10 @@
   - **معلق**: ↩ بازگردانی به فعال، ✏️ ویرایش، ✓ انجام شد، 🗑 حذف، ✕ انصراف
   - **لغوشده**: ↩ بازگردانی به فعال، ✏️ ویرایش، 🗑 حذف، ✕ انصراف
   - **انجام‌شده**: ↩ بازگردانی، ✏️ ویرایش، 🗑 حذف، ✕ انصراف
+- 🔧 v134: فیلد «👤 شخص مرتبط» اضافه شد (در فرم ایجاد/ویرایش)
+  - dropdown قابل جستجو — تایپ بخشی از نام/شرکت/سمت → فیلتر
+  - شخص در جزئیات تسک نمایش داده می‌شود (نام + شرکت + تلفن)
+  - فیلد `contactId` در item ذخیره می‌شود
 - 🔧 v132: دکمه «🔊 بخوان» و کل سیستم TTS حذف شد
   - توابع حذف‌شده: readTaskAloud، _speakWithAI، _speakWithWebSpeech،
     _speakWithGoogleTTS، _speakWithResponsiveVoice، _initAITTS،
@@ -430,6 +434,8 @@
 - فرم با: شرکت، نام، سمت، تاریخ‌ها، اشانتیون، تلفن‌ها، آدرس‌ها، توضیحات
 - درصد کارپردازی پیش‌فرض ۰
 - تاریخ شروع همکاری و تولد از تقویم شمسی
+- 🔧 v134: دکمهٔ «➕ تسک» در ردیف هر شخص — با کلیک، کاربر گروه را
+  انتخاب می‌کند و فرم ایجاد تسک باز می‌شود با شخص از قبل انتخاب‌شده.
 
 ### T4.03 — ویرایش شخص
 - دکمه ✏️ در ردیف شخص
@@ -573,7 +579,8 @@
 - فایل JSON با: items, groups, contacts, notes, settings, appVersion
 - فیلدهای item شامل: text, deadline, done, groupId, completedAt, position,
   pinned, pinnedAt, pinnedOrder, urgent, parentId, repeat,
-  cancelled, cancelledAt, suspended, suspendedAt (v133)
+  cancelled, cancelledAt, suspended, suspendedAt (v133),
+  contactId (v134)
 - فیلدهای group شامل: id, name, color, isDefault, headerIcon, headerImage, showInAll
 - فیلدهای contact شامل: id, company, name, position, startDate, birthDate,
   commissionAsked, commissionPaid, commissionPercent, phones, primaryPhone,
@@ -588,6 +595,9 @@
 - 🔧 v133: فیلدهای cancelled/cancelledAt/suspended/suspendedAt اضافه شد
   - بک‌آپ‌های قدیمی v7 هم کار می‌کنند (این فیلدها در migrateItem مدیریت می‌شوند)
   - اگر فیلد موجود نباشد، مقدار پیش‌فرض null در نظر گرفته می‌شود
+- 🔧 v134: فیلد contactId اضافه شد
+  - تسک‌ها می‌توانند به یک شخص از بانک اشخاص متصل شوند
+  - در بک‌آپ ذخیره می‌شود و هنگام بازیابی حفظ می‌شود
 
 ### T8.02 — بازیابی
 - دکمه 📥 در هدر

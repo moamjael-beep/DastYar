@@ -906,6 +906,68 @@ body { padding-bottom: 30px; }
     background: #f5f5f5;
     border-radius: 8px;
 }
+/* 🔧 v134: انتخاب‌گر شخص در فرم تسک */
+.contact-picker-section {
+    margin-top: 8px;
+    margin-bottom: 12px;
+}
+.contact-picker-wrapper {
+    position: relative;
+}
+.contact-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    z-index: 10001;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    max-height: 240px;
+    overflow-y: auto;
+    margin-top: 2px;
+}
+.contact-dropdown-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.15s;
+    font-size: 14px;
+}
+.contact-dropdown-item:last-child { border-bottom: none; }
+.contact-dropdown-item:hover, .contact-dropdown-item.highlighted {
+    background: #e3f2fd;
+}
+.contact-dropdown-item .cd-name {
+    font-weight: 600;
+    color: #1976D2;
+}
+.contact-dropdown-item .cd-meta {
+    font-size: 11px;
+    color: #666;
+    margin-top: 2px;
+}
+.contact-dropdown-empty {
+    padding: 12px;
+    text-align: center;
+    color: #999;
+    font-size: 13px;
+}
+/* نشانگر شخص مرتبط در جزئیات تسک */
+.detail-contact-row {
+    background: #e3f2fd;
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin: 4px 0;
+}
+.detail-contact-row .detail-label { color: #1565C0; }
+.detail-contact-row .detail-value { font-weight: 600; color: #0D47A1; }
+/* دکمهٔ ایجاد تسک در ردیف اشخاص */
+.contact-row-btn.add-task {
+    background: #4CAF50;
+    color: white;
+}
 .repeat-row {
     display: flex;
     gap: 8px;
@@ -3138,6 +3200,21 @@ body.locked .header-actions button {
                     <input type="hidden" id="repeatEndDate">
                 </div>
             </div>
+
+            <!-- 🔧 v134: انتخاب شخص برای تسک — dropdown قابل جستجو -->
+            <div class="contact-picker-section">
+                <label class="modal-label">👤 شخص مرتبط <span style="font-weight:400;color:#999;">(اختیاری — از بانک اشخاص)</span></label>
+                <div class="contact-picker-wrapper" style="position: relative;">
+                    <input type="text" id="taskContactSearch" class="modal-input"
+                        placeholder="تایپ کنید نام شخص را... (خالی = بدون شخص)"
+                        autocomplete="off"
+                        oninput="filterTaskContactOptions()"
+                        onfocus="showTaskContactDropdown()"
+                        onblur="setTimeout(hideTaskContactDropdown, 200)">
+                    <input type="hidden" id="taskContactId" value="">
+                    <div id="taskContactDropdown" class="contact-dropdown" style="display:none;"></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -3730,7 +3807,19 @@ body.locked .header-actions button {
 //            هر دو حالت قابل بازگردانی به «فعال» هستند.
 //         4) migrateItem: فیلدهای cancelled, cancelledAt, suspended,
 //            suspendedAt اضافه شد (forward-compatibility حفظ شد).
-const APP_VERSION = 'v133-2026-11-07-new-task-states';
+//   v134 - CONTACT-TASK LINK:
+//         1) در فرم ایجاد/ویرایش تسک: فیلد «👤 شخص مرتبط» اضافه شد.
+//            dropdown قابل جستجو — کاربر می‌تواند نام شخص را تایپ کند
+//            تا لیست فیلتر شود (بر اساس نام، شرکت، سمت).
+//         2) در جزئیات تسک: شخص مرتبط نمایش داده می‌شود (نام + شرکت + تلفن).
+//         3) در صفحه اشخاص: دکمهٔ «➕ تسک» کنار هر شخص — با کلیک،
+//            کاربر گروه را انتخاب می‌کند و فرم ایجاد تسک باز می‌شود
+//            با شخص از قبل انتخاب‌شده.
+//         4) migrateItem: فیلد contactId اضافه شد (forward-compatibility).
+//         5) توابع جدید: showTaskContactDropdown, filterTaskContactOptions,
+//            renderTaskContactDropdown, selectTaskContact, loadTaskContactIntoForm,
+//            addTaskForContact, toEnglishDigitsIfPersian.
+const APP_VERSION = 'v134-2026-11-07-contact-task-link';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -4607,6 +4696,12 @@ function migrateItem(item) {
     if (item.suspended == true && !out.done && !out.cancelled) {
         out.suspended = true;
         if (item.suspendedAt) out.suspendedAt = String(item.suspendedAt);
+    }
+
+    // 🔧 v134: شخص مرتبط با تسک (contactId)
+    // اگر تسک به شخصی از بانک اشخاص متصل است، این فیلد ذخیره می‌شود
+    if (item.contactId && typeof item.contactId === 'string') {
+        out.contactId = String(item.contactId);
     }
 
     // parentId — لینک به والد برای فرزندان تکرارشونده
@@ -6892,6 +6987,11 @@ function startAdding(prefilledDeadline, prefilledText) {
     if (ru) ru.style.display = 'none';
     var rr = document.getElementById('repeatEndRow');
     if (rr) rr.style.display = 'none';
+    // 🔧 v134: ریست فیلد انتخاب شخص در فرم تسک
+    var tcs = document.getElementById('taskContactSearch');
+    var tci = document.getElementById('taskContactId');
+    if (tcs) tcs.value = '';
+    if (tci) tci.value = '';
     // Update the Persian display of the deadline (if any)
     if (prefilledDeadline) {
         updateDeadlineDisplay(prefilledDeadline);
@@ -7024,6 +7124,10 @@ function editTask(id) {
             document.getElementById('repeatEndDateDisplay').value = toJalaliLong(endDate);
         }
         onRepeatTypeChange();
+    }
+    // 🔧 v134: بارگذاری شخص مرتبط در فرم (اگر تسک شخص دارد)
+    if (editItem.contactId) {
+        loadTaskContactIntoForm(editItem.contactId);
     }
 }
 
@@ -7367,6 +7471,15 @@ function saveItem() {
             // Update the parent's text and deadline
             items[idx].text = newText;
             items[idx].deadline = newDeadline;
+            // 🔧 v134: به‌روزرسانی شخص مرتبط با تسک
+            const formContactId = document.getElementById('taskContactId') ? document.getElementById('taskContactId').value : '';
+            if (formContactId) {
+                items[idx].contactId = formContactId;
+            } else {
+                // اگر شخصی انتخاب نشده، فیلد contactId پاک شود
+                try { delete items[idx].contactId; } catch(e) {}
+                items[idx].contactId = null;
+            }
 
             // ===== REPEAT HANDLING ON EDIT =====
             // ALWAYS read the FORM's repeat settings (not the existing
@@ -7475,6 +7588,11 @@ function saveItem() {
             navBack();
             document.getElementById('itemText').value = '';
             document.getElementById('itemDeadline').value = '';
+            // 🔧 v134: پاک کردن فیلد انتخاب شخص
+            var _tcs = document.getElementById('taskContactSearch');
+            var _tci = document.getElementById('taskContactId');
+            if (_tcs) _tcs.value = '';
+            if (_tci) _tci.value = '';
             editTaskId = null;  // Clear the edit flag
             // 🔧 از fullRender استفاده نمی‌کنیم تا اسکرول نپرد
             // به‌جای آن render را مستقیم صدا می‌زنیم
@@ -7520,6 +7638,11 @@ function saveItem() {
         urgent: newTaskUrgent,
         // position intentionally NOT set — sort by deadline as fallback
     };
+    // 🔧 v134: ذخیرهٔ شخص مرتبط با تسک (اگر انتخاب شده)
+    const formContactId = document.getElementById('taskContactId') ? document.getElementById('taskContactId').value : '';
+    if (formContactId) {
+        newItem.contactId = formContactId;
+    }
     items.push(newItem);
 
     // Check repeat settings and generate children if configured
@@ -7593,6 +7716,11 @@ function saveItem() {
     navBack();
     document.getElementById('itemText').value = '';
     document.getElementById('itemDeadline').value = '';
+    // 🔧 v134: پاک کردن فیلد انتخاب شخص
+    var _tcs2 = document.getElementById('taskContactSearch');
+    var _tci2 = document.getElementById('taskContactId');
+    if (_tcs2) _tcs2.value = '';
+    if (_tci2) _tci2.value = '';
     // Reset repeat fields
     if (document.getElementById('repeatType')) document.getElementById('repeatType').value = 'none';
     if (document.getElementById('repeatValue')) document.getElementById('repeatValue').value = '1';
@@ -8868,6 +8996,7 @@ function renderTasksView(groupId) {
             ${item.completedAt ? `<div class="detail-row"><span class="detail-label">روز انجام:</span><span class="detail-value">${toJalaliLong(item.completedAt)}</span></div>` : ''}
             <div class="detail-row group-selector-row"><span class="detail-label">گروه:</span><select class="group-selector" onchange="changeTaskGroup('${item.id}', this.value)">${groupOpts}</select></div>
             <div class="detail-row urgent-toggle-row"><span class="detail-label">🚨 فوری:</span><label class="urgent-checkbox-label"><input type="checkbox" class="urgent-checkbox" ${item.urgent ? 'checked' : ''} onchange="toggleTaskUrgent('${item.id}')"> <span>این تسک در گروه «کارهای فوری» نمایش داده شود</span></label></div>
+            ${item.contactId ? (() => { const tc = getContactById(item.contactId); return tc ? `<div class="detail-row detail-contact-row"><span class="detail-label">👤 شخص:</span><span class="detail-value">${escapeHtml(tc.name)}${tc.company ? ' — ' + escapeHtml(tc.company) : ''}${tc.primaryPhone ? ' • ' + escapeHtml(tc.primaryPhone) : ''}</span></div>` : ''; })() : ''}
             <div class="item-actions">${
                 // 🔧 v133: دکمه‌ها بسته به حالت تسک متفاوت‌اند
                 item.cancelled == true
@@ -9768,6 +9897,181 @@ function getContactById(id) {
     return getContacts().find(c => c.id === id);
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v134: انتخاب‌گر شخص در فرم تسک — dropdown قابل جستجو
+// ════════════════════════════════════════════════════════════════════
+// این توابع برای انتخاب یک شخص از بانک اشخاص در فرم ایجاد/ویرایش
+// تسک استفاده می‌شوند. کاربر می‌تواند نام شخص را تایپ کند تا لیست
+// فیلتر شود و سپس روی شخص مورد نظر کلیک کند.
+
+// نمایش dropdown انتخاب شخص
+function showTaskContactDropdown() {
+    renderTaskContactDropdown('');
+}
+
+// پنهان کردن dropdown
+function hideTaskContactDropdown() {
+    const dd = document.getElementById('taskContactDropdown');
+    if (dd) dd.style.display = 'none';
+}
+
+// فیلتر کردن گزینه‌های dropdown بر اساس متن تایپ‌شده
+function filterTaskContactOptions() {
+    const search = document.getElementById('taskContactSearch');
+    if (!search) return;
+    const query = search.value.trim().toLowerCase();
+    // اگر کاربر متن را پاک کرد، contactId هم پاک شود
+    if (!query) {
+        document.getElementById('taskContactId').value = '';
+    }
+    renderTaskContactDropdown(query);
+}
+
+// رندر لیست اشخاص در dropdown
+function renderTaskContactDropdown(query) {
+    const dd = document.getElementById('taskContactDropdown');
+    if (!dd) return;
+    const contacts = getContacts();
+    if (contacts.length === 0) {
+        dd.innerHTML = '<div class="contact-dropdown-empty">هیچ شخصی تعریف نشده است. از بخش 👥 اشخاص شخص جدید اضافه کنید.</div>';
+        dd.style.display = 'block';
+        return;
+    }
+    // فیلتر بر اساس query (در نام، شرکت، سمت)
+    let filtered = contacts;
+    if (query) {
+        filtered = contacts.filter(c => {
+            const name = (c.name || '').toLowerCase();
+            const company = (c.company || '').toLowerCase();
+            const position = (c.position || '').toLowerCase();
+            return name.includes(query) || company.includes(query) || position.includes(query);
+        });
+    }
+    if (filtered.length === 0) {
+        dd.innerHTML = '<div class="contact-dropdown-empty">هیچ شخصی با این نام یافت نشد</div>';
+        dd.style.display = 'block';
+        return;
+    }
+    // رندر آیتم‌ها
+    let html = '';
+    filtered.forEach(c => {
+        const displayPhone = c.primaryPhone || ((c.phones && c.phones.length > 0) ? c.phones[0] : '');
+        const meta = [c.company, c.position, displayPhone].filter(x => x).join(' • ');
+        html += '<div class="contact-dropdown-item" onclick="selectTaskContact(\'' + c.id + '\')">' +
+            '<div class="cd-name">' + escapeHtml(c.name || '—') + '</div>' +
+            (meta ? '<div class="cd-meta">' + escapeHtml(meta) + '</div>' : '') +
+            '</div>';
+    });
+    dd.innerHTML = html;
+    dd.style.display = 'block';
+}
+
+// انتخاب یک شخص از dropdown
+function selectTaskContact(contactId) {
+    const c = getContactById(contactId);
+    if (!c) return;
+    document.getElementById('taskContactId').value = contactId;
+    // نمایش نام شخص در فیلد جستجو (به‌عنوان نمایش انتخاب)
+    document.getElementById('taskContactSearch').value = c.name + (c.company ? ' (' + c.company + ')' : '');
+    hideTaskContactDropdown();
+}
+
+// پاک کردن انتخاب شخص (وقتی کاربر متن را پاک می‌کند)
+function clearTaskContactSelection() {
+    document.getElementById('taskContactId').value = '';
+    document.getElementById('taskContactSearch').value = '';
+}
+
+// پر کردن فیلد شخص هنگام ویرایش تسک
+function loadTaskContactIntoForm(contactId) {
+    const searchEl = document.getElementById('taskContactSearch');
+    const idEl = document.getElementById('taskContactId');
+    if (!searchEl || !idEl) return;
+    if (contactId) {
+        const c = getContactById(contactId);
+        if (c) {
+            idEl.value = contactId;
+            searchEl.value = c.name + (c.company ? ' (' + c.company + ')' : '');
+        } else {
+            idEl.value = '';
+            searchEl.value = '';
+        }
+    } else {
+        idEl.value = '';
+        searchEl.value = '';
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v134: ایجاد تسک برای یک شخص از صفحه اشخاص
+// ════════════════════════════════════════════════════════════════════
+// این تابع وقتی کاربر در صفحه اشخاص روی دکمهٔ «➕ تسک» کنار هر
+// شخص کلیک می‌کند، اجرا می‌شود. ابتدا از کاربر می‌پرسد که تسک در
+// کدام گروه ساخته شود، سپس فرم ایجاد تسک را باز می‌کند با شخص
+// انتخاب‌شده از قبل.
+
+function addTaskForContact(contactId) {
+    const c = getContactById(contactId);
+    if (!c) {
+        showToast('شخص یافت نشد');
+        return;
+    }
+    // بستن صفحه اشخاص
+    closeContacts();
+    // پرسیدن گروه از کاربر
+    const groups = getGroups().filter(g => g.id !== 'urgent');
+    if (groups.length === 0) {
+        showToast('ابتدا یک گروه بسازید');
+        return;
+    }
+    // ساخت لیست گروه‌ها برای انتخاب
+    let groupList = 'یک گروه را انتخاب کنید:\n\n';
+    groups.forEach((g, i) => {
+        groupList += toPersianNumber(i + 1) + '. ' + g.name + '\n';
+    });
+    groupList += '\n(شماره گروه را وارد کنید، یا برای گروه «همه کارها» ۱ را وارد کنید)';
+    const choice = prompt(groupList);
+    if (!choice) return;
+    const idx = parseInt(toEnglishDigitsIfPersian(choice), 10);
+    if (isNaN(idx) || idx < 1 || idx > groups.length) {
+        showToast('شماره گروه نامعتبر');
+        return;
+    }
+    const selectedGroup = groups[idx - 1];
+    // تنظیم currentView به tasks و currentGroupId به گروه انتخاب‌شده
+    currentView = 'tasks';
+    currentGroupId = selectedGroup.id;
+    expandedId = null;
+    navReplace({ view: 'tasks', groupId: selectedGroup.id });
+    fullRender();
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    // باز کردن فرم ایجاد تسک
+    setTimeout(function() {
+        startAdding();
+        // پس از باز شدن فرم، شخص را در فرم قرار بده
+        setTimeout(function() {
+            loadTaskContactIntoForm(contactId);
+            // پیش‌پر کردن متن با نام شخص
+            const textEl = document.getElementById('itemText');
+            if (textEl && !textEl.value) {
+                textEl.value = 'تماس/کارت: ' + c.name + (c.company ? ' (' + c.company + ')' : '');
+            }
+        }, 100);
+    }, 200);
+    showToast('تسک برای «' + c.name + '» در گروه «' + selectedGroup.name + '»');
+}
+
+// تبدیل اعداد فارسی به انگلیسی (برای parseInt صحیح)
+function toEnglishDigitsIfPersian(str) {
+    if (!str) return str;
+    const persian = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+    let result = String(str);
+    for (let i = 0; i < 10; i++) {
+        result = result.replace(new RegExp(persian[i], 'g'), i);
+    }
+    return result;
+}
+
 // ─── باز/بستن صفحه اشخاص ───
 // 🔧 ساده‌سازی شده — بدون navPush/navBack که با popstate تداخل داشت
 // صفحه اشخاص یک overlay تمام‌صفحه است، نه یک مودال معمولی
@@ -9844,6 +10148,8 @@ function renderContactsList() {
         html += '<td>' + escapeHtml(c.position || '—') + '</td>';
         html += '<td>' + renderClickablePhone(displayPhone) + '</td>';
         html += '<td><div class="contact-row-actions">';
+        // 🔧 v134: دکمهٔ «➕ تسک» برای ایجاد تسک برای این شخص
+        html += '<button class="contact-row-btn add-task" onclick="addTaskForContact(\'' + c.id + '\')" title="ایجاد تسک برای این شخص">➕</button>';
         html += '<button class="contact-row-btn" onclick="editContact(\'' + c.id + '\')">✏️</button>';
         html += '<button class="contact-row-btn danger" onclick="deleteContact(\'' + c.id + '\')">🗑</button>';
         html += '</div></td>';
