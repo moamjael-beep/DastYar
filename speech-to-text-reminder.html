@@ -83,8 +83,7 @@
      📦 کتابخانهٔ SortableJS برای قابلیت «کشیدن و رها کردن» (Drag & Drop)
      ────────────────────────────────────────────────────────────────────
      🔧 v132: defer اضافه شد تا بارگذاری کتابخانه مسدودکنندهٔ رندر اولیه
-         نباشد — صفحه سریع‌تر نمایش داده می‌شود و کتابخانه در پس‌زمینه
-         بارگذاری می‌شود.
+         نباشد — صفحه سریع‌تر نمایش داده می‌شود.
      ──────────────────────────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" defer
         onerror="this.onerror=null; var fb=document.createElement('script'); fb.src='https://unpkg.com/sortablejs@1.15.0/Sortable.min.js'; fb.defer=true; document.head.appendChild(fb);"></script>
@@ -160,7 +159,7 @@ body { padding-bottom: 30px; }
     gap: 2px;
 }
 .header h1 { font-size: 17px; font-weight: 700; }
-.header-date { font-size: 12px; opacity: 0.9; }
+.header-date { font-size: 15px; opacity: 0.95; font-weight: 600; }
 
 .header-actions {
     display: flex;
@@ -763,6 +762,25 @@ body { padding-bottom: 30px; }
 }
 
 .item.done { background: linear-gradient(135deg, #9E9E9E, #616161); opacity: 0.85; }
+/* 🔧 v133: حالت‌های جدید تسک — لغوشده (سیاه) و معلق (قهوه‌ای) */
+.item.cancelled { background: linear-gradient(135deg, #424242, #212121); opacity: 0.75; }
+.item.cancelled .item-text { text-decoration: line-through; color: #BDBDBD; }
+.item.suspended { background: linear-gradient(135deg, #795548, #4E342E); opacity: 0.9; }
+.item.suspended .item-text { color: #D7CCC8; font-style: italic; }
+/* نشانگرهای حالت در گوشهٔ تسک */
+.item-state-badge {
+    position: absolute;
+    top: 4px;
+    left: 8px;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: white;
+    font-weight: 600;
+}
+.item.cancelled .item-state-badge { background: #000000; }
+.item.suspended .item-state-badge { background: #5D4037; }
+.item.done .item-state-badge { background: #616161; }
 
 /* Modal */
 .modal-overlay {
@@ -977,7 +995,7 @@ body { padding-bottom: 30px; }
 @media (max-width: 480px) {
     .header { padding: 11px 14px; }
     .header h1 { font-size: 15px; }
-    .header-date { font-size: 11px; }
+    .header-date { font-size: 13px; font-weight: 600; }
     .add-btn { width: 42px; height: 42px; font-size: 24px; }
     .container { padding: 8px; gap: 5px; }
     .item { padding: 0 12px; }
@@ -1018,7 +1036,7 @@ body { padding-bottom: 30px; }
         border-radius: 0 0 12px 12px;
     }
     .header h1 { font-size: 20px; }
-    .header-date { font-size: 13px; }
+    .header-date { font-size: 16px; font-weight: 600; }
     .item {
         padding: 14px 24px;
         min-height: 56px;
@@ -3692,26 +3710,27 @@ body.locked .header-actions button {
 //         5) Internal group header: Enlarged all elements to match external
 //            header — back button 28→40px, title 11→16px, count 24→32px,
 //            menu button 28→36px, icon 28→40px.
-//   v121 - TWO-ROW HEADER: Internal group header is now TWO rows: title
-//         centered on top, buttons (back, icon, menu, count) on bottom row.
-//         min-height 110px.
+//   v121 - TWO-ROW HEADER + AUDIO TTS:
+//         1) Internal group header is now TWO rows: title centered on top,
+//            buttons (back, icon, menu, count) on bottom row. min-height 110px.
 //   v131 - AI TTS: Added Transformers.js + VITS Persian TTS. REMOVED in v132.
 //   v132 - TTS REMOVED + PERFORMANCE:
 //         1) کل سیستم خواندن صوتی (TTS) حذف شد — دکمه «🔊 بخوان»،
-//            توابع readTaskAloud، _speakWithAI، _speakWithWebSpeech،
-//            _speakWithGoogleTTS، _speakWithResponsiveVoice، _initAITTS،
-//            _float32ToWav، _stopAllTTS، _resetTTSButton و تمام متغیرهای
-//            مربوطه _ttsSpeaking, _ttsAudio, _aiTtsPipeline, ...
-//         2) کتابخانهٔ ResponsiveVoice از <head> حذف شد — این کتابخانه
-//            بیش از ۱۰۰ کیلوبایت دانلود می‌کرد و بارگذاری اولیه را
-//            به‌طور قابل‌توجهی کند می‌کرد.
-//         3) SortableJS با «defer» بارگذاری می‌شود — مسدودکنندهٔ رندر
-//            اولیه نیست و صفحه سریع‌تر نمایش داده می‌شود.
-//         4) manifest.json: id و prefer_related_applications و فیلدهای
-//            ماندگاری در حافظه اضافه شد.
-//         5) CACHE_NAME در sw.js از v98 به v99 افزایش یافت تا کش قدیمی
-//            که شامل ResponsiveVoice بود پاک شود.
-const APP_VERSION = 'v132-2026-11-07-no-tts-fast';
+//            توابع readTaskAloud، _speakWithAI، ... و کتابخانهٔ ResponsiveVoice.
+//         2) SortableJS با «defer» بارگذاری می‌شود (سریع‌تر).
+//         3) SW Keepalive: هر ۲۵ ثانیه ping به سرویس‌ورکر برای زنده ماندن.
+//   v133 - HEADER + UNPIN + NEW TASK STATES:
+//         1) تاریخ و ساعت هدر بزرگ‌تر شد (۱۲→۱۵px، موبایل ۱۱→۱۳px).
+//         2) لغو پین: position حذف نمی‌شود → تسک به جای اصلی خود
+//            بر اساس سررسید برمی‌گردد (نه به پایین تسک‌ها).
+//         3) دو حالت جدید تسک علاوه بر «انجام شد»:
+//            - «لغو شد» (cancelled): سیاه، در پایین همه
+//            - «معلق شد» (suspended): قهوه‌ای، بالای انجام‌شده‌ها
+//            ترتیب نمایش: فعال → معلق → انجام‌شده → لغوشده
+//            هر دو حالت قابل بازگردانی به «فعال» هستند.
+//         4) migrateItem: فیلدهای cancelled, cancelledAt, suspended,
+//            suspendedAt اضافه شد (forward-compatibility حفظ شد).
+const APP_VERSION = 'v133-2026-11-07-new-task-states';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -4531,6 +4550,7 @@ function getDB() {
 //   v4 — + parentId, repeat, pinned, position, completedAt
 //   v5 — + urgent, pinnedAt, pinnedOrder, headerIcon, headerImage, showInAll,
 //         گروه urgent (سیستمی)، contacts (بانک اطلاعاتی اشخاص)
+//   v133 — + cancelled, cancelledAt, suspended, suspendedAt (حالت‌های جدید تسک)
 
 // مهاجرت یک تسک به ساختار فعلی
 // تمام فیلدهای جدید با مقدار پیش‌فرض پر می‌شوند
@@ -4573,6 +4593,21 @@ function migrateItem(item) {
 
     // 🔧 فیلد فوری (Urgent) — بررسی با == برای پذیرش مقادیر قدیمی
     if (item.urgent == true && !out.done) out.urgent = true;
+
+    // 🔧 v133: حالت «لغوشده» (cancelled)
+    // فقط در صورتی کپی می‌شود که تسک انجام‌نشده باشد (یک تسک هم done و هم cancelled نباشد)
+    // بررسی با == برای پذیرش مقادیر قدیمی
+    if (item.cancelled == true && !out.done) {
+        out.cancelled = true;
+        if (item.cancelledAt) out.cancelledAt = String(item.cancelledAt);
+    }
+
+    // 🔧 v133: حالت «معلق» (suspended)
+    // فقط در صورتی کپی می‌شود که تسک انجام‌نشده و لغوشده نباشد
+    if (item.suspended == true && !out.done && !out.cancelled) {
+        out.suspended = true;
+        if (item.suspendedAt) out.suspendedAt = String(item.suspendedAt);
+    }
 
     // parentId — لینک به والد برای فرزندان تکرارشونده
     if (item.parentId && typeof item.parentId === 'string' && item.parentId !== item.id) {
@@ -7586,7 +7621,10 @@ function saveItem() {
 //   - چشمک‌زن: سررسید گذشته (بسیار فوری)
 //   - خاکستری: انجام‌شده
 // ============ Urgency / Color ============
-function getUrgencyLevel(deadline, done) {
+function getUrgencyLevel(deadline, done, cancelled, suspended) {
+    // 🔧 v133: حالت‌های جدید — cancelled و suspended
+    if (cancelled) return 'cancelled';
+    if (suspended) return 'suspended';
     if (done) return 'done';
     const remaining = new Date(deadline).getTime() - Date.now();
     if (remaining < 0) return 'overdue';
@@ -7597,7 +7635,10 @@ function getUrgencyLevel(deadline, done) {
     return 'normal';
 }
 
-function formatRemaining(deadline, done) {
+function formatRemaining(deadline, done, cancelled, suspended) {
+    // 🔧 v133: حالت‌های جدید — پیام مناسب برای لغوشده و معلق
+    if (cancelled) return 'لغو شد';
+    if (suspended) return 'معلق';
     if (done) return 'انجام شد';
     const remaining = new Date(deadline).getTime() - Date.now();
     if (remaining < 0) {
@@ -8008,8 +8049,10 @@ function togglePinTask(taskId) {
         item.pinnedAt = null;
         try { delete item.pinnedOrder; } catch(e) {}
         item.pinnedOrder = null;
-        // حذف position هم برای اینکه به ترتیب لمسی/زمانی برگردد
-        try { delete item.position; } catch(e) {}
+        // 🔧 v133: position را حذف نکن — تسک به جای اصلی خود بر اساس سررسید
+        // برگردد، نه به پایین تسک‌ها. قبلاً position حذف می‌شد و تسک به پایین
+        // می‌رفت (چون position ناموجود → 999999 → آخر). حالا position حفظ می‌شود
+        // تا تسک در جای قبلی خود (قبل از پین شدن) برگردد.
     } else {
         // پین کردن
         item.pinned = true;
@@ -8601,24 +8644,46 @@ function renderTasksView(groupId) {
         items = items.filter(i => i.groupId === groupId);
     }
 
-    // 🔧 مرتب‌سازی: پین‌ها اول، بعد تسک‌های غیرپین
-    // پین‌ها به ترتیب pinnedOrder (آخرین پین‌شده بالاتر — drag-drop قابل تغییر)
-    // تسک‌های غیرپین به ترتیب position (drag-drop) یا deadline
-    // در هر دو حالت، تسک‌های انجام‌شده در پایین قرار می‌گیرند
-    //
-    // برای گروه «همه کارها» هم پین کار می‌کند — پین‌ها بالاترین هستند
-    // و بقیه بر اساس deadline مرتب می‌شوند (چون این گروه drag-drop ندارد)
+    // 🔧 v133: مرتب‌سازی با ۴ حالت تسک
+    // ترتیب از بالا به پایین:
+    //   ۱. فعال (نه done، نه cancelled، نه suspended)
+    //      - پین‌ها اول (بر اساس pinnedOrder)
+    //      - غیرپین: بر اساس position یا deadline
+    //   ۲. معلق (suspended) — قهوه‌ای
+    //   ۳. انجام‌شده (done) — خاکستری
+    //   ۴. لغوشده (cancelled) — سیاه (پایین)
     items.sort((a, b) => {
-        // ۱. انجام‌شده‌ها در پایین
-        if (a.done !== b.done) return a.done ? 1 : -1;
-        // ۲. اگر هر دو انجام‌شده هستند: بر اساس تاریخ و ساعت انجام شدن
-        //    جدیدترین انجام (بالا) ← قدیمی‌ترین انجام (پایین)
-        if (a.done && b.done) {
+        // محاسبهٔ «حالت» هر تسک: 0=فعال, 1=معلق, 2=انجام‌شده, 3=لغوشده
+        function stateOf(it) {
+            if (it.cancelled == true) return 3;
+            if (it.done == true) return 2;
+            if (it.suspended == true) return 1;
+            return 0;
+        }
+        const aState = stateOf(a);
+        const bState = stateOf(b);
+        if (aState !== bState) return aState - bState;
+
+        // اگر هر دو لغوشده هستند: بر اساس cancelledAt نزولی (جدیدترین بالا)
+        if (aState === 3) {
+            const aT = a.cancelledAt ? new Date(a.cancelledAt).getTime() : 0;
+            const bT = b.cancelledAt ? new Date(b.cancelledAt).getTime() : 0;
+            return bT - aT;
+        }
+        // اگر هر دو انجام‌شده هستند: بر اساس completedAt نزولی (جدیدترین بالا)
+        if (aState === 2) {
             const aCompleted = a.completedAt ? new Date(a.completedAt).getTime() : 0;
             const bCompleted = b.completedAt ? new Date(b.completedAt).getTime() : 0;
-            return bCompleted - aCompleted;  // نزولی: جدیدترین بالا
+            return bCompleted - aCompleted;
         }
-        // ۳. پین‌ها اول (فقط برای انجام‌نشده)
+        // اگر هر دو معلق هستند: بر اساس suspendedAt نزولی (جدیدترین بالا)
+        if (aState === 1) {
+            const aT = a.suspendedAt ? new Date(a.suspendedAt).getTime() : 0;
+            const bT = b.suspendedAt ? new Date(b.suspendedAt).getTime() : 0;
+            return bT - aT;
+        }
+
+        // ۳. پین‌ها اول (فقط برای فعال‌ها)
         const aPinned = a.pinned === true;
         const bPinned = b.pinned === true;
         if (aPinned && !bPinned) return -1;
@@ -8629,7 +8694,7 @@ function renderTasksView(groupId) {
             if (aOrder !== bOrder) return aOrder - bOrder;
             return (b.pinnedAt || 0) - (a.pinnedAt || 0);
         }
-        // ۴. تسک‌های غیرپین (انجام‌نشده)
+        // ۴. تسک‌های فعال غیرپین
         if (groupId === 'all' || groupId === 'urgent') {
             return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
         } else {
@@ -8737,18 +8802,21 @@ function renderTasksView(groupId) {
     }
 
     items.forEach((item) => {
-        const level = getUrgencyLevel(item.deadline, item.done);
+        const level = getUrgencyLevel(item.deadline, item.done, item.cancelled, item.suspended);
         const div = document.createElement('div');
         // 🔧 اگر تسک پین شده، کلاس pinned-task اضافه کن (نوار آبی در سمت راست)
         // 🔧 اگر تسک فوری است، کلاس urgent-task اضافه کن (نوار زرد در سمت چپ)
         // 🔧 بررسی دقیق === true تا تسک‌هایی که urgent ندارند یا false شده‌اند
         // قطعاً نوار زرد نداشته باشند.
-        div.className = `item ${level}` + (expandedId === item.id ? ' expanded' : '') + (item.pinned === true ? ' pinned-task' : '') + (item.urgent === true ? ' urgent-task' : '');
+        div.className = `item ${level}` + (expandedId === item.id ? ' expanded' : '') + (item.pinned === true ? ' pinned-task' : '') + (item.urgent === true ? ' urgent-task' : '') + (item.done == true ? ' done' : '') + (item.cancelled == true ? ' cancelled' : '') + (item.suspended == true ? ' suspended' : '');
         div.dataset.id = item.id;
 
         const row = document.createElement('div');
         row.className = 'item-row';
         if (item.done) { const m = document.createElement('div'); m.className='item-done-mark'; m.textContent='✓'; row.appendChild(m); }
+        // 🔧 v133: نشانگرهای حالت تسک (لغوشده/معلق)
+        if (item.cancelled == true) { const m = document.createElement('div'); m.className='item-done-mark'; m.textContent='✕'; m.style.color='#E53935'; row.appendChild(m); }
+        if (item.suspended == true) { const m = document.createElement('div'); m.className='item-done-mark'; m.textContent='⏸'; m.style.color='#FFB74D'; row.appendChild(m); }
         const textEl = document.createElement('div'); textEl.className='item-text'; textEl.textContent=item.text; row.appendChild(textEl);
         // Group tag: show the task's group name as a colored badge — ONLY in
         // the "همه کارها" view (where all groups are mixed together). In a
@@ -8771,7 +8839,7 @@ function renderTasksView(groupId) {
                 row.appendChild(tag);
             }
         }
-        const remEl = document.createElement('div'); remEl.className='item-remaining'; remEl.textContent=toPersianDigits(formatRemaining(item.deadline, item.done)); row.appendChild(remEl);
+        const remEl = document.createElement('div'); remEl.className='item-remaining'; remEl.textContent=toPersianDigits(formatRemaining(item.deadline, item.done, item.cancelled, item.suspended)); row.appendChild(remEl);
         // 🔧 آیکون پین — سمت چپ (در RTL، آخرین عنصر در row)
         // کم‌رنگ وقتی پین نیست، پررنگ (با چرخش) وقتی پین شده
         const pinBtn = document.createElement('button');
@@ -8800,7 +8868,14 @@ function renderTasksView(groupId) {
             ${item.completedAt ? `<div class="detail-row"><span class="detail-label">روز انجام:</span><span class="detail-value">${toJalaliLong(item.completedAt)}</span></div>` : ''}
             <div class="detail-row group-selector-row"><span class="detail-label">گروه:</span><select class="group-selector" onchange="changeTaskGroup('${item.id}', this.value)">${groupOpts}</select></div>
             <div class="detail-row urgent-toggle-row"><span class="detail-label">🚨 فوری:</span><label class="urgent-checkbox-label"><input type="checkbox" class="urgent-checkbox" ${item.urgent ? 'checked' : ''} onchange="toggleTaskUrgent('${item.id}')"> <span>این تسک در گروه «کارهای فوری» نمایش داده شود</span></label></div>
-            <div class="item-actions"><button class="action-btn" data-action="edit">✏️ ویرایش</button><button class="action-btn" data-action="toggle">${item.done ? '↩ بازگردانی' : '✓ انجام شد'}</button><button class="action-btn danger" data-action="delete">🗑 حذف</button><button class="action-btn secondary" data-action="cancel">✕ انصراف</button></div>
+            <div class="item-actions">${
+                // 🔧 v133: دکمه‌ها بسته به حالت تسک متفاوت‌اند
+                item.cancelled == true
+                    ? '<button class="action-btn" data-action="restore-cancelled">↩ بازگردانی به فعال</button><button class="action-btn" data-action="edit">✏️ ویرایش</button><button class="action-btn danger" data-action="delete">🗑 حذف</button><button class="action-btn secondary" data-action="close-details">✕ انصراف</button>'
+                    : item.suspended == true
+                    ? '<button class="action-btn" data-action="restore-suspended">↩ بازگردانی به فعال</button><button class="action-btn" data-action="edit">✏️ ویرایش</button><button class="action-btn" data-action="toggle">✓ انجام شد</button><button class="action-btn danger" data-action="delete">🗑 حذف</button><button class="action-btn secondary" data-action="close-details">✕ انصراف</button>'
+                    : '<button class="action-btn" data-action="edit">✏️ ویرایش</button><button class="action-btn" data-action="suspend">⏸ معلق شد</button><button class="action-btn" data-action="cancel-task">❌ لغو شد</button><button class="action-btn" data-action="toggle">' + (item.done ? '↩ بازگردانی' : '✓ انجام شد') + '</button><button class="action-btn danger" data-action="delete">🗑 حذف</button><button class="action-btn secondary" data-action="close-details">✕ انصراف</button>'
+            }</div>
         `;
         div.appendChild(row);
         div.appendChild(details);
@@ -8809,8 +8884,13 @@ function renderTasksView(groupId) {
             if (action === 'toggle') { e.stopPropagation(); toggleDone(item.id); return; }
             if (action === 'delete') { e.stopPropagation(); deleteItem(item.id); return; }
             if (action === 'edit') { e.stopPropagation(); editTask(item.id); return; }
+            // 🔧 v133: دکمه‌های حالت‌های جدید
+            if (action === 'cancel-task') { e.stopPropagation(); toggleCancelled(item.id); return; }
+            if (action === 'suspend') { e.stopPropagation(); toggleSuspended(item.id); return; }
+            if (action === 'restore-cancelled') { e.stopPropagation(); toggleCancelled(item.id); return; }
+            if (action === 'restore-suspended') { e.stopPropagation(); toggleSuspended(item.id); return; }
             // 🔧 دکمه «انصراف» — جزئیات تسک را می‌بندد (مانند کلیک روی تسک)
-            if (action === 'cancel') { e.stopPropagation(); toggleExpand(item.id); return; }
+            if (action === 'close-details' || action === 'cancel') { e.stopPropagation(); toggleExpand(item.id); return; }
             if (e.target.closest('.action-btn') || e.target.closest('.group-selector') || e.target.closest('.urgent-checkbox-label') || e.target.classList.contains('urgent-checkbox') || e.target.closest('.item-details') || e.target.closest('.deadline-box') || e.target.closest('.detail-row')) return;
             toggleExpand(item.id);
         });
@@ -8903,16 +8983,8 @@ function _scrollTaskBelowHeader(taskId) {
 //   ۱) روی اندروید بدون صدای فارسی سیستمی کار نمی‌کرد
 //   ۲) دانلود کتابخانهٔ ResponsiveVoice (~۱۰۰KB) سرعت بارگذاری
 //      اولیه را به‌طور قابل‌توجهی پایین می‌آورد
-//   ۳) مدل VITS (~۵۰MB) حافظهٔ زیادی اشغال می‌کرد و در گوشی‌های
-//      کم‌رمی باعث ناپایداری می‌شد
-// تمام توابع زیر حذف شدند:
-//   readTaskAloud, _speakWithAI, _speakWithWebSpeech, _speakWithGoogleTTS,
-//   _speakWithResponsiveVoice, _initAITTS, _float32ToWav,
-//   _stopAllTTS, _resetTTSButton
-// و تمام متغیرهای مربوطه:
-//   _ttsSpeaking, _ttsCurrentBtn, _ttsAudio, _aiTtsPipeline,
-//   _aiTtsLoading, _ttsEngine
-// دکمهٔ «🔊 بخوان» هم از رابط کاربری حذف شد.
+//   ۳) مدل VITS (~۵۰MB) حافظهٔ زیادی اشغال می‌کرد
+// تمام توابع و دکمهٔ «🔊 بخوان» حذف شدند.
 // ════════════════════════════════════════════════════════════════════
 
 function toggleDone(id) {
@@ -8972,6 +9044,130 @@ function toggleDone(id) {
         window.scrollTo(0, savedScrollY);
     }, 50);
     showToast(item.done ? 'انجام شد ✓' : 'بازگردانی شد');
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v133: حالت‌های جدید تسک — «لغوشده» و «معلق»
+// ════════════════════════════════════════════════════════════════════
+// این دو حالت علاوه بر «انجام‌شده» اضافه شدند:
+//   - cancelled (لغوشده): تسکی که انجام نشده و قرار نیست انجام شود
+//     رنگ: سیاه، نشانگر: ✕، در پایین همهٔ تسک‌ها
+//   - suspended (معلق): تسکی که موقتاً متوقف شده، بعداً ممکن است فعال شود
+//     رنگ: قهوه‌ای، نشانگر: ⏸، بالای انجام‌شده‌ها
+//
+// ترتیب نمایش از بالا به پایین:
+//   فعال → معلق → انجام‌شده → لغوشده
+//
+// هر دو حالت قابل بازگردانی به «فعال» هستند.
+
+// 🔧 تغییر وضعیت «لغوشده» یک تسک
+// اگر لغو نباشد → لغو می‌شود (به پایین همه می‌رود، سیاه می‌شود)
+// اگر لغو باشد → بازگردانی به فعال (از حالت لغو خارج می‌شود)
+function toggleCancelled(id) {
+    const items = getDB();
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    if (item.cancelled == true) {
+        // بازگردانی از حالت لغو → فعال
+        try { delete item.cancelled; } catch(e) {}
+        item.cancelled = null;
+        try { delete item.cancelledAt; } catch(e) {}
+        item.cancelledAt = null;
+    } else {
+        // لغو کردن تسک
+        item.cancelled = true;
+        item.cancelledAt = new Date().toISOString();
+        // هنگام لغو، پین و فوری هم پاک می‌شوند (مثل انجام‌شدن)
+        try { delete item.pinned; } catch(e) {}
+        item.pinned = null;
+        try { delete item.pinnedAt; } catch(e) {}
+        item.pinnedAt = null;
+        try { delete item.pinnedOrder; } catch(e) {}
+        item.pinnedOrder = null;
+        try { delete item.urgent; } catch(e) {}
+        item.urgent = null;
+        // اگر انجام‌شده بود، آن هم پاک می‌شود (یک تسک هم انجام‌شده و هم لغوشده نباشد)
+        try { delete item.done; } catch(e) {}
+        item.done = null;
+        try { delete item.completedAt; } catch(e) {}
+        item.completedAt = null;
+        // اگر معلق بود، آن هم پاک می‌شود
+        try { delete item.suspended; } catch(e) {}
+        item.suspended = null;
+        try { delete item.suspendedAt; } catch(e) {}
+        item.suspendedAt = null;
+    }
+
+    setDB(items);
+    var savedScrollY = window.scrollY;
+    expandedId = null;
+    if (typeof sortableInstance !== 'undefined' && sortableInstance) {
+        try { sortableInstance.destroy(); } catch(e) {}
+        sortableInstance = null;
+    }
+    render();
+    setTimeout(function() {
+        initSortable();
+        window.scrollTo(0, savedScrollY);
+    }, 50);
+    if (navigator.vibrate) navigator.vibrate(20);
+    showToast(item.cancelled == true ? '❌ لغو شد' : '↩ بازگردانی شد به فعال');
+}
+
+// 🔧 تغییر وضعیت «معلق» یک تسک
+// اگر معلق نباشد → معلق می‌شود (قهوه‌ای می‌شود، بالای انجام‌شده‌ها)
+// اگر معلق باشد → بازگردانی به فعال
+function toggleSuspended(id) {
+    const items = getDB();
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    if (item.suspended == true) {
+        // بازگردانی از حالت معلق → فعال
+        try { delete item.suspended; } catch(e) {}
+        item.suspended = null;
+        try { delete item.suspendedAt; } catch(e) {}
+        item.suspendedAt = null;
+    } else {
+        // معلق کردن تسک
+        item.suspended = true;
+        item.suspendedAt = new Date().toISOString();
+        // هنگام معلق شدن، پین پاک می‌شود (تسک معلق پین نمی‌ماند)
+        // اما فوری پاک نمی‌شود — تسک معلق همچنان می‌تواند فوری باشد
+        // (کاربر ممکن است بخواهد یادآوری بگیرد حتی برای تسک معلق)
+        try { delete item.pinned; } catch(e) {}
+        item.pinned = null;
+        try { delete item.pinnedAt; } catch(e) {}
+        item.pinnedAt = null;
+        try { delete item.pinnedOrder; } catch(e) {}
+        item.pinnedOrder = null;
+        // اگر انجام‌شده بود، پاک می‌شود
+        try { delete item.done; } catch(e) {}
+        item.done = null;
+        try { delete item.completedAt; } catch(e) {}
+        item.completedAt = null;
+        // اگر لغوشده بود، پاک می‌شود
+        try { delete item.cancelled; } catch(e) {}
+        item.cancelled = null;
+        try { delete item.cancelledAt; } catch(e) {}
+        item.cancelledAt = null;
+    }
+
+    setDB(items);
+    var savedScrollY = window.scrollY;
+    expandedId = null;
+    if (typeof sortableInstance !== 'undefined' && sortableInstance) {
+        try { sortableInstance.destroy(); } catch(e) {}
+        sortableInstance = null;
+    }
+    render();
+    setTimeout(function() {
+        initSortable();
+        window.scrollTo(0, savedScrollY);
+    }, 50);
+    if (navigator.vibrate) navigator.vibrate(20);
+    showToast(item.suspended == true ? '⏸ معلق شد' : '↩ بازگردانی شد به فعال');
 }
 
 // 🔧 تغییر وضعیت «فوری» یک تسک
@@ -11859,10 +12055,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ─────────────────────────────────────────────────────────────────────
     // 🔧 v132 — SW KEEPALIVE: سرویس ورکر را در حافظه نگه می‌داریم
     // ─────────────────────────────────────────────────────────────────────
-    // مرورگر سرویس ورکر را پس از ~30 ثانیه بیکاری خاموش می‌کند. برای اینکه
-    // اعلان‌های سررسید سریع‌تر نمایش داده شوند و صفحهٔ بعدی سریع‌تر باز
-    // شود، هر ۲۵ ثانیه یک «ping» به سرویس ورکر می‌فرستیم تا زنده بماند.
-    // این کار هیچ بار CPU قابل‌توجهی ایجاد نمی‌کند (فقط postMessage).
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
         setInterval(() => {
             try {
@@ -11872,7 +12064,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             } catch(e) {}
         }, 25000);
     }
-    // وقتی کاربر به برنامه برمی‌گردد (از حالت پس‌زمینه)، فوراً SW را بیدار کن
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden && navigator.serviceWorker.controller) {
             try {
