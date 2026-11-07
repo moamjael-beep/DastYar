@@ -3761,7 +3761,7 @@ body.locked .header-actions button {
 //            cross-origin media WITHOUT CORS headers (fetch needs CORS).
 //            Added 8s timeout for Web Speech API (if no onend/onerror, try next).
 //            Added 8s timeout per online URL. Added "در حال خواندن..." toast.
-const APP_VERSION = 'v150-2026-11-05-groq-speaks';
+const APP_VERSION = 'v152-2026-11-05-groq-404-fix';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -9177,21 +9177,34 @@ async function _vaProcessCommand(userText) {
         } else {
             // Groq / OpenAI-compatible API
             var apiUrl = localStorage.getItem('openai_api_url') || 'https://api.groq.com/openai/v1';
+            // 🔧 اطمینان از URL درست برای Groq
+            if (provider === 'groq') {
+                apiUrl = 'https://api.groq.com/openai/v1';
+            }
             var modelName = localStorage.getItem('openai_api_model') || 'llama-3.3-70b-versatile';
+            // 🔧 اطمینان از مدل درست برای Groq
+            if (provider === 'groq') {
+                modelName = 'llama-3.3-70b-versatile';
+            }
+            console.log('[VA] Using API:', apiUrl + '/chat/completions', 'model:', modelName);
+            var requestBody = {
+                model: modelName,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userText }
+                ]
+            };
+            // response_format فقط برای مدل‌هایی که پشتیبانی می‌کنند
+            if (provider === 'groq') {
+                requestBody.response_format = { type: 'json_object' };
+            }
             response = await fetch(apiUrl + '/chat/completions', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': 'Bearer ' + apiKey
                 },
-                body: JSON.stringify({
-                    model: modelName,
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: userText }
-                    ],
-                    response_format: { type: 'json_object' }
-                })
+                body: JSON.stringify(requestBody)
             });
             data = await response.json();
             aiText = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
@@ -9219,7 +9232,19 @@ async function _vaProcessCommand(userText) {
 
     } catch(e) {
         console.error('[VA] AI failed:', e);
-        document.getElementById('vaText').textContent = 'خطا: ' + (e.message || '').substring(0, 60);
+        var errMsg = 'خطا: ';
+        if (e.message && e.message.indexOf('404') >= 0) {
+            errMsg += 'آدرس API اشتباه است — دکمه 🤖 را بزنید و Groq را دوباره انتخاب کنید';
+        } else if (e.message && e.message.indexOf('401') >= 0) {
+            errMsg += 'کلید API نامعتبر است';
+        } else if (e.message && e.message.indexOf('429') >= 0) {
+            errMsg += 'محدودیت درخواست — بعداً امتحان کنید';
+        } else if (e.message && e.message.indexOf('Failed to fetch') >= 0) {
+            errMsg += 'ارتباط ناموفق — اینترنت را بررسی کنید';
+        } else {
+            errMsg += (e.message || 'نامشخص').substring(0, 80);
+        }
+        document.getElementById('vaText').textContent = errMsg;
         document.getElementById('vaIcon').textContent = '❌';
     }
 }
