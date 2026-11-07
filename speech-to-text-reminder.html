@@ -81,9 +81,13 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" media="all" onerror="this.remove()">
 <!-- ────────────────────────────────────────────────────────────────────
      📦 کتابخانهٔ SortableJS برای قابلیت «کشیدن و رها کردن» (Drag & Drop)
+     ────────────────────────────────────────────────────────────────────
+     🔧 v132: defer اضافه شد تا بارگذاری کتابخانه مسدودکنندهٔ رندر اولیه
+         نباشد — صفحه سریع‌تر نمایش داده می‌شود و کتابخانه در پس‌زمینه
+         بارگذاری می‌شود.
      ──────────────────────────────────────────────────────────────────── -->
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"
-        onerror="this.onerror=null; var fb=document.createElement('script'); fb.src='https://unpkg.com/sortablejs@1.15.0/Sortable.min.js'; document.head.appendChild(fb);"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" defer
+        onerror="this.onerror=null; var fb=document.createElement('script'); fb.src='https://unpkg.com/sortablejs@1.15.0/Sortable.min.js'; fb.defer=true; document.head.appendChild(fb);"></script>
 <style>
 /* ════════════════════════════════════════════════════════════════════
    بخش ۱: استایل‌های CSS — ظاهر و چیدمان برنامه
@@ -128,12 +132,12 @@ body { padding-bottom: 30px; }
     top: 0;
     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     color: white;
-    padding: 10px 16px;
+    padding: 14px 16px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.15);
     z-index: 9999;
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    justify-content: space-between;
+    align-items: center;
     transition: background 0.3s;
 }
 .header.offline {
@@ -152,19 +156,16 @@ body { padding-bottom: 30px; }
 }
 .header-info {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
+    flex-direction: column;
+    gap: 2px;
 }
-.header h1 { font-size: 18px; font-weight: 700; }
-.header-date { font-size: 14px; font-weight: 600; opacity: 1; line-height: 1.4; }
+.header h1 { font-size: 17px; font-weight: 700; }
+.header-date { font-size: 12px; opacity: 0.9; }
 
 .header-actions {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     align-items: center;
-    flex-wrap: wrap;
-    width: 100%;
 }
 .icon-btn {
     background: white;
@@ -3015,16 +3016,7 @@ body.locked .header-actions button {
 <div class="header">
     <div class="header-info">
         <h1 id="headerTitle">یادآور صوتی</h1>
-        <div style="display:flex;align-items:center;gap:8px;">
-            <svg id="analogClock" width="36" height="36" viewBox="0 0 100 100" style="flex-shrink:0;">
-                <circle cx="50" cy="50" r="46" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.6)" stroke-width="3"/>
-                <circle cx="50" cy="50" r="2" fill="white"/>
-                <line id="clockHour" x1="50" y1="50" x2="50" y2="28" stroke="white" stroke-width="4" stroke-linecap="round"/>
-                <line id="clockMinute" x1="50" y1="50" x2="50" y2="18" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-                <line id="clockSecond" x1="50" y1="50" x2="50" y2="14" stroke="#FFC107" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-            <div class="header-date" id="headerDate"></div>
-        </div>
+        <div class="header-date" id="headerDate"></div>
     </div>
     <div class="header-actions">
         <button class="icon-btn share-btn install-btn" id="installBtn" onclick="installApp()" title="نصب به عنوان اپلیکیشن" style="display:none;">⬇</button>
@@ -3036,6 +3028,7 @@ body.locked .header-actions button {
         <button class="icon-btn share-btn" id="importBtn" onclick="importDatabase()" title="وارد کردن دیتابیس از فایل JSON">📥</button>
         <button class="icon-btn share-btn" id="notifBtn" onclick="toggleNotifications()" title="فعال‌سازی اعلان‌ها">🔔<span class="notif-badge"></span></button>
         <button class="icon-btn share-btn" id="shareBtn" onclick="confirmBackup()" title="ذخیره بک‌آپ در فضای ذخیره‌سازی">📤</button>
+        <button class="icon-btn add-btn" id="addBtn" onclick="startAdding()" title="افزودن یادآور">+</button>
     </div>
 </div>
 
@@ -3571,11 +3564,6 @@ body.locked .header-actions button {
     </div>
 </div>
 
-
-
-</div>
-</div>
-
 <!-- ════════════════════════════════════════════════════════════════════
      📋 مودال انتخاب فرمت گزارش (HTML / PDF / JSON)
      ════════════════════════════════════════════════════════════════════ -->
@@ -3704,14 +3692,26 @@ body.locked .header-actions button {
 //         5) Internal group header: Enlarged all elements to match external
 //            header — back button 28→40px, title 11→16px, count 24→32px,
 //            menu button 28→36px, icon 28→40px.
-//   v121 - TWO-ROW HEADER + AUDIO TTS:
-//         1) Internal group header is now TWO rows: title centered on top,
-//            buttons (back, icon, menu, count) on bottom row. min-height 110px.
-//         2) TTS: Switched from fetch() to <audio> elements — <audio> can play
-//            cross-origin media WITHOUT CORS headers (fetch needs CORS).
-//            Added 8s timeout for Web Speech API (if no onend/onerror, try next).
-//            Added 8s timeout per online URL. Added "در حال خواندن..." toast.
-const APP_VERSION = 'v154-2026-11-05-speed-clock-persist';
+//   v121 - TWO-ROW HEADER: Internal group header is now TWO rows: title
+//         centered on top, buttons (back, icon, menu, count) on bottom row.
+//         min-height 110px.
+//   v131 - AI TTS: Added Transformers.js + VITS Persian TTS. REMOVED in v132.
+//   v132 - TTS REMOVED + PERFORMANCE:
+//         1) کل سیستم خواندن صوتی (TTS) حذف شد — دکمه «🔊 بخوان»،
+//            توابع readTaskAloud، _speakWithAI، _speakWithWebSpeech،
+//            _speakWithGoogleTTS، _speakWithResponsiveVoice، _initAITTS،
+//            _float32ToWav، _stopAllTTS، _resetTTSButton و تمام متغیرهای
+//            مربوطه _ttsSpeaking, _ttsAudio, _aiTtsPipeline, ...
+//         2) کتابخانهٔ ResponsiveVoice از <head> حذف شد — این کتابخانه
+//            بیش از ۱۰۰ کیلوبایت دانلود می‌کرد و بارگذاری اولیه را
+//            به‌طور قابل‌توجهی کند می‌کرد.
+//         3) SortableJS با «defer» بارگذاری می‌شود — مسدودکنندهٔ رندر
+//            اولیه نیست و صفحه سریع‌تر نمایش داده می‌شود.
+//         4) manifest.json: id و prefer_related_applications و فیلدهای
+//            ماندگاری در حافظه اضافه شد.
+//         5) CACHE_NAME در sw.js از v98 به v99 افزایش یافت تا کش قدیمی
+//            که شامل ResponsiveVoice بود پاک شود.
+const APP_VERSION = 'v132-2026-11-07-no-tts-fast';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -8809,7 +8809,6 @@ function renderTasksView(groupId) {
             if (action === 'toggle') { e.stopPropagation(); toggleDone(item.id); return; }
             if (action === 'delete') { e.stopPropagation(); deleteItem(item.id); return; }
             if (action === 'edit') { e.stopPropagation(); editTask(item.id); return; }
-            // 🔧 دکمه «🔊 بخوان» — متن تسک را با صدا می‌خواند
             // 🔧 دکمه «انصراف» — جزئیات تسک را می‌بندد (مانند کلیک روی تسک)
             if (action === 'cancel') { e.stopPropagation(); toggleExpand(item.id); return; }
             if (e.target.closest('.action-btn') || e.target.closest('.group-selector') || e.target.closest('.urgent-checkbox-label') || e.target.classList.contains('urgent-checkbox') || e.target.closest('.item-details') || e.target.closest('.deadline-box') || e.target.closest('.detail-row')) return;
@@ -8896,9 +8895,25 @@ function _scrollTaskBelowHeader(taskId) {
     }, 150);
 }
 
-
-
-
+// ════════════════════════════════════════════════════════════════════
+// 🔊 خواندن صوتی — حذف کامل در v132
+// ════════════════════════════════════════════════════════════════════
+// در v131 سیستم TTS (Transformers.js + VITS + Web Speech + Google TTS
+// + ResponsiveVoice) وجود داشت. در v132 به‌طور کامل حذف شد چون:
+//   ۱) روی اندروید بدون صدای فارسی سیستمی کار نمی‌کرد
+//   ۲) دانلود کتابخانهٔ ResponsiveVoice (~۱۰۰KB) سرعت بارگذاری
+//      اولیه را به‌طور قابل‌توجهی پایین می‌آورد
+//   ۳) مدل VITS (~۵۰MB) حافظهٔ زیادی اشغال می‌کرد و در گوشی‌های
+//      کم‌رمی باعث ناپایداری می‌شد
+// تمام توابع زیر حذف شدند:
+//   readTaskAloud, _speakWithAI, _speakWithWebSpeech, _speakWithGoogleTTS,
+//   _speakWithResponsiveVoice, _initAITTS, _float32ToWav,
+//   _stopAllTTS, _resetTTSButton
+// و تمام متغیرهای مربوطه:
+//   _ttsSpeaking, _ttsCurrentBtn, _ttsAudio, _aiTtsPipeline,
+//   _aiTtsLoading, _ttsEngine
+// دکمهٔ «🔊 بخوان» هم از رابط کاربری حذف شد.
+// ════════════════════════════════════════════════════════════════════
 
 function toggleDone(id) {
     const items = getDB();
@@ -10900,31 +10915,9 @@ function showToast(msg) {
 // به‌روزرسانی تاریخ هدر (بالا صفحه)
 // ────────────────────────────────────────────────────────────────────
 // ============ Header date ============
-// 🔧 به‌روزرسانی تاریخ هدر + ساعت آنالوگ
 function updateHeaderDate() {
-    var now = new Date();
-    var el = document.getElementById('headerDate');
-    if (el) {
-        // تاریخ شمسی + روز هفته + ساعت
-        var [jy, jm, jd] = toJalaliParts(now);
-        var wd = jalaliWeekdays[now.getDay()];
-        var timeStr = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
-        el.innerHTML = '<div style="font-size:13px;font-weight:700;">' + wd + ' ' + toPersianDigits(jd) + ' ' + jalaliMonths[jm-1] + '</div>' +
-            '<div style="font-size:15px;font-weight:700;color:#FFC107;">' + toPersianDigits(timeStr) + '</div>';
-    }
-    // 🔧 ساعت آنالوگ
-    var h = now.getHours() % 12;
-    var m = now.getMinutes();
-    var s = now.getSeconds();
-    var hourAngle = (h * 30) + (m * 0.5);
-    var minuteAngle = m * 6;
-    var secondAngle = s * 6;
-    var hourLine = document.getElementById('clockHour');
-    var minLine = document.getElementById('clockMinute');
-    var secLine = document.getElementById('clockSecond');
-    if (hourLine) hourLine.setAttribute('transform', 'rotate(' + hourAngle + ' 50 50)');
-    if (minLine) minLine.setAttribute('transform', 'rotate(' + minuteAngle + ' 50 50)');
-    if (secLine) secLine.setAttribute('transform', 'rotate(' + secondAngle + ' 50 50)');
+    const el = document.getElementById('headerDate');
+    if (el) el.textContent = toPersianDigits(toJalaliLong(new Date()));
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -11847,20 +11840,47 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // 🔧 به‌روزرسانی ساعت و تاریخ هر ۱ ثانیه (سبک — فقط DOM آپدیت)
-    setInterval(updateHeaderDate, 1000);
-
-    // 🔧 PERIODIC UI REFRESH — هر ۶۰ ثانیه (کاهش از ۳۰ برای پایداری حافظه)
+    // ─────────────────────────────────────────────────────────────────────
+    // PERIODIC UI REFRESH (every 30s) — re-render for time-based reordering
+    // and urgency color updates. Fast (just calls render()).
+    // ─────────────────────────────────────────────────────────────────────
     setInterval(() => {
         render();
+        updateHeaderDate();
         checkNotifications();
-    }, 60000);
+    }, 30000);
 
-    // 🔧 بررسی اعلان‌ها هر ۲ دقیقه (کاهش برای پایداری)
-    setInterval(checkNotifications, 120000);
+    // Also check notifications every 60s to catch deadlines
+    setInterval(checkNotifications, 60000);
 
     // Run initial notification check after 3 seconds (delayed to not block load)
     setTimeout(checkNotifications, 3000);
+
+    // ─────────────────────────────────────────────────────────────────────
+    // 🔧 v132 — SW KEEPALIVE: سرویس ورکر را در حافظه نگه می‌داریم
+    // ─────────────────────────────────────────────────────────────────────
+    // مرورگر سرویس ورکر را پس از ~30 ثانیه بیکاری خاموش می‌کند. برای اینکه
+    // اعلان‌های سررسید سریع‌تر نمایش داده شوند و صفحهٔ بعدی سریع‌تر باز
+    // شود، هر ۲۵ ثانیه یک «ping» به سرویس ورکر می‌فرستیم تا زنده بماند.
+    // این کار هیچ بار CPU قابل‌توجهی ایجاد نمی‌کند (فقط postMessage).
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        setInterval(() => {
+            try {
+                if (navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({ type: 'KEEPALIVE', ts: Date.now() });
+                }
+            } catch(e) {}
+        }, 25000);
+    }
+    // وقتی کاربر به برنامه برمی‌گردد (از حالت پس‌زمینه)، فوراً SW را بیدار کن
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && navigator.serviceWorker.controller) {
+            try {
+                navigator.serviceWorker.controller.postMessage({ type: 'KEEPALIVE', ts: Date.now() });
+                navigator.serviceWorker.controller.postMessage({ type: 'CHECK_DEADLINES' });
+            } catch(e) {}
+        }
+    });
 
     // ─────────────────────────────────────────────────────────────────────
     // UI EVENT LISTENERS — modal close on overlay click, Escape key, etc.

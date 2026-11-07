@@ -3,13 +3,15 @@
   "_comment_what_is_manifest": "این فایل «manifest» (مانیفست) برنامهٔ وب پیشرفته (PWA) است.",
   "_comment_purpose": "مرورگر با خواندن این فایل می‌فهمد که برنامه می‌تواند روی گوشی یا دسکتاپ نصب شود و مثل یک اپلیکیشن واقعی رفتار کند.",
   "_comment_install": "وقتی کاربر برنامه را نصب می‌کند، آیکون آن روی صفحهٔ اصلی گوشی ظاهر می‌شود و بدون نوار آدرس مرورگر باز می‌گردد.",
+  "_comment_v132": "🔧 v132: فیلدهای id، prefer_related_applications، و protocols اضافه شد\n         تا برنامه بهتر در حافظهٔ گوشی بماند و سریع‌تر باز شود.",
 
+  "id": "/yadavar-soti/",
   "name": "یادآور صوتی - تبدیل صوت فارسی به متن",
   "short_name": "یادآور",
   "description": "برنامه یادآور هوشمند با تبدیل صوت فارسی به متن، تاریخ شمسی و اعلان خودکار",
 
   "_comment_start_url": "صفحهٔ شروع: وقتی کاربر آیکون برنامه را باز می‌کند، این صفحه نمایش داده می‌شود.",
-  "start_url": "./speech-to-text-reminder.html",
+  "start_url": "./speech-to-text-reminder.html?source=pwa",
 
   "_comment_scope": "محدودهٔ برنامه: تمام آدرس‌هایی که داخل این پوشه هستند تحت کنترل سرویس‌ورکر قرار می‌گیرند.",
   "scope": "./",
@@ -19,11 +21,11 @@
   "display_override": [
     "standalone",
     "minimal-ui",
-    "fullscreen"
+    "browser"
   ],
 
-  "_comment_orientation": "جهت پیش‌فرض: any یعنی هر جهت (برای ماندگاری بهتر در حافظه).",
-  "orientation": "any",
+  "_comment_orientation": "جهت پیش‌فرض: portrait-primary یعنی حالت عمودی گوشی.",
+  "orientation": "portrait-primary",
 
   "_comment_colors": "رنگ‌های اصلی برنامه: رنگ پس‌زمینه و رنگ نوار وضعیت.",
   "background_color": "#f0f2f5",
@@ -33,13 +35,23 @@
   "lang": "fa",
   "dir": "rtl",
 
-  "_comment_persistence": "برای ماندگاری در حافظه گوشی — برگه سبک و کم‌حجم",
+  "_comment_categories": "دسته‌بندی برنامه برای فروشگاه‌های اپلیکیشن.",
   "categories": [
     "productivity",
     "utilities",
     "lifestyle"
   ],
+
+  "_comment_pwa_sticky": "🔧 v132: prefer_related_applications=false به مرورگر می‌گوید که نسخهٔ\n         وب این برنامه را به جای نسخهٔ نیتیو ترجیح دهد. this helps the\n         PWA stay installed and not get replaced by a native app search.",
   "prefer_related_applications": false,
+
+  "_comment_launch_handler": "🔧 v132: launch_handler به مرورگر می‌گوید که وقتی کاربر آیکون را\n         می‌زند، اگر برنامه از قبل در حافظه باز است، همان را متمرکز کن\n         (navigate-existing) تا از بارگذاری مجدد و هدر دادن حافظه جلوگیری شود.",
+  "launch_handler": {
+    "client_mode": [
+      "navigate-existing",
+      "auto"
+    ]
+  },
 
   "_comment_icons_intro": "═══════════════════════════════════════════════════════════════════",
   "_comment_icons_what": "آیکون‌های برنامه در اندازه‌های مختلف. مرورگر بر اساس دستگاه، یکی را انتخاب می‌کند.",
