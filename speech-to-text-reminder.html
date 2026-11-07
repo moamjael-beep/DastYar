@@ -2840,6 +2840,9 @@ body.locked .header-actions button {
 .contacts-table th.filter-header {
     padding: 4px 6px;
     background: rgba(255,255,255,0.1);
+    /* 🔧 v137: عرض ثابت برای ستون‌های «نام شرکت» و «نام» — هر دو یکسان */
+    width: 140px;
+    min-width: 140px;
 }
 .contacts-table th.filter-header input {
     width: 100%;
@@ -4044,7 +4047,18 @@ body.locked .header-actions button {
 //         3) تعداد نتایج + لینک «پاک کردن فیلتر» در پایین جدول.
 //         4) توابع جدید: comparePersian, toggleContactsSort, updateContactsFilter.
 //         5) متغیرهای state: _contactsSort, _contactsFilter.
-const APP_VERSION = 'v136-2026-11-07-contacts-sort-filter';
+//   v137 - SEARCH RESULTS TABLE + DEFAULT 0% + EQUAL TEXTBOX WIDTH:
+//         1) در جدول اشخاص: عرض ثابت ۱۴۰px برای textbox ستون‌های
+//            «نام شرکت» و «نام» (هر دو یکسان).
+//         2) در صفحه جستجوی اشخاص: درصد کارپردازی پیش‌فرض = ۰ (طبق
+//            درخواست کاربر — قبلاً خالی بود).
+//         3) نتایج جستجو: دقیقاً شبیه جدول اصلی اشخاص — با sort
+//            (کلیک روی هدر) و filter (textbox در ردیف دوم هدر).
+//         4) توابع جدید: toggleSearchResultsSort, updateSearchResultsFilter,
+//            renderSearchResultsTable.
+//         5) متغیرهای state: _searchResultsSort, _searchResultsFilter,
+//            _lastSearchResults.
+const APP_VERSION = 'v137-2026-11-07-search-results-table-default-0';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -10993,7 +11007,8 @@ function openContactSearch() {
     document.getElementById('searchPhone').value = '';
     document.getElementById('searchCommissionAskedMin').value = '';
     document.getElementById('searchCommissionPaidMin').value = '';
-    document.getElementById('searchCommissionPercent').value = '';
+    // 🔧 v137: درصد کارپردازی پیش‌فرض = ۰ (طبق درخواست کاربر)
+    document.getElementById('searchCommissionPercent').value = '0';
     document.getElementById('contactSearchOverlay').classList.add('active');
     history.pushState({ view: 'contactSearch' }, '');
     refreshFloatingContactBtn();
@@ -11050,18 +11065,99 @@ function filterContacts(criteria) {
     return contacts;
 }
 
-function showContactSearchResults(results) {
-    document.getElementById('searchResultsCount').textContent = 'تعداد: ' + toPersianNumber(results.length) + ' نفر';
-    const body = document.getElementById('contactSearchResultsBody');
+// 🔧 v137: state فیلتر و sort برای نتایج جستجو (مستقل از جدول اصلی)
+let _searchResultsSort = { field: null, dir: 'asc' };
+let _searchResultsFilter = { company: '', name: '' };
+let _lastSearchResults = [];  // نتایج جستجوی قبلی (برای re-render بعد از sort/filter)
 
-    if (results.length === 0) {
-        body.innerHTML = '<div class="contacts-empty"><div class="contacts-empty-icon">🔍</div><div>هیچ نتیجه‌ای یافت نشد</div></div>';
+function toggleSearchResultsSort(field) {
+    if (_searchResultsSort.field === field) {
+        _searchResultsSort.dir = (_searchResultsSort.dir === 'asc') ? 'desc' : 'asc';
     } else {
-        let html = '<table class="search-results-table"><thead><tr>';
-        html += '<th>ردیف</th><th>نام شرکت</th><th>نام</th><th>سمت</th><th>تلفن</th><th>شروع همکاری</th><th>تولد</th><th>عملیات</th>';
-        html += '</tr></thead><tbody>';
-        results.forEach((c, idx) => {
-            // 🔧 اگر primaryPhone وجود دارد، آن را نمایش بده
+        _searchResultsSort.field = field;
+        _searchResultsSort.dir = 'asc';
+    }
+    renderSearchResultsTable();
+}
+
+function updateSearchResultsFilter(field, value) {
+    _searchResultsFilter[field] = value;
+    renderSearchResultsTable();
+    const inputs = document.querySelectorAll('#contactSearchResultsBody .contacts-table th.filter-header input[data-field="' + field + '"]');
+    if (inputs.length > 0) {
+        const inp = inputs[0];
+        inp.focus();
+        inp.setSelectionRange(inp.value.length, inp.value.length);
+    }
+}
+
+// 🔧 v137: رندر جدول نتایج جستجو — دقیقاً شبیه جدول اصلی اشخاص
+// (با sort و filter و textbox در ردیف دوم هدر)
+function renderSearchResultsTable() {
+    const body = document.getElementById('contactSearchResultsBody');
+    if (!body) return;
+    const allResults = _lastSearchResults;
+
+    if (allResults.length === 0) {
+        body.innerHTML = '<div class="contacts-empty"><div class="contacts-empty-icon">🔍</div><div>هیچ نتیجه‌ای یافت نشد</div></div>';
+        return;
+    }
+
+    // اعمال فیلتر
+    let filtered = allResults;
+    if (_searchResultsFilter.company) {
+        const q = _searchResultsFilter.company.toLowerCase();
+        filtered = filtered.filter(c => (c.company || '').toLowerCase().includes(q));
+    }
+    if (_searchResultsFilter.name) {
+        const q = _searchResultsFilter.name.toLowerCase();
+        filtered = filtered.filter(c => (c.name || '').toLowerCase().includes(q));
+    }
+
+    // اعمال sort
+    if (_searchResultsSort.field) {
+        const field = _searchResultsSort.field;
+        const dir = (_searchResultsSort.dir === 'asc') ? 1 : -1;
+        filtered = filtered.slice().sort(function(a, b) {
+            const cmp = comparePersian(a[field], b[field]);
+            return cmp * dir;
+        });
+    }
+
+    // ساخت جدول — دقیقاً همان ساختار جدول اصلی اشخاص
+    let html = '<table class="contacts-table"><thead>';
+    // ردیف اول: عناوین (قابل کلیک برای sort)
+    html += '<tr>';
+    html += '<th>ردیف</th>';
+    const companySortClass = _searchResultsSort.field === 'company' ? (_searchResultsSort.dir === 'asc' ? 'sorted-asc' : 'sorted-desc') : '';
+    html += '<th class="sortable ' + companySortClass + '" onclick="toggleSearchResultsSort(\'company\')">';
+    html += '<span class="sort-indicator"></span>نام شرکت';
+    html += '</th>';
+    const nameSortClass = _searchResultsSort.field === 'name' ? (_searchResultsSort.dir === 'asc' ? 'sorted-asc' : 'sorted-desc') : '';
+    html += '<th class="sortable ' + nameSortClass + '" onclick="toggleSearchResultsSort(\'name\')">';
+    html += '<span class="sort-indicator"></span>نام';
+    html += '</th>';
+    html += '<th>سمت</th>';
+    html += '<th>تلفن</th>';
+    html += '<th>عملیات</th>';
+    html += '</tr>';
+    // ردیف دوم: textbox فیلتر
+    html += '<tr>';
+    html += '<th></th>';
+    html += '<th class="filter-header"><input type="text" data-field="company" value="' + escapeHtml(_searchResultsFilter.company) + '" placeholder="فیلتر شرکت..." oninput="updateSearchResultsFilter(\'company\', this.value)"></th>';
+    html += '<th class="filter-header"><input type="text" data-field="name" value="' + escapeHtml(_searchResultsFilter.name) + '" placeholder="فیلتر نام..." oninput="updateSearchResultsFilter(\'name\', this.value)"></th>';
+    html += '<th></th>';
+    html += '<th></th>';
+    html += '<th></th>';
+    html += '</tr>';
+    html += '</thead><tbody>';
+
+    if (filtered.length === 0) {
+        html += '<tr><td colspan="6" style="text-align:center; padding:30px; color:#999;">';
+        html += 'هیچ شخصی با این فیلتر یافت نشد';
+        html += '</td></tr>';
+    } else {
+        filtered.forEach((c, idx) => {
             const displayPhone = c.primaryPhone || ((c.phones && c.phones.length > 0) ? c.phones[0] : '');
             html += '<tr>';
             html += '<td>' + toPersianNumber(idx + 1) + '</td>';
@@ -11069,14 +11165,33 @@ function showContactSearchResults(results) {
             html += '<td>' + escapeHtml(c.name || '—') + '</td>';
             html += '<td>' + escapeHtml(c.position || '—') + '</td>';
             html += '<td>' + renderClickablePhone(displayPhone) + '</td>';
-            html += '<td>' + escapeHtml(c.startDate || '—') + '</td>';
-            html += '<td>' + escapeHtml(c.birthDate || '—') + '</td>';
-            html += '<td><div class="contact-row-actions"><button class="contact-row-btn" onclick="editContactFromSearch(\'' + c.id + '\')">✏️</button></div></td>';
+            html += '<td><div class="contact-row-actions">';
+            html += '<button class="contact-row-btn add-task" onclick="addTaskForContact(\'' + c.id + '\')" title="ایجاد تسک برای این شخص">➕</button>';
+            html += '<button class="contact-row-btn" onclick="editContactFromSearch(\'' + c.id + '\')">✏️</button>';
+            html += '</div></td>';
             html += '</tr>';
         });
-        html += '</tbody></table>';
-        body.innerHTML = html;
     }
+
+    html += '</tbody></table>';
+    if (_searchResultsFilter.company || _searchResultsFilter.name) {
+        html += '<div style="text-align:center; padding:10px; color:#666; font-size:12px;">';
+        html += toPersianNumber(filtered.length) + ' نفر از ' + toPersianNumber(allResults.length) + ' نفر نمایش داده شد';
+        html += ' — <a href="javascript:void(0)" onclick="_searchResultsFilter={company:\'\',name:\'\'}; _searchResultsSort={field:null,dir:\'asc\'}; renderSearchResultsTable();" style="color:#1976D2; font-weight:600;">پاک کردن فیلتر</a>';
+        html += '</div>';
+    }
+    body.innerHTML = html;
+}
+
+function showContactSearchResults(results) {
+    // 🔧 v137: ذخیره نتایج برای re-render بعد از sort/filter
+    _lastSearchResults = results;
+    // ریست sort و filter هنگام نمایش نتایج جدید
+    _searchResultsSort = { field: null, dir: 'asc' };
+    _searchResultsFilter = { company: '', name: '' };
+
+    document.getElementById('searchResultsCount').textContent = 'تعداد: ' + toPersianNumber(results.length) + ' نفر';
+    renderSearchResultsTable();
 
     document.getElementById('contactSearchResultsOverlay').classList.add('active');
     history.pushState({ view: 'contactSearchResults' }, '');
