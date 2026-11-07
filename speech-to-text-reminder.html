@@ -3503,7 +3503,8 @@ body.locked .header-actions button {
         <div class="contacts-header-actions">
             <button class="contacts-action-btn primary" onclick="openContactForm()">➕ جدید</button>
             <button class="contacts-action-btn" onclick="openContactSearch()">🔍 جستجو</button>
-            <button class="contacts-action-btn" onclick="openContactReport()">📊 گزارشات</button>
+            <button class="contacts-action-btn" onclick="openTaskReport()">📋 گزارش کارها</button>
+            <button class="contacts-action-btn" onclick="openContactReport()">📊 گزارش اشخاص</button>
         </div>
     </div>
     <div class="contacts-body" id="contactsBody">
@@ -3756,6 +3757,52 @@ body.locked .header-actions button {
         </div>
     </div>
     <div class="contacts-body" id="contactReportResultsBody"></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     📋 مودال گزارش کارها — v141
+     ════════════════════════════════════════════════════════════════════
+     دو نوع گزارش:
+       ۱) بر اساس تمام جزئیات یک تسک (انتخاب یک تسک → گزارش کامل آن)
+       ۲) بر اساس تمام جزئیات یک شخص (انتخاب یک شخص → تمام تسک‌های او)
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="taskReportOverlay">
+    <div class="modal search-form-modal">
+        <h2>📋 گزارش کارها</h2>
+        <div class="search-form-body">
+            <div class="contact-form-section">
+                <div class="contact-form-section-title">نوع گزارش را انتخاب کنید</div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;" onclick="openTaskReportByTask()">📋 گزارش بر اساس یک تسک<br><span style="font-size:12px;font-weight:400;">تمام جزئیات یک تسک انتخابی</span></button>
+                    </div>
+                </div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <button class="btn btn-secondary" style="width:100%;padding:14px;font-size:15px;" onclick="openTaskReportByContact()">👤 گزارش بر اساس یک شخص<br><span style="font-size:12px;font-weight:400;">تمام تسک‌های یک شخص انتخابی</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeTaskReport()">انصراف</button>
+        </div>
+    </div>
+</div>
+
+<!-- صفحه نتایج گزارش کارها -->
+<div class="contacts-overlay" id="taskReportResultsOverlay">
+    <div class="contacts-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <button class="contacts-back-btn" onclick="closeTaskReportResults()" title="بازگشت">◄</button>
+            <h2 id="taskReportTitle">📋 گزارش کارها</h2>
+        </div>
+        <div class="contacts-header-actions">
+            <button class="contacts-action-btn" onclick="saveTaskReport()">💾 ذخیره</button>
+            <button class="contacts-action-btn" onclick="printTaskReport()">🖨️ چاپ</button>
+        </div>
+    </div>
+    <div class="contacts-body" id="taskReportResultsBody"></div>
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════════
@@ -4060,7 +4107,26 @@ body.locked .header-actions button {
 //         با یک دکمهٔ مداد ✏️ واحد جایگزین شد. این دکمه در هر دو حالت
 //         (تسک با شخص یا بدون شخص) نمایش داده می‌شود. کلیک روی آن
 //         منوی انتخاب شخص را باز می‌کند (که هم ویرایش و هم حذف را شامل می‌شود).
-const APP_VERSION = 'v139-2026-11-07-single-pencil-contact-btn';
+//   v140 - BEAUTIFUL LOUD NOTIFICATION SOUND + REPEAT:
+//         ۱) سطوح اعلان به ۳ کاهش یافت: ۳ ساعت، ۱۵ دقیقه، سررسید
+//         ۲) اعلان‌های ۳ ساعت و ۱۵ دقیقه دو بار تکرار می‌شوند (فاصله ۱۵s)
+//         ۳) همهٔ اعلان‌ها requireInteraction=true (تا کلیک پنهان نشوند)
+//         ۴) الگوی لرزش طولانی‌تر: ۶ بار ۳۰۰ms با فاصله ۱۰۰ms
+//         ۵) صدای زیبا و بلند با Web Audio API: ۴ نت (C5-E5-G5-C6) × ۳ بار
+//            تکرار = ~۳ ثانیه bell-like sound
+//         ۶) SW پیام PLAY_NOTIFICATION_SOUND به صفحه می‌فرستد تا صدا پخش شود
+//         ۷) تابع playNotificationSound() + playBellNote() + getNotifAudioContext()
+//         ⚠️ محدودیت: صدای Web Audio فقط وقتی صفحه باز است پخش می‌شود.
+//         ⚠️ افزودن به زنگ ساعت موبایل امکان‌پذیر نیست (محدودیت وب‌اپ).
+//   v141 - ACTIVE COUNT IN HEADERS + TASK REPORTS:
+//         ۱) شمارنده هدر گروه‌ها: فقط تسک‌های فعال (نه done/cancelled/suspended)
+//         ۲) دکمهٔ «📋 گزارش کارها» در صفحه اشخاص (کنار گزارش اشخاص)
+//         ۳) دو نوع گزارش:
+//            - گزارش بر اساس یک تسک: تمام جزئیات یک تسک انتخابی
+//            - گزارش بر اساس یک شخص: تمام تسک‌های یک شخص
+//         ۴) منوی زیبا برای انتخاب تسک/شخص (با فیلد جستجو)
+//         ۵) ذخیره HTML + چاپ گزارش
+const APP_VERSION = 'v141-2026-11-07-active-count-task-reports';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -8889,11 +8955,12 @@ function renderGroupsView() {
         const showUrgentBadge = o.showUrgentBadge !== false;
         const showPinnedBadge = o.showPinnedBadge !== false;
         const gid = groupId || '';
-        const notDone = groupItems.filter(i => !i.done);
-        const notDoneCount = notDone.length;
+        // 🔧 v141: فقط تسک‌های فعال (نه done، نه cancelled، نه suspended)
+        const active = groupItems.filter(i => !i.done && i.cancelled != true && i.suspended != true);
+        const activeCount = active.length;
         // 🔧 بررسی با == true برای پذیرش مقادیر قدیمی
-        const pinnedCount = notDone.filter(i => i.pinned == true).length;
-        const urgentCount = notDone.filter(i => i.urgent == true).length;
+        const pinnedCount = active.filter(i => i.pinned == true).length;
+        const urgentCount = active.filter(i => i.urgent == true).length;
         let html = '';
         if (showPinnedBadge && pinnedCount > 0) {
             html += `<span class="group-badge-pinned">📌${toPersianNumber(pinnedCount)}</span>`;
@@ -8902,7 +8969,7 @@ function renderGroupsView() {
             html += `<span class="group-badge-urgent">🚨${toPersianNumber(urgentCount)}</span>`;
         }
         // 🔧 دایره تعداد تسک‌ها به آیکون یادداشت می‌چسبد — هر دو در یک wrapper
-        html += `<div class="group-count-notes-wrapper"><span class="group-count">${toPersianNumber(notDoneCount)}</span><button class="group-notes-btn" onclick="event.stopPropagation(); openNotes('${gid}')" title="یادداشت">📝</button></div>`;
+        html += `<div class="group-count-notes-wrapper"><span class="group-count">${toPersianNumber(activeCount)}</span><button class="group-notes-btn" onclick="event.stopPropagation(); openNotes('${gid}')" title="یادداشت">📝</button></div>`;
         return html;
     }
 
@@ -9130,13 +9197,14 @@ function renderTasksView(groupId) {
         `;
     }
 
-    // 🔧 شمارش تسک‌ها — دایره (انجام‌نشده) + عدد قرمز پین + عدد زرد فوری
+    // 🔧 شمارش تسک‌ها — دایره (فعال) + عدد قرمز پین + عدد زرد فوری
+    // 🔧 v141: فقط تسک‌های فعال (نه done، نه cancelled، نه suspended)
     // برای گروه «کارهای فوری»، badge فوری نشان داده نمی‌شود (زیرتکراری است).
     // 🔧 بررسی با == true برای پذیرش مقادیر قدیمی
-    const notDoneItems = items.filter(i => !i.done);
-    const notDoneCount = notDoneItems.length;
-    const pinnedCount = notDoneItems.filter(i => i.pinned == true).length;
-    const urgentCount = notDoneItems.filter(i => i.urgent == true).length;
+    const activeItems = items.filter(i => !i.done && i.cancelled != true && i.suspended != true);
+    const activeCount = activeItems.length;
+    const pinnedCount = activeItems.filter(i => i.pinned == true).length;
+    const urgentCount = activeItems.filter(i => i.urgent == true).length;
     const isUrgentGroup = (groupId === 'urgent');
     let countHtml = '';
     if (pinnedCount > 0) {
@@ -9145,7 +9213,7 @@ function renderTasksView(groupId) {
     if (!isUrgentGroup && urgentCount > 0) {
         countHtml += `<span class="group-badge-urgent">🚨${toPersianNumber(urgentCount)}</span>`;
     }
-    countHtml += `<span class="group-task-count">${toPersianNumber(notDoneCount)}</span>`;
+    countHtml += `<span class="group-task-count">${toPersianNumber(activeCount)}</span>`;
 
     // چیدمان: back → icon → title (flex:1) → menu → count
     // 🔧 منوی کشویی (dropdownHtml) مستقیماً در هدر قرار می‌گیرد (نه داخل
@@ -10010,13 +10078,11 @@ function updateNotifButton() {
 }
 
 // Notification thresholds: at X minutes remaining, send once
+// 🔧 v140: طبق درخواست کاربر — فقط ۳ سطح + تکرار برای ۳ ساعت و ۱۵ دقیقه
 const NOTIF_THRESHOLDS = [
-    { minutes: 60 * 24, key: 'd1', label: '۱ روز' },     // 1 day before
-    { minutes: 60 * 6,  key: 'h6', label: '۶ ساعت' },     // 6 hours before
-    { minutes: 60,      key: 'h1', label: '۱ ساعت' },     // 1 hour before
-    { minutes: 30,      key: 'm30', label: '۳۰ دقیقه' }, // 30 min before
-    { minutes: 10,      key: 'm10', label: '۱۰ دقیقه' },  // 10 min before
-    { minutes: 0,       key: 'due', label: 'سررسید' },    // at deadline
+    { minutes: 180, key: 'h3',  label: '۳ ساعت',  repeat: true  },  // 3 hours before, repeat
+    { minutes: 15,  key: 'm15', label: '۱۵ دقیقه', repeat: true  },  // 15 min before, repeat
+    { minutes: 0,   key: 'due', label: 'سررسید',  repeat: false },  // at deadline
 ];
 
 function checkNotifications() {
@@ -10026,6 +10092,8 @@ function checkNotifications() {
 
     items.forEach(item => {
         if (item.done) return;
+        // 🔧 v140: تسک‌های لغوشده هم اعلان نمی‌گیرند
+        if (item.cancelled == true) return;
         const deadlineMs = new Date(item.deadline).getTime();
         if (isNaN(deadlineMs)) return;
         const remaining = deadlineMs - now;
@@ -10037,7 +10105,7 @@ function checkNotifications() {
 
             // Send if remaining <= triggerMs AND not too far past (within 60 min window)
             if (remaining <= triggerMs && remaining > triggerMs - 60 * 60 * 1000) {
-                sendNotification(item, t.label, remaining <= 0);
+                sendNotification(item, t.label, remaining <= 0, t.repeat, item.id);
                 sentNotifications.add(notifKey);
                 saveSentNotifications();
                 // Also write to IndexedDB so SW doesn't duplicate in background
@@ -10047,7 +10115,7 @@ function checkNotifications() {
     });
 }
 
-function sendNotification(item, label, isOverdue) {
+function sendNotification(item, label, isOverdue, shouldRepeat, itemId) {
     try {
         const text = item.text.length > 40 ? item.text.substring(0, 40) + '...' : item.text;
         const title = isOverdue
@@ -10056,11 +10124,17 @@ function sendNotification(item, label, isOverdue) {
         const body = isOverdue
             ? `زمان انجام این یادآور گذشته است`
             : `یادآور شما نزدیک سررسید است`;
+        // 🔧 v140: تنظیمات اعلان — requireInteraction + vibrate طولانی + silent=false
         const n = new Notification(title, {
             body: body,
             tag: item.id + '_' + label,
             dir: 'rtl',
-            lang: 'fa-IR'
+            lang: 'fa-IR',
+            // 🔧 v140: requireInteraction برای همه (تا کلیک کاربر پنهان نشود)
+            requireInteraction: true,
+            // 🔧 v140: الگوی لرزش طولانی‌تر و قوی‌تر
+            vibrate: [300, 100, 300, 100, 300, 100, 300, 100, 300, 100, 300],
+            silent: false  // صدای پیش‌فرض اعلان مرورگر پخش شود
         });
         n.onclick = () => {
             window.focus();
@@ -10068,6 +10142,35 @@ function sendNotification(item, label, isOverdue) {
             expandedId = item.id;
             render();
         };
+        // 🔧 v140: پخش صدای زیبا و بلند با Web Audio API
+        playNotificationSound();
+        // 🔧 v140: تکرار اعلان (فقط برای h3 و m15 — ۱۵ ثانیه بعد)
+        if (shouldRepeat) {
+            setTimeout(function() {
+                try {
+                    const n2 = new Notification(title + ' (تکرار)', {
+                        body: body + ' — تکرار',
+                        tag: item.id + '_' + label + '_repeat',
+                        dir: 'rtl',
+                        lang: 'fa-IR',
+                        requireInteraction: true,
+                        vibrate: [300, 100, 300, 100, 300, 100, 300, 100, 300, 100, 300],
+                        silent: false
+                    });
+                    n2.onclick = () => {
+                        window.focus();
+                        n2.close();
+                        expandedId = item.id;
+                        render();
+                    };
+                    // پخش صدا برای تکرار هم
+                    playNotificationSound();
+                    console.log('[Notif] Repeat notification sent');
+                } catch(e) {
+                    console.warn('[Notif] Repeat failed:', e);
+                }
+            }, 15000);  // ۱۵ ثانیه بعد
+        }
     } catch(e) {
         console.error('Notification error:', e);
     }
@@ -11321,6 +11424,340 @@ function closeContactReportResults() {
     refreshFloatingContactBtn();
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v141: گزارش کارها — دو نوع گزارش
+// ════════════════════════════════════════════════════════════════════
+//   ۱) گزارش بر اساس یک تسک: تمام جزئیات یک تسک انتخابی
+//   ۲) گزارش بر اساس یک شخص: تمام تسک‌های یک شخص انتخابی
+
+function openTaskReport() {
+    document.getElementById('taskReportOverlay').classList.add('active');
+    history.pushState({ view: 'taskReport' }, '');
+    refreshFloatingContactBtn();
+}
+
+function closeTaskReport() {
+    document.getElementById('taskReportOverlay').classList.remove('active');
+    refreshFloatingContactBtn();
+}
+
+function closeTaskReportResults() {
+    document.getElementById('taskReportResultsOverlay').classList.remove('active');
+    refreshFloatingContactBtn();
+}
+
+// 📋 گزارش بر اساس یک تسک — منوی زیبا برای انتخاب تسک
+function openTaskReportByTask() {
+    closeTaskReport();
+    const items = getDB();
+    if (items.length === 0) {
+        showToast('هیچ تسکی وجود ندارد');
+        return;
+    }
+    // ساخت لیست تسک‌ها برای انتخاب
+    const old = document.getElementById('taskPickerOverlay');
+    if (old) old.remove();
+    const overlay = document.createElement('div');
+    overlay.className = 'group-picker-overlay';
+    overlay.id = 'taskPickerOverlay';
+    const modal = document.createElement('div');
+    modal.className = 'group-picker-modal';
+    const title = document.createElement('div');
+    title.className = 'group-picker-title';
+    title.textContent = 'انتخاب تسک برای گزارش';
+    modal.appendChild(title);
+    const subtitle = document.createElement('div');
+    subtitle.className = 'group-picker-subtitle';
+    subtitle.textContent = items.length + ' تسک موجود — روی تسک مورد نظر کلیک کنید';
+    modal.appendChild(subtitle);
+    // فیلد جستجو
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.className = 'modal-input';
+    searchInput.placeholder = 'جستجوی متن تسک...';
+    searchInput.style.marginBottom = '12px';
+    searchInput.style.width = '100%';
+    searchInput.style.padding = '10px';
+    searchInput.style.borderRadius = '8px';
+    searchInput.style.border = '1px solid #ccc';
+    searchInput.style.fontFamily = 'inherit';
+    searchInput.style.fontSize = '14px';
+    modal.appendChild(searchInput);
+    const list = document.createElement('div');
+    list.className = 'group-picker-list';
+    list.style.maxHeight = '400px';
+    list.style.overflowY = 'auto';
+    modal.appendChild(list);
+    function renderTaskList(query) {
+        list.innerHTML = '';
+        let filtered = items;
+        if (query) {
+            const q = query.toLowerCase();
+            filtered = items.filter(i => (i.text || '').toLowerCase().includes(q));
+        }
+        if (filtered.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'contact-dropdown-empty';
+            empty.textContent = 'تسکی با این متن یافت نشد';
+            list.appendChild(empty);
+            return;
+        }
+        filtered.forEach(item => {
+            const btn = document.createElement('button');
+            btn.className = 'group-picker-item';
+            const icon = document.createElement('div');
+            icon.className = 'group-picker-item-icon';
+            // آیکون بر اساس حالت تسک
+            if (item.done == true) { icon.style.background = '#9E9E9E'; icon.textContent = '✓'; }
+            else if (item.cancelled == true) { icon.style.background = '#424242'; icon.textContent = '✕'; }
+            else if (item.suspended == true) { icon.style.background = '#795548'; icon.textContent = '⏸'; }
+            else if (item.urgent == true) { icon.style.background = '#E53935'; icon.textContent = '🚨'; }
+            else { icon.style.background = '#4CAF50'; icon.textContent = '📋'; }
+            btn.appendChild(icon);
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'group-picker-item-name';
+            const text = item.text.length > 50 ? item.text.substring(0, 50) + '...' : item.text;
+            const group = getGroupById(item.groupId || 'all');
+            const groupName = group ? group.name : 'همه کارها';
+            nameDiv.innerHTML = escapeHtml(text) + '<br><span style="font-size:11px;color:#888;font-weight:400">' + escapeHtml(groupName) + ' • ' + toPersianDigits(toJalaliLong(item.deadline)) + '</span>';
+            btn.appendChild(nameDiv);
+            btn.onclick = function() {
+                overlay.remove();
+                showTaskReportByTaskResult(item);
+            };
+            list.appendChild(btn);
+        });
+    }
+    searchInput.oninput = function() { renderTaskList(searchInput.value.trim()); };
+    renderTaskList('');
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'group-picker-cancel';
+    cancelBtn.textContent = '✕ انصراف';
+    cancelBtn.onclick = function() { overlay.remove(); };
+    modal.appendChild(cancelBtn);
+    overlay.appendChild(modal);
+    overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+    document.body.appendChild(overlay);
+    setTimeout(function() { searchInput.focus(); }, 100);
+}
+
+// 📋 نمایش گزارش کامل یک تسک
+function showTaskReportByTaskResult(item) {
+    const body = document.getElementById('taskReportResultsBody');
+    const now = new Date();
+    const jalaliDate = toJalaliLong(now);
+    const group = getGroupById(item.groupId || 'all');
+    const groupName = group ? group.name : 'همه کارها';
+    const contact = item.contactId ? getContactById(item.contactId) : null;
+    // تعیین حالت تسک
+    let stateLabel = 'فعال';
+    let stateColor = '#4CAF50';
+    if (item.done == true) { stateLabel = 'انجام‌شده'; stateColor = '#9E9E9E'; }
+    else if (item.cancelled == true) { stateLabel = 'لغوشده'; stateColor = '#424242'; }
+    else if (item.suspended == true) { stateLabel = 'معلق'; stateColor = '#795548'; }
+    let html = '<div class="report-header">';
+    html += '<h3>📋 گزارش کامل تسک</h3>';
+    html += '<div class="report-meta">تاریخ تولید: ' + jalaliDate + '</div>';
+    html += '</div>';
+    html += '<div class="report-actions">';
+    html += '<button class="report-action-btn" onclick="saveTaskReport()">💾 ذخیره</button>';
+    html += '<button class="report-action-btn" onclick="printTaskReport()">🖨️ چاپ</button>';
+    html += '</div>';
+    // جدول جزئیات تسک
+    html += '<table class="search-results-table"><tbody>';
+    function detailRow(label, value) {
+        return '<tr><th style="width:30%;background:#e3f2fd;color:#1565C0;">' + label + '</th><td style="background:white;font-weight:600;">' + (value || '—') + '</td></tr>';
+    }
+    html += detailRow('📝 متن تسک', escapeHtml(item.text));
+    html += detailRow('📊 حالت', '<span style="background:' + stateColor + ';color:white;padding:2px 10px;border-radius:4px;">' + stateLabel + '</span>');
+    html += detailRow('📁 گروه', escapeHtml(groupName));
+    html += detailRow('📅 تاریخ ایجاد', toPersianDigits(toJalaliFull(item.createdAt)));
+    html += detailRow('📅 روز ایجاد', toJalaliLong(item.createdAt));
+    html += detailRow('⏰ سررسید', toPersianDigits(toJalaliFull(item.deadline)));
+    html += detailRow('📅 روز سررسید', toJalaliLong(item.deadline));
+    if (item.completedAt) {
+        html += detailRow('✅ تاریخ انجام', toPersianDigits(toJalaliFull(item.completedAt)));
+        html += detailRow('📅 روز انجام', toJalaliLong(item.completedAt));
+    }
+    if (item.cancelledAt) {
+        html += detailRow('❌ تاریخ لغو', toPersianDigits(toJalaliFull(item.cancelledAt)));
+    }
+    if (item.suspendedAt) {
+        html += detailRow('⏸ تاریخ معلق شدن', toPersianDigits(toJalaliFull(item.suspendedAt)));
+    }
+    html += detailRow('📌 پین شده', item.pinned == true ? 'بله' : 'خیر');
+    html += detailRow('🚨 فوری', item.urgent == true ? 'بله' : 'خیر');
+    if (item.contactId) {
+        if (contact) {
+            html += detailRow('👤 شخص مرتبط', escapeHtml(contact.name) + (contact.company ? ' — ' + escapeHtml(contact.company) : '') + (contact.primaryPhone ? ' • ' + escapeHtml(contact.primaryPhone) : ''));
+        } else {
+            html += detailRow('👤 شخص مرتبط', '(شخص حذف شده)');
+        }
+    } else {
+        html += detailRow('👤 شخص مرتبط', 'بدون شخص');
+    }
+    if (item.parentId) {
+        html += detailRow('🔗 تسک والد', 'تسک تکرارشونده (فرزند)');
+    }
+    if (item.repeat && item.repeat.type !== 'none') {
+        html += detailRow('🔄 تکرار', escapeHtml(item.repeat.type) + ' — هر ' + toPersianNumber(item.repeat.value) + ' تا ' + toPersianDigits(toJalaliFull(item.repeat.endDate)));
+    }
+    html += detailRow('🆔 شناسه', escapeHtml(item.id));
+    html += '</tbody></table>';
+    body.innerHTML = html;
+    body.dataset.reportType = 'task';
+    body.dataset.reportTaskId = item.id;
+    document.getElementById('taskReportTitle').textContent = '📋 گزارش تسک: ' + (item.text.length > 30 ? item.text.substring(0, 30) + '...' : item.text);
+    document.getElementById('taskReportResultsOverlay').classList.add('active');
+    history.pushState({ view: 'taskReportResults' }, '');
+    refreshFloatingContactBtn();
+}
+
+// 👤 گزارش بر اساس یک شخص — منوی زیبا برای انتخاب شخص
+function openTaskReportByContact() {
+    closeTaskReport();
+    const contacts = getContacts();
+    if (contacts.length === 0) {
+        showToast('هیچ شخصی تعریف نشده است');
+        return;
+    }
+    // استفاده از منوی انتخاب شخص موجود
+    showContactPickerForTask(function(contact) {
+        if (contact) {
+            showTaskReportByContactResult(contact);
+        }
+    });
+    // تغییر عنوان منو
+    setTimeout(function() {
+        const overlay = document.getElementById('contactPickerOverlay');
+        if (overlay) {
+            const title = overlay.querySelector('.group-picker-title');
+            if (title) title.textContent = 'انتخاب شخص برای گزارش';
+            const subtitle = overlay.querySelector('.group-picker-subtitle');
+            if (subtitle) subtitle.textContent = 'تمام تسک‌های این شخص نمایش داده می‌شود';
+            // دکمهٔ «حذف شخص از این تسک» را پنهان کن (در اینجا بی‌معنی است)
+            const btns = overlay.querySelectorAll('.group-picker-cancel');
+            btns.forEach(function(b) {
+                if (b.textContent.indexOf('حذف شخص') >= 0) {
+                    b.style.display = 'none';
+                }
+            });
+        }
+    }, 50);
+}
+
+// 👤 نمایش گزارش تسک‌های یک شخص
+function showTaskReportByContactResult(contact) {
+    const body = document.getElementById('taskReportResultsBody');
+    const items = getDB();
+    const contactTasks = items.filter(i => i.contactId === contact.id);
+    const now = new Date();
+    const jalaliDate = toJalaliLong(now);
+
+    let html = '<div class="report-header">';
+    html += '<h3>👤 گزارش تسک‌های شخص</h3>';
+    html += '<div class="report-meta">تاریخ تولید: ' + jalaliDate + '</div>';
+    html += '</div>';
+    // اطلاعات شخص
+    html += '<div class="contact-form-section" style="margin-bottom:12px;">';
+    html += '<div class="contact-form-section-title">👤 اطلاعات شخص</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;padding:8px;">';
+    html += '<div><b>نام:</b> ' + escapeHtml(contact.name || '—') + '</div>';
+    html += '<div><b>شرکت:</b> ' + escapeHtml(contact.company || '—') + '</div>';
+    html += '<div><b>سمت:</b> ' + escapeHtml(contact.position || '—') + '</div>';
+    const displayPhone = contact.primaryPhone || ((contact.phones && contact.phones.length > 0) ? contact.phones[0] : '');
+    html += '<div><b>تلفن:</b> ' + escapeHtml(displayPhone || '—') + '</div>';
+    html += '<div><b>درصد کارپردازی:</b> ' + escapeHtml(contact.commissionPercent || '—') + '</div>';
+    html += '<div><b>شروع همکاری:</b> ' + escapeHtml(contact.startDate || '—') + '</div>';
+    html += '</div></div>';
+
+    // خلاصه آماری
+    const activeCount = contactTasks.filter(i => !i.done && i.cancelled != true && i.suspended != true).length;
+    const doneCount = contactTasks.filter(i => i.done == true).length;
+    const cancelledCount = contactTasks.filter(i => i.cancelled == true).length;
+    const suspendedCount = contactTasks.filter(i => i.suspended == true).length;
+
+    html += '<div class="contact-form-section" style="margin-bottom:12px;">';
+    html += '<div class="contact-form-section-title">📈 خلاصه آماری</div>';
+    html += '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px;">';
+    html += '<div>📋 کل تسک‌ها: <b>' + toPersianNumber(contactTasks.length) + '</b></div>';
+    html += '<div>🟢 فعال: <b>' + toPersianNumber(activeCount) + '</b></div>';
+    html += '<div>✅ انجام‌شده: <b>' + toPersianNumber(doneCount) + '</b></div>';
+    html += '<div>⏸ معلق: <b>' + toPersianNumber(suspendedCount) + '</b></div>';
+    html += '<div>❌ لغوشده: <b>' + toPersianNumber(cancelledCount) + '</b></div>';
+    html += '</div></div>';
+
+    html += '<div class="report-actions">';
+    html += '<button class="report-action-btn" onclick="saveTaskReport()">💾 ذخیره</button>';
+    html += '<button class="report-action-btn" onclick="printTaskReport()">🖨️ چاپ</button>';
+    html += '</div>';
+
+    if (contactTasks.length === 0) {
+        html += '<div class="contacts-empty"><div class="contacts-empty-icon">📋</div><div>این شخص هیچ تسکی ندارد</div></div>';
+    } else {
+        // جدول تسک‌ها
+        html += '<table class="search-results-table"><thead><tr>';
+        html += '<th>ردیف</th><th>متن تسک</th><th>گروه</th><th>سررسید</th><th>حالت</th><th>پین</th><th>فوری</th>';
+        html += '</tr></thead><tbody>';
+        // sort by deadline
+        contactTasks.sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+        contactTasks.forEach((item, idx) => {
+            const grp = getGroupById(item.groupId || 'all');
+            let stateLabel = 'فعال';
+            let stateColor = '#4CAF50';
+            if (item.done == true) { stateLabel = 'انجام‌شده'; stateColor = '#9E9E9E'; }
+            else if (item.cancelled == true) { stateLabel = 'لغوشده'; stateColor = '#424242'; }
+            else if (item.suspended == true) { stateLabel = 'معلق'; stateColor = '#795548'; }
+            html += '<tr>';
+            html += '<td>' + toPersianNumber(idx + 1) + '</td>';
+            const text = item.text.length > 40 ? item.text.substring(0, 40) + '...' : item.text;
+            html += '<td>' + escapeHtml(text) + '</td>';
+            html += '<td>' + escapeHtml(grp ? grp.name : '—') + '</td>';
+            html += '<td>' + toPersianDigits(toJalaliFull(item.deadline)) + '</td>';
+            html += '<td><span style="background:' + stateColor + ';color:white;padding:2px 8px;border-radius:4px;font-size:11px;">' + stateLabel + '</span></td>';
+            html += '<td>' + (item.pinned == true ? '📌' : '—') + '</td>';
+            html += '<td>' + (item.urgent == true ? '🚨' : '—') + '</td>';
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+    }
+    body.innerHTML = html;
+    body.dataset.reportType = 'contact';
+    body.dataset.reportContactId = contact.id;
+    document.getElementById('taskReportTitle').textContent = '👤 گزارش تسک‌های: ' + contact.name;
+    document.getElementById('taskReportResultsOverlay').classList.add('active');
+    history.pushState({ view: 'taskReportResults' }, '');
+    refreshFloatingContactBtn();
+}
+
+// ذخیره گزارش کار (دانلود HTML)
+function saveTaskReport() {
+    const body = document.getElementById('taskReportResultsBody');
+    const title = document.getElementById('taskReportTitle').textContent;
+    const now = new Date();
+    const [jy, jm, jd] = toJalaliParts(now);
+    const ts = jy + pad2(jm) + pad2(jd) + pad2(now.getHours()) + pad2(now.getMinutes());
+    const htmlContent = '<!DOCTYPE html><html dir="rtl" lang="fa"><head><meta charset="utf-8"><title>' + escapeHtml(title) + '</title><style>body{font-family:Tahoma,sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;text-align:right;}th{background:#1976D2;color:white;}</style></head><body><h1>' + escapeHtml(title) + '</h1>' + body.innerHTML + '</body></html>';
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'TaskReport_' + ts + '.html';
+    a.click();
+    setTimeout(function() { URL.revokeObjectURL(url); }, 2000);
+    showToast('گزارش ذخیره شد ✓');
+}
+
+// چاپ گزارش کار
+function printTaskReport() {
+    const body = document.getElementById('taskReportResultsBody');
+    const title = document.getElementById('taskReportTitle').textContent;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write('<!DOCTYPE html><html dir="rtl" lang="fa"><head><meta charset="utf-8"><title>' + escapeHtml(title) + '</title><style>body{font-family:Tahoma,sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;text-align:right;}th{background:#1976D2;color:white;}.report-actions{display:none;}</style></head><body><h1>' + escapeHtml(title) + '</h1>' + body.innerHTML + '</body></html>');
+    printWindow.document.close();
+    setTimeout(function() { printWindow.print(); }, 500);
+}
+
 // ─── ذخیره و ارسال گزارش ───
 
 // 🔧 تابع کمکی: تولید محتوای HTML گزارش (مشترک بین چاپ، ذخیره HTML، و ارسال)
@@ -12517,11 +12954,112 @@ async function setupPeriodicSync(registration) {
     }
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v140: صدای زیبا و بلند برای اعلان‌ها با Web Audio API
+// ════════════════════════════════════════════════════════════════════
+// این تابع یک زنگ زیبا، بلند و طولانی (~۸ ثانیه) با Web Audio API تولید
+// می‌کند. صدای تولیدشده شامل یک توالی از نت‌های دلنشین (bell-like) است
+// که سه بار تکرار می‌شود تا توجه کاربر را جلب کند.
+//
+// چرا Web Audio API؟
+//   - Notification API قابلیت `sound` دارد اما فقط در Chrome و با فایل صوتی
+//   - ما فایل صوتی نداریم (همه چیز در یک HTML است)
+//   - Web Audio API اجازه می‌دهد صدای زیبا را در لحظه تولید کنیم
+//   - صدای تولیدشده بلندتر و طولانی‌تر از صدای پیش‌فرض اعلان است
+//
+// محدودیت: این صدا فقط وقتی پخش می‌شود که صفحهٔ برنامه باز باشد.
+// اگر صفحه بسته باشد، فقط صدای پیش‌فرض اعلان مرورگر پخش می‌شود.
+
+let _notifAudioCtx = null;
+
+function getNotifAudioContext() {
+    if (!_notifAudioCtx) {
+        try {
+            _notifAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        } catch(e) {
+            console.warn('[NotifSound] AudioContext not supported');
+            return null;
+        }
+    }
+    // اگر context suspend شده (مرورگرهای جدید بعد از تعامل کاربر)، آن را resume کن
+    if (_notifAudioCtx.state === 'suspended') {
+        _notifAudioCtx.resume().catch(function() {});
+    }
+    return _notifAudioCtx;
+}
+
+// پخش یک نت منفرد (bell-like با decay)
+function playBellNote(ctx, freq, startTime, duration, gainVal) {
+    // دو اسیلاتور: اصلی (sine) + هارمونیک (triangle) برای صدای غنی‌تر
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc1.type = 'sine';
+    osc1.frequency.value = freq;
+    osc2.type = 'triangle';
+    osc2.frequency.value = freq * 2;  // هارمونیک یک اکتاو بالاتر
+
+    // envelope: attack سریع، decay طولانی (bell-like)
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(gainVal, startTime + 0.01);   // attack
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);  // decay
+
+    // اسیلاتور دوم کم‌حجم‌تر (برای غنایی صدا)
+    const gain2 = ctx.createGain();
+    gain2.gain.setValueAtTime(0, startTime);
+    gain2.gain.linearRampToValueAtTime(gainVal * 0.3, startTime + 0.01);
+    gain2.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+    osc1.connect(gain);
+    gain.connect(ctx.destination);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+
+    osc1.start(startTime);
+    osc1.stop(startTime + duration);
+    osc2.start(startTime);
+    osc2.stop(startTime + duration);
+}
+
+// پخش صدای کامل اعلان: ۳ نت × ۳ بار تکرار = ~۸ ثانیه
+function playNotificationSound() {
+    const ctx = getNotifAudioContext();
+    if (!ctx) return;
+    try {
+        const now = ctx.currentTime;
+        // نت‌های دلنشین (major chord arpeggio): C5, E5, G5, C6
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        const gainVal = 0.5;  // بلند (اما بدون clipping)
+        // هر بار: ۴ نت با فاصلهٔ ۰.۲ ثانیه، هر نت ۰.۵ ثانیه طول می‌کشد
+        // ۳ بار تکرار با فاصلهٔ ۱ ثانیه
+        for (let repeat = 0; repeat < 3; repeat++) {
+            const baseTime = now + repeat * 1.0;  // هر تکرار ۱ ثانیه فاصله
+            for (let i = 0; i < notes.length; i++) {
+                const noteStart = baseTime + i * 0.2;
+                playBellNote(ctx, notes[i], noteStart, 0.5, gainVal);
+            }
+        }
+        console.log('[NotifSound] Playing beautiful notification sound (~3s)');
+    } catch(e) {
+        console.warn('[NotifSound] Failed to play:', e);
+    }
+}
+
 // Listen for messages from SW (e.g., expand a reminder after notification click)
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (event) => {
         console.log('[Page] Message from SW:', event.data);
         if (!event.data) return;
+        // 🔧 v140: پیام پخش صدای اعلان از سرویس‌ورکر
+        if (event.data.type === 'PLAY_NOTIFICATION_SOUND') {
+            console.log('[Page] Playing notification sound for:', event.data.title);
+            playNotificationSound();
+            // اگر صفحه پنهان است (کاربر در تب دیگری است)، تلاش برای فوکوس
+            if (document.hidden) {
+                try { window.focus(); } catch(e) {}
+            }
+        }
         if (event.data.type === 'expand-reminder' && event.data.id) {
             expandedId = event.data.id;
             render();
