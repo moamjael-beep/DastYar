@@ -2926,6 +2926,53 @@ body.locked .header-actions button {
 #taskReportResultsOverlay {
     z-index: 10500 !important;
 }
+/* 🔧 v143: dropdown جستجوی متن/شرکت/سمت در فرم گزارش */
+.report-search-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    z-index: 10001;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    max-height: 138px;  /* فقط ۳ آیتم */
+    overflow-y: auto;
+    margin-top: 2px;
+    scrollbar-width: thin;
+    scrollbar-color: #1976D2 #e3f2fd;
+    -webkit-overflow-scrolling: touch;
+}
+.report-search-dropdown::-webkit-scrollbar {
+    width: 10px;
+    background: #e3f2fd;
+    border-radius: 5px;
+}
+.report-search-dropdown::-webkit-scrollbar-track {
+    background: #e3f2fd;
+    border-radius: 5px;
+}
+.report-search-dropdown::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #1976D2, #1565C0);
+    border-radius: 5px;
+    border: 2px solid #e3f2fd;
+}
+.report-search-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+    transition: background 0.15s;
+}
+.report-search-item:last-child { border-bottom: none; }
+.report-search-item:hover { background: #e3f2fd; }
+.report-search-empty {
+    padding: 10px;
+    text-align: center;
+    color: #999;
+    font-size: 12px;
+}
 
 /* 🔧 در موبایل: max-height دقیق‌تر */
 @media (max-width: 600px) {
@@ -3766,42 +3813,59 @@ body.locked .header-actions button {
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════════
-     📋 مودال گزارش کارها — v142 (جامع)
+     📋 مودال گزارش کارها — v143 (جامع)
      ════════════════════════════════════════════════════════════════════
      گزارش جامع با فیلترهای متعدد:
-       - متن تسک (جستجو)
-       - شرکت / سمت / درصد کارپردازی شخص مرتبط (۳ حالت)
+       - متن تسک / شرکت / سمت (dropdown قابل جستجو با اسکرول)
+       - درصد کارپردازی شخص (۳ حالت) + داشتن شخص
        - حالت تسک: فعال / انجام‌شده / لغوشده / معلق
-       - فوری / پین / دارای شخص
-       - بازه سررسید / بازه تاریخ ایجاد / بازه تاریخ انجام
-     نتایج: خلاصه آماری + جدول با کلیک روی هر تسک → جزئیات
+       - بازه سررسید / بازه تاریخ ایجاد / بازه تاریخ انجام (با تقویم شمسی)
      ════════════════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="taskReportOverlay">
     <div class="modal search-form-modal" style="max-width:600px;">
         <h2>📋 گزارش کارها</h2>
         <div class="search-form-body">
-            <!-- بخش ۱: جستجوی متن تسک -->
+            <!-- بخش ۱: جستجوی متن/شرکت/سمت (dropdown قابل جستجو) -->
             <div class="contact-form-section">
-                <div class="contact-form-section-title">📝 جستجوی متن تسک</div>
+                <div class="contact-form-section-title">🔍 جستجوی متن، شرکت و سمت</div>
                 <div class="contact-form-row">
                     <div class="contact-form-field">
-                        <input type="text" id="taskReportText" placeholder="بخشی از متن تسک... (خالی = همه)">
+                        <label>📝 متن تسک</label>
+                        <div style="position:relative;">
+                            <input type="text" id="taskReportText" placeholder="تایپ کنید..." autocomplete="off"
+                                oninput="filterReportDropdown('taskReportText','taskText')"
+                                onfocus="showReportDropdown('taskReportText','taskText')"
+                                onblur="setTimeout(function(){hideReportDropdown('taskReportText')},200)">
+                            <div id="taskReportText_dd" class="report-search-dropdown"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>🏢 نام شرکت</label>
+                        <div style="position:relative;">
+                            <input type="text" id="taskReportCompany" placeholder="تایپ کنید..." autocomplete="off"
+                                oninput="filterReportDropdown('taskReportCompany','company')"
+                                onfocus="showReportDropdown('taskReportCompany','company')"
+                                onblur="setTimeout(function(){hideReportDropdown('taskReportCompany')},200)">
+                            <div id="taskReportCompany_dd" class="report-search-dropdown"></div>
+                        </div>
+                    </div>
+                    <div class="contact-form-field">
+                        <label>💼 سمت</label>
+                        <div style="position:relative;">
+                            <input type="text" id="taskReportPosition" placeholder="تایپ کنید..." autocomplete="off"
+                                oninput="filterReportDropdown('taskReportPosition','position')"
+                                onfocus="showReportDropdown('taskReportPosition','position')"
+                                onblur="setTimeout(function(){hideReportDropdown('taskReportPosition')},200)">
+                            <div id="taskReportPosition_dd" class="report-search-dropdown"></div>
+                        </div>
                     </div>
                 </div>
             </div>
             <!-- بخش ۲: فیلتر بر اساس شخص مرتبط -->
             <div class="contact-form-section">
-                <div class="contact-form-section-title">👤 فیلتر بر اساس شخص مرتبط</div>
-                <div class="contact-form-row">
-                    <div class="contact-form-field">
-                        <label>نام شرکت</label>
-                        <input type="text" id="taskReportCompany" placeholder="نام شرکت شخص...">
-                    </div>
-                    <div class="contact-form-field">
-                        <label>سمت</label>
-                        <input type="text" id="taskReportPosition" placeholder="سمت شخص...">
-                    </div>
-                </div>
+                <div class="contact-form-section-title">👤 فیلتر شخص مرتبط</div>
                 <div class="contact-form-row">
                     <div class="contact-form-field">
                         <label>درصد کارپردازی</label>
@@ -3828,7 +3892,7 @@ body.locked .header-actions button {
                     </div>
                 </div>
             </div>
-            <!-- بخش ۳: فیلتر بر اساس حالت تسک -->
+            <!-- بخش ۳: حالت تسک -->
             <div class="contact-form-section">
                 <div class="contact-form-section-title">📊 حالت تسک</div>
                 <div class="contact-form-row" style="flex-wrap:wrap;gap:8px;">
@@ -3846,53 +3910,45 @@ body.locked .header-actions button {
                     </label>
                 </div>
             </div>
-            <!-- بخش ۴: فیلتر فوری و پین -->
-            <div class="contact-form-section">
-                <div class="contact-form-section-title">📌 فوری و پین</div>
-                <div class="contact-form-row">
-                    <div class="contact-form-field">
-                        <label>فوری</label>
-                        <select id="taskReportUrgent">
-                            <option value="all">همه</option>
-                            <option value="yes">فقط فوری</option>
-                            <option value="no">فقط غیر فوری</option>
-                        </select>
-                    </div>
-                    <div class="contact-form-field">
-                        <label>پین شده</label>
-                        <select id="taskReportPinned">
-                            <option value="all">همه</option>
-                            <option value="yes">فقط پین شده</option>
-                            <option value="no">فقط غیر پین</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <!-- بخش ۵: بازه سررسید -->
+            <!-- بخش ۴: بازه سررسید (با تقویم) -->
             <div class="contact-form-section">
                 <div class="contact-form-section-title">⏰ بازه سررسید</div>
                 <div class="contact-form-row">
                     <div class="contact-form-field">
-                        <label>از تاریخ (شمسی)</label>
-                        <input type="text" id="taskReportDeadlineFrom" placeholder="مثال: ۱۴۰۵/۰۸/۱۵">
+                        <label>از تاریخ</label>
+                        <input type="text" id="taskReportDeadlineFrom" placeholder="کلیک کنید..." readonly onclick="openContactDatePicker('taskReportDeadlineFrom')">
                     </div>
                     <div class="contact-form-field">
-                        <label>تا تاریخ (شمسی)</label>
-                        <input type="text" id="taskReportDeadlineTo" placeholder="مثال: ۱۴۰۵/۰۹/۰۱">
+                        <label>تا تاریخ</label>
+                        <input type="text" id="taskReportDeadlineTo" placeholder="کلیک کنید..." readonly onclick="openContactDatePicker('taskReportDeadlineTo')">
                     </div>
                 </div>
             </div>
-            <!-- بخش ۶: بازه تاریخ ایجاد -->
+            <!-- بخش ۵: بازه تاریخ ایجاد (با تقویم) -->
             <div class="contact-form-section">
                 <div class="contact-form-section-title">📅 بازه تاریخ ایجاد</div>
                 <div class="contact-form-row">
                     <div class="contact-form-field">
-                        <label>از تاریخ (شمسی)</label>
-                        <input type="text" id="taskReportCreatedFrom" placeholder="مثال: ۱۴۰۵/۰۸/۰۱">
+                        <label>از تاریخ</label>
+                        <input type="text" id="taskReportCreatedFrom" placeholder="کلیک کنید..." readonly onclick="openContactDatePicker('taskReportCreatedFrom')">
                     </div>
                     <div class="contact-form-field">
-                        <label>تا تاریخ (شمسی)</label>
-                        <input type="text" id="taskReportCreatedTo" placeholder="مثال: ۱۴۰۵/۰۸/۳۱">
+                        <label>تا تاریخ</label>
+                        <input type="text" id="taskReportCreatedTo" placeholder="کلیک کنید..." readonly onclick="openContactDatePicker('taskReportCreatedTo')">
+                    </div>
+                </div>
+            </div>
+            <!-- بخش ۶: بازه تاریخ انجام (با تقویم) — v143 -->
+            <div class="contact-form-section">
+                <div class="contact-form-section-title">✅ بازه تاریخ انجام</div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>از تاریخ</label>
+                        <input type="text" id="taskReportCompletedFrom" placeholder="کلیک کنید..." readonly onclick="openContactDatePicker('taskReportCompletedFrom')">
+                    </div>
+                    <div class="contact-form-field">
+                        <label>تا تاریخ</label>
+                        <input type="text" id="taskReportCompletedTo" placeholder="کلیک کنید..." readonly onclick="openContactDatePicker('taskReportCompletedTo')">
                     </div>
                 </div>
             </div>
@@ -4253,7 +4309,20 @@ body.locked .header-actions button {
 //         ۵) دکمهٔ «📋 رفتن به تسک» → باز کردن تسک در گروهش → back → گزارش
 //         ۶) توابع جدید: executeTaskReport, showTaskReportResults,
 //            toggleTaskReportItem, goToTaskFromReport, parseJalaliDate
-const APP_VERSION = 'v142-2026-11-07-comprehensive-task-report';
+//   v143 - REPORT FORM REDESIGN + RETURN TO REPORT:
+//         ۱) حذف بخش «فوری و پین» از فرم گزارش (حالت تسک کافی است)
+//         ۲) افزودن «بازه تاریخ انجام» (completedFrom/To)
+//         ۳) فیلدهای تاریخ با تقویم شمسی (کلیک → openContactDatePicker)
+//         ۴) جستجوی متن/شرکت/سمت با dropdown قابل جستجو + اسکرول
+//            (max-height 138px = ۳ آیتم، فیلتر زنده هنگام تایپ)
+//         ۵) goToTaskFromReport: گزارش در پس‌زمینه نگه داشته می‌شود
+//            (display:none) → تسک باز می‌شود → با بستن جزئیات (toggleExpand
+//            یا back) به گزارش برگرد.
+//         ۶) تراز با زیر هدر برنامه هنگام باز کردن تسک از گزارش.
+//         ۷) توابع جدید: showReportDropdown, hideReportDropdown,
+//            filterReportDropdown, renderReportDropdown, selectReportDropdown,
+//            returnToTaskReport.
+const APP_VERSION = 'v143-2026-11-07-report-redesign-return';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -8820,6 +8889,20 @@ function closeModalByType(type) {
 window.addEventListener('popstate', (e) => {
     const state = e.state || { view: 'groups' };
 
+    // 🔧 v143: اگر از تسک به گزارش برمی‌گردیم (فلگ تنظیم شده)، به گزارش برگرد
+    if (typeof _returningFromTaskToReport !== 'undefined' && _returningFromTaskToReport) {
+        // ابتدا فلگ را ریست کن
+        _returningFromTaskToReport = false;
+        expandedId = null;
+        returnToTaskReport();
+        // اگر state از نوع groups است (یعنی back فراتر رفته)، آن را نادیده بگیر
+        // و فقط به گزارش برگرد
+        if (state.view === 'groups') {
+            return;
+        }
+        return;
+    }
+
     // 🔧 اگر منوی همبرگری باز است، آن را ببست
     if (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu) {
         closeGroupMenu();
@@ -9497,6 +9580,14 @@ function changeTaskGroup(taskId, newGroupId) {
 function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
 
 function toggleExpand(id) {
+    // 🔧 v143: اگر از گزارش آمده‌ایم و در حال بستن جزئیات همان تسک هستیم
+    // → به گزارش برگرد
+    if (_returningFromTaskToReport && expandedId === id) {
+        expandedId = null;
+        render();
+        returnToTaskReport();
+        return;
+    }
     // 🔧 حفظ موقعیت اسکرول — صفحه نپرد
     var savedScrollY = window.scrollY;
     if (expandedId === id) {
@@ -11575,15 +11666,98 @@ function openTaskReport() {
     document.getElementById('taskReportStateDone').checked = true;
     document.getElementById('taskReportStateCancelled').checked = true;
     document.getElementById('taskReportStateSuspended').checked = true;
-    document.getElementById('taskReportUrgent').value = 'all';
-    document.getElementById('taskReportPinned').value = 'all';
+    // 🔧 v143: فوری و پین حذف شدند
     document.getElementById('taskReportDeadlineFrom').value = '';
     document.getElementById('taskReportDeadlineTo').value = '';
     document.getElementById('taskReportCreatedFrom').value = '';
     document.getElementById('taskReportCreatedTo').value = '';
+    // 🔧 v143: بازه تاریخ انجام اضافه شد
+    document.getElementById('taskReportCompletedFrom').value = '';
+    document.getElementById('taskReportCompletedTo').value = '';
     document.getElementById('taskReportOverlay').classList.add('active');
     history.pushState({ view: 'taskReport' }, '');
     refreshFloatingContactBtn();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v143: توابع dropdown جستجوی متن/شرکت/سمت در فرم گزارش
+// ════════════════════════════════════════════════════════════════════
+// این توابع مقادیر موجود در دیتابیس را در dropdown نمایش می‌دهند.
+// وقتی کاربر تایپ می‌کند، dropdown فیلتر می‌شود و فقط مقادیری که
+// شامل متن تایپ‌شده هستند نمایش داده می‌شوند.
+
+function showReportDropdown(fieldId, type) {
+    renderReportDropdown(fieldId, type, '');
+}
+
+function hideReportDropdown(fieldId) {
+    const dd = document.getElementById(fieldId + '_dd');
+    if (dd) dd.style.display = 'none';
+}
+
+function filterReportDropdown(fieldId, type) {
+    const input = document.getElementById(fieldId);
+    if (!input) return;
+    const query = input.value.trim().toLowerCase();
+    renderReportDropdown(fieldId, type, query);
+}
+
+function renderReportDropdown(fieldId, type, query) {
+    const dd = document.getElementById(fieldId + '_dd');
+    if (!dd) return;
+    // جمع‌آوری مقادیر موجود از دیتابیس
+    let values = [];
+    if (type === 'taskText') {
+        const items = getDB();
+        // فقط متن‌های کوتاه‌تر از ۱۰۰ کاراکتر را به‌عنوان گزینه نمایش بده
+        // (متن‌های بلندتر در dropdown جا نمی‌شوند)
+        const seen = new Set();
+        items.forEach(item => {
+            const text = (item.text || '').trim();
+            if (text && text.length <= 100 && !seen.has(text.toLowerCase())) {
+                seen.add(text.toLowerCase());
+                values.push(text);
+            }
+        });
+    } else if (type === 'company' || type === 'position') {
+        const contacts = getContacts();
+        const seen = new Set();
+        contacts.forEach(c => {
+            const val = (c[type] || '').trim();
+            if (val && !seen.has(val.toLowerCase())) {
+                seen.add(val.toLowerCase());
+                values.push(val);
+            }
+        });
+    }
+    // فیلتر بر اساس query
+    if (query) {
+        values = values.filter(v => v.toLowerCase().includes(query));
+    }
+    // sort بر اساس حروف الفبا
+    values.sort(function(a, b) {
+        try { return a.localeCompare(b, 'fa'); }
+        catch(e) { return a < b ? -1 : (a > b ? 1 : 0); }
+    });
+    // رندر
+    if (values.length === 0) {
+        dd.innerHTML = '<div class="report-search-empty">' + (query ? 'موردی یافت نشد' : 'موردی وجود ندارد') + '</div>';
+        dd.style.display = 'block';
+        return;
+    }
+    let html = '';
+    values.forEach(function(val) {
+        const display = val.length > 60 ? val.substring(0, 60) + '...' : val;
+        const safeVal = val.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        html += '<div class="report-search-item" onclick="selectReportDropdown(\'' + fieldId + '\', \'' + safeVal + '\')">' + escapeHtml(display) + '</div>';
+    });
+    dd.innerHTML = html;
+    dd.style.display = 'block';
+}
+
+function selectReportDropdown(fieldId, value) {
+    document.getElementById(fieldId).value = value;
+    hideReportDropdown(fieldId);
 }
 
 function closeTaskReport() {
@@ -11632,12 +11806,14 @@ function executeTaskReport() {
     const stateDone = document.getElementById('taskReportStateDone').checked;
     const stateCancelled = document.getElementById('taskReportStateCancelled').checked;
     const stateSuspended = document.getElementById('taskReportStateSuspended').checked;
-    const urgentFilter = document.getElementById('taskReportUrgent').value;
-    const pinnedFilter = document.getElementById('taskReportPinned').value;
+    // 🔧 v143: فوری و پین حذف شدند
     const deadlineFrom = parseJalaliDate(document.getElementById('taskReportDeadlineFrom').value);
     const deadlineTo = parseJalaliDate(document.getElementById('taskReportDeadlineTo').value);
     const createdFrom = parseJalaliDate(document.getElementById('taskReportCreatedFrom').value);
     const createdTo = parseJalaliDate(document.getElementById('taskReportCreatedTo').value);
+    // 🔧 v143: بازه تاریخ انجام اضافه شد
+    const completedFrom = parseJalaliDate(document.getElementById('taskReportCompletedFrom').value);
+    const completedTo = parseJalaliDate(document.getElementById('taskReportCompletedTo').value);
 
     let items = getDB();
     const contacts = getContacts();
@@ -11657,12 +11833,7 @@ function executeTaskReport() {
         if (isDone && !stateDone) return false;
         if (isCancelled && !stateCancelled) return false;
         if (isSuspended && !stateSuspended) return false;
-        // فوری
-        if (urgentFilter === 'yes' && item.urgent != true) return false;
-        if (urgentFilter === 'no' && item.urgent == true) return false;
-        // پین
-        if (pinnedFilter === 'yes' && item.pinned != true) return false;
-        if (pinnedFilter === 'no' && item.pinned == true) return false;
+        // 🔧 v143: فوری و پین حذف شدند — حالت تسک کافی است
         // شخص مرتبط
         const contact = item.contactId ? contactsById[item.contactId] : null;
         if (hasContact === 'yes' && !contact) return false;
@@ -11687,7 +11858,7 @@ function executeTaskReport() {
             const dl = new Date(item.deadline).getTime();
             if (isNaN(dl)) return false;
             if (deadlineFrom && dl < deadlineFrom) return false;
-            if (deadlineTo && dl > deadlineTo + 86400000) return false; // +1 day to include end date
+            if (deadlineTo && dl > deadlineTo + 86400000) return false;
         }
         // بازه تاریخ ایجاد
         if (createdFrom || createdTo) {
@@ -11695,6 +11866,14 @@ function executeTaskReport() {
             if (isNaN(ct)) return false;
             if (createdFrom && ct < createdFrom) return false;
             if (createdTo && ct > createdTo + 86400000) return false;
+        }
+        // 🔧 v143: بازه تاریخ انجام (فقط برای تسک‌های انجام‌شده)
+        if (completedFrom || completedTo) {
+            if (!item.completedAt) return false;  // فقط تسک‌های انجام‌شده
+            const cm = new Date(item.completedAt).getTime();
+            if (isNaN(cm)) return false;
+            if (completedFrom && cm < completedFrom) return false;
+            if (completedTo && cm > completedTo + 86400000) return false;
         }
         return true;
     });
@@ -11706,11 +11885,12 @@ function executeTaskReport() {
     showTaskReportResults(items, {
         text, company, position, commissionMode, commissionValue,
         hasContact, stateActive, stateDone, stateCancelled, stateSuspended,
-        urgentFilter, pinnedFilter,
         deadlineFrom: document.getElementById('taskReportDeadlineFrom').value,
         deadlineTo: document.getElementById('taskReportDeadlineTo').value,
         createdFrom: document.getElementById('taskReportCreatedFrom').value,
-        createdTo: document.getElementById('taskReportCreatedTo').value
+        createdTo: document.getElementById('taskReportCreatedTo').value,
+        completedFrom: document.getElementById('taskReportCompletedFrom').value,
+        completedTo: document.getElementById('taskReportCompletedTo').value
     });
 }
 
@@ -11829,6 +12009,9 @@ function toggleTaskReportItem(taskId) {
 }
 
 // رفتن به تسک از گزارش → باز کردن تسک در گروهش → بازگشت به گزارش با back
+// 🔧 v143: فلگ برای بازگشت از تسک به گزارش
+let _returningFromTaskToReport = false;
+
 function goToTaskFromReport(taskId) {
     const items = getDB();
     const item = items.find(i => i.id === taskId);
@@ -11836,18 +12019,42 @@ function goToTaskFromReport(taskId) {
         showToast('تسک یافت نشد');
         return;
     }
-    // بستن صفحه نتایج گزارش (اما نه history را — back برمی‌گردد به گزارش)
-    document.getElementById('taskReportResultsOverlay').classList.remove('active');
-    // بستن صفحه اشخاص هم اگر باز است
+    // 🔧 v143: گزارش را در پس‌زمینه نگه می‌داریم (فقط پنهان می‌کنیم، نمی‌بندیم)
+    document.getElementById('taskReportResultsOverlay').style.display = 'none';
     document.getElementById('contactsOverlay').classList.remove('active');
+    // تنظیم فلگ برای بازگشت
+    _returningFromTaskToReport = true;
     // رفتن به گروه تسک و گسترش آن
     currentView = 'tasks';
     currentGroupId = item.groupId || 'all';
     expandedId = taskId;
     navPush({ view: 'tasks', groupId: currentGroupId, expandedId: taskId, fromReport: true });
     fullRender();
-    window.scrollTo({ top: 0, behavior: 'auto' });
-    showToast('برای بازگشت به گزارش، دکمه ◄ را بزنید');
+    // 🔧 v143: تراز با زیر هدر برنامه — اسکرول به تسک
+    setTimeout(function() {
+        const el = document.querySelector('.item[data-id="' + taskId + '"]');
+        if (el) {
+            var headerEl = document.querySelector('.header');
+            var headerHeight = headerEl ? headerEl.offsetHeight : 60;
+            var rect = el.getBoundingClientRect();
+            var offset = rect.top - headerHeight - 10;
+            if (offset > 0) {
+                window.scrollBy({ top: offset, behavior: 'smooth' });
+            }
+        }
+    }, 300);
+}
+
+// 🔧 v143: بازگشت به گزارش از تسک
+function returnToTaskReport() {
+    _returningFromTaskToReport = false;
+    var overlay = document.getElementById('taskReportResultsOverlay');
+    overlay.style.display = '';
+    overlay.classList.add('active');
+    if (!document.getElementById('contactsOverlay').classList.contains('active')) {
+        document.getElementById('contactsOverlay').classList.add('active');
+    }
+    refreshFloatingContactBtn();
 }
 
 // ذخیره گزارش کار (دانلود HTML)
