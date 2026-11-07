@@ -914,6 +914,7 @@ body { padding-bottom: 30px; }
 .contact-picker-wrapper {
     position: relative;
 }
+/* 🔧 v135: dropdown فقط ۳ آیتم نشان دهد + نوار اسکرول زیبا کنارش */
 .contact-dropdown {
     position: absolute;
     top: 100%;
@@ -924,9 +925,34 @@ body { padding-bottom: 30px; }
     border: 1px solid #ccc;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    max-height: 240px;
+    /* فقط ۳ آیتم نمایش داده شود — هر آیتم ~۴۲px، پس max-height = ۳×۴۲ + اندازه scrollbar */
+    max-height: 138px;
     overflow-y: auto;
     margin-top: 2px;
+    /* نوار اسکرول زیبا — هم در موبایل و هم دسکتاپ */
+    scrollbar-width: thin;                    /* Firefox */
+    scrollbar-color: #1976D2 #e3f2fd;         /* Firefox */
+    -webkit-overflow-scrolling: touch;        /* iOS smooth scroll */
+    padding-left: 4px;                        /* فضا برای نوار */
+}
+/* نوار اسکرول برای WebKit (Chrome, Safari, Edge, Android) */
+.contact-dropdown::-webkit-scrollbar {
+    width: 10px;
+    background: #e3f2fd;
+    border-radius: 5px;
+}
+.contact-dropdown::-webkit-scrollbar-track {
+    background: #e3f2fd;
+    border-radius: 5px;
+    margin: 2px 0;
+}
+.contact-dropdown::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #1976D2, #1565C0);
+    border-radius: 5px;
+    border: 2px solid #e3f2fd;
+}
+.contact-dropdown::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #1565C0, #0D47A1);
 }
 .contact-dropdown-item {
     padding: 10px 14px;
@@ -960,9 +986,147 @@ body { padding-bottom: 30px; }
     border-radius: 6px;
     padding: 6px 10px;
     margin: 4px 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 .detail-contact-row .detail-label { color: #1565C0; }
-.detail-contact-row .detail-value { font-weight: 600; color: #0D47A1; }
+.detail-contact-row .detail-value { font-weight: 600; color: #0D47A1; flex: 1; min-width: 0; }
+/* دکمهٔ تغییر شخص در جزئیات تسک */
+.detail-contact-change-btn {
+    background: #1976D2;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+}
+.detail-contact-change-btn:hover { background: #1565C0; }
+.detail-contact-clear-btn {
+    background: #f44336;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+}
+.detail-contact-clear-btn:hover { background: #d32f2f; }
+/* 🔧 v135: منوی زیبای انتخاب گروه برای ایجاد تسک از صفحه اشخاص */
+.group-picker-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 10002;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s;
+}
+.group-picker-modal {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    max-width: 420px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    animation: slideUp 0.25s;
+}
+.group-picker-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1976D2;
+    margin-bottom: 6px;
+    text-align: center;
+}
+.group-picker-subtitle {
+    font-size: 13px;
+    color: #666;
+    text-align: center;
+    margin-bottom: 16px;
+}
+.group-picker-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.group-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #f5f5f5;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.18s;
+    font-family: inherit;
+    text-align: right;
+}
+.group-picker-item:hover {
+    background: #e3f2fd;
+    border-color: #1976D2;
+    transform: translateY(-1px);
+}
+.group-picker-item:active {
+    transform: translateY(0);
+    background: #bbdefb;
+}
+.group-picker-item-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: white;
+    flex-shrink: 0;
+}
+.group-picker-item-name {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+}
+.group-picker-item-count {
+    font-size: 12px;
+    color: #888;
+    background: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+.group-picker-cancel {
+    margin-top: 14px;
+    width: 100%;
+    padding: 11px;
+    background: #f5f5f5;
+    color: #666;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+}
+.group-picker-cancel:hover { background: #e0e0e0; }
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 /* دکمهٔ ایجاد تسک در ردیف اشخاص */
 .contact-row-btn.add-task {
     background: #4CAF50;
@@ -3819,7 +3983,21 @@ body.locked .header-actions button {
 //         5) توابع جدید: showTaskContactDropdown, filterTaskContactOptions,
 //            renderTaskContactDropdown, selectTaskContact, loadTaskContactIntoForm,
 //            addTaskForContact, toEnglishDigitsIfPersian.
-const APP_VERSION = 'v134-2026-11-07-contact-task-link';
+//   v135 - GROUP PICKER + CONTACT DROPDOWN LIMIT + DETAIL CONTACT EDIT:
+//         1) انتخاب گروه برای ایجاد تسک از صفحه اشخاص: به‌جای prompt عدد،
+//            یک منوی زیبا با دکمه‌های قابل کلیک نمایش داده می‌شود. هر
+//            گروه آیکون، نام و تعداد تسک‌های فعال را نشان می‌دهد.
+//         2) dropdown انتخاب شخص در فرم تسک: فقط ۳ نفر را بیشتر نشان
+//            نمی‌دهد + نوار اسکرول زیبا (آبی روشن با thumb گرادیان آبی)
+//            کنارش برای کشیدن به بالا و پایین.
+//         3) از جزئیات تسک: دکمه‌های «تغییر» و «حذف» برای شخص مرتبط
+//            اضافه شد. اگر تسک شخصی ندارد، دکمهٔ «+ افزودن شخص» نشان
+//            داده می‌شود. کلیک روی آن منوی زیبای انتخاب شخص را باز
+//            می‌کند (با فیلد جستجو).
+//         4) توابع جدید: showGroupPickerForContact, closeGroupPicker,
+//            changeTaskContact, clearTaskContact, showContactPickerForTask,
+//            closeContactPickerForTask.
+const APP_VERSION = 'v135-2026-11-07-group-picker-detail-contact';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -8996,7 +9174,7 @@ function renderTasksView(groupId) {
             ${item.completedAt ? `<div class="detail-row"><span class="detail-label">روز انجام:</span><span class="detail-value">${toJalaliLong(item.completedAt)}</span></div>` : ''}
             <div class="detail-row group-selector-row"><span class="detail-label">گروه:</span><select class="group-selector" onchange="changeTaskGroup('${item.id}', this.value)">${groupOpts}</select></div>
             <div class="detail-row urgent-toggle-row"><span class="detail-label">🚨 فوری:</span><label class="urgent-checkbox-label"><input type="checkbox" class="urgent-checkbox" ${item.urgent ? 'checked' : ''} onchange="toggleTaskUrgent('${item.id}')"> <span>این تسک در گروه «کارهای فوری» نمایش داده شود</span></label></div>
-            ${item.contactId ? (() => { const tc = getContactById(item.contactId); return tc ? `<div class="detail-row detail-contact-row"><span class="detail-label">👤 شخص:</span><span class="detail-value">${escapeHtml(tc.name)}${tc.company ? ' — ' + escapeHtml(tc.company) : ''}${tc.primaryPhone ? ' • ' + escapeHtml(tc.primaryPhone) : ''}</span></div>` : ''; })() : ''}
+            ${item.contactId ? (() => { const tc = getContactById(item.contactId); return tc ? `<div class="detail-row detail-contact-row"><span class="detail-label">👤 شخص:</span><span class="detail-value">${escapeHtml(tc.name)}${tc.company ? ' — ' + escapeHtml(tc.company) : ''}${tc.primaryPhone ? ' • ' + escapeHtml(tc.primaryPhone) : ''}</span><button class="detail-contact-change-btn" onclick="event.stopPropagation(); changeTaskContact('${item.id}')">تغییر</button><button class="detail-contact-clear-btn" onclick="event.stopPropagation(); clearTaskContact('${item.id}')">حذف</button></div>` : `<div class="detail-row detail-contact-row"><span class="detail-label">👤 شخص:</span><span class="detail-value">بدون شخص</span><button class="detail-contact-change-btn" onclick="event.stopPropagation(); changeTaskContact('${item.id}')">+ افزودن شخص</button></div>`; })() : `<div class="detail-row detail-contact-row"><span class="detail-label">👤 شخص:</span><span class="detail-value">بدون شخص</span><button class="detail-contact-change-btn" onclick="event.stopPropagation(); changeTaskContact('${item.id}')">+ افزودن شخص</button></div>`}
             <div class="item-actions">${
                 // 🔧 v133: دکمه‌ها بسته به حالت تسک متفاوت‌اند
                 item.cancelled == true
@@ -10018,47 +10196,292 @@ function addTaskForContact(contactId) {
     }
     // بستن صفحه اشخاص
     closeContacts();
-    // پرسیدن گروه از کاربر
+    // 🔧 v135: منوی زیبای انتخاب گروه (به‌جای prompt عدد)
     const groups = getGroups().filter(g => g.id !== 'urgent');
     if (groups.length === 0) {
         showToast('ابتدا یک گروه بسازید');
         return;
     }
-    // ساخت لیست گروه‌ها برای انتخاب
-    let groupList = 'یک گروه را انتخاب کنید:\n\n';
-    groups.forEach((g, i) => {
-        groupList += toPersianNumber(i + 1) + '. ' + g.name + '\n';
+    // نمایش منوی زیبا
+    showGroupPickerForContact(c, groups, function(selectedGroup) {
+        // تنظیم currentView به tasks و currentGroupId به گروه انتخاب‌شده
+        currentView = 'tasks';
+        currentGroupId = selectedGroup.id;
+        expandedId = null;
+        navReplace({ view: 'tasks', groupId: selectedGroup.id });
+        fullRender();
+        window.scrollTo({ top: 0, behavior: 'auto' });
+        // باز کردن فرم ایجاد تسک
+        setTimeout(function() {
+            startAdding();
+            // پس از باز شدن فرم، شخص را در فرم قرار بده
+            setTimeout(function() {
+                loadTaskContactIntoForm(contactId);
+                // پیش‌پر کردن متن با نام شخص
+                const textEl = document.getElementById('itemText');
+                if (textEl && !textEl.value) {
+                    textEl.value = 'تماس/کارت: ' + c.name + (c.company ? ' (' + c.company + ')' : '');
+                }
+            }, 100);
+        }, 200);
+        showToast('تسک برای «' + c.name + '» در گروه «' + selectedGroup.name + '»');
     });
-    groupList += '\n(شماره گروه را وارد کنید، یا برای گروه «همه کارها» ۱ را وارد کنید)';
-    const choice = prompt(groupList);
-    if (!choice) return;
-    const idx = parseInt(toEnglishDigitsIfPersian(choice), 10);
-    if (isNaN(idx) || idx < 1 || idx > groups.length) {
-        showToast('شماره گروه نامعتبر');
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v135: منوی زیبای انتخاب گروه (به‌جای prompt عدد)
+// ════════════════════════════════════════════════════════════════════
+// این تابع یک مودال زیبا با لیست گروه‌ها نمایش می‌دهد. هر گروه یک
+// دکمهٔ قابل کلیک با آیکون، نام و تعداد تسک‌های فعال است. وقتی کاربر
+// روی گروهی کلیک کند، callback با آن گروه فراخوانی می‌شود.
+
+function showGroupPickerForContact(contact, groups, callback) {
+    // حذف مودال قبلی اگر وجود دارد
+    const old = document.getElementById('groupPickerOverlay');
+    if (old) old.remove();
+
+    // ساخت overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'group-picker-overlay';
+    overlay.id = 'groupPickerOverlay';
+
+    // ساخت مودال
+    const modal = document.createElement('div');
+    modal.className = 'group-picker-modal';
+
+    // عنوان
+    const items = getDB();
+    const title = document.createElement('div');
+    title.className = 'group-picker-title';
+    title.textContent = 'انتخاب گروه برای تسک';
+    modal.appendChild(title);
+
+    const subtitle = document.createElement('div');
+    subtitle.className = 'group-picker-subtitle';
+    subtitle.textContent = 'برای «' + contact.name + (contact.company ? ' — ' + contact.company : '') + '» کدام گروه؟';
+    modal.appendChild(subtitle);
+
+    // لیست گروه‌ها
+    const list = document.createElement('div');
+    list.className = 'group-picker-list';
+    groups.forEach(g => {
+        const item = document.createElement('button');
+        item.className = 'group-picker-item';
+        // تعداد تسک‌های فعال این گروه
+        const activeCount = items.filter(i => (i.groupId === g.id) && !i.done && !i.cancelled && !i.suspended).length;
+        // آیکون و رنگ گروه
+        const icon = document.createElement('div');
+        icon.className = 'group-picker-item-icon';
+        icon.style.background = g.color || '#607D8B';
+        icon.textContent = g.headerIcon || '📋';
+        item.appendChild(icon);
+        // نام گروه
+        const name = document.createElement('div');
+        name.className = 'group-picker-item-name';
+        name.textContent = g.name;
+        item.appendChild(name);
+        // تعداد تسک‌ها
+        if (activeCount > 0) {
+            const count = document.createElement('div');
+            count.className = 'group-picker-item-count';
+            count.textContent = toPersianNumber(activeCount) + ' تسک فعال';
+            item.appendChild(count);
+        }
+        // کلیک → انتخاب گروه
+        item.onclick = function() {
+            closeGroupPicker();
+            callback(g);
+        };
+        list.appendChild(item);
+    });
+    modal.appendChild(list);
+
+    // دکمهٔ انصراف
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'group-picker-cancel';
+    cancelBtn.textContent = '✕ انصراف';
+    cancelBtn.onclick = closeGroupPicker;
+    modal.appendChild(cancelBtn);
+
+    overlay.appendChild(modal);
+    // کلیک روی overlay (خارج از مودال) → بستن
+    overlay.onclick = function(e) {
+        if (e.target === overlay) closeGroupPicker();
+    };
+    document.body.appendChild(overlay);
+}
+
+// بستن منوی انتخاب گروه
+function closeGroupPicker() {
+    const overlay = document.getElementById('groupPickerOverlay');
+    if (overlay) overlay.remove();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v135: تغییر/حذف شخص از جزئیات تسک
+// ════════════════════════════════════════════════════════════════════
+// این توابع از جزئیات تسک صدا زده می‌شوند تا شخص مرتبط را تغییر
+// داد یا حذف کرد، بدون نیاز به باز کردن فرم ویرایش کامل.
+
+// تغییر شخص مرتبط با یک تسک (از جزئیات)
+function changeTaskContact(taskId) {
+    const items = getDB();
+    const item = items.find(i => i.id === taskId);
+    if (!item) return;
+    // نمایش منوی انتخاب شخص
+    showContactPickerForTask(function(contact) {
+        if (contact) {
+            item.contactId = contact.id;
+        } else {
+            try { delete item.contactId; } catch(e) {}
+            item.contactId = null;
+        }
+        setDB(items);
+        render();
+        showToast(contact ? 'شخص تغییر کرد: ' + contact.name : 'شخص حذف شد');
+    });
+}
+
+// حذف شخص مرتبط با یک تسک (از جزئیات)
+function clearTaskContact(taskId) {
+    const items = getDB();
+    const item = items.find(i => i.id === taskId);
+    if (!item) return;
+    if (!item.contactId) {
+        showToast('این تسک شخصی ندارد');
         return;
     }
-    const selectedGroup = groups[idx - 1];
-    // تنظیم currentView به tasks و currentGroupId به گروه انتخاب‌شده
-    currentView = 'tasks';
-    currentGroupId = selectedGroup.id;
-    expandedId = null;
-    navReplace({ view: 'tasks', groupId: selectedGroup.id });
-    fullRender();
-    window.scrollTo({ top: 0, behavior: 'auto' });
-    // باز کردن فرم ایجاد تسک
-    setTimeout(function() {
-        startAdding();
-        // پس از باز شدن فرم، شخص را در فرم قرار بده
-        setTimeout(function() {
-            loadTaskContactIntoForm(contactId);
-            // پیش‌پر کردن متن با نام شخص
-            const textEl = document.getElementById('itemText');
-            if (textEl && !textEl.value) {
-                textEl.value = 'تماس/کارت: ' + c.name + (c.company ? ' (' + c.company + ')' : '');
-            }
-        }, 100);
-    }, 200);
-    showToast('تسک برای «' + c.name + '» در گروه «' + selectedGroup.name + '»');
+    if (!confirm('شخص مرتبط با این تسک حذف شود؟')) return;
+    try { delete item.contactId; } catch(e) {}
+    item.contactId = null;
+    setDB(items);
+    render();
+    showToast('شخص حذف شد');
+}
+
+// نمایش منوی انتخاب شخص (برای تغییر از جزئیات)
+function showContactPickerForTask(callback) {
+    const contacts = getContacts();
+    if (contacts.length === 0) {
+        showToast('هیچ شخصی تعریف نشده است');
+        return;
+    }
+    // حذف مودال قبلی اگر وجود دارد
+    const old = document.getElementById('contactPickerOverlay');
+    if (old) old.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'group-picker-overlay';
+    overlay.id = 'contactPickerOverlay';
+
+    const modal = document.createElement('div');
+    modal.className = 'group-picker-modal';
+
+    const title = document.createElement('div');
+    title.className = 'group-picker-title';
+    title.textContent = 'انتخاب شخص';
+    modal.appendChild(title);
+
+    const subtitle = document.createElement('div');
+    subtitle.className = 'group-picker-subtitle';
+    subtitle.textContent = 'شخص مرتبط با این تسک را انتخاب کنید';
+    modal.appendChild(subtitle);
+
+    // فیلد جستجو
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.className = 'modal-input';
+    searchInput.placeholder = 'جستجوی نام...';
+    searchInput.style.marginBottom = '12px';
+    searchInput.style.width = '100%';
+    searchInput.style.padding = '10px';
+    searchInput.style.borderRadius = '8px';
+    searchInput.style.border = '1px solid #ccc';
+    searchInput.style.fontFamily = 'inherit';
+    searchInput.style.fontSize = '14px';
+    modal.appendChild(searchInput);
+
+    // لیست اشخاص
+    const list = document.createElement('div');
+    list.className = 'group-picker-list';
+    list.style.maxHeight = '300px';
+    list.style.overflowY = 'auto';
+    modal.appendChild(list);
+
+    function renderList(query) {
+        list.innerHTML = '';
+        let filtered = contacts;
+        if (query) {
+            const q = query.toLowerCase();
+            filtered = contacts.filter(c => {
+                const name = (c.name || '').toLowerCase();
+                const company = (c.company || '').toLowerCase();
+                const position = (c.position || '').toLowerCase();
+                return name.includes(q) || company.includes(q) || position.includes(q);
+            });
+        }
+        if (filtered.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'contact-dropdown-empty';
+            empty.textContent = 'هیچ شخصی با این نام یافت نشد';
+            list.appendChild(empty);
+            return;
+        }
+        filtered.forEach(c => {
+            const item = document.createElement('button');
+            item.className = 'group-picker-item';
+            const icon = document.createElement('div');
+            icon.className = 'group-picker-item-icon';
+            icon.style.background = '#1976D2';
+            icon.textContent = '👤';
+            item.appendChild(icon);
+            const name = document.createElement('div');
+            name.className = 'group-picker-item-name';
+            const displayPhone = c.primaryPhone || ((c.phones && c.phones.length > 0) ? c.phones[0] : '');
+            name.innerHTML = escapeHtml(c.name) + (c.company ? '<br><span style="font-size:11px;color:#888;font-weight:400">' + escapeHtml(c.company) + (displayPhone ? ' • ' + escapeHtml(displayPhone) : '') + '</span>' : '');
+            item.appendChild(name);
+            item.onclick = function() {
+                closeContactPickerForTask();
+                callback(c);
+            };
+            list.appendChild(item);
+        });
+    }
+
+    searchInput.oninput = function() { renderList(searchInput.value.trim()); };
+    renderList('');
+
+    // دکمهٔ «حذف شخص» (در صورت وجود شخص فعلی)
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'group-picker-cancel';
+    clearBtn.style.marginTop = '8px';
+    clearBtn.style.background = '#ffebee';
+    clearBtn.style.color = '#c62828';
+    clearBtn.textContent = '✕ حذف شخص از این تسک';
+    clearBtn.onclick = function() {
+        closeContactPickerForTask();
+        callback(null);
+    };
+    modal.appendChild(clearBtn);
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'group-picker-cancel';
+    cancelBtn.textContent = '✕ انصراف';
+    cancelBtn.onclick = closeContactPickerForTask;
+    modal.appendChild(cancelBtn);
+
+    overlay.appendChild(modal);
+    overlay.onclick = function(e) {
+        if (e.target === overlay) closeContactPickerForTask();
+    };
+    document.body.appendChild(overlay);
+    // فوکوس روی فیلد جستجو
+    setTimeout(function() { searchInput.focus(); }, 100);
+}
+
+function closeContactPickerForTask() {
+    const overlay = document.getElementById('contactPickerOverlay');
+    if (overlay) overlay.remove();
 }
 
 // تبدیل اعداد فارسی به انگلیسی (برای parseInt صحیح)
