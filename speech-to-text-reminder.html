@@ -993,31 +993,22 @@ body { padding-bottom: 30px; }
 }
 .detail-contact-row .detail-label { color: #1565C0; }
 .detail-contact-row .detail-value { font-weight: 600; color: #0D47A1; flex: 1; min-width: 0; }
-/* دکمهٔ تغییر شخص در جزئیات تسک */
-.detail-contact-change-btn {
+/* 🔧 v139: یک دکمهٔ مداد واحد برای ویرایش/افزودن شخص در جزئیات تسک */
+.detail-contact-edit-btn {
     background: #1976D2;
     color: white;
     border: none;
     border-radius: 6px;
-    padding: 4px 10px;
-    font-size: 12px;
+    padding: 4px 12px;
+    font-size: 14px;
     cursor: pointer;
     font-family: inherit;
     white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s;
 }
-.detail-contact-change-btn:hover { background: #1565C0; }
-.detail-contact-clear-btn {
-    background: #f44336;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 4px 10px;
-    font-size: 12px;
-    cursor: pointer;
-    font-family: inherit;
-    white-space: nowrap;
-}
-.detail-contact-clear-btn:hover { background: #d32f2f; }
+.detail-contact-edit-btn:hover { background: #1565C0; }
+.detail-contact-edit-btn:active { background: #0D47A1; }
 /* 🔧 v135: منوی زیبای انتخاب گروه برای ایجاد تسک از صفحه اشخاص */
 .group-picker-overlay {
     position: fixed;
@@ -2840,12 +2831,14 @@ body.locked .header-actions button {
 .contacts-table th.filter-header {
     padding: 4px 6px;
     background: rgba(255,255,255,0.1);
-    /* 🔧 v137: عرض ثابت برای ستون‌های «نام شرکت» و «نام» — هر دو یکسان */
-    width: 140px;
-    min-width: 140px;
+    /* 🔧 v138: ستون auto-size می‌شود (table به حالت اول برمی‌گردد) —
+       width روی خود textbox اعمال می‌شود، نه روی th */
 }
 .contacts-table th.filter-header input {
-    width: 100%;
+    /* 🔧 v138: عرض ثابت روی textbox — نه روی th.
+       اینطوری textbox همیشه 140px است، اما ستون بر اساس محتوای داده
+       auto-size می‌شود و جدول به اندازهٔ اصلی برمی‌گردد. */
+    width: 140px;
     box-sizing: border-box;
     padding: 5px 7px;
     border: 1px solid rgba(255,255,255,0.4);
@@ -4058,7 +4051,16 @@ body.locked .header-actions button {
 //            renderSearchResultsTable.
 //         5) متغیرهای state: _searchResultsSort, _searchResultsFilter,
 //            _lastSearchResults.
-const APP_VERSION = 'v137-2026-11-07-search-results-table-default-0';
+//   v138 - TEXTBOX WIDTH FIX:
+//         عرض ثابت ۱۴۰px از روی th (ستون) به input (textbox) منتقل شد.
+//         نتیجه: textbox همیشه ۱۴۰px است، اما ستون بر اساس محتوای داده
+//         auto-size می‌شود و جدول به اندازهٔ اصلی برمی‌گردد (نه بزرگ‌تر).
+//   v139 - SINGLE PENCIL BUTTON FOR CONTACT:
+//         در جزئیات تسک، دو دکمهٔ «تغییر» و «حذف» + دکمهٔ «افزودن شخص»
+//         با یک دکمهٔ مداد ✏️ واحد جایگزین شد. این دکمه در هر دو حالت
+//         (تسک با شخص یا بدون شخص) نمایش داده می‌شود. کلیک روی آن
+//         منوی انتخاب شخص را باز می‌کند (که هم ویرایش و هم حذف را شامل می‌شود).
+const APP_VERSION = 'v139-2026-11-07-single-pencil-contact-btn';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -9235,7 +9237,7 @@ function renderTasksView(groupId) {
             ${item.completedAt ? `<div class="detail-row"><span class="detail-label">روز انجام:</span><span class="detail-value">${toJalaliLong(item.completedAt)}</span></div>` : ''}
             <div class="detail-row group-selector-row"><span class="detail-label">گروه:</span><select class="group-selector" onchange="changeTaskGroup('${item.id}', this.value)">${groupOpts}</select></div>
             <div class="detail-row urgent-toggle-row"><span class="detail-label">🚨 فوری:</span><label class="urgent-checkbox-label"><input type="checkbox" class="urgent-checkbox" ${item.urgent ? 'checked' : ''} onchange="toggleTaskUrgent('${item.id}')"> <span>این تسک در گروه «کارهای فوری» نمایش داده شود</span></label></div>
-            ${item.contactId ? (() => { const tc = getContactById(item.contactId); return tc ? `<div class="detail-row detail-contact-row"><span class="detail-label">👤 شخص:</span><span class="detail-value">${escapeHtml(tc.name)}${tc.company ? ' — ' + escapeHtml(tc.company) : ''}${tc.primaryPhone ? ' • ' + escapeHtml(tc.primaryPhone) : ''}</span><button class="detail-contact-change-btn" onclick="event.stopPropagation(); changeTaskContact('${item.id}')">تغییر</button><button class="detail-contact-clear-btn" onclick="event.stopPropagation(); clearTaskContact('${item.id}')">حذف</button></div>` : `<div class="detail-row detail-contact-row"><span class="detail-label">👤 شخص:</span><span class="detail-value">بدون شخص</span><button class="detail-contact-change-btn" onclick="event.stopPropagation(); changeTaskContact('${item.id}')">+ افزودن شخص</button></div>`; })() : `<div class="detail-row detail-contact-row"><span class="detail-label">👤 شخص:</span><span class="detail-value">بدون شخص</span><button class="detail-contact-change-btn" onclick="event.stopPropagation(); changeTaskContact('${item.id}')">+ افزودن شخص</button></div>`}
+            ${(() => { const tc = item.contactId ? getContactById(item.contactId) : null; return `<div class="detail-row detail-contact-row"><span class="detail-label">👤 شخص:</span><span class="detail-value">${tc ? escapeHtml(tc.name) + (tc.company ? ' — ' + escapeHtml(tc.company) : '') + (tc.primaryPhone ? ' • ' + escapeHtml(tc.primaryPhone) : '') : 'بدون شخص'}</span><button class="detail-contact-edit-btn" onclick="event.stopPropagation(); changeTaskContact('${item.id}')" title="${tc ? 'ویرایش/تغییر شخص' : 'افزودن شخص'}">✏️</button></div>`; })()}
             <div class="item-actions">${
                 // 🔧 v133: دکمه‌ها بسته به حالت تسک متفاوت‌اند
                 item.cancelled == true
