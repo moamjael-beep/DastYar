@@ -2820,6 +2820,43 @@ body.locked .header-actions button {
     font-size: 12px;
     white-space: nowrap;
 }
+/* 🔧 v136: هدر قابل کلیک برای sort + textbox فیلتر */
+.contacts-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+}
+.contacts-table th.sortable:hover {
+    background: rgba(255,255,255,0.15);
+}
+.contacts-table th.sortable .sort-indicator {
+    display: inline-block;
+    margin-right: 4px;
+    font-size: 10px;
+    opacity: 0.7;
+}
+.contacts-table th.sorted-asc .sort-indicator::after { content: ' ▲'; }
+.contacts-table th.sorted-desc .sort-indicator::after { content: ' ▼'; }
+.contacts-table th.filter-header {
+    padding: 4px 6px;
+    background: rgba(255,255,255,0.1);
+}
+.contacts-table th.filter-header input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 5px 7px;
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 5px;
+    background: white;
+    color: #333;
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+}
+.contacts-table th.filter-header input:focus {
+    border-color: white;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
+}
 .contacts-table td {
     padding: 10px;
     border-bottom: 1px solid #eee;
@@ -3997,7 +4034,17 @@ body.locked .header-actions button {
 //         4) توابع جدید: showGroupPickerForContact, closeGroupPicker,
 //            changeTaskContact, clearTaskContact, showContactPickerForTask,
 //            closeContactPickerForTask.
-const APP_VERSION = 'v135-2026-11-07-group-picker-detail-contact';
+//   v136 - CONTACTS TABLE SORT + FILTER:
+//         1) کلیک روی هدر «نام شرکت» یا «نام» → sort بر اساس حروف الفبا
+//            (صعودی اول، کلیک مجدد → نزولی). نشانگر ▲/▼ نمایش داده می‌شود.
+//            مقایسه با localeCompare('fa') برای sort صحیح فارسی.
+//         2) در ردیف دوم هدر (زیر «نام شرکت» و «نام»): textbox فیلتر.
+//            تایپ بخشی یا تمام نام → جدول فیلتر می‌شود (فقط ردیف‌های
+//            منطبق نمایش داده می‌شوند).
+//         3) تعداد نتایج + لینک «پاک کردن فیلتر» در پایین جدول.
+//         4) توابع جدید: comparePersian, toggleContactsSort, updateContactsFilter.
+//         5) متغیرهای state: _contactsSort, _contactsFilter.
+const APP_VERSION = 'v136-2026-11-07-contacts-sort-filter';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -10543,43 +10590,153 @@ function refreshFloatingContactBtn() {
 
 // ─── رندر لیست اشخاص ───
 
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v136: state فیلتر و sort برای جدول اشخاص
+// ════════════════════════════════════════════════════════════════════
+// این متغیرها وضعیت فیلتر و sort جدول اشخاص را نگه می‌دارند.
+// وقتی کاربر در textbox تایپ می‌کند یا روی هدر کلیک می‌کند،
+// renderContactsList دوباره صدا زده می‌شود و این مقادیر اعمال می‌شوند.
+let _contactsSort = { field: null, dir: 'asc' };  // field: 'company' | 'name' | null
+let _contactsFilter = { company: '', name: '' };  // متن فیلتر برای هر ستون
+
+// تابع کمکی: مقایسهٔ فارسی برای sort
+// از localeCompare با 'fa' استفاده می‌کند تا حروف فارسی درست مرتب شوند.
+function comparePersian(a, b) {
+    const aStr = (a || '').trim();
+    const bStr = (b || '').trim();
+    if (!aStr && !bStr) return 0;
+    if (!aStr) return 1;   // خالی آخر
+    if (!bStr) return -1;  // خالی آخر
+    try {
+        return aStr.localeCompare(bStr, 'fa');
+    } catch(e) {
+        return aStr < bStr ? -1 : (aStr > bStr ? 1 : 0);
+    }
+}
+
+// تغییر وضعیت sort با کلیک روی هدر
+function toggleContactsSort(field) {
+    if (_contactsSort.field === field) {
+        // همان ستون — جهت را برعکس کن
+        _contactsSort.dir = (_contactsSort.dir === 'asc') ? 'desc' : 'asc';
+    } else {
+        // ستون جدید — پیش‌فرض صعودی
+        _contactsSort.field = field;
+        _contactsSort.dir = 'asc';
+    }
+    renderContactsList();
+}
+
+// به‌روزرسانی فیلتر با تایپ در textbox
+function updateContactsFilter(field, value) {
+    _contactsFilter[field] = value;
+    // فقط جدول را به‌روزرسانی کنیم، نه تمام صفحه را
+    renderContactsList();
+    // فوکوس را به textbox برگردانیم (چون render آن را از بین می‌برد)
+    const inputs = document.querySelectorAll('.contacts-table th.filter-header input[data-field="' + field + '"]');
+    if (inputs.length > 0) {
+        const inp = inputs[0];
+        inp.focus();
+        // نشانگر را در انتهای متن قرار بده
+        inp.setSelectionRange(inp.value.length, inp.value.length);
+    }
+}
+
 function renderContactsList() {
     const body = document.getElementById('contactsBody');
-    const contacts = getContacts();
+    const allContacts = getContacts();
 
-    if (contacts.length === 0) {
+    if (allContacts.length === 0) {
         body.innerHTML = '<div class="contacts-empty"><div class="contacts-empty-icon">👥</div><div>هیچ شخصی تعریف نشده است<br>برای افزودن، دکمه «جدید» را بزنید</div></div>';
         return;
     }
 
-    let html = '<table class="contacts-table"><thead><tr>';
+    // 🔧 v136: اعمال فیلتر
+    let filtered = allContacts;
+    if (_contactsFilter.company) {
+        const q = _contactsFilter.company.toLowerCase();
+        filtered = filtered.filter(c => (c.company || '').toLowerCase().includes(q));
+    }
+    if (_contactsFilter.name) {
+        const q = _contactsFilter.name.toLowerCase();
+        filtered = filtered.filter(c => (c.name || '').toLowerCase().includes(q));
+    }
+
+    // 🔧 v136: اعمال sort
+    if (_contactsSort.field) {
+        const field = _contactsSort.field;
+        const dir = (_contactsSort.dir === 'asc') ? 1 : -1;
+        filtered = filtered.slice().sort(function(a, b) {
+            const cmp = comparePersian(a[field], b[field]);
+            return cmp * dir;
+        });
+    }
+
+    // ساخت جدول — هدر با دو ردیف: ردیف اول عناوین (قابل کلیک برای sort)،
+    // ردیف دوم textbox فیلتر (فقط برای ستون‌های «نام شرکت» و «نام»)
+    let html = '<table class="contacts-table"><thead>';
+    // ردیف اول: عناوین
+    html += '<tr>';
     html += '<th>ردیف</th>';
-    html += '<th>نام شرکت</th>';
-    html += '<th>نام</th>';
+    // ستون «نام شرکت» — قابل کلیک برای sort
+    const companySortClass = _contactsSort.field === 'company' ? (_contactsSort.dir === 'asc' ? 'sorted-asc' : 'sorted-desc') : '';
+    html += '<th class="sortable ' + companySortClass + '" onclick="toggleContactsSort(\'company\')">';
+    html += '<span class="sort-indicator"></span>نام شرکت';
+    html += '</th>';
+    // ستون «نام» — قابل کلیک برای sort
+    const nameSortClass = _contactsSort.field === 'name' ? (_contactsSort.dir === 'asc' ? 'sorted-asc' : 'sorted-desc') : '';
+    html += '<th class="sortable ' + nameSortClass + '" onclick="toggleContactsSort(\'name\')">';
+    html += '<span class="sort-indicator"></span>نام';
+    html += '</th>';
     html += '<th>سمت</th>';
     html += '<th>تلفن</th>';
     html += '<th>عملیات</th>';
-    html += '</tr></thead><tbody>';
+    html += '</tr>';
+    // ردیف دوم: textbox فیلتر (فقط برای «نام شرکت» و «نام»)
+    html += '<tr>';
+    html += '<th></th>';  // ردیف — بدون فیلتر
+    html += '<th class="filter-header"><input type="text" data-field="company" value="' + escapeHtml(_contactsFilter.company) + '" placeholder="فیلتر شرکت..." oninput="updateContactsFilter(\'company\', this.value)"></th>';
+    html += '<th class="filter-header"><input type="text" data-field="name" value="' + escapeHtml(_contactsFilter.name) + '" placeholder="فیلتر نام..." oninput="updateContactsFilter(\'name\', this.value)"></th>';
+    html += '<th></th>';  // سمت
+    html += '<th></th>';  // تلفن
+    html += '<th></th>';  // عملیات
+    html += '</tr>';
+    html += '</thead><tbody>';
 
-    contacts.forEach((c, idx) => {
-        // 🔧 اگر primaryPhone وجود دارد، آن را نمایش بده؛ وگرنه اولین تلفن
-        const displayPhone = c.primaryPhone || ((c.phones && c.phones.length > 0) ? c.phones[0] : '');
-        html += '<tr>';
-        html += '<td>' + toPersianNumber(idx + 1) + '</td>';
-        html += '<td>' + escapeHtml(c.company || '—') + '</td>';
-        html += '<td>' + escapeHtml(c.name || '—') + '</td>';
-        html += '<td>' + escapeHtml(c.position || '—') + '</td>';
-        html += '<td>' + renderClickablePhone(displayPhone) + '</td>';
-        html += '<td><div class="contact-row-actions">';
-        // 🔧 v134: دکمهٔ «➕ تسک» برای ایجاد تسک برای این شخص
-        html += '<button class="contact-row-btn add-task" onclick="addTaskForContact(\'' + c.id + '\')" title="ایجاد تسک برای این شخص">➕</button>';
-        html += '<button class="contact-row-btn" onclick="editContact(\'' + c.id + '\')">✏️</button>';
-        html += '<button class="contact-row-btn danger" onclick="deleteContact(\'' + c.id + '\')">🗑</button>';
-        html += '</div></td>';
-        html += '</tr>';
-    });
+    if (filtered.length === 0) {
+        // هیچ نتیجه‌ای بعد از فیلتر
+        const cols = 6;
+        html += '<tr><td colspan="' + cols + '" style="text-align:center; padding:30px; color:#999;">';
+        html += 'هیچ شخصی با این فیلتر یافت نشد';
+        html += '</td></tr>';
+    } else {
+        filtered.forEach((c, idx) => {
+            // 🔧 اگر primaryPhone وجود دارد، آن را نمایش بده؛ وگرنه اولین تلفن
+            const displayPhone = c.primaryPhone || ((c.phones && c.phones.length > 0) ? c.phones[0] : '');
+            html += '<tr>';
+            html += '<td>' + toPersianNumber(idx + 1) + '</td>';
+            html += '<td>' + escapeHtml(c.company || '—') + '</td>';
+            html += '<td>' + escapeHtml(c.name || '—') + '</td>';
+            html += '<td>' + escapeHtml(c.position || '—') + '</td>';
+            html += '<td>' + renderClickablePhone(displayPhone) + '</td>';
+            html += '<td><div class="contact-row-actions">';
+            // 🔧 v134: دکمهٔ «➕ تسک» برای ایجاد تسک برای این شخص
+            html += '<button class="contact-row-btn add-task" onclick="addTaskForContact(\'' + c.id + '\')" title="ایجاد تسک برای این شخص">➕</button>';
+            html += '<button class="contact-row-btn" onclick="editContact(\'' + c.id + '\')">✏️</button>';
+            html += '<button class="contact-row-btn danger" onclick="deleteContact(\'' + c.id + '\')">🗑</button>';
+            html += '</div></td>';
+            html += '</tr>';
+        });
+    }
 
     html += '</tbody></table>';
+    // 🔧 v136: نمایش تعداد نتایج اگر فیلتر فعال است
+    if (_contactsFilter.company || _contactsFilter.name) {
+        html += '<div style="text-align:center; padding:10px; color:#666; font-size:12px;">';
+        html += toPersianNumber(filtered.length) + ' نفر از ' + toPersianNumber(allContacts.length) + ' نفر نمایش داده شد';
+        html += ' — <a href="javascript:void(0)" onclick="_contactsFilter={company:\'\',name:\'\'}; _contactsSort={field:null,dir:\'asc\'}; renderContactsList();" style="color:#1976D2; font-weight:600;">پاک کردن فیلتر</a>';
+        html += '</div>';
+    }
     body.innerHTML = html;
 }
 
