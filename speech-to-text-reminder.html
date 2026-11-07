@@ -79,8 +79,6 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <!-- فونت فارسی «وزیرمتن» از CDN -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" media="all" onerror="this.remove()">
-<!-- 🗣️ کتابخانه ResponsiveVoice برای خواندن صوتی فارسی (بدون نیاز به صدای سیستمی) -->
-<script src="https://code.responsivevoice.org/1.21.0/responsivevoice.js?key=FREE-KEY"></script>
 <!-- ────────────────────────────────────────────────────────────────────
      📦 کتابخانهٔ SortableJS برای قابلیت «کشیدن و رها کردن» (Drag & Drop)
      ──────────────────────────────────────────────────────────────────── -->
@@ -158,8 +156,8 @@ body { padding-bottom: 30px; }
     align-items: center;
     width: 100%;
 }
-.header h1 { font-size: 17px; font-weight: 700; }
-.header-date { font-size: 12px; opacity: 0.9; }
+.header h1 { font-size: 18px; font-weight: 700; }
+.header-date { font-size: 14px; font-weight: 600; opacity: 1; line-height: 1.4; }
 
 .header-actions {
     display: flex;
@@ -3017,7 +3015,16 @@ body.locked .header-actions button {
 <div class="header">
     <div class="header-info">
         <h1 id="headerTitle">یادآور صوتی</h1>
-        <div class="header-date" id="headerDate"></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <svg id="analogClock" width="36" height="36" viewBox="0 0 100 100" style="flex-shrink:0;">
+                <circle cx="50" cy="50" r="46" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.6)" stroke-width="3"/>
+                <circle cx="50" cy="50" r="2" fill="white"/>
+                <line id="clockHour" x1="50" y1="50" x2="50" y2="28" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                <line id="clockMinute" x1="50" y1="50" x2="50" y2="18" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                <line id="clockSecond" x1="50" y1="50" x2="50" y2="14" stroke="#FFC107" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <div class="header-date" id="headerDate"></div>
+        </div>
     </div>
     <div class="header-actions">
         <button class="icon-btn share-btn install-btn" id="installBtn" onclick="installApp()" title="نصب به عنوان اپلیکیشن" style="display:none;">⬇</button>
@@ -3704,7 +3711,7 @@ body.locked .header-actions button {
 //            cross-origin media WITHOUT CORS headers (fetch needs CORS).
 //            Added 8s timeout for Web Speech API (if no onend/onerror, try next).
 //            Added 8s timeout per online URL. Added "در حال خواندن..." toast.
-const APP_VERSION = 'v153-2026-11-05-remove-ai-tts';
+const APP_VERSION = 'v154-2026-11-05-speed-clock-persist';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -10893,9 +10900,31 @@ function showToast(msg) {
 // به‌روزرسانی تاریخ هدر (بالا صفحه)
 // ────────────────────────────────────────────────────────────────────
 // ============ Header date ============
+// 🔧 به‌روزرسانی تاریخ هدر + ساعت آنالوگ
 function updateHeaderDate() {
-    const el = document.getElementById('headerDate');
-    if (el) el.textContent = toPersianDigits(toJalaliLong(new Date()));
+    var now = new Date();
+    var el = document.getElementById('headerDate');
+    if (el) {
+        // تاریخ شمسی + روز هفته + ساعت
+        var [jy, jm, jd] = toJalaliParts(now);
+        var wd = jalaliWeekdays[now.getDay()];
+        var timeStr = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+        el.innerHTML = '<div style="font-size:13px;font-weight:700;">' + wd + ' ' + toPersianDigits(jd) + ' ' + jalaliMonths[jm-1] + '</div>' +
+            '<div style="font-size:15px;font-weight:700;color:#FFC107;">' + toPersianDigits(timeStr) + '</div>';
+    }
+    // 🔧 ساعت آنالوگ
+    var h = now.getHours() % 12;
+    var m = now.getMinutes();
+    var s = now.getSeconds();
+    var hourAngle = (h * 30) + (m * 0.5);
+    var minuteAngle = m * 6;
+    var secondAngle = s * 6;
+    var hourLine = document.getElementById('clockHour');
+    var minLine = document.getElementById('clockMinute');
+    var secLine = document.getElementById('clockSecond');
+    if (hourLine) hourLine.setAttribute('transform', 'rotate(' + hourAngle + ' 50 50)');
+    if (minLine) minLine.setAttribute('transform', 'rotate(' + minuteAngle + ' 50 50)');
+    if (secLine) secLine.setAttribute('transform', 'rotate(' + secondAngle + ' 50 50)');
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -11818,18 +11847,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // ─────────────────────────────────────────────────────────────────────
-    // PERIODIC UI REFRESH (every 30s) — re-render for time-based reordering
-    // and urgency color updates. Fast (just calls render()).
-    // ─────────────────────────────────────────────────────────────────────
+    // 🔧 به‌روزرسانی ساعت و تاریخ هر ۱ ثانیه (سبک — فقط DOM آپدیت)
+    setInterval(updateHeaderDate, 1000);
+
+    // 🔧 PERIODIC UI REFRESH — هر ۶۰ ثانیه (کاهش از ۳۰ برای پایداری حافظه)
     setInterval(() => {
         render();
-        updateHeaderDate();
         checkNotifications();
-    }, 30000);
+    }, 60000);
 
-    // Also check notifications every 60s to catch deadlines
-    setInterval(checkNotifications, 60000);
+    // 🔧 بررسی اعلان‌ها هر ۲ دقیقه (کاهش برای پایداری)
+    setInterval(checkNotifications, 120000);
 
     // Run initial notification check after 3 seconds (delayed to not block load)
     setTimeout(checkNotifications, 3000);
