@@ -4668,7 +4668,15 @@ body.locked .header-actions button {
 //         ۳) _refreshFloatingAddBtn: فوق ساده — querySelector برای بررسی
 //         ۴) refreshFloatingContactBtn: فوق ساده — همان منطق
 //         ۵) setInterval 500ms همچنان فعال
-const APP_VERSION = 'v157-2026-11-07-floating-nuclear-fix';
+//   v158 - FLOATING BUTTON REAL FIX + BRING TO FRONT FOR ALL OVERLAYS:
+//         ۱) _isVisible() تابع کمکی — بررسی active + display !== none
+//         ۲) _refreshFloatingAddBtn: استفاده از _isVisible برای همه overlayها
+//            (مشکل: contactsOverlay با display:none اما active=true → حل شد)
+//         ۳) bringToFront() به همه overlayهای باز شونده اضافه شد:
+//            contactSearch, contactSearchResults, contactReport,
+//            contactReportResults, taskReport, taskReportResults, contactForm
+//         نتیجه: هر overlay روی قبلی باز می‌شود (قانون overlay stack)
+const APP_VERSION = 'v158-2026-11-07-floating-real-fix-bring-front';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -9503,23 +9511,38 @@ function isAnyOverlayOpen() {
     return false;
 }
 
+// 🔧 v158: تابع کمکی — آیا یک overlay خاص باز و قابل دیدن است؟
+function _isVisible(id) {
+    var el = document.getElementById(id);
+    if (!el) return false;
+    if (!el.classList.contains('active')) return false;
+    if (el.style.display === 'none') return false;
+    return true;
+}
+
 function _refreshFloatingAddBtn() {
     var fab = document.getElementById('floatingAddBtn');
     if (!fab) return;
-    // 🔧 v157: مکانیزم بسیار ساده
+    // 🔧 v158: مکانیزم ساده و درست
     // دکمه + شناور فقط وقتی نمایش داده شود که:
     //   ۱) currentView === 'tasks' (داخل یک گروه)
-    //   ۲) هیچ overlay/منو/مودالی باز نباشد
+    //   ۲) هیچ overlay/منو/مودالی باز و قابل دیدن نباشد
     var shouldShow = false;
     if (currentView === 'tasks') {
-        // بررسی ساده: آیا چیزی باز است؟
-        var something = document.querySelector('.modal-overlay.active, .contacts-overlay.active, .notes-overlay.active');
+        // بررسی همه overlayها — فقط اگر فعال و قابل دیدن باشند
+        var anyVisible = _isVisible('modalOverlay') || _isVisible('calendarOverlay')
+            || _isVisible('datetimePickerOverlay') || _isVisible('groupSettingsOverlay')
+            || _isVisible('contactsOverlay') || _isVisible('contactFormOverlay')
+            || _isVisible('contactSearchOverlay') || _isVisible('contactSearchResultsOverlay')
+            || _isVisible('contactReportOverlay') || _isVisible('contactReportResultsOverlay')
+            || _isVisible('taskReportOverlay') || _isVisible('taskReportResultsOverlay')
+            || _isVisible('notesOverlay') || _isVisible('phoneActionOverlay');
         var dyn = document.getElementById('groupPickerOverlay') || document.getElementById('contactPickerOverlay')
             || document.getElementById('contactActionMenuOverlay') || document.getElementById('taskPickerOverlay')
             || document.getElementById('bellSettingsOverlay');
         var menu = (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu);
         var details = (expandedId !== null);
-        shouldShow = !something && !dyn && !menu && !details;
+        shouldShow = !anyVisible && !dyn && !menu && !details;
     }
     fab.style.display = shouldShow ? 'flex' : 'none';
 }
@@ -11567,21 +11590,23 @@ function closeContacts() {
 function refreshFloatingContactBtn() {
     var fcb = document.getElementById('floatingContactBtn');
     if (!fcb) return;
-    // 🔧 v157: مکانیزم بسیار ساده
-    // دکمه + شناور اشpersons فقط وقتی نمایش داده شود که:
-    //   ۱) صفحه اشpersons باز و visible باشد
-    //   ۲) هیچ overlay/منوی دیگری باز نباشد
+    // 🔧 v158: مکانیزم ساده و درست
     var shouldShow = false;
-    var contactsEl = document.getElementById('contactsOverlay');
-    if (contactsEl && contactsEl.classList.contains('active') && contactsEl.style.display !== 'none') {
-        // بررسی: آیا چیزی روی اشpersons باز است؟
-        var something = document.querySelector('.modal-overlay.active');
+    if (_isVisible('contactsOverlay')) {
+        // بررسی: آیا چیزی روی اشpersons باز و قابل دیدن است؟
+        var anyChild = _isVisible('contactFormOverlay') || _isVisible('contactSearchOverlay')
+            || _isVisible('contactSearchResultsOverlay') || _isVisible('contactReportOverlay')
+            || _isVisible('contactReportResultsOverlay') || _isVisible('taskReportOverlay')
+            || _isVisible('taskReportResultsOverlay') || _isVisible('modalOverlay')
+            || _isVisible('calendarOverlay') || _isVisible('datetimePickerOverlay')
+            || _isVisible('groupSettingsOverlay') || _isVisible('notesOverlay')
+            || _isVisible('phoneActionOverlay');
         var dyn = document.getElementById('groupPickerOverlay') || document.getElementById('contactPickerOverlay')
             || document.getElementById('contactActionMenuOverlay') || document.getElementById('taskPickerOverlay')
             || document.getElementById('bellSettingsOverlay');
         var menu = (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu);
         var details = (expandedId !== null);
-        shouldShow = !something && !dyn && !menu && !details;
+        shouldShow = !anyChild && !dyn && !menu && !details;
     }
     fcb.style.display = shouldShow ? 'flex' : 'none';
 }
@@ -11823,7 +11848,9 @@ function openContactForm(id) {
         renderDynamicList('contactNotesList', [''], 'توضیح');
     }
 
-    document.getElementById('contactFormOverlay').classList.add('active');
+    var cfOverlay = document.getElementById('contactFormOverlay');
+    cfOverlay.classList.add('active');
+    bringToFront(cfOverlay);  // 🔧 v158
     history.pushState({ view: 'contactForm' }, '');
     refreshFloatingContactBtn();
 }
@@ -12039,11 +12066,12 @@ function openContactSearch() {
     document.getElementById('searchPhone').value = '';
     document.getElementById('searchCommissionAskedMin').value = '';
     document.getElementById('searchCommissionPaidMin').value = '';
-    // 🔧 v146: درصد کارپردازی — ۴ حالت (همانند گزارش کارها)
     document.getElementById('searchCommissionMode').value = 'all';
     document.getElementById('searchCommissionValueWrap').style.display = 'none';
     document.getElementById('searchCommissionValue').value = '';
-    document.getElementById('contactSearchOverlay').classList.add('active');
+    var overlay = document.getElementById('contactSearchOverlay');
+    overlay.classList.add('active');
+    bringToFront(overlay);  // 🔧 v158: روی اشpersons قرار بگیرد
     history.pushState({ view: 'contactSearch' }, '');
     refreshFloatingContactBtn();
 }
@@ -12235,7 +12263,9 @@ function showContactSearchResults(results) {
     document.getElementById('searchResultsCount').textContent = 'تعداد: ' + toPersianNumber(results.length) + ' نفر';
     renderSearchResultsTable();
 
-    document.getElementById('contactSearchResultsOverlay').classList.add('active');
+    var resOverlay = document.getElementById('contactSearchResultsOverlay');
+    resOverlay.classList.add('active');
+    bringToFront(resOverlay);  // 🔧 v158: روی همه قرار بگیرد
     history.pushState({ view: 'contactSearchResults' }, '');
     refreshFloatingContactBtn();
 }
@@ -12265,7 +12295,9 @@ function openContactReport() {
     document.getElementById('reportCommissionMode').value = 'all';
     document.getElementById('reportCommissionValueWrap').style.display = 'none';
     document.getElementById('reportCommissionValue').value = '';
-    document.getElementById('contactReportOverlay').classList.add('active');
+    var repOverlay = document.getElementById('contactReportOverlay');
+    repOverlay.classList.add('active');
+    bringToFront(repOverlay);  // 🔧 v158
     history.pushState({ view: 'contactReport' }, '');
     refreshFloatingContactBtn();
 }
@@ -12356,9 +12388,9 @@ function showContactReportResults(results, criteria) {
     body.innerHTML = html;
     body.dataset.reportData = JSON.stringify(results);
 
-    document.getElementById('contactReportResultsOverlay').classList.add('active');
-    history.pushState({ view: 'contactReportResults' }, '');
-    refreshFloatingContactBtn();
+    var rrOverlay = document.getElementById('contactReportResultsOverlay');
+    rrOverlay.classList.add('active');
+    bringToFront(rrOverlay);  // 🔧 v158
 }
 
 function closeContactReportResults() {
@@ -12401,9 +12433,9 @@ function openTaskReport() {
     document.getElementById('taskReportCreatedTo').value = '';
     document.getElementById('taskReportCompletedFrom').value = '';
     document.getElementById('taskReportCompletedTo').value = '';
-    document.getElementById('taskReportOverlay').classList.add('active');
-    history.pushState({ view: 'taskReport' }, '');
-    refreshFloatingContactBtn();
+    var trOverlay = document.getElementById('taskReportOverlay');
+    trOverlay.classList.add('active');
+    bringToFront(trOverlay);  // 🔧 v158
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -12763,9 +12795,9 @@ function showTaskReportResults(results, criteria) {
     body.innerHTML = html;
     body.dataset.reportType = 'search';
     document.getElementById('taskReportTitle').textContent = '📋 گزارش: ' + toPersianNumber(results.length) + ' تسک';
-    document.getElementById('taskReportResultsOverlay').classList.add('active');
-    history.pushState({ view: 'taskReportResults' }, '');
-    refreshFloatingContactBtn();
+    var trrOverlay = document.getElementById('taskReportResultsOverlay');
+    trrOverlay.classList.add('active');
+    bringToFront(trrOverlay);  // 🔧 v158
 }
 
 // باز/بسته کردن جزئیات یک تسک در گزارش (درون‌خطی)
