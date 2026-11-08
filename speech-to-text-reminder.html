@@ -123,17 +123,18 @@ html, body {
        'clip' prevents horizontal scroll without breaking sticky. */
     overflow-x: clip;
 }
-body { padding-bottom: 30px; }
+body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای هدر fixed */ }
 
 .header {
-    position: sticky;
-    position: -webkit-sticky;
+    position: fixed;  /* 🔧 v151: fixed (نه sticky) تا همیشه روی همه overlayها باشد */
     top: 0;
+    left: 0;
+    right: 0;
     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     color: white;
     padding: 14px 16px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-    z-index: 9999;
+    z-index: 10700;  /* 🔧 v151: بالاتر از همه overlayها (max 10602) */
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -2734,10 +2735,11 @@ body.locked .header-actions button {
     position: fixed;
     inset: 0;
     background: #f0f2f5;
-    z-index: 10000;  /* 🔧 بالاتر از هدر اصلی (9999) تا هدر روی آن نیاید */
+    z-index: 10000;
     display: none;
     flex-direction: column;
     direction: rtl;
+    padding-top: 62px;  /* v151: header fixed */
 }
 .contacts-overlay.active { display: flex; }
 
@@ -4622,7 +4624,13 @@ body.locked .header-actions button {
 //         ۲) refreshFloatingContactBtn هم همین منطق را استفاده می‌کند
 //         ۳) 🔒 قانون برای آینده: هر منوی جدیدی که اضافه می‌شود باید
 //            در isAnyOverlayOpen() ثبت شود تا دکمه + شناور درست کار کند.
-const APP_VERSION = 'v150-2026-11-07-overlay-detection-all-menus';
+//   v151 - HEADER ALWAYS ON TOP (قانون کلیدی):
+//         هدر اصلی از sticky به fixed تغییر یافت + z-index از ۹۹۹۹ به ۱۰۷۰۰.
+//         نتیجه: کلیدهای هدر (👥 📅 📝 📥 🔔 📤 +) در هر جای برنامه همیشه
+//         قابل کلیک هستند — حتی وقتی overlay/منو/مودال باز است.
+//         body و contacts-overlay padding-top: 62px اضافه شد (فضای هدر).
+//         🔒 این یک قانون همیشگی است — هدر همیشه اولویت کلیک دارد.
+const APP_VERSION = 'v151-2026-11-07-header-always-on-top';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
