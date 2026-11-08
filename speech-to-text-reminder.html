@@ -248,8 +248,8 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 /* 🔧 دکمه شناور افزودن تسک — بزرگ‌تر با افکت تپنده زیبا همیشگی */
 .floating-add-btn {
     position: fixed;
-    left: 100px;
-    bottom: 200px;
+    left: 16px;
+    bottom: 16px;
     z-index: 9998;
     width: 70px;
     height: 70px;
@@ -312,14 +312,14 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 }
 /* در صفحات کوچک */
 @media (max-width: 480px) {
-    .floating-add-btn { width: 60px; height: 60px; font-size: 32px; left: 60px; bottom: 140px; }
+    .floating-add-btn { width: 56px; height: 56px; font-size: 30px; left: 12px; bottom: 12px; }
 }
 
 /* 🔧 دکمه شناور افزودن شخص — بزرگ‌تر با افکت تپنده زیبا همیشگی */
 .floating-contact-btn {
     position: fixed;
-    left: 100px;
-    bottom: 200px;
+    left: 16px;
+    bottom: 16px;
     z-index: 9998;
     width: 70px;
     height: 70px;
@@ -357,7 +357,7 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     }
 }
 @media (max-width: 480px) {
-    .floating-contact-btn { width: 60px; height: 60px; font-size: 28px; left: 60px; bottom: 140px; }
+    .floating-contact-btn { width: 56px; height: 56px; font-size: 28px; left: 12px; bottom: 12px; }
 }
 /* Disabled state for the reset-order button (↩). Used on the groups list
    view AND inside the "همه کارها" group — there's no manual ordering to
@@ -3061,6 +3061,87 @@ body.locked .header-actions button {
     z-index: 10601;
 }
 
+/* 🔧 v169: بخش تلفن‌ها و اشانتیون‌ها در منوی لمسی شخص */
+.contact-action-phones-header {
+    margin-top: 10px;
+    margin-bottom: 6px;
+    padding: 6px 8px;
+    background: #e3f2fd;
+    color: #1565C0;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+}
+.contact-action-phone-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    background: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+.contact-action-phone-row.is-primary {
+    background: #fff8e1;
+    border-color: #ffe082;
+}
+.contact-action-phone-text {
+    flex: 1;
+    min-width: 100px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    direction: ltr;
+    text-align: right;
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+    font-family: inherit;
+}
+.contact-action-phone-num { direction: ltr; }
+.contact-action-phone-badge {
+    font-size: 9px;
+    background: #FFA000;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 6px;
+    direction: rtl;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.contact-action-phone-btn {
+    border: none;
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-family: inherit;
+    min-width: 60px;
+}
+.contact-action-phone-btn.call { background: #009688; color: white; }
+.contact-action-phone-btn.sms  { background: #FF9800; color: white; }
+.contact-action-phone-btn:active { transform: scale(0.95); }
+
+.contact-action-commission-row {
+    padding: 8px 12px;
+    background: #f3e5f5;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    color: #6A1B9A;
+    font-weight: 600;
+    direction: rtl;
+}
+.contact-action-commission-idx {
+    color: #1565C0;
+    font-weight: 700;
+}
+
 .contact-row-actions { display: flex; gap: 4px; }
 .contact-row-btn {
     background: #e3f2fd;
@@ -3322,6 +3403,44 @@ body.locked .header-actions button {
 }
 .contact-dynamic-add-btn:active { transform: scale(0.97); }
 
+/* 🔧 v169: آیتم اشانتیون در فرم — سه input در یک ردیف */
+.contact-commission-item {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+    padding: 8px;
+    background: #fffde7;
+    border: 1px solid #ffe082;
+    border-radius: 8px;
+    align-items: center;
+}
+.contact-commission-item .comm-field {
+    flex: 1 1 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.contact-commission-item .comm-field label {
+    font-size: 10px;
+    color: #6d4c41;
+    font-weight: 600;
+}
+.contact-commission-item .comm-field input {
+    padding: 6px 8px;
+    border: 2px solid #ffe082;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: inherit;
+    direction: rtl;
+}
+.contact-commission-item .comm-field input:focus { outline: none; border-color: #FFA000; }
+.contact-commission-item .comm-percent { flex: 0 1 90px; }
+.contact-commission-item .contact-dynamic-remove {
+    align-self: flex-start;
+    margin-top: 2px;
+}
+
 /* صفحه جستجو و گزارشات */
 /* 🔧 استایل search-form-modal در بالا تعریف شده — این فقط نتایج */
 .search-results-table {
@@ -3558,9 +3677,7 @@ body.locked .header-actions button {
      عیناً همان عملکرد دکمهٔ + هدر را دارد ولی در وسط سمت چپ صفحه شناور است. -->
 <button class="floating-add-btn" id="floatingAddBtn" onclick="startAdding()" title="افزادن یادآور">+</button>
 
-<!-- 🔧 دکمهٔ شناور افزودن شخص جدید — فقط در صفحه اشخاص ظاهر می‌شود. -->
-<button class="floating-contact-btn" id="floatingContactBtn" onclick="openContactForm()" title="افزودن شخص جدید">➕</button>
-
+<!-- 🔧 v169: دکمهٔ شناور افزودن شخص حذف شد — به‌جای آن دکمهٔ «➕ جدید» در هدر صفحهٔ اشخاص قرار گرفت. -->
 <div class="container" id="container">
     <div class="empty">
         <div class="empty-icon">🎤</div>
@@ -3746,6 +3863,7 @@ body.locked .header-actions button {
             <h2>👥 بانک اطلاعاتی اشخاص</h2>
         </div>
         <div class="contacts-header-actions">
+            <button class="contacts-action-btn primary" onclick="openContactForm()">➕ جدید</button>
             <button class="contacts-action-btn" onclick="openContactSearch()">🔍 جستجو</button>
             <button class="contacts-action-btn" onclick="openTaskReport()">📋 گزارش کارها</button>
             <button class="contacts-action-btn" onclick="openContactReport()">📊 گزارش اشخاص</button>
@@ -3797,25 +3915,11 @@ body.locked .header-actions button {
                 </div>
             </div>
 
-            <!-- بخش اشانتیون -->
+            <!-- 🔧 v169: بخش اشانتیون‌ها (نامحدود) — هر رکورد دارای خواسته‌شده، داده‌شده، درصد -->
             <div class="contact-form-section">
-                <div class="contact-form-section-title">🎁 اشانتیون (کالا)</div>
-                <div class="contact-form-row">
-                    <div class="contact-form-field">
-                        <label>اشانتیون خواسته شده (کالا)</label>
-                        <input type="text" id="contactCommissionAsked" placeholder="مثال: گوشی سامسونگ">
-                    </div>
-                    <div class="contact-form-field">
-                        <label>اشانتیون داده شده (کالا)</label>
-                        <input type="text" id="contactCommissionPaid" placeholder="مثال: لپ‌تاپ ایسوس">
-                    </div>
-                </div>
-                <div class="contact-form-row">
-                    <div class="contact-form-field">
-                        <label>اعلام درصد کارپردازی به ایشان</label>
-                        <input type="text" id="contactCommissionPercent" placeholder="مثال: ۱۰٪">
-                    </div>
-                </div>
+                <div class="contact-form-section-title">🎁 اشانتیون (نامحدود)</div>
+                <div class="contact-dynamic-list" id="contactCommissionsList"></div>
+                <button class="contact-dynamic-add-btn" onclick="addContactCommission()">➕ افزودن اشانتیون</button>
             </div>
 
             <!-- بخش تلفن‌ها (نامحدود) -->
@@ -4722,7 +4826,22 @@ body.locked .header-actions button {
 //         ۲) HTML: style="display:none" حذف شد
 //         ۳) JS: classList.add/remove('show') — نه inline style
 //         ۴) openContacts/closeContacts: refreshFloatingContactBtn() صدا می‌زنند
-const APP_VERSION = 'v167-2026-11-07-floating-contact-class-based';
+//   v168 - FLOATING BTNS STICK TO BOTTOM-LEFT CORNER:
+//         left: 100px → 16px, bottom: 200px → 16px (چسبیده به گوشه)
+//         موبایل: left: 12px, bottom: 12px
+//   v169 - REMOVE FLOATING CONTACT BTN + PHONE PER-NUMBER ACTIONS + UNLIMITED COMMISSIONS:
+//         ۱) دکمهٔ شناور ➕ شخص از صفحه اشخاص حذف شد — به‌جای آن دکمهٔ «➕ جدید»
+//            در هدر صفحه اشخاص قرار گرفت.
+//         ۲) منوی لمسی شخص: تمام تلفن‌ها به‌صورت جداگانه نمایش داده می‌شوند.
+//            برای هر شماره دو دکمه «📞 تماس» و «💬 پیامک» وجود دارد که دقیقاً
+//            روی همان شماره (tel:/sms:) باز می‌شوند. موبایل اصلی با نشان طلایی
+//            متمایز می‌شود.
+//         ۳) اشانتیون نامحدود: ساختار تکی commissionAsked/commissionPaid/
+//            commissionPercent با آرایه commissions: [{asked, paid, percent}, ...]
+//            جایگزین شد. در فرم، هر رکورد سه input دارد. مهاجرت خودکار از داده‌های
+//            قدیمی در migrateContacts پشتیبانی می‌شود. جستجو/گزارش/گزارش کارها
+//            همگی به‌روزرسانی شدند تا روی همهٔ رکوردها کار کنند.
+const APP_VERSION = 'v169-2026-11-08-no-fab-per-phone-comm-unlimited';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -5741,11 +5860,36 @@ function migrateGroups(rawGroups) {
 
 // مهاجرت بانک اطلاعاتی اشخاص (contacts)
 // اگر بک‌آپ قدیمی است و contacts ندارد، آرایه خالی برمی‌گرداند
+// 🔧 v169: مهاجرت از فیلدهای تکی commissionAsked/commissionPaid/commissionPercent
+//          به آرایه commissions: [{asked, paid, percent}, ...]
 function migrateContacts(rawContacts) {
     if (!Array.isArray(rawContacts)) return [];
     return rawContacts
         .filter(c => c && c.id && c.name)
         .map(c => {
+            // 🔧 v169: مهاجرت اشانتیون — اگر آرایه commissions ندارد ولی فیلدهای تکی دارد،
+            // یک رکورد از آن‌ها بساز. اگر هر دو ساختار وجود دارند، آرایه را اولویت بده.
+            let commissions = [];
+            if (Array.isArray(c.commissions)) {
+                commissions = c.commissions.filter(function(cm) {
+                    return cm && typeof cm === 'object';
+                }).map(function(cm) {
+                    return {
+                        asked: cm.asked ? String(cm.asked) : '',
+                        paid: cm.paid ? String(cm.paid) : '',
+                        percent: cm.percent ? String(cm.percent) : ''
+                    };
+                });
+            }
+            // اگر commissions خالی است ولی فیلدهای تکی قدیمی پر هستند، یک رکورد بساز
+            if (commissions.length === 0) {
+                const oldAsked = c.commissionAsked ? String(c.commissionAsked).trim() : '';
+                const oldPaid = c.commissionPaid ? String(c.commissionPaid).trim() : '';
+                const oldPercent = c.commissionPercent ? String(c.commissionPercent).trim() : '';
+                if (oldAsked || oldPaid || oldPercent) {
+                    commissions = [ { asked: oldAsked, paid: oldPaid, percent: oldPercent } ];
+                }
+            }
             const out = {
                 id: String(c.id),
                 company: c.company ? String(c.company) : '',
@@ -5753,9 +5897,7 @@ function migrateContacts(rawContacts) {
                 position: c.position ? String(c.position) : '',
                 startDate: c.startDate ? String(c.startDate) : '',
                 birthDate: c.birthDate ? String(c.birthDate) : '',
-                commissionAsked: c.commissionAsked ? String(c.commissionAsked) : '',
-                commissionPaid: c.commissionPaid ? String(c.commissionPaid) : '',
-                commissionPercent: c.commissionPercent ? String(c.commissionPercent) : '',
+                commissions: commissions,
                 phones: Array.isArray(c.phones) ? c.phones.filter(p => p).map(p => String(p)) : [],
                 primaryPhone: c.primaryPhone ? String(c.primaryPhone) : '',  // 🔧 موبایل اصلی
                 addresses: Array.isArray(c.addresses) ? c.addresses.filter(a => a).map(a => String(a)) : [],
@@ -5766,7 +5908,7 @@ function migrateContacts(rawContacts) {
             const knownContactKeys = new Set([
                 'id', 'company', 'name', 'position',
                 'startDate', 'birthDate',
-                'commissionAsked', 'commissionPaid', 'commissionPercent',
+                'commissions',
                 'phones', 'primaryPhone', 'addresses', 'notes', 'createdAt'
             ]);
             for (const key of Object.keys(c)) {
@@ -11082,14 +11224,17 @@ let toastTimer;
 //     position: string,        // سمت
 //     startDate: string,       // تاریخ شروع همکاری (شمسی)
 //     birthDate: string,       // تاریخ تولد (شمسی)
-//     commissionAsked: string, // اشانتیون خواسته شده
-//     commissionPaid: string,  // اشانتیون داده شده
-//     commissionPercent: string, // اعلام درصد کارپردازی
+//     commissions: [           // لیست اشانتیون‌ها (نامحدود) — v169
+//       { asked: string, paid: string, percent: string }
+//     ],
 //     phones: [string],        // لیست تلفن‌ها (نامحدود)
+//     primaryPhone: string,    // موبایل اصلی (یکی از phones)
 //     addresses: [string],     // لیست آدرس‌ها (نامحدود)
 //     notes: [string],         // لیست توضیحات (نامحدود)
 //     createdAt: string        // تاریخ ایجاد (ISO)
 //   }
+// 🔧 v169: فیلدهای تکی قدیمی commissionAsked/commissionPaid/commissionPercent
+//          به‌صورت خودکار به یک رکورد در commissions مهاجرت می‌شوند.
 
 const CONTACTS_KEY = 'contacts_db_v1';
 let _editingContactId = null;
@@ -11761,13 +11906,14 @@ function renderContactsList() {
 }
 
 // 🔧 v144: منوی لمسی شخص — وقتی روی یک شخص کلیک می‌شود، باز می‌شود
+// 🔧 v169: تمام تلفن‌ها نمایش داده می‌شوند — برای هر شماره، دو دکمه «تماس» و «پیامک»
+//          وجود دارد که دقیقاً روی همان شماره باز می‌شوند.
 function showContactActionMenu(contactId) {
     const c = getContactById(contactId);
     if (!c) return;
     // حذف منوی قبلی
     const old = document.getElementById('contactActionMenuOverlay');
     if (old) old.remove();
-    const displayPhone = c.primaryPhone || ((c.phones && c.phones.length > 0) ? c.phones[0] : '');
     const overlay = document.createElement('div');
     overlay.className = 'contact-action-menu-overlay';
     overlay.id = 'contactActionMenuOverlay';
@@ -11779,24 +11925,81 @@ function showContactActionMenu(contactId) {
     if (c.company) headerHtml += ' — ' + escapeHtml(c.company);
     headerHtml += '</div>';
     menu.innerHTML = headerHtml;
-    // گزینه‌ها
+
+    // 🔧 ساخت یک container برای آیتم‌های اصلی
+    const itemsContainer = document.createElement('div');
+    menu.appendChild(itemsContainer);
+
+    // گزینه‌های اصلی
     const items = [
         { icon: '➕', label: 'ایجاد تسک برای این شخص', color: '#4CAF50', action: "closeContactActionMenu(); addTaskForContact('" + contactId + "')" },
         { icon: '✏️', label: 'ویرایش شخص', color: '#1976D2', action: "closeContactActionMenu(); editContact('" + contactId + "')" },
         { icon: '🗑', label: 'حذف شخص', color: '#f44336', action: "closeContactActionMenu(); deleteContact('" + contactId + "')" },
     ];
-    // اگر تلفن دارد، گزینه‌های تلفن را اضافه کن
-    if (displayPhone) {
-        items.push({ icon: '📞', label: 'تماس: ' + escapeHtml(displayPhone), color: '#009688', action: "closeContactActionMenu(); window.location.href='tel:" + displayPhone + "'" });
-        items.push({ icon: '💬', label: 'پیامک', color: '#FF9800', action: "closeContactActionMenu(); window.location.href='sms:" + displayPhone + "'" });
-    }
     items.forEach(function(item) {
         const div = document.createElement('div');
         div.className = 'contact-action-menu-item';
         div.innerHTML = '<div class="contact-action-menu-item-icon" style="background:' + item.color + '">' + item.icon + '</div><span>' + item.label + '</span>';
         div.setAttribute('onclick', item.action);
-        menu.appendChild(div);
+        itemsContainer.appendChild(div);
     });
+
+    // 🔧 v169: بخش تلفن‌ها — هر شماره به‌صورت جداگانه با دو دکمه «تماس» و «پیامک»
+    //          هر دو دکمه دقیقاً روی همان شماره باز می‌شوند.
+    const phones = (c.phones || []).filter(p => p && String(p).trim());
+    if (phones.length > 0) {
+        const phonesHeader = document.createElement('div');
+        phonesHeader.className = 'contact-action-phones-header';
+        phonesHeader.textContent = '📞 تلفن‌ها (برای تماس یا پیامک، شماره را لمس کنید)';
+        itemsContainer.appendChild(phonesHeader);
+
+        phones.forEach(function(phone, idx) {
+            const safePhone = String(phone).replace(/'/g, "\\'");
+            const isPrimary = (c.primaryPhone && phone === c.primaryPhone);
+            const row = document.createElement('div');
+            row.className = 'contact-action-phone-row' + (isPrimary ? ' is-primary' : '');
+            // متن شماره + نشان «موبایل اصلی»
+            const phoneText = document.createElement('div');
+            phoneText.className = 'contact-action-phone-text';
+            phoneText.innerHTML = '<span class="contact-action-phone-num">' + escapeHtml(phone) + '</span>' +
+                                  (isPrimary ? '<span class="contact-action-phone-badge">موبایل اصلی</span>' : '');
+            row.appendChild(phoneText);
+            // دو دکمه تماس و پیامک — هر دو روی همین شماره
+            const callBtn = document.createElement('button');
+            callBtn.className = 'contact-action-phone-btn call';
+            callBtn.innerHTML = '📞 تماس';
+            callBtn.setAttribute('onclick', "closeContactActionMenu(); window.location.href='tel:" + safePhone + "'");
+            row.appendChild(callBtn);
+
+            const smsBtn = document.createElement('button');
+            smsBtn.className = 'contact-action-phone-btn sms';
+            smsBtn.innerHTML = '💬 پیامک';
+            smsBtn.setAttribute('onclick', "closeContactActionMenu(); window.location.href='sms:" + safePhone + "'");
+            row.appendChild(smsBtn);
+
+            itemsContainer.appendChild(row);
+        });
+    }
+
+    // 🔧 v169: بخش اشانتیون‌ها — هر رکورد به‌صورت جداگانه نمایش داده می‌شود
+    const commissions = getContactCommissions(c);
+    if (commissions.length > 0) {
+        const commHeader = document.createElement('div');
+        commHeader.className = 'contact-action-phones-header';
+        commHeader.textContent = '🎁 اشانتیون‌ها';
+        itemsContainer.appendChild(commHeader);
+        commissions.forEach(function(cm, idx) {
+            const row = document.createElement('div');
+            row.className = 'contact-action-commission-row';
+            let parts = [];
+            if (cm.asked) parts.push('خواسته: ' + escapeHtml(cm.asked));
+            if (cm.paid) parts.push('داده: ' + escapeHtml(cm.paid));
+            if (cm.percent) parts.push('درصد: ' + escapeHtml(cm.percent) + '٪');
+            row.innerHTML = '<span class="contact-action-commission-idx">' + toPersianNumber(idx + 1) + '.</span> ' + parts.join(' — ');
+            itemsContainer.appendChild(row);
+        });
+    }
+
     const closeBtn = document.createElement('button');
     closeBtn.className = 'contact-action-menu-close';
     closeBtn.textContent = '✕ بستن';
@@ -11826,10 +12029,9 @@ function openContactForm(id) {
         document.getElementById('contactPosition').value = c.position || '';
         document.getElementById('contactStartDate').value = c.startDate || '';
         document.getElementById('contactBirthDate').value = c.birthDate || '';
-        document.getElementById('contactCommissionAsked').value = c.commissionAsked || '';
-        document.getElementById('contactCommissionPaid').value = c.commissionPaid || '';
-        // 🔧 اگر درصد کارپردازی خالی است، ۰ نمایش داده شود (پیش‌فرض)
-        document.getElementById('contactCommissionPercent').value = c.commissionPercent || '0';
+        // 🔧 v169: اشانتیون‌های نامحدود — رکوردها از getContactCommissions گرفته می‌شود
+        //          (هم ساختار جدید commissions و هم ساختار قدیمی تکی پشتیبانی می‌شود)
+        renderCommissionsList(getContactCommissions(c));
         renderDynamicList('contactPhonesList', c.phones || [], 'تلفن', c.primaryPhone);
         renderDynamicList('contactAddressesList', c.addresses || [], 'آدرس');
         renderDynamicList('contactNotesList', c.notes || [], 'توضیح');
@@ -11839,10 +12041,8 @@ function openContactForm(id) {
         document.getElementById('contactPosition').value = '';
         document.getElementById('contactStartDate').value = '';
         document.getElementById('contactBirthDate').value = '';
-        document.getElementById('contactCommissionAsked').value = '';
-        document.getElementById('contactCommissionPaid').value = '';
-        // 🔧 پیش‌فرض ۰ برای درصد کارپردازی (طبق درخواست کاربر)
-        document.getElementById('contactCommissionPercent').value = '0';
+        // 🔧 v169: یک ردیف خالی اشانتیون به‌صورت پیش‌فرض
+        renderCommissionsList([ { asked: '', paid: '', percent: '' } ]);
         renderDynamicList('contactPhonesList', [''], 'تلفن');
         renderDynamicList('contactAddressesList', [''], 'آدرس');
         renderDynamicList('contactNotesList', [''], 'توضیح');
@@ -11997,6 +12197,134 @@ function getPrimaryPhone() {
     return '';
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v169: اشانتیون‌های نامحدود
+// هر شخص می‌تواند چندین رکورد اشانتیون داشته باشد. هر رکورد شامل:
+//   { asked: 'کالای خواسته شده', paid: 'کالای داده شده', percent: 'درصد کارپردازی' }
+// در فرم، هر رکورد به‌صورت یک ردیف با سه input نمایش داده می‌شود.
+// برای سازگاری با داده‌های قدیمی، تابع getContactCommissions هم رکوردهای
+// commissions جدید و هم فیلدهای تکی قدیمی را به‌صورت یک آرایه برمی‌گرداند.
+// ════════════════════════════════════════════════════════════════════
+
+// ساخت یک ردیف input برای اشانتیون
+function _makeCommissionField(parent, labelText, value, placeholder, extraClass) {
+    const field = document.createElement('div');
+    field.className = 'comm-field' + (extraClass ? ' ' + extraClass : '');
+    const label = document.createElement('label');
+    label.textContent = labelText;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = value || '';
+    input.placeholder = placeholder;
+    field.appendChild(label);
+    field.appendChild(input);
+    parent.appendChild(field);
+    return input;
+}
+
+// رندر لیست اشانتیون‌ها — هر رکورد شامل سه input
+function renderCommissionsList(items) {
+    const list = document.getElementById('contactCommissionsList');
+    if (!list) return;
+    list.innerHTML = '';
+    if (!items || items.length === 0) items = [ { asked: '', paid: '', percent: '' } ];
+    items.forEach(function(cm) {
+        const div = document.createElement('div');
+        div.className = 'contact-commission-item';
+        _makeCommissionField(div, 'خواسته شده (کالا)', cm.asked, 'مثال: گوشی سامسونگ');
+        _makeCommissionField(div, 'داده شده (کالا)', cm.paid, 'مثال: لپ‌تاپ ایسوس');
+        _makeCommissionField(div, 'درصد کارپردازی', cm.percent, 'مثال: ۱۰', 'comm-percent');
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'contact-dynamic-remove';
+        removeBtn.textContent = '×';
+        removeBtn.onclick = function(e) {
+            e.stopPropagation();
+            if (list.children.length > 1) {
+                div.remove();
+            } else {
+                // ردیف آخر را پاک کن (همه inputها)
+                div.querySelectorAll('input').forEach(function(i) { i.value = ''; });
+            }
+        };
+        div.appendChild(removeBtn);
+        list.appendChild(div);
+    });
+}
+
+// افزودن یک ردیف اشانتیون جدید
+function addContactCommission() {
+    const list = document.getElementById('contactCommissionsList');
+    if (!list) return;
+    const div = document.createElement('div');
+    div.className = 'contact-commission-item';
+    _makeCommissionField(div, 'خواسته شده (کالا)', '', 'مثال: گوشی سامسونگ');
+    _makeCommissionField(div, 'داده شده (کالا)', '', 'مثال: لپ‌تاپ ایسوس');
+    _makeCommissionField(div, 'درصد کارپردازی', '', 'مثال: ۱۰', 'comm-percent');
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'contact-dynamic-remove';
+    removeBtn.textContent = '×';
+    removeBtn.onclick = function(e) {
+        e.stopPropagation();
+        if (list.children.length > 1) {
+            div.remove();
+        } else {
+            div.querySelectorAll('input').forEach(function(i) { i.value = ''; });
+        }
+    };
+    div.appendChild(removeBtn);
+    list.appendChild(div);
+    // فوکوس روی اولین input ردیف جدید
+    const firstInput = div.querySelector('input');
+    if (firstInput) firstInput.focus();
+}
+
+// گرفتن لیست اشانتیون‌ها از فرم (فقط رکوردهایی که حداقل یکی از سه فیلد پر شده)
+function getCommissionsFromForm() {
+    const list = document.getElementById('contactCommissionsList');
+    if (!list) return [];
+    const result = [];
+    list.querySelectorAll('.contact-commission-item').forEach(function(item) {
+        const inputs = item.querySelectorAll('input');
+        if (inputs.length < 3) return;
+        const asked = (inputs[0].value || '').trim();
+        const paid = (inputs[1].value || '').trim();
+        const percent = (inputs[2].value || '').trim();
+        if (asked || paid || percent) {
+            result.push({ asked: asked, paid: paid, percent: percent });
+        }
+    });
+    return result;
+}
+
+// گرفتن لیست اشانتیون‌ها از یک شخص ذخیره‌شده
+// این تابع هم ساختار جدید (commissions: []) و هم ساختار قدیمی
+// (commissionAsked/commissionPaid/commissionPercent) را پشتیبانی می‌کند.
+function getContactCommissions(c) {
+    if (!c) return [];
+    // ساختار جدید
+    if (Array.isArray(c.commissions)) {
+        return c.commissions.filter(function(cm) {
+            return cm && ((cm.asked && String(cm.asked).trim()) ||
+                          (cm.paid && String(cm.paid).trim()) ||
+                          (cm.percent && String(cm.percent).trim()));
+        }).map(function(cm) {
+            return {
+                asked: cm.asked ? String(cm.asked) : '',
+                paid: cm.paid ? String(cm.paid) : '',
+                percent: cm.percent ? String(cm.percent) : ''
+            };
+        });
+    }
+    // مهاجرت از ساختار قدیمی
+    const oldAsked = c.commissionAsked ? String(c.commissionAsked).trim() : '';
+    const oldPaid = c.commissionPaid ? String(c.commissionPaid).trim() : '';
+    const oldPercent = c.commissionPercent ? String(c.commissionPercent).trim() : '';
+    if (oldAsked || oldPaid || oldPercent) {
+        return [ { asked: oldAsked, paid: oldPaid, percent: oldPercent } ];
+    }
+    return [];
+}
+
 // ─── ذخیره شخص ───
 
 function saveContact() {
@@ -12012,9 +12340,8 @@ function saveContact() {
         position: document.getElementById('contactPosition').value.trim(),
         startDate: document.getElementById('contactStartDate').value.trim(),
         birthDate: document.getElementById('contactBirthDate').value.trim(),
-        commissionAsked: document.getElementById('contactCommissionAsked').value.trim(),
-        commissionPaid: document.getElementById('contactCommissionPaid').value.trim(),
-        commissionPercent: document.getElementById('contactCommissionPercent').value.trim(),
+        // 🔧 v169: اشانتیون‌های نامحدود — ذخیره به‌صورت آرایه از رکوردها
+        commissions: getCommissionsFromForm(),
         phones: getDynamicListValues('contactPhonesList'),
         primaryPhone: getPrimaryPhone(),  // 🔧 موبایل اصلی
         addresses: getDynamicListValues('contactAddressesList'),
@@ -12115,24 +12442,54 @@ function filterContacts(criteria) {
         contacts = contacts.filter(c => (c.phones || []).some(p => p.toLowerCase().includes(criteria.phone)));
     }
     if (criteria.commissionAskedMin) {
-        // 🔧 اشانتیون کالا است، نه مبلغ — جستجوی متنی
-        contacts = contacts.filter(c => (c.commissionAsked || '').toLowerCase().includes(criteria.commissionAskedMin.toLowerCase()));
+        // 🔧 v169: جستجوی متنی در همهٔ رکوردهای commissions[].asked
+        const q = criteria.commissionAskedMin.toLowerCase();
+        contacts = contacts.filter(c => {
+            const cms = getContactCommissions(c);
+            return cms.some(function(cm) {
+                return (cm.asked || '').toLowerCase().includes(q);
+            });
+        });
     }
     if (criteria.commissionPaidMin) {
-        // 🔧 اشانتیون کالا است، نه مبلغ — جستجوی متنی
-        contacts = contacts.filter(c => (c.commissionPaid || '').toLowerCase().includes(criteria.commissionPaidMin.toLowerCase()));
+        // 🔧 v169: جستجوی متنی در همهٔ رکوردهای commissions[].paid
+        const q = criteria.commissionPaidMin.toLowerCase();
+        contacts = contacts.filter(c => {
+            const cms = getContactCommissions(c);
+            return cms.some(function(cm) {
+                return (cm.paid || '').toLowerCase().includes(q);
+            });
+        });
     }
     // 🔧 v146: فیلتر درصد کارپردازی — ۴ حالت
+    // 🔧 v169: اکنون بر اساس همهٔ رکوردهای commissions[].percent بررسی می‌شود
     if (criteria.commissionMode && criteria.commissionMode !== 'all') {
         if (criteria.commissionMode === 'zero') {
-            contacts = contacts.filter(c => parseFloat(c.commissionPercent || '0') === 0);
-        } else if (criteria.commissionMode === 'nonzero') {
+            // هیچ رکوردی با درصد مخالف صفر نباشد
             contacts = contacts.filter(c => {
-                const cp = parseFloat(c.commissionPercent || '0');
-                return !isNaN(cp) && cp !== 0;
+                const cms = getContactCommissions(c);
+                if (cms.length === 0) return true;  // بدون اشانتیون = صفر
+                return cms.every(function(cm) {
+                    return parseFloat(cm.percent || '0') === 0;
+                });
+            });
+        } else if (criteria.commissionMode === 'nonzero') {
+            // حداقل یک رکورد با درصد مخالف صفر داشته باشد
+            contacts = contacts.filter(c => {
+                const cms = getContactCommissions(c);
+                return cms.some(function(cm) {
+                    const cp = parseFloat(cm.percent || '0');
+                    return !isNaN(cp) && cp !== 0;
+                });
             });
         } else if (criteria.commissionMode === 'specific' && criteria.commissionValue) {
-            contacts = contacts.filter(c => (c.commissionPercent || '').includes(criteria.commissionValue));
+            // حداقل یک رکورد با درصد شامل مقدار مشخص داشته باشد
+            contacts = contacts.filter(c => {
+                const cms = getContactCommissions(c);
+                return cms.some(function(cm) {
+                    return (cm.percent || '').includes(criteria.commissionValue);
+                });
+            });
         }
     }
 
@@ -12345,17 +12702,22 @@ function showContactReportResults(results, criteria) {
     if (results.length === 0) {
         html += '<div class="contacts-empty"><div class="contacts-empty-icon">📊</div><div>هیچ نتیجه‌ای برای گزارش یافت نشد</div></div>';
     } else {
-        // 🔧 اشانتیون کالا است، نه مبلغ — تعداد کالاهای خواسته/داده شده را می‌شماریم
-        let askedCount = 0, paidCount = 0;
+        // 🔧 v169: شمارش رکوردهای اشانتیون خواسته/داده شده در همهٔ persons
+        let askedCount = 0, paidCount = 0, totalCommissionRecords = 0;
         results.forEach(c => {
-            if (c.commissionAsked && c.commissionAsked.trim()) askedCount++;
-            if (c.commissionPaid && c.commissionPaid.trim()) paidCount++;
+            const cms = getContactCommissions(c);
+            totalCommissionRecords += cms.length;
+            cms.forEach(function(cm) {
+                if (cm.asked && cm.asked.trim()) askedCount++;
+                if (cm.paid && cm.paid.trim()) paidCount++;
+            });
         });
 
         html += '<div class="contact-form-section" style="margin-bottom:12px;">';
         html += '<div class="contact-form-section-title">📈 خلاصه آماری</div>';
         html += '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px;">';
         html += '<div>👥 تعداد اشخاص: <b>' + toPersianNumber(results.length) + '</b></div>';
+        html += '<div>🎁 مجموع رکوردهای اشانتیون: <b>' + toPersianNumber(totalCommissionRecords) + '</b></div>';
         html += '<div>🎁 دارای اشانتیون خواسته شده: <b>' + toPersianNumber(askedCount) + '</b></div>';
         html += '<div>🎁 دارای اشانتیون داده شده: <b>' + toPersianNumber(paidCount) + '</b></div>';
         html += '</div></div>';
@@ -12364,9 +12726,23 @@ function showContactReportResults(results, criteria) {
         html += '<table class="search-results-table"><thead><tr>';
         html += '<th>ردیف</th><th>نام شرکت</th><th>نام</th><th>سمت</th>';
         html += '<th>تلفن‌ها</th><th>آدرس</th><th>شروع همکاری</th><th>تولد</th>';
-        html += '<th>اشانتیون خواسته</th><th>اشانتیون داده</th><th>درصد</th><th>توضیحات</th>';
+        html += '<th>اشانتیون‌ها (خواسته / داده / درصد)</th><th>توضیحات</th>';
         html += '</tr></thead><tbody>';
         results.forEach((c, idx) => {
+            const cms = getContactCommissions(c);
+            let commissionsHtml;
+            if (cms.length === 0) {
+                commissionsHtml = '—';
+            } else {
+                commissionsHtml = cms.map(function(cm, i) {
+                    let parts = [];
+                    if (cm.asked) parts.push('خواسته: ' + escapeHtml(cm.asked));
+                    if (cm.paid) parts.push('داده: ' + escapeHtml(cm.paid));
+                    if (cm.percent) parts.push('درصد: ' + escapeHtml(cm.percent) + '٪');
+                    const line = (i + 1) + '. ' + (parts.length ? parts.join(' — ') : 'خالی');
+                    return '<div style="margin-bottom:3px;">' + line + '</div>';
+                }).join('');
+            }
             html += '<tr>';
             html += '<td>' + toPersianNumber(idx + 1) + '</td>';
             html += '<td>' + escapeHtml(c.company || '—') + '</td>';
@@ -12376,9 +12752,7 @@ function showContactReportResults(results, criteria) {
             html += '<td>' + (c.addresses || []).map(a => escapeHtml(a)).join('<br>') + '</td>';
             html += '<td>' + escapeHtml(c.startDate || '—') + '</td>';
             html += '<td>' + escapeHtml(c.birthDate || '—') + '</td>';
-            html += '<td>' + escapeHtml(c.commissionAsked || '—') + '</td>';
-            html += '<td>' + escapeHtml(c.commissionPaid || '—') + '</td>';
-            html += '<td>' + escapeHtml(c.commissionPercent || '—') + '</td>';
+            html += '<td style="font-size:11px;">' + commissionsHtml + '</td>';
             html += '<td>' + (c.notes || []).map(n => escapeHtml(n)).join('<br>') + '</td>';
             html += '</tr>';
         });
@@ -12640,13 +13014,28 @@ function executeTaskReport() {
             // 🔧 v144: فیلتر نام شخص
             if (contactName && !(contact.name || '').toLowerCase().includes(contactName)) return false;
             if (position && !(contact.position || '').toLowerCase().includes(position)) return false;
-            const cp = (contact.commissionPercent || '0').toString();
+            // 🔧 v169: درصد کارپردازی اکنون از آرایه commissions بررسی می‌شود
+            const cms = getContactCommissions(contact);
             if (commissionMode === 'zero') {
-                if (parseFloat(cp) !== 0) return false;
+                // هیچ رکوردی با درصد مخالف صفر نباشد
+                const hasNonZero = cms.some(function(cm) {
+                    const cp = parseFloat(cm.percent || '0');
+                    return !isNaN(cp) && cp !== 0;
+                });
+                if (hasNonZero) return false;
             } else if (commissionMode === 'nonzero') {
-                if (parseFloat(cp) === 0 || isNaN(parseFloat(cp))) return false;
+                // حداقل یک رکورد با درصد مخالف صفر داشته باشد
+                const hasNonZero = cms.some(function(cm) {
+                    const cp = parseFloat(cm.percent || '0');
+                    return !isNaN(cp) && cp !== 0;
+                });
+                if (!hasNonZero) return false;
             } else if (commissionMode === 'specific') {
-                if (cp !== commissionValue) return false;
+                // حداقل یک رکورد با درصد دقیقاً برابر مقدار مشخص داشته باشد
+                const hasMatch = cms.some(function(cm) {
+                    return (cm.percent || '') === commissionValue;
+                });
+                if (!hasMatch) return false;
             }
         } else if (commissionMode !== 'all' || company || contactName || position) {
             // اگر فیلتر شخصی فعال است ولی تسک شخص ندارد → رد کن
