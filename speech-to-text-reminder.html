@@ -794,6 +794,7 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     align-items: center;
     justify-content: center;
     padding: 16px;
+    padding-top: 78px;  /* 🔧 v152: ۶۲px هدر + ۱۶px padding */
     backdrop-filter: blur(2px);
     /* 🔧 وقتی مودال باز است، صفحه زیر آن اسکرول نشود */
     overflow: hidden;
@@ -1793,17 +1794,16 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     border: 3px solid #000 !important;
     /* 🔧 طبق درخواست کاربر: این گروه‌ها در جای خود فیکس می‌شوند (sticky)
        و با اسکرول حرکت نمی‌کنند. */
+    /* 🔧 v152: top زیر هدر اصلی (62px) — JS هم این مقدار را محاسبه می‌کند */
     position: sticky;
     position: -webkit-sticky;
-    top: 0;
+    top: 62px;
     z-index: 50;
 }
 /* 🔧 گروه «کارهای فوری» زیر «همه کارها» فیکس می‌شود.
-   ارتفاع هر group-item: padding(16+16) + min-height(60) + border(3+3) = 98px
-   + gap (6px) = 104px. ولی چون margin-bottom صفر شده، 98px کافی است.
-   مقدار کمی بیشتر (4px) برای فاصلهٔ استاندارد. */
+   ۶۲px (هدر) + ۱۰۲px (همه کارها) = ۱۶۴px */
 .group-item-fixed.group-urgent {
-    top: 102px;
+    top: 164px;
     z-index: 49;
 }
 /* 🔧 پس‌زمینهٔ کمی مات برای خوانایی */
@@ -1876,7 +1876,7 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     width: 100%;
     position: sticky;
     position: -webkit-sticky;
-    top: 0;
+    top: 62px;  /* 🔧 v152: زیر هدر اصلی */
     z-index: 100;
     transition: transform 0.2s;
     -webkit-user-select: none;
@@ -2645,6 +2645,7 @@ body.locked .header-actions button {
     display: none;
     flex-direction: column;
     direction: rtl;
+    padding-top: 62px;  /* 🔧 v152: فضا برای هدر fixed */
 }
 .notes-overlay.active { display: flex; }
 .notes-header {
@@ -2745,7 +2746,7 @@ body.locked .header-actions button {
 
 .contacts-header {
     position: sticky;
-    top: 0;
+    top: 0;  /* 🔧 v152: sticky داخل overlay با padding-top:62px — top:0 یعنی زیر هدر */
     background: linear-gradient(135deg, #1976D2, #0D47A1);
     color: white;
     padding: 14px 16px;
@@ -4630,7 +4631,19 @@ body.locked .header-actions button {
 //         قابل کلیک هستند — حتی وقتی overlay/منو/مودال باز است.
 //         body و contacts-overlay padding-top: 62px اضافه شد (فضای هدر).
 //         🔒 این یک قانون همیشگی است — هدر همیشه اولویت کلیک دارد.
-const APP_VERSION = 'v151-2026-11-07-header-always-on-top';
+//   v152 - ALL HEADERS ALIGNED BELOW MAIN HEADER:
+//         ۱) group-tasks-header: sticky top 0 → 62px
+//         ۲) group items (all/urgent): sticky top 0 → 62px / 164px
+//         ۳) notes-overlay: padding-top 62px اضافه شد
+//         ۴) modal-overlay: padding-top 78px (62+16) اضافه شد
+//         ۵) 🔒 قانون: همه هدرها و overlayها باید زیر هدر اصلی تراز شوند
+//   v153 - FLOATING BUTTON FIX (CRITICAL):
+//         MutationObserver حذف شد (باعث feedback loop → دکمه همیشه پنهان)
+//         به‌جای آن: setInterval هر ۵۰۰ms (ساده و قابل اعتماد)
+//         _refreshFloatingAddBtn: فقط اگر مقدار تغییر کرده style را به‌روزرسانی کن
+//         🔒 قانون: دکمه + شناور فقط در tasks view + بدون overlay
+//         🔒 قانون: دکمه + شناور اشpersons فقط در contacts + بدون overlay
+const APP_VERSION = 'v153-2026-11-07-floating-button-fix';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -9468,16 +9481,16 @@ function isAnyOverlayOpen() {
 function _refreshFloatingAddBtn() {
     var fab = document.getElementById('floatingAddBtn');
     if (!fab) return;
-    // 🔧 v147: قانون جهانی — دکمه + شناور فقط وقتی نمایش داده شود که:
-    //   ۱) در tasks view باشیم (داخل یک گروه)
-    //   ۲) هیچ overlay/منو/مودالی باز نباشد
-    // در غیر این صورت پنهان شود. بعد از بسته شدن overlay دوباره ظاهر شود.
-    if (currentView === 'tasks' && !isAnyOverlayOpen()) {
+    // 🔧 v153: قانون ساده و واضح:
+    // دکمه + شناور فقط وقتی نمایش داده شود که:
+    //   ۱) currentView === 'tasks' (داخل یک گروه)
+    //   ۲) هیچ overlay/منو/مودالی باز نباشد (isAnyOverlayOpen() === false)
+    var shouldShow = (currentView === 'tasks' && !isAnyOverlayOpen());
+    // فقط اگر مقدار تغییر کرده، style را به‌روزرسانی کن (جلوگیری از تغییرهای بی‌مورد)
+    if (shouldShow && fab.style.display !== 'flex') {
         fab.style.display = 'flex';
-    } else {
+    } else if (!shouldShow && fab.style.display !== 'none') {
         fab.style.display = 'none';
-        // 🔧 اگر در حال ضبط است، کلاس recording را حفظ کن (نه پنهان کردن)
-        // چون ضبط باید ادامه یابد حتی اگر دکمه پنهان باشد
     }
 }
 
@@ -14680,27 +14693,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ─────────────────────────────────────────────────────────────────────
-    // 🔧 v149: MutationObserver — به‌روزرسانی خودکار دکمه + شناور
+    // 🔧 v153: به‌روزرسانی دکمه + شناور — بدون MutationObserver
     // ─────────────────────────────────────────────────────────────────────
-    // وقتی هر overlay یا عنصری در صفحه تغییر می‌کند (class فعال/غیرفعال)،
-    // این observer به‌طور خودکار دکمه + شناور را به‌روزرسانی می‌کند.
-    // این تضمین می‌کند که دکمه + شناور در همهٔ حالات درست نمایش داده شود
-    // یا پنهان شود — بدون نیاز به صدا زدن دستی _refreshFloatingAddBtn().
-    try {
-        var _floatingObserver = new MutationObserver(function() {
+    // MutationObserver حذف شد چون باعث feedback loop می‌شد:
+    //   ۱) تابع style را تغییر می‌دهد
+    //   ۲) Observer فعال می‌شود
+    //   ۳) تابع دوباره صدا زده می‌شود
+    //   ۴) دوباره style تغییر می‌کند → goto 2
+    // به‌جای آن: یک interval ساده هر ۵۰۰ms دکمه‌ها را به‌روزرسانی می‌کند.
+    // این روش قابل اعتمادتر است و feedback loop ایجاد نمی‌کند.
+    // 🔒 قانون: دکمه + شناور فقط در tasks view + بدون overlay نمایش داده شود.
+    // 🔒 قانون: دکمه + شناور اشpersons فقط در contacts page + بدون overlay.
+    setInterval(function() {
+        try {
             _refreshFloatingAddBtn();
             refreshFloatingContactBtn();
-        });
-        _floatingObserver.observe(document.body, {
-            childList: true,        // عناصر اضافه/حذف شده
-            subtree: true,          // همهٔ زیرعناصر
-            attributes: true,       // تغییر attributeها
-            attributeFilter: ['class', 'style']  // فقط class و style
-        });
-        console.log('[Observer] Floating button auto-refresh active');
-    } catch(e) {
-        console.warn('[Observer] MutationObserver failed:', e);
-    }
+        } catch(e) {}
+    }, 500);
+    console.log('[Floating] Auto-refresh interval active (500ms)');
 
     // ─────────────────────────────────────────────────────────────────────
     // UI EVENT LISTENERS — modal close on overlay click, Escape key, etc.
