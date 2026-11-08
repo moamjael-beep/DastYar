@@ -1014,7 +1014,7 @@ body { padding-bottom: 30px; }
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.5);
-    z-index: 10002;
+    z-index: 10600;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2835,19 +2835,30 @@ body.locked .header-actions button {
        width روی خود textbox اعمال می‌شود، نه روی th */
 }
 .contacts-table th.filter-header input {
-    /* 🔧 v138: عرض ثابت روی textbox — نه روی th.
-       اینطوری textbox همیشه 140px است، اما ستون بر اساس محتوای داده
-       auto-size می‌شود و جدول به اندازهٔ اصلی برمی‌گردد. */
-    width: 140px;
+    /* 🔧 v145: عرض کوچک‌تر برای جا شدن در موبایل */
+    width: 100%;
     box-sizing: border-box;
-    padding: 5px 7px;
+    padding: 4px 6px;
     border: 1px solid rgba(255,255,255,0.4);
     border-radius: 5px;
     background: white;
     color: #333;
-    font-size: 12px;
+    font-size: 11px;
     font-family: inherit;
     outline: none;
+}
+/* 🔧 v145: عرض ستون‌های فیلتر — شرکت/نام یکسان، سمت کوچک‌تر */
+.contacts-table th.filter-header { width: auto; }
+/* در ردیف فیلتر (ردیف دوم thead)، ستون شرکت و نام */
+.contacts-table thead tr:nth-child(2) th:nth-child(2),
+.contacts-table thead tr:nth-child(2) th:nth-child(3) {
+    width: 30%;
+    min-width: 80px;
+}
+/* ستون سمت — کوچک‌تر */
+.contacts-table thead tr:nth-child(2) th:nth-child(4) {
+    width: 20%;
+    min-width: 60px;
 }
 .contacts-table th.filter-header input:focus {
     border-color: white;
@@ -2892,7 +2903,7 @@ body.locked .header-actions button {
     background: white;
     border-radius: 16px 16px 0 0;
     box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
-    z-index: 10003;
+    z-index: 10602;
     padding: 16px;
     animation: slideUpMenu 0.25s;
     max-width: 500px;
@@ -2957,7 +2968,7 @@ body.locked .header-actions button {
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.4);
-    z-index: 10002;
+    z-index: 10601;
 }
 
 .contact-row-actions { display: flex; gap: 4px; }
@@ -3646,7 +3657,6 @@ body.locked .header-actions button {
             <h2>👥 بانک اطلاعاتی اشخاص</h2>
         </div>
         <div class="contacts-header-actions">
-            <button class="contacts-action-btn primary" onclick="openContactForm()">➕ جدید</button>
             <button class="contacts-action-btn" onclick="openContactSearch()">🔍 جستجو</button>
             <button class="contacts-action-btn" onclick="openTaskReport()">📋 گزارش کارها</button>
             <button class="contacts-action-btn" onclick="openContactReport()">📊 گزارش اشخاص</button>
@@ -4456,7 +4466,25 @@ body.locked .header-actions button {
 //            شامل: ➕ تسک، ✏️ ویرایش، 🗑 حذف، 📞 تماس، 💬 پیامک
 //         ۷) نتایج جستجو: شبیه جدول اصلی (همان ستون‌ها + sort + filter + منو)
 //         ۸) توابع جدید: showContactActionMenu, closeContactActionMenu
-const APP_VERSION = 'v144-2026-11-07-report-contacts-redesign';
+//   v145 - FILTER SIZE + REMOVE NEW BTN + OVERLAY STACK PRINCIPLE:
+//         ۱) باکس‌های فیلتر کوچک‌تر — هر سه در عرض موبایل جا شوند
+//            شرکت/نام: ۳۰% عرض، سمت: ۲۰% عرض (کوچک‌تر)
+//         ۲) حذف دکمه «➕ جدید» از هدر اشpersons (دکمه شناور + کافی است)
+//         ۳) 🔒 قانون جهانی Overlay Stack:
+//            هر صفحه/منوی جدید که بر اساس واکنش صفحه قبل باز می‌شود،
+//            صفحه قبل را نمی‌بندد — فقط روی آن باز می‌شود (z-index بالاتر).
+//            پس از بسته شدن، به همان صفحه قبل (با همان حالت) برمی‌گردیم.
+//            این قانون برای ۱۰۰۰ صفحه متوالی هم اعمال می‌شود — همه در
+//            پس‌زمینه باز می‌مانند و یکی‌یکی بسته می‌شوند.
+//            کلید back موبایل هم روی همین قواعد عمل می‌کند.
+//         ۴) addTaskForContact: دیگر contactsOverlay را نمی‌بندد — فقط
+//            پنهان می‌کند (display:none) و بعد از بستن فرم به آن برمی‌گردد.
+//         ۵) z-index اصلاح شد:
+//            contactsOverlay: 10000
+//            contact modals: 10500
+//            group-picker: 10600
+//            contact-action-menu: 10601/10602
+const APP_VERSION = 'v145-2026-11-07-filter-size-overlay-stack';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -10712,21 +10740,25 @@ function addTaskForContact(contactId) {
         showToast('شخص یافت نشد');
         return;
     }
-    // بستن صفحه اشخاص
-    closeContacts();
+    // 🔧 v145: طبق قانون overlay stack — صفحه اشpersons بسته نمی‌شود
+    // فقط منوی عملیات شخص را می‌بندیم (اگر باز است)
+    closeContactActionMenu();
     // 🔧 v135: منوی زیبای انتخاب گروه (به‌جای prompt عدد)
     const groups = getGroups().filter(g => g.id !== 'urgent');
     if (groups.length === 0) {
         showToast('ابتدا یک گروه بسازید');
         return;
     }
-    // نمایش منوی زیبا
+    // نمایش منوی زیبا — روی صفحه اشpersons (z-index بالاتر)
     showGroupPickerForContact(c, groups, function(selectedGroup) {
+        // 🔧 v145: قبل از رفتن به گروه، صفحه اشpersons را پنهان کنیم (نه بستن)
+        // تا وقتی فرم تسک بسته شد، به صفحه اشpersons برگردیم
+        document.getElementById('contactsOverlay').style.display = 'none';
         // تنظیم currentView به tasks و currentGroupId به گروه انتخاب‌شده
         currentView = 'tasks';
         currentGroupId = selectedGroup.id;
         expandedId = null;
-        navReplace({ view: 'tasks', groupId: selectedGroup.id });
+        navPush({ view: 'tasks', groupId: selectedGroup.id, fromContacts: true });
         fullRender();
         window.scrollTo({ top: 0, behavior: 'auto' });
         // باز کردن فرم ایجاد تسک
