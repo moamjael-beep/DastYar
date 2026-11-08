@@ -250,7 +250,7 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     position: fixed;
     left: 100px;
     bottom: 200px;
-    z-index: 9998;  /* 🔧 v157: زیر هدر (10700) اما بالای محتوا */
+    z-index: 9998;
     width: 70px;
     height: 70px;
     border-radius: 50%;
@@ -262,7 +262,7 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     line-height: 1;
     cursor: pointer;
     box-shadow: 0 6px 20px rgba(33,150,243,0.4);
-    /* 🔧 v157: display از CSS حذف شد — فقط JS کنترل می‌کند */
+    display: none;  /* 🔧 v163: CSS کنترل می‌کند — نه inline style */
     align-items: center;
     justify-content: center;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -272,6 +272,9 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .floating-add-btn:active {
     transform: scale(0.9);
     animation: none;
+}
+.floating-add-btn.show {
+    display: flex !important;  /* 🔧 v163: class show برای نمایش */
 }
 .floating-add-btn.recording {
     background: linear-gradient(135deg, #f44336, #d32f2f);
@@ -3551,7 +3554,7 @@ body.locked .header-actions button {
 
 <!-- 🔧 دکمهٔ شناور افزودن تسک — فقط در حالت نمایش تسک‌های یک گروه ظاهر می‌شود.
      عیناً همان عملکرد دکمهٔ + هدر را دارد ولی در وسط سمت چپ صفحه شناور است. -->
-<button class="floating-add-btn" id="floatingAddBtn" onclick="startAdding()" title="افزودن یادآور" style="display:none;">+</button>
+<button class="floating-add-btn" id="floatingAddBtn" onclick="startAdding()" title="افزادن یادآور">+</button>
 
 <!-- 🔧 دکمهٔ شناور افزودن شخص جدید — فقط در صفحه اشخاص ظاهر می‌شود. -->
 <button class="floating-contact-btn" id="floatingContactBtn" onclick="openContactForm()" title="افزودن شخص جدید" style="display:none;">➕</button>
@@ -4690,7 +4693,12 @@ body.locked .header-actions button {
 //         ۲) syncHeaderHeight: همه ۵ overlay (contacts + notes + 3 نتایج)
 //         ۳) overlayها: top:0 در CSS، syncHeaderHeight تنظیم می‌کند
 //   v162 - OVERDUE BLINK: orange ↔ yellow (نه red), 2s (نه 5s — سریع‌تر)
-const APP_VERSION = 'v162-2026-11-07-overdue-orange-yellow-fast';
+//   v163 - FLOATING BUTTON CLASS-BASED (راه‌حل اساسی):
+//         CSS: display:none (پیش‌فرض) + .show { display:flex !important }
+//         JS: classList.add/remove('show') — نه inline style
+//         HTML: style="display:none" حذف شد
+//         مشکل: inline style با CSS تداخل داشت → class بدون تداخل
+const APP_VERSION = 'v163-2026-11-07-floating-class-based';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -9535,23 +9543,23 @@ function _isVisible(id) {
 function _refreshFloatingAddBtn() {
     var fab = document.getElementById('floatingAddBtn');
     if (!fab) return;
-    // 🔧 v161: مکانیزم فوق ساده
-    // فقط در tasks view + بدون overlay فعال → نمایش
+    // 🔧 v163: مکانیزم با class — نه inline style
+    // CSS: .floating-add-btn { display: none } + .floating-add-btn.show { display: flex !important }
     var shouldShow = (currentView === 'tasks' && expandedId === null);
     if (shouldShow) {
-        // اگر هر overlay با class active موجود است → پنهان
         var actives = document.querySelectorAll('.modal-overlay.active, .contacts-overlay.active, .notes-overlay.active');
         for (var i = 0; i < actives.length; i++) {
             if (actives[i].style.display !== 'none') { shouldShow = false; break; }
         }
     }
+    if (shouldShow && typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu) shouldShow = false;
+    if (shouldShow && (document.getElementById('groupPickerOverlay') || document.getElementById('bellSettingsOverlay'))) shouldShow = false;
+    // فقط class را toggle کن — نه inline style
     if (shouldShow) {
-        if (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu) shouldShow = false;
+        fab.classList.add('show');
+    } else {
+        fab.classList.remove('show');
     }
-    if (shouldShow) {
-        if (document.getElementById('groupPickerOverlay') || document.getElementById('bellSettingsOverlay')) shouldShow = false;
-    }
-    fab.style.display = shouldShow ? 'flex' : 'none';
 }
 
 function render() {
