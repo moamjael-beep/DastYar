@@ -739,25 +739,25 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .item.warning { background: linear-gradient(135deg, #FB8C00, #E65100); }
 .item.urgent { background: linear-gradient(135deg, #E53935, #B71C1C); }
 
-/* Overdue: blinking orange <-> red, 5s cycle, stays at top until user acts */
+/* 🔧 v162: Overdue: blinking orange <-> yellow, 2s cycle (سریع‌تر), stays at top */
 @keyframes overdueBlink {
     0%, 100% {
-        background-color: #E65100;
+        background-color: #E65100;  /* نارنجی تیره */
         box-shadow: 0 2px 14px rgba(251, 140, 0, 0.5);
     }
     50% {
-        background-color: #B71C1C;
-        box-shadow: 0 2px 18px rgba(229, 57, 53, 0.7);
+        background-color: #F9A825;  /* زرد پررنگ */
+        box-shadow: 0 2px 18px rgba(249, 168, 37, 0.7);
     }
 }
 .item.overdue {
-    background-color: #B71C1C; /* fallback (red) when animation unsupported */
-    animation: overdueBlink 5s ease-in-out infinite;
+    background-color: #E65100; /* fallback (نارنجی) */
+    animation: overdueBlink 2s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
     .item.overdue {
         animation: none;
-        background-color: #B71C1C;
+        background-color: #E65100;
     }
 }
 
@@ -2638,7 +2638,7 @@ body.locked .header-actions button {
 /* ============ 📝 صفحه یادداشت ============ */
 .notes-overlay {
     position: fixed;
-    top: 62px;  /* 🔧 v155: زیر هدر اصلی شروع شود — نه inset:0 */
+    top: 0;  /* 🔧 v161: syncHeaderHeight تنظیم می‌کند */
     left: 0;
     right: 0;
     bottom: 0;
@@ -2735,7 +2735,7 @@ body.locked .header-actions button {
 /* ============ 👥 بانک اطلاعاتی اشخاص (CRM) ============ */
 .contacts-overlay {
     position: fixed;
-    top: 62px;  /* 🔧 v155: زیر هدر اصلی شروع شود — نه inset:0 */
+    top: 0;  /* 🔧 v161: از top:0 شروع — syncHeaderHeight تنظیم می‌کند */
     left: 0;
     right: 0;
     bottom: 0;
@@ -4685,7 +4685,12 @@ body.locked .header-actions button {
 //         ۲) CSS: contactSearchResultsOverlay + contactReportResultsOverlay z-index 10500 !important
 //         ۳) closeContacts: co.style.display = '' (پاک کردن inline display:none)
 //         ۴) closeContacts: _refreshFloatingAddBtn() صدا زده می‌شود
-const APP_VERSION = 'v160-2026-11-07-zindex-important-close-reset';
+//   v161 - FLOATING SIMPLE + ALL OVERLAYS SYNC HEADER:
+//         ۱) _refreshFloatingAddBtn: فوق ساده — if زنجیره‌ای
+//         ۲) syncHeaderHeight: همه ۵ overlay (contacts + notes + 3 نتایج)
+//         ۳) overlayها: top:0 در CSS، syncHeaderHeight تنظیم می‌کند
+//   v162 - OVERDUE BLINK: orange ↔ yellow (نه red), 2s (نه 5s — سریع‌تر)
+const APP_VERSION = 'v162-2026-11-07-overdue-orange-yellow-fast';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -9530,27 +9535,21 @@ function _isVisible(id) {
 function _refreshFloatingAddBtn() {
     var fab = document.getElementById('floatingAddBtn');
     if (!fab) return;
-    // 🔧 v159: مکانیزم نهایی — کاملا ساده
-    // فقط دو شرط: در tasks view باشیم + هیچ overlay فعالی نباشد
-    var shouldShow = false;
-    if (currentView === 'tasks' && expandedId === null) {
-        // بررسی ساده: آیا هیچ element با class active و display قابل دیدن هست؟
-        var activeOverlays = document.querySelectorAll(
-            '.modal-overlay.active, .contacts-overlay.active, .notes-overlay.active'
-        );
-        var found = false;
-        for (var i = 0; i < activeOverlays.length; i++) {
-            if (activeOverlays[i].style.display !== 'none') { found = true; break; }
+    // 🔧 v161: مکانیزم فوق ساده
+    // فقط در tasks view + بدون overlay فعال → نمایش
+    var shouldShow = (currentView === 'tasks' && expandedId === null);
+    if (shouldShow) {
+        // اگر هر overlay با class active موجود است → پنهان
+        var actives = document.querySelectorAll('.modal-overlay.active, .contacts-overlay.active, .notes-overlay.active');
+        for (var i = 0; i < actives.length; i++) {
+            if (actives[i].style.display !== 'none') { shouldShow = false; break; }
         }
-        // منوی همبرگری
-        if (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu) found = true;
-        // منوهای داینامیک
-        if (document.getElementById('groupPickerOverlay') ||
-            document.getElementById('contactPickerOverlay') ||
-            document.getElementById('contactActionMenuOverlay') ||
-            document.getElementById('taskPickerOverlay') ||
-            document.getElementById('bellSettingsOverlay')) found = true;
-        shouldShow = !found;
+    }
+    if (shouldShow) {
+        if (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu) shouldShow = false;
+    }
+    if (shouldShow) {
+        if (document.getElementById('groupPickerOverlay') || document.getElementById('bellSettingsOverlay')) shouldShow = false;
     }
     fab.style.display = shouldShow ? 'flex' : 'none';
 }
@@ -11546,16 +11545,19 @@ function syncHeaderHeight() {
     var header = document.querySelector('.header');
     if (!header) return;
     var h = header.offsetHeight;
-    // تنظیم top همه overlayهای تمام‌صفحه
-    var overlays = ['contactsOverlay', 'notesOverlay'];
-    for (var i = 0; i < overlays.length; i++) {
-        var el = document.getElementById(overlays[i]);
+    // 🔧 v161: تنظیم top همه overlayهای تمام‌صفحه + body
+    var overlayIds = [
+        'contactsOverlay', 'notesOverlay',
+        'contactSearchResultsOverlay', 'contactReportResultsOverlay', 'taskReportResultsOverlay'
+    ];
+    for (var i = 0; i < overlayIds.length; i++) {
+        var el = document.getElementById(overlayIds[i]);
         if (el) el.style.top = h + 'px';
     }
-    // تنظیم top sticky headers داخل groups view
+    // sticky headers داخل groups view
     var gtHeader = document.querySelector('.group-tasks-header');
     if (gtHeader) gtHeader.style.top = h + 'px';
-    // تنظیم top گروه‌های فیکس (all, urgent) — فقط در groups view
+    // گروه‌های فیکس
     var allDiv = document.querySelector('.group-item-fixed.group-all');
     if (allDiv) allDiv.style.top = h + 'px';
     var urgentDiv = document.querySelector('.group-item-fixed.group-urgent');
