@@ -4606,7 +4606,23 @@ body.locked .header-actions button {
 //         ۷) playShortBeeps(): ۵ بوق square wave ۸۸۰Hz با فاصله ۰.۳s
 //         ۸) NOTIF_THRESHOLDS از تنظیمات کاربر خوانده می‌شود
 //         ۹) تنظیمات در localStorage: yadavar_notif_settings_v1
-const APP_VERSION = 'v148-2026-11-07-bell-toggle-sound-choice-times';
+//   v149 - WAKELOCK + MUTATIONOBSERVER + RECORDING FIX:
+//         ۱) WakeLock: هنگام ضبط، صفحه خواب نمی‌کند (acquireWakeLock/releaseWakeLock)
+//         ۲) MutationObserver: دکمه + شناور به‌طور خودکار به‌روزرسانی می‌شود
+//            وقتی هر overlay/منو باز/بسته می‌شود — بدون نیاز به صدا زدن دستی
+//         ۳) visibilitychange: WakeLock دوباره گرفته می‌شود وقتی برگشتیم
+//         ⚠️ محدودیت: ضبط صدای داخلی (مکالمه تلفنی، صدای برنامه‌ها)
+//            امکان‌پذیر نیست — Web Speech API فقط میکروفون را استفاده می‌کند.
+//   v150 - OVERLAY DETECTION FIX FOR ALL MENUS:
+//         ۱) isAnyOverlayOpen بازنویسی شد:
+//            - Static overlays: بررسی class 'active' + display !== 'none'
+//            - Dynamic overlays: بررسی وجود در DOM (createElement/remove)
+//            - bellSettingsOverlay اضافه شد (قبلاً جا افتاده بود)
+//            - contactsOverlay با display:none باز حساب نمی‌شود (پس‌زمینه)
+//         ۲) refreshFloatingContactBtn هم همین منطق را استفاده می‌کند
+//         ۳) 🔒 قانون برای آینده: هر منوی جدیدی که اضافه می‌شود باید
+//            در isAnyOverlayOpen() ثبت شود تا دکمه + شناور درست کار کند.
+const APP_VERSION = 'v150-2026-11-07-overlay-detection-all-menus';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -6944,6 +6960,24 @@ async function migrateLegacyData() {
 // ============ Speech Recognition ============
 let recognition = null;
 let isRecording = false;
+// 🔧 v149: WakeLock برای جلوگیری از خواب موبایل هنگام ضبط
+let _wakeLock = null;
+async function acquireWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    try {
+        _wakeLock = await navigator.wakeLock.request('screen');
+        console.log('[WakeLock] Acquired — screen will stay awake during recording');
+    } catch(e) {
+        console.warn('[WakeLock] Failed:', e.message);
+    }
+}
+function releaseWakeLock() {
+    if (_wakeLock) {
+        try { _wakeLock.release(); _wakeLock = null; console.log('[WakeLock] Released'); } catch(e) {}
+    }
+}
+// وقتی صفحه دوباره visible می‌شود و در حال ضبط هستیم، wakeLock را دوباره بگیر
+// (چون wakeLock با visibilitychange از دست می‌رود)
 // Two-level tracking (same as the WORKING backup version):
 //   allFinalText: accumulated across sessions (committed in onend)
 //   currentSessionText: current session only (reset in onstart)
@@ -7118,6 +7152,8 @@ function startRecording() {
     currentSessionText = '';
     document.getElementById('itemText').value = '';
     isRecording = true;
+    // 🔧 v149: WakeLock بگیر تا موبایل خواب نکند و ضبط ادامه یابد
+    acquireWakeLock();
     document.getElementById('recordingSection').style.display = 'block';
     document.getElementById('formSection').style.display = 'none';
     document.getElementById('modalTitle').textContent = 'در حال ضبط صوت';
@@ -7144,6 +7180,8 @@ function startRecording() {
 
 function stopRecording() {
     isRecording = false;
+    // 🔧 v149: WakeLock را آزاد کن
+    releaseWakeLock();
     document.getElementById('addBtn').classList.remove('recording');
     // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
     const fabStop = document.getElementById('floatingAddBtn');
@@ -9370,39 +9408,51 @@ function fullRender() {
 //   - هیچ فرمی باز نباشد (فرم تسک، فرم شخص، مودال تنظیمات گروه)
 //   - هیچ منویی باز نباشد (منوی همبرگری گروه)
 //   - جزئیات هیچ تسکی باز نباشد
-// 🔧 v147: تابع جامع — آیا هر overlay/منو/مودالی باز است؟
-// این تابع همهٔ overlayهای برنامه را بررسی می‌کند. اگر هر کدام باز
-// باشد، دکمهٔ + شناور پنهان می‌شود (طبق قانون جهانی).
+// 🔧 v150: تابع جامع — آیا هر overlay/منو/مودالی باز است؟
+// این تابع همهٔ overlayها، منوها و مودال‌های برنامه را بررسی می‌کند.
+// اگر هر کدام باز باشد، دکمهٔ + شناور پنهان می‌شود (طبق قانون جهانی).
+// 🔒 این یک قانون کلیدی و همیشگی است — برای آینده هم باید رعایت شود.
 function isAnyOverlayOpen() {
-    // لیست همهٔ overlayهای برنامه
-    var overlayIds = [
-        'modalOverlay',          // فرم تسک
-        'calendarOverlay',       // تقویم
-        'datetimePickerOverlay', // انتخابگر تاریخ
-        'groupSettingsOverlay',  // تنظیمات گروه
-        'contactsOverlay',       // صفحه اشpersons
-        'contactFormOverlay',    // فرم شخص
-        'contactSearchOverlay',  // جستجوی اشpersons
+    // ── Static overlays ──
+    // این overlayها همیشه در DOM هستند و با class 'active' باز/بسته می‌شوند.
+    // اگر display:none دارند (پس‌زمینه)، باز حساب نمی‌شوند.
+    var staticOverlays = [
+        'modalOverlay',              // فرم تسک
+        'calendarOverlay',           // تقویم
+        'datetimePickerOverlay',     // انتخابگر تاریخ
+        'groupSettingsOverlay',      // تنظیمات گروه
+        'contactsOverlay',           // صفحه اشpersons
+        'contactFormOverlay',        // فرم شخص
+        'contactSearchOverlay',      // جستجوی اشpersons
         'contactSearchResultsOverlay', // نتایج جستجو
-        'contactReportOverlay',  // گزارش اشpersons
+        'contactReportOverlay',      // گزارش اشpersons
         'contactReportResultsOverlay', // نتایج گزارش اشpersons
-        'taskReportOverlay',     // گزارش کارها
-        'taskReportResultsOverlay', // نتایج گزارش کارها
-        'phoneActionOverlay',    // منوی تلفن
-        'groupPickerOverlay',    // منوی انتخاب گروه (dynamic)
-        'contactPickerOverlay',  // منوی انتخاب شخص (dynamic)
-        'contactActionMenuOverlay', // منوی عملیات شخص (dynamic)
-        'taskPickerOverlay',     // منوی انتخاب تسک (dynamic)
+        'taskReportOverlay',         // گزارش کارها
+        'taskReportResultsOverlay',  // نتایج گزارش کارها
+        'phoneActionOverlay',        // منوی تلفن
     ];
-    for (var i = 0; i < overlayIds.length; i++) {
-        var el = document.getElementById(overlayIds[i]);
-        if (el && el.classList.contains('active')) return true;
-        // 🔧 برخی overlayهای dynamic با style.display کنترل می‌شوند نه class
-        if (el && el.style.display !== '' && el.style.display !== 'none') return true;
+    for (var i = 0; i < staticOverlays.length; i++) {
+        var el = document.getElementById(staticOverlays[i]);
+        if (!el) continue;
+        // اگر class 'active' دارد و display:none نیست → باز است
+        if (el.classList.contains('active') && el.style.display !== 'none') return true;
     }
-    // منوی همبرگری گروه
+    // ── Dynamic overlays ──
+    // این overlayها با createElement ساخته می‌شوند و با .remove() حذف می‌شوند.
+    // اگر در DOM وجود دارند → باز هستند (نیازی به class 'active' نیست).
+    var dynamicOverlays = [
+        'groupPickerOverlay',        // منوی انتخاب گروه
+        'contactPickerOverlay',      // منوی انتخاب شخص
+        'contactActionMenuOverlay',  // منوی عملیات شخص (لمسی)
+        'taskPickerOverlay',         // منوی انتخاب تسک
+        'bellSettingsOverlay',       // منوی تنظیمات زنگوله (v148)
+    ];
+    for (var j = 0; j < dynamicOverlays.length; j++) {
+        if (document.getElementById(dynamicOverlays[j])) return true;
+    }
+    // ── منوی همبرگری گروه ──
     if (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu) return true;
-    // جزئیات تسک باز است
+    // ── جزئیات تسک باز است ──
     if (expandedId !== null) return true;
     return false;
 }
@@ -11438,22 +11488,43 @@ function refreshFloatingContactBtn() {
     const fcb = document.getElementById('floatingContactBtn');
     if (!fcb) return;
     const contactsOpen = document.getElementById('contactsOverlay').classList.contains('active');
-    if (!contactsOpen) { fcb.style.display = 'none'; return; }
-    // 🔧 v147: بررسی همه overlayها — اگر هر کدام باز است، پنهان کن
-    var overlayIds = [
-        'contactFormOverlay', 'contactSearchOverlay', 'contactSearchResultsOverlay',
-        'contactReportOverlay', 'contactReportResultsOverlay',
-        'taskReportOverlay', 'taskReportResultsOverlay',
-        'phoneActionOverlay', 'groupPickerOverlay', 'contactPickerOverlay',
-        'contactActionMenuOverlay', 'taskPickerOverlay',
-        'modalOverlay', 'calendarOverlay', 'datetimePickerOverlay', 'groupSettingsOverlay',
-    ];
-    for (var i = 0; i < overlayIds.length; i++) {
-        var el = document.getElementById(overlayIds[i]);
-        if (el && el.classList.contains('active')) { fcb.style.display = 'none'; return; }
-        if (el && el.style.display !== '' && el.style.display !== 'none') { fcb.style.display = 'none'; return; }
+    // 🔧 v150: اگر contactsOverlay پنهان است (display:none = پس‌زمینه)، پنهان کن
+    if (!contactsOpen || document.getElementById('contactsOverlay').style.display === 'none') {
+        fcb.style.display = 'none';
+        return;
     }
-    if (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu) { fcb.style.display = 'none'; return; }
+    // 🔧 v150: استفاده از isAnyOverlayOpen برای بررسی همه overlayها
+    // (به‌جز contactsOverlay خودش که باز است)
+    // بررسی مستقیم: اگر هر overlay دیگری باز است → پنهان
+    var staticOverlays = [
+        'modalOverlay', 'calendarOverlay', 'datetimePickerOverlay',
+        'groupSettingsOverlay', 'contactFormOverlay', 'contactSearchOverlay',
+        'contactSearchResultsOverlay', 'contactReportOverlay',
+        'contactReportResultsOverlay', 'taskReportOverlay',
+        'taskReportResultsOverlay', 'phoneActionOverlay',
+    ];
+    for (var i = 0; i < staticOverlays.length; i++) {
+        var el = document.getElementById(staticOverlays[i]);
+        if (el && el.classList.contains('active') && el.style.display !== 'none') {
+            fcb.style.display = 'none';
+            return;
+        }
+    }
+    // Dynamic overlays — اگر وجود دارند → باز هستند
+    var dynamicOverlays = [
+        'groupPickerOverlay', 'contactPickerOverlay',
+        'contactActionMenuOverlay', 'taskPickerOverlay', 'bellSettingsOverlay',
+    ];
+    for (var j = 0; j < dynamicOverlays.length; j++) {
+        if (document.getElementById(dynamicOverlays[j])) {
+            fcb.style.display = 'none';
+            return;
+        }
+    }
+    if (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu) {
+        fcb.style.display = 'none';
+        return;
+    }
     fcb.style.display = 'flex';
 }
 
@@ -14545,6 +14616,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 🔧 v147: اگر در حال ضبط صدا بودیم و برگشتیم به برنامه،
             // مطمئن شویم ضبط همچنان ادامه دارد. اگر متوقف شده، دوباره شروع کن.
             if (typeof isRecording !== 'undefined' && isRecording) {
+                // 🔧 v149: WakeLock را دوباره بگیر (چون با visibility از دست می‌رود)
+                if (typeof acquireWakeLock === 'function') acquireWakeLock();
                 if (typeof recognition !== 'undefined' && recognition) {
                     try {
                         // تلاش برای restart اگر recognition متوقف شده
@@ -14597,6 +14670,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             } catch(e) {}
         }
     });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // 🔧 v149: MutationObserver — به‌روزرسانی خودکار دکمه + شناور
+    // ─────────────────────────────────────────────────────────────────────
+    // وقتی هر overlay یا عنصری در صفحه تغییر می‌کند (class فعال/غیرفعال)،
+    // این observer به‌طور خودکار دکمه + شناور را به‌روزرسانی می‌کند.
+    // این تضمین می‌کند که دکمه + شناور در همهٔ حالات درست نمایش داده شود
+    // یا پنهان شود — بدون نیاز به صدا زدن دستی _refreshFloatingAddBtn().
+    try {
+        var _floatingObserver = new MutationObserver(function() {
+            _refreshFloatingAddBtn();
+            refreshFloatingContactBtn();
+        });
+        _floatingObserver.observe(document.body, {
+            childList: true,        // عناصر اضافه/حذف شده
+            subtree: true,          // همهٔ زیرعناصر
+            attributes: true,       // تغییر attributeها
+            attributeFilter: ['class', 'style']  // فقط class و style
+        });
+        console.log('[Observer] Floating button auto-refresh active');
+    } catch(e) {
+        console.warn('[Observer] MutationObserver failed:', e);
+    }
 
     // ─────────────────────────────────────────────────────────────────────
     // UI EVENT LISTENERS — modal close on overlay click, Escape key, etc.
