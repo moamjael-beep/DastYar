@@ -744,25 +744,25 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .item.warning { background: linear-gradient(135deg, #FB8C00, #E65100); }
 .item.urgent { background: linear-gradient(135deg, #E53935, #B71C1C); }
 
-/* 🔧 v170: Overdue: blinking orange pale <-> RED (was brown), 2s cycle */
+/* 🔧 v174: Overdue: blinking brown <-> dark brown (no yellow/orange, no red), 2s cycle */
 @keyframes overdueBlink {
     0%, 100% {
-        background-color: #FFB74D;  /* نارنجی کمرنگ */
-        box-shadow: 0 2px 14px rgba(255, 183, 77, 0.4);
+        background-color: #795548;  /* 🔧 v174: قهوه‌ای روشن (Material Brown 400) */
+        box-shadow: 0 2px 14px rgba(121, 85, 72, 0.4);
     }
     50% {
-        background-color: #D32F2F;  /* 🔧 v170: قرمز (قبلاً قهوه‌ای #795548 بود) */
-        box-shadow: 0 2px 18px rgba(211, 47, 47, 0.6);
+        background-color: #4E342E;  /* 🔧 v174: قهوه‌ای تیره (Material Brown 900) */
+        box-shadow: 0 2px 18px rgba(78, 52, 46, 0.6);
     }
 }
 .item.overdue {
-    background-color: #FFB74D; /* fallback */
+    background-color: #795548; /* fallback — 🔧 v174: قهوه‌ای */
     animation: overdueBlink 2s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
     .item.overdue {
         animation: none;
-        background-color: #FFB74D;
+        background-color: #795548; /* 🔧 v174: قهوه‌ای */
     }
 }
 
@@ -4895,7 +4895,16 @@ body.locked .header-actions button {
 //            هماهنگ باشد — شامل تمام قابلیت‌های جدید: اشانتیون نامحدود،
 //            درصد تکی، تلفن per-number، حذف دکمهٔ شناور، مسیریابی هوشمند +.
 //         ۴) توضیحات فارسی بخش‌های کد تقویت شد.
-const APP_VERSION = 'v173-2026-11-08-code-cleanup-spec-rewrite';
+//   v174 - OVERDUE BLINK BROWN-ONLY (no yellow/orange, no red):
+//         کاربر درخواست کرد: چشمک‌زن تسک‌های گذشته فقط قهوه‌ای باشد —
+//         «از رنگ قرمز به قهوه‌ای انجام شود و زرد یا نارنجی نباشد».
+//         🔧 تغییر:
+//         - فاز ۱ (0%/100%): #FFB74D (نارنجی کمرنگ) → #795548 (قهوه‌ای روشن، Brown 400)
+//         - فاز ۲ (50%):     #D32F2F (قرمز)             → #4E342E (قهوه‌ای تیره، Brown 900)
+//         - fallback bg + prefers-reduced-motion fallback: هر دو به #795548
+//         - box-shadow rgba هماهنگ با رنگ‌های قهوه‌ای جدید
+//         نتیجه: چشمک بین دو قهوه‌ای (روشن ↔ تیره) — بدون زرد، نارنجی، یا قرمز.
+const APP_VERSION = 'v174-2026-11-08-overdue-blink-brown-only';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
