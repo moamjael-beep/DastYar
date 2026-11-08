@@ -320,7 +320,7 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     position: fixed;
     left: 100px;
     bottom: 200px;
-    z-index: 9998;  /* 🔧 v157: زیر هدر (10700) اما بالای محتوا */
+    z-index: 9998;
     width: 70px;
     height: 70px;
     border-radius: 50%;
@@ -331,17 +331,19 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     line-height: 1;
     cursor: pointer;
     box-shadow: 0 6px 20px rgba(76,175,80,0.4);
-    /* 🔧 v157: display از CSS حذف شد — فقط JS کنترل می‌کند */
+    display: none;  /* 🔧 v167: CSS کنترل می‌کند */
     align-items: center;
     justify-content: center;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     border: 3px solid rgba(255,255,255,0.5);
-    /* 🔧 افکت تپنده همیشگی */
     animation: floatingContactIdle 1.5s ease-in-out infinite;
 }
 .floating-contact-btn:active {
     transform: scale(0.9);
     animation: none;
+}
+.floating-contact-btn.show {
+    display: flex !important;
 }
 /* 🔧 افکت تپنده همیشگی برای دکمه اشخاص — بزرگ‌تر و سریع‌تر */
 @keyframes floatingContactIdle {
@@ -3557,7 +3559,7 @@ body.locked .header-actions button {
 <button class="floating-add-btn" id="floatingAddBtn" onclick="startAdding()" title="افزادن یادآور">+</button>
 
 <!-- 🔧 دکمهٔ شناور افزودن شخص جدید — فقط در صفحه اشخاص ظاهر می‌شود. -->
-<button class="floating-contact-btn" id="floatingContactBtn" onclick="openContactForm()" title="افزودن شخص جدید" style="display:none;">➕</button>
+<button class="floating-contact-btn" id="floatingContactBtn" onclick="openContactForm()" title="افزودن شخص جدید">➕</button>
 
 <div class="container" id="container">
     <div class="empty">
@@ -4715,7 +4717,12 @@ body.locked .header-actions button {
 //         ۴) recognition.onerror network: دیگر isReachable=false نمی‌کند
 //         ۵) فقط online/offline events → isReachable = true/false
 //         نتیجه: هدر هرگز چشمک نمی‌زند مگر واقعاً اینترنت قطع باشد
-const APP_VERSION = 'v166-2026-11-07-remove-reachability-no-flash';
+//   v167 - FLOATING CONTACT BTN CLASS-BASED (مانند floating-add-btn):
+//         ۱) CSS: display:none + .show { display:flex !important }
+//         ۲) HTML: style="display:none" حذف شد
+//         ۳) JS: classList.add/remove('show') — نه inline style
+//         ۴) openContacts/closeContacts: refreshFloatingContactBtn() صدا می‌زنند
+const APP_VERSION = 'v167-2026-11-07-floating-contact-class-based';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -11572,9 +11579,8 @@ function openContacts() {
     renderContactsList();
     var overlay = document.getElementById('contactsOverlay');
     overlay.classList.add('active');
-    bringToFront(overlay);  // 🔧 v156: روی همه overlayها قرار بگیرد
-    const fcb = document.getElementById('floatingContactBtn');
-    if (fcb) fcb.style.display = 'flex';
+    bringToFront(overlay);
+    refreshFloatingContactBtn();
     history.pushState({ view: 'contacts' }, '');
 }
 
@@ -11587,9 +11593,8 @@ function closeContacts() {
     var co = document.getElementById('contactsOverlay');
     co.classList.remove('active');
     co.style.display = '';
-    var fcb = document.getElementById('floatingContactBtn');
-    if (fcb) fcb.style.display = 'none';
     _editingContactId = null;
+    refreshFloatingContactBtn();
     _refreshFloatingAddBtn();
 }
 
@@ -11598,12 +11603,11 @@ function closeContacts() {
 function refreshFloatingContactBtn() {
     var fcb = document.getElementById('floatingContactBtn');
     if (!fcb) return;
-    // 🔧 v164: فوق ساده — همیشه در صفحه اشpersons روشن
     var co = document.getElementById('contactsOverlay');
     if (co && co.classList.contains('active') && co.style.display !== 'none') {
-        fcb.style.display = 'flex';
+        fcb.classList.add('show');
     } else {
-        fcb.style.display = 'none';
+        fcb.classList.remove('show');
     }
 }
 
