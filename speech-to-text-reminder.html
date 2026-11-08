@@ -250,7 +250,7 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     position: fixed;
     left: 100px;
     bottom: 200px;
-    z-index: 9000;
+    z-index: 9998;  /* 🔧 v157: زیر هدر (10700) اما بالای محتوا */
     width: 70px;
     height: 70px;
     border-radius: 50%;
@@ -262,12 +262,11 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     line-height: 1;
     cursor: pointer;
     box-shadow: 0 6px 20px rgba(33,150,243,0.4);
-    display: none;
+    /* 🔧 v157: display از CSS حذف شد — فقط JS کنترل می‌کند */
     align-items: center;
     justify-content: center;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     border: 3px solid rgba(255,255,255,0.5);
-    /* 🔧 افکت تپنده همیشگی — بزرگ‌تر و سریع‌تر */
     animation: floatingIdle 1.5s ease-in-out infinite;
 }
 .floating-add-btn:active {
@@ -318,7 +317,7 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     position: fixed;
     left: 100px;
     bottom: 200px;
-    z-index: 10050;
+    z-index: 9998;  /* 🔧 v157: زیر هدر (10700) اما بالای محتوا */
     width: 70px;
     height: 70px;
     border-radius: 50%;
@@ -329,7 +328,7 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     line-height: 1;
     cursor: pointer;
     box-shadow: 0 6px 20px rgba(76,175,80,0.4);
-    display: none;
+    /* 🔧 v157: display از CSS حذف شد — فقط JS کنترل می‌کند */
     align-items: center;
     justify-content: center;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -789,7 +788,7 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.55);
-    z-index: 10500;  /* 🔧 v155: بالاتر از contactsOverlay (10000) — تقویم روی اشpersons باز شود */
+    z-index: 1000;  /* 🔧 v156: back to original — dynamic z-index via JS */
     display: none;
     align-items: center;
     justify-content: center;
@@ -3553,10 +3552,10 @@ body.locked .header-actions button {
 
 <!-- 🔧 دکمهٔ شناور افزودن تسک — فقط در حالت نمایش تسک‌های یک گروه ظاهر می‌شود.
      عیناً همان عملکرد دکمهٔ + هدر را دارد ولی در وسط سمت چپ صفحه شناور است. -->
-<button class="floating-add-btn" id="floatingAddBtn" onclick="startAdding()" title="افزودن یادآور">+</button>
+<button class="floating-add-btn" id="floatingAddBtn" onclick="startAdding()" title="افزودن یادآور" style="display:none;">+</button>
 
 <!-- 🔧 دکمهٔ شناور افزودن شخص جدید — فقط در صفحه اشخاص ظاهر می‌شود. -->
-<button class="floating-contact-btn" id="floatingContactBtn" onclick="openContactForm()" title="افزودن شخص جدید">➕</button>
+<button class="floating-contact-btn" id="floatingContactBtn" onclick="openContactForm()" title="افزودن شخص جدید" style="display:none;">➕</button>
 
 <div class="container" id="container">
     <div class="empty">
@@ -4658,7 +4657,18 @@ body.locked .header-actions button {
 //         ۲) sticky headers: top:0 (داخل overlay که top:62px شروع می‌شود)
 //         ۳) modal-overlay z-index: 1000 → 10500 (تقویم روی اشpersons باز شود)
 //         ۴) contacts-header: آبی → سبز تیره (#00695C)
-const APP_VERSION = 'v155-2026-11-07-overlay-top-calendar-zindex-color';
+//   v156 - DYNAMIC Z-INDEX + DYNAMIC HEADER HEIGHT:
+//         ۱) modal-overlay z-index: back to 1000 (static)
+//         ۲) bringToFront(): هر overlay از هدر z-index بالاتر می‌گیرد
+//         ۳) syncHeaderHeight(): ارتفاع واقعی هدر → top overlayها (پویا)
+//         ۴) هر سه (📅👥📝) bringToFront دارند — آخرین کلیک روی همه
+//   v157 - FLOATING BUTTON NUCLEAR FIX:
+//         ۱) display:none از CSS حذف شد — فقط inline style کنترل می‌کند
+//         ۲) z-index: 9998 (زیر هدر 10700، بالای محتوا)
+//         ۳) _refreshFloatingAddBtn: فوق ساده — querySelector برای بررسی
+//         ۴) refreshFloatingContactBtn: فوق ساده — همان منطق
+//         ۵) setInterval 500ms همچنان فعال
+const APP_VERSION = 'v157-2026-11-07-floating-nuclear-fix';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -9496,41 +9506,28 @@ function isAnyOverlayOpen() {
 function _refreshFloatingAddBtn() {
     var fab = document.getElementById('floatingAddBtn');
     if (!fab) return;
-    // 🔧 v154: مکانیزم ساده و مستقیم — بدون isAnyOverlayOpen
+    // 🔧 v157: مکانیزم بسیار ساده
     // دکمه + شناور فقط وقتی نمایش داده شود که:
-    //   ۱) در tasks view باشیم (داخل یک گروه)
-    //   ۲) فرم تسک باز نباشد
-    //   ۳) جزئیات تسک باز نباشد
-    //   ۴) صفحه اشpersons باز نباشد
-    //   ۵) هیچ منوی داینامیکی وجود نداشته باشد
-    var inTasks = (currentView === 'tasks');
-    var modalActive = document.getElementById('modalOverlay') && document.getElementById('modalOverlay').classList.contains('active');
-    var detailsOpen = (expandedId !== null);
-    var contactsEl = document.getElementById('contactsOverlay');
-    var contactsVisible = contactsEl && contactsEl.classList.contains('active') && contactsEl.style.display !== 'none';
-    var dynExists = document.getElementById('groupPickerOverlay')
-        || document.getElementById('contactPickerOverlay')
-        || document.getElementById('contactActionMenuOverlay')
-        || document.getElementById('taskPickerOverlay')
-        || document.getElementById('bellSettingsOverlay');
-    var groupMenuOpen = (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu);
-    var shouldShow = inTasks && !modalActive && !detailsOpen && !contactsVisible && !dynExists && !groupMenuOpen;
-    if (shouldShow) {
-        if (fab.style.display !== 'flex') fab.style.display = 'flex';
-    } else {
-        if (fab.style.display !== 'none') fab.style.display = 'none';
+    //   ۱) currentView === 'tasks' (داخل یک گروه)
+    //   ۲) هیچ overlay/منو/مودالی باز نباشد
+    var shouldShow = false;
+    if (currentView === 'tasks') {
+        // بررسی ساده: آیا چیزی باز است؟
+        var something = document.querySelector('.modal-overlay.active, .contacts-overlay.active, .notes-overlay.active');
+        var dyn = document.getElementById('groupPickerOverlay') || document.getElementById('contactPickerOverlay')
+            || document.getElementById('contactActionMenuOverlay') || document.getElementById('taskPickerOverlay')
+            || document.getElementById('bellSettingsOverlay');
+        var menu = (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu);
+        var details = (expandedId !== null);
+        shouldShow = !something && !dyn && !menu && !details;
     }
+    fab.style.display = shouldShow ? 'flex' : 'none';
 }
 
 function render() {
-    // 🔧 حفظ موقعیت اسکرول — جلوگیری از پرش صفحه
-    // render() محتوای container را جایگزین می‌کند که ممکن است
-    // موقعیت اسکرول را ریست کند. با ذخیره و بازیابی، پرش را حذف می‌کنیم.
-    // این مشکل سه مورد را حل می‌کند:
-    //   ۱) باز کردن تسک → پرش به بالا
-    //   ۲) اسکرول روی تسک‌ها → پرش به بالا (هر ۳۰ ثانیه render صدا زده می‌شود)
-    //   ۳) مشاهده جزئیات تسک → پرش به بالا
     var savedScrollY = window.scrollY;
+    // 🔧 v156: همگام‌سازی ارتفاع هدر با overlayها (پویا)
+    syncHeaderHeight();
 
     // Toggle the + button's disabled state based on the current view.
     const addBtn = document.getElementById('addBtn');
@@ -11506,10 +11503,44 @@ function toEnglishDigitsIfPersian(str) {
 // 🔧 ساده‌سازی شده — بدون navPush/navBack که با popstate تداخل داشت
 // صفحه اشخاص یک overlay تمام‌صفحه است، نه یک مودال معمولی
 
+// 🔧 v156: سیستم z-index پویا — هر overlay از هدر باز شود، بالاترین z-index را می‌گیرد
+let _overlayZCounter = 10500;
+function bringToFront(el) {
+    if (!el) return;
+    _overlayZCounter++;
+    el.style.zIndex = _overlayZCounter;
+}
+// 🔧 v156: محاسبه ارتفاع واقعی هدر و تنظیم overlayها
+function syncHeaderHeight() {
+    var header = document.querySelector('.header');
+    if (!header) return;
+    var h = header.offsetHeight;
+    // تنظیم top همه overlayهای تمام‌صفحه
+    var overlays = ['contactsOverlay', 'notesOverlay'];
+    for (var i = 0; i < overlays.length; i++) {
+        var el = document.getElementById(overlays[i]);
+        if (el) el.style.top = h + 'px';
+    }
+    // تنظیم top sticky headers داخل groups view
+    var gtHeader = document.querySelector('.group-tasks-header');
+    if (gtHeader) gtHeader.style.top = h + 'px';
+    // تنظیم top گروه‌های فیکس (all, urgent) — فقط در groups view
+    var allDiv = document.querySelector('.group-item-fixed.group-all');
+    if (allDiv) allDiv.style.top = h + 'px';
+    var urgentDiv = document.querySelector('.group-item-fixed.group-urgent');
+    if (urgentDiv) {
+        var allHeight = allDiv ? allDiv.offsetHeight : 0;
+        urgentDiv.style.top = (h + allHeight + 6) + 'px';
+    }
+    // body padding-top
+    document.body.style.paddingTop = h + 'px';
+}
+
 function openContacts() {
     renderContactsList();
-    document.getElementById('contactsOverlay').classList.add('active');
-    // 🔧 نمایش دکمهٔ شناور افزودن شخص جدید
+    var overlay = document.getElementById('contactsOverlay');
+    overlay.classList.add('active');
+    bringToFront(overlay);  // 🔧 v156: روی همه overlayها قرار بگیرد
     const fcb = document.getElementById('floatingContactBtn');
     if (fcb) fcb.style.display = 'flex';
     history.pushState({ view: 'contacts' }, '');
@@ -11536,36 +11567,23 @@ function closeContacts() {
 function refreshFloatingContactBtn() {
     var fcb = document.getElementById('floatingContactBtn');
     if (!fcb) return;
-    // 🔧 v154: مکانیزم ساده و مستقیم
+    // 🔧 v157: مکانیزم بسیار ساده
     // دکمه + شناور اشpersons فقط وقتی نمایش داده شود که:
     //   ۱) صفحه اشpersons باز و visible باشد
     //   ۲) هیچ overlay/منوی دیگری باز نباشد
+    var shouldShow = false;
     var contactsEl = document.getElementById('contactsOverlay');
-    var contactsVisible = contactsEl && contactsEl.classList.contains('active') && contactsEl.style.display !== 'none';
-    // بررسی overlayهای فرزند
-    var childIds = ['contactFormOverlay', 'contactSearchOverlay', 'contactSearchResultsOverlay',
-        'contactReportOverlay', 'contactReportResultsOverlay', 'taskReportOverlay',
-        'taskReportResultsOverlay', 'modalOverlay', 'calendarOverlay', 'datetimePickerOverlay',
-        'groupSettingsOverlay', 'phoneActionOverlay'];
-    var childOpen = false;
-    for (var i = 0; i < childIds.length; i++) {
-        var el = document.getElementById(childIds[i]);
-        if (el && el.classList.contains('active') && el.style.display !== 'none') { childOpen = true; break; }
+    if (contactsEl && contactsEl.classList.contains('active') && contactsEl.style.display !== 'none') {
+        // بررسی: آیا چیزی روی اشpersons باز است؟
+        var something = document.querySelector('.modal-overlay.active');
+        var dyn = document.getElementById('groupPickerOverlay') || document.getElementById('contactPickerOverlay')
+            || document.getElementById('contactActionMenuOverlay') || document.getElementById('taskPickerOverlay')
+            || document.getElementById('bellSettingsOverlay');
+        var menu = (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu);
+        var details = (expandedId !== null);
+        shouldShow = !something && !dyn && !menu && !details;
     }
-    // بررسی منوهای داینامیک
-    var dynExists = document.getElementById('groupPickerOverlay')
-        || document.getElementById('contactPickerOverlay')
-        || document.getElementById('contactActionMenuOverlay')
-        || document.getElementById('taskPickerOverlay')
-        || document.getElementById('bellSettingsOverlay');
-    var menuOpen = (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu);
-    var detailsOpen = (expandedId !== null);
-    var shouldShow = contactsVisible && !childOpen && !dynExists && !menuOpen && !detailsOpen;
-    if (shouldShow) {
-        if (fcb.style.display !== 'flex') fcb.style.display = 'flex';
-    } else {
-        if (fcb.style.display !== 'none') fcb.style.display = 'none';
-    }
+    fcb.style.display = shouldShow ? 'flex' : 'none';
 }
 
 // ─── رندر لیست اشخاص ───
@@ -13107,7 +13125,9 @@ function openNotes(groupId, customTitle) {
             titleEl.textContent = '📝 یادداشت';
         }
     }
-    document.getElementById('notesOverlay').classList.add('active');
+    var notesOverlay = document.getElementById('notesOverlay');
+    notesOverlay.classList.add('active');
+    bringToFront(notesOverlay);  // 🔧 v156: روی همه overlayها قرار بگیرد
     history.pushState({ view: 'notes' }, '');
     // اسکرول به بالا
     setTimeout(() => {
@@ -13653,7 +13673,9 @@ function openCalendar() {
     const [jy, jm, jd] = toJalaliParts(today);
     calState = { year: jy, month: jm, selectedDay: jd };
     renderCalendar();
-    document.getElementById('calendarOverlay').classList.add('active');
+    var calOverlay = document.getElementById('calendarOverlay');
+    calOverlay.classList.add('active');
+    bringToFront(calOverlay);  // 🔧 v156: روی همه overlayها قرار بگیرد
     // Push a modal marker so the mobile back button closes the calendar
     // instead of navigating underneath (or exiting the app).
     navPush({ view: 'modal', type: 'calendar' });
@@ -14515,6 +14537,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ─────────────────────────────────────────────────────────────────────
     initRecognition();
     updateHeaderDate();
+    // 🔧 v156: همگام‌سازی ارتفاع هدر در بارگذاری اولیه
+    syncHeaderHeight();
+    // و بعد از رندر اولیه
+    setTimeout(syncHeaderHeight, 100);
+    window.addEventListener('resize', syncHeaderHeight);
+    window.addEventListener('orientationchange', function() { setTimeout(syncHeaderHeight, 200); });
 
     // One-time migration: CLEAR all task positions so every task is sorted
     // by deadline. Runs once per device (flag in localStorage).
