@@ -1201,7 +1201,7 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     padding: 11px 22px;
     border-radius: 24px;
     font-size: 13px;
-    z-index: 10001; /* افزایش برای نمایش روی صفحه قفل (z-index 9998) */
+    z-index: 10800; /* 🔧 v165: بالاتر از همه — حتی هدر (10700) */
     opacity: 0;
     transition: all 0.3s;
     pointer-events: none;
@@ -4703,7 +4703,12 @@ body.locked .header-actions button {
 //         ۲) کلید + هدر: هرگز disabled نمی‌شود (همیشه روشن)
 //         ۳) کلید + شناور: فقط شرط tasks view — هیچ شرط پنهان شدن دیگر
 //         ۴) کلید + شناور اشpersons: فقط شرط contacts فعال — هیچ شرط دیگر
-const APP_VERSION = 'v164-2026-11-07-overdue-brown-add-always-floating-simple';
+//   v165 - ADD IN CONTACTS + TOAST Z-INDEX + NO FLASH:
+//         ۱) startAdding: اگر در صفحه اشpersons → openContactForm()
+//         ۲) toast z-index: 10001 → 10800 (بالاتر از همه)
+//         ۳) checkReachability: فقط navigator.onLine (نه fetch) + ۲ دقیقه فاصله
+//         نتیجه: هدر دیگر بی‌جهت چشمک نمی‌زند + ضبط صدا قطع نمی‌شود
+const APP_VERSION = 'v165-2026-11-07-add-contacts-toast-no-flash';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -7854,13 +7859,13 @@ function unlockBodyScroll() {
 }
 
 function startAdding(prefilledDeadline, prefilledText) {
-    // The + button is disabled on the groups list view — a new task needs
-    // to know which group to be assigned to. If the user somehow invokes
-    // startAdding while on the groups view (e.g., via a keyboard shortcut),
-    // refuse and guide them.
-    // EXCEPTION: when `pendingTaskGroupId` is set, the user came in via the
-    // calendar + flow (where they explicitly picked a group via the picker),
-    // so we skip the guard — the group is already known.
+    // 🔧 v165: اگر در صفحه اشpersons هستیم → فرم شخص جدید باز کن
+    var co = document.getElementById('contactsOverlay');
+    if (co && co.classList.contains('active') && co.style.display !== 'none') {
+        openContactForm();
+        return;
+    }
+    // اگر در صفحه اصلی (groups) هستیم و گروه انتخاب نشده
     if (currentView === 'groups' && !pendingTaskGroupId) {
         showToast('ابتدا وارد یک گروه شوید، سپس + را بزنید');
         return;
@@ -14252,22 +14257,16 @@ function checkPendingReload() {
 let isReachable = true; // assume reachable initially (avoid unnecessary flashing on load)
 let lastReachabilityCheck = 0;
 let reachabilityCheckInProgress = false;
-const REACHABILITY_CHECK_INTERVAL = 25000; // 25 seconds (must be less than the 30s setInterval)
-const REACHABILITY_TIMEOUT = 3500; // 3.5 seconds timeout
-// Endpoints to test for REAL internet reachability.
-// Use the SMALLEST file first (manifest.json is ~1KB vs the HTML at ~225KB).
-// The HTML is a fallback (some hosts don't have manifest.json). The CDN is
-// a last resort (cross-origin, may have CORS issues).
-// We try them SEQUENTIALLY and stop at the first success.
-const REACHABILITY_ENDPOINTS = [
-    './manifest.json',                  // PRIMARY: small file, fast
-    './speech-to-text-reminder.html',  // SECONDARY: the program file
-    'https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js',  // TERTIARY: external CDN
-];
+// 🔧 v165: افزایش فاصله بررسی از ۲۵s به ۱۲۰s (۲ دقیقه) — چشمک بی‌جهت حذف شود
+const REACHABILITY_CHECK_INTERVAL = 120000; // 2 minutes
+const REACHABILITY_TIMEOUT = 5000; // 5 seconds timeout (بیشتر صبر کن)
+// 🔧 v165: فقط navigator.onLine بررسی شود — fetch نکن که باعث چشمک می‌شود
+// اگر navigator.onLine=true → آنلاین. اگر false → آفلاین.
+// دیگر فایل‌ها را fetch نمی‌کنیم چون باعث چشمک بی‌جهت می‌شد.
+const REACHABILITY_ENDPOINTS = [];
 
 async function checkReachability(force = false) {
     const now = Date.now();
-    // Don't check too often (unless forced)
     if (!force && now - lastReachabilityCheck < REACHABILITY_CHECK_INTERVAL) {
         return isReachable;
     }
@@ -14277,67 +14276,12 @@ async function checkReachability(force = false) {
     reachabilityCheckInProgress = true;
     lastReachabilityCheck = now;
 
-    // If navigator says offline, definitely not reachable
-    if (!navigator.onLine) {
-        const wasReachable = isReachable;
-        isReachable = false;
-        if (wasReachable) updateOnlineStatus();
-        reachabilityCheckInProgress = false;
-        return false;
-    }
-
-    // Try multiple endpoints - if ANY succeeds, we're online
-    // If ALL fail, we're offline (or have bad connectivity)
-    let anySuccess = false;
-
-    for (const endpoint of REACHABILITY_ENDPOINTS) {
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), REACHABILITY_TIMEOUT);
-
-            // Use _rc parameter to tell SW to bypass cache
-            // Use cache: 'no-store' as additional browser-level cache bypass
-            // Use HEAD method (no body needed, just checking connectivity)
-            const separator = endpoint.includes('?') ? '&' : '?';
-            const checkUrl = endpoint + separator + '_rc=1&_=' + now;
-
-            const response = await fetch(checkUrl, {
-                method: 'HEAD',
-                cache: 'no-store',
-                signal: controller.signal,
-                redirect: 'follow'
-            });
-            clearTimeout(timeoutId);
-
-            // Check response:
-            // - response.ok (status 200-299) = real success from network
-            // - response.status === 503 = SW's offline fallback (network failed)
-            // - response.type === 'opaque' = cross-origin no-cors (network succeeded)
-            if (response.ok || response.status === 0 || response.type === 'opaque') {
-                anySuccess = true;
-                break; // one endpoint is enough - we're online
-            }
-            // If status is 503, the SW caught a network failure - try next endpoint
-        } catch(e) {
-            // Network error, timeout, or aborted - try next endpoint
-            console.warn('[Reachability] Endpoint failed:', endpoint, e.name || e.message);
-        }
-    }
-
+    // 🔧 v165: فقط navigator.onLine — دیگر fetch نمی‌کنیم
     const wasReachable = isReachable;
-    isReachable = anySuccess;
+    isReachable = navigator.onLine;
     if (wasReachable !== isReachable) {
         updateOnlineStatus();
-        // If we just transitioned from OFFLINE to ONLINE (GitHub reachable
-        // again), automatically clear the Service Worker cache and reload
-        // the page from the network. This ensures the user gets the latest
-        // online version from GitHub, not a stale cached offline copy.
-        if (!wasReachable && isReachable) {
-            console.log('[Reachability] Transition: offline → online. Clearing SW cache & reloading...');
-            clearSWCacheAndReload();
-        }
     }
-
     reachabilityCheckInProgress = false;
     return isReachable;
 }
