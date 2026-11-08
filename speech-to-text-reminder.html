@@ -3102,15 +3102,14 @@ body.locked .header-actions button {
     z-index: 10;
     box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
 }
-/* 🔧 مودال‌های فرم/جستجو/گزارش اشخاص — z-index بالاتر از contactsOverlay (10000) */
+/* 🔧 v160: همه overlayهای فرزند — z-index پایه 10500 + !important */
 #contactFormOverlay,
 #contactSearchOverlay,
 #contactReportOverlay,
 #taskReportOverlay,
-#taskPickerOverlay {
-    z-index: 10500 !important;
-}
-/* 🔧 v142: صفحات نتایج گزارش — z-index بالاتر از contactsOverlay */
+#taskPickerOverlay,
+#contactSearchResultsOverlay,
+#contactReportResultsOverlay,
 #taskReportResultsOverlay {
     z-index: 10500 !important;
 }
@@ -4681,7 +4680,12 @@ body.locked .header-actions button {
 //         ۲) toggleGroupMenu: به‌جای fab.style.display='none' → _refreshFloatingAddBtn()
 //         ۳) openGroupSettings: همان
 //         ۴) querySelectorAll برای بررسی همه overlayهای active
-const APP_VERSION = 'v159-2026-11-07-floating-final-fix';
+//   v160 - Z-INDEX !IMPORTANT + CLOSECONTACTS RESET + RESULT OVERLAYS:
+//         ۱) bringToFront: style.setProperty z-index با !important
+//         ۲) CSS: contactSearchResultsOverlay + contactReportResultsOverlay z-index 10500 !important
+//         ۳) closeContacts: co.style.display = '' (پاک کردن inline display:none)
+//         ۴) closeContacts: _refreshFloatingAddBtn() صدا زده می‌شود
+const APP_VERSION = 'v160-2026-11-07-zindex-important-close-reset';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -11232,9 +11236,9 @@ function addTaskForContact(contactId) {
     }
     // نمایش منوی زیبا — روی صفحه اشpersons (z-index بالاتر)
     showGroupPickerForContact(c, groups, function(selectedGroup) {
-        // 🔧 v145: قبل از رفتن به گروه، صفحه اشpersons را پنهان کنیم (نه بستن)
-        // تا وقتی فرم تسک بسته شد، به صفحه اشpersons برگردیم
-        document.getElementById('contactsOverlay').style.display = 'none';
+        // 🔧 v160: contactsOverlay را پنهان کنیم (نه بستن)
+        var co = document.getElementById('contactsOverlay');
+        co.style.display = 'none';
         // تنظیم currentView به tasks و currentGroupId به گروه انتخاب‌شده
         currentView = 'tasks';
         currentGroupId = selectedGroup.id;
@@ -11535,7 +11539,7 @@ let _overlayZCounter = 10500;
 function bringToFront(el) {
     if (!el) return;
     _overlayZCounter++;
-    el.style.zIndex = _overlayZCounter;
+    el.style.setProperty('z-index', _overlayZCounter, 'important');
 }
 // 🔧 v156: محاسبه ارتفاع واقعی هدر و تنظیم overlayها
 function syncHeaderHeight() {
@@ -11574,19 +11578,18 @@ function openContacts() {
 }
 
 function closeContacts() {
-    // 🔧 بستن همهٔ زیر-مودال‌های اشخاص هم (فرم، جستجو، گزارش، نتایج)
     document.getElementById('contactFormOverlay').classList.remove('active');
     document.getElementById('contactSearchOverlay').classList.remove('active');
     document.getElementById('contactSearchResultsOverlay').classList.remove('active');
     document.getElementById('contactReportOverlay').classList.remove('active');
     document.getElementById('contactReportResultsOverlay').classList.remove('active');
-    // بستن خود صفحه اشخاص
-    document.getElementById('contactsOverlay').classList.remove('active');
-    // 🔧 مخفی کردن دکمهٔ شناور افزودن شخص جدید
-    const fcb = document.getElementById('floatingContactBtn');
+    var co = document.getElementById('contactsOverlay');
+    co.classList.remove('active');
+    co.style.display = '';
+    var fcb = document.getElementById('floatingContactBtn');
     if (fcb) fcb.style.display = 'none';
-    // ریست حالت ویرایش
     _editingContactId = null;
+    _refreshFloatingAddBtn();
 }
 
 // 🔧 تابع کمکی: دکمهٔ شناور افزودن شخص را فقط وقتی نشان بده که صفحهٔ
