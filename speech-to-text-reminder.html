@@ -744,25 +744,25 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .item.warning { background: linear-gradient(135deg, #FB8C00, #E65100); }
 .item.urgent { background: linear-gradient(135deg, #E53935, #B71C1C); }
 
-/* 🔧 v174: Overdue: blinking brown <-> dark brown (no yellow/orange, no red), 2s cycle */
+/* 🔧 v175: Overdue: blinking orange <-> dark orange, 2s cycle */
 @keyframes overdueBlink {
     0%, 100% {
-        background-color: #795548;  /* 🔧 v174: قهوه‌ای روشن (Material Brown 400) */
-        box-shadow: 0 2px 14px rgba(121, 85, 72, 0.4);
+        background-color: #FF9800;  /* 🔧 v175: نارنجی روشن (Material Orange 500) */
+        box-shadow: 0 2px 14px rgba(255, 152, 0, 0.4);
     }
     50% {
-        background-color: #4E342E;  /* 🔧 v174: قهوه‌ای تیره (Material Brown 900) */
-        box-shadow: 0 2px 18px rgba(78, 52, 46, 0.6);
+        background-color: #E65100;  /* 🔧 v175: نارنجی تیره (Material Orange 900) */
+        box-shadow: 0 2px 18px rgba(230, 81, 0, 0.6);
     }
 }
 .item.overdue {
-    background-color: #795548; /* fallback — 🔧 v174: قهوه‌ای */
+    background-color: #FF9800; /* fallback — 🔧 v175: نارنجی */
     animation: overdueBlink 2s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
     .item.overdue {
         animation: none;
-        background-color: #795548; /* 🔧 v174: قهوه‌ای */
+        background-color: #FF9800; /* 🔧 v175: نارنجی */
     }
 }
 
@@ -4904,7 +4904,15 @@ body.locked .header-actions button {
 //         - fallback bg + prefers-reduced-motion fallback: هر دو به #795548
 //         - box-shadow rgba هماهنگ با رنگ‌های قهوه‌ای جدید
 //         نتیجه: چشمک بین دو قهوه‌ای (روشن ↔ تیره) — بدون زرد، نارنجی، یا قرمز.
-const APP_VERSION = 'v174-2026-11-08-overdue-blink-brown-only';
+//   v175 - OVERDUE BLINK ORANGE (was brown in v174):
+//         کاربر درخواست کرد: «چشمک‌زن را از قهوه‌ای به نارنجی کن».
+//         🔧 تغییر:
+//         - فاز ۱ (0%/100%): #795548 (قهوه‌ای روشن) → #FF9800 (نارنجی روشن، Orange 500)
+//         - فاز ۲ (50%):     #4E342E (قهوه‌ای تیره) → #E65100 (نارنجی تیره، Orange 900)
+//         - fallback bg + prefers-reduced-motion fallback: هر دو به #FF9800
+//         - box-shadow rgba هماهنگ با رنگ‌های نارنجی جدید
+//         نتیجه: چشمک بین دو نارنجی (روشن ↔ تیره).
+const APP_VERSION = 'v175-2026-11-08-overdue-blink-orange';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
