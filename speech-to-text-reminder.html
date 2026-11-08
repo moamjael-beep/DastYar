@@ -4877,7 +4877,28 @@ body.locked .header-actions button {
 //         - قانون دکمهٔ + شناور (separate concern — مربوط به recording نیست)
 //         - auto-restart در recognition.onend (طبق کامنت «same as working backup»،
 //           این رفتار از قبل وجود داشته و جزو تغییرات recording-request نیست)
-const APP_VERSION = 'v171-2026-11-08-revert-bg-record-wakelock';
+//   v172 - RECORDING SILENCE TOLERANCE (5s+ grace period):
+//         مشکل: وقتی ضبط شروع می‌شد و کاربر بلافاصله صحبت نمی‌کرد، تشخیص صوت
+//         بعد از چند ثانیه سکوت به‌طور خودکار تمام می‌شد (continuous=false) و
+//         سپس auto-restart در onend یک session جدید شروع می‌کرد. کاربر این
+//         چرخهٔ سریع «قطع → شروع دوباره» را به‌عنوان «خیلی زود تمام می‌شود»
+//         احساس می‌کرد و فرصت صحبت پیدا نمی‌کرد.
+//         🔧 راه‌حل:
+//         ۱) recognition.continuous = false → true
+//            تشخیص صوت در زمان سکوت قطع نمی‌شود — session تا زمانی که کاربر
+//            دکمهٔ توقف را نزده، باز می‌ماند.
+//         ۲) در recognition.onerror، خطای 'no-speech' به‌طور کامل نادیده گرفته
+//            می‌شود — کاربر از حالت ضبط بیرون انداخته نمی‌شود. فقط یک راهنمای
+//            ملایم «در انتظار صحبت شما...» در hint نمایش داده می‌شود (نه toast).
+//         ۳) متغیر _recordingStartedAt در onstart ثبت می‌شود — برای پشتیبانی
+//            آینده از یک دورهٔ مهلت صریح ۵ ثانیه‌ای (در حال حاضر no-speech همیشه
+//            نادیده گرفته می‌شود، بنابراین دورهٔ مهلت عملاً نامحدود است — بیشتر
+//            از ۵ ثانیه که کاربر درخواست کرده بود).
+//         ۴) auto-restart در onend همچنان فعال است (۳۰۰ms delay) — اگر session
+//            پس از یک no-speech پایان یابد، session جدید شروع می‌شود. کاربر در
+//            UI ضبط می‌ماند و می‌تواند هر زمان صحبت کند.
+//         نتیجه: کاربر فرصت صحبت پیدا می‌کند — حتی اگر چند ثانیه سکوت کند.
+const APP_VERSION = 'v172-2026-11-08-recording-silence-tolerance';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -7269,6 +7290,11 @@ async function migrateLegacyData() {
 // ============ Speech Recognition ============
 let recognition = null;
 let isRecording = false;
+// 🔧 v172: زمان شروع ضبط — برای اعمال «دوره مهلت ۵ ثانیه‌ای» در no-speech
+// وقتی ضبط شروع می‌شود، این متغیر به Date.now() تنظیم می‌شود. اگر خطای
+// no-speech در کمتر از ۵ ثانیه از شروع ضبط رخ دهد، نادیده گرفته می‌شود
+// تا کاربر فرصت صحبت پیدا کند.
+let _recordingStartedAt = 0;
 // Two-level tracking (same as the WORKING backup version):
 //   allFinalText: accumulated across sessions (committed in onend)
 //   currentSessionText: current session only (reset in onstart)
@@ -7285,7 +7311,13 @@ function initRecognition() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SR();
     recognition.lang = 'fa-IR';
-    recognition.continuous = false;
+    // 🔧 v172: continuous = true — تشخیص صوت در زمان سکوت قطع نمی‌شود
+    // قبلاً continuous = false بود که باعث می‌شد پس از چند ثانیه سکوت،
+    // تشخیص به‌طور خودکار تمام شود و سپس auto-restart در onend یک session
+    // جدید شروع کند. این چرخهٔ سریع «قطع → شروع دوباره» توسط کاربر به‌عنوان
+    // «خیلی زود تمام می‌شود» احساس می‌شد. با continuous = true، session
+    // تا زمانی که کاربر دکمهٔ توقف را نزده، باز می‌ماند.
+    recognition.continuous = true;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
 
@@ -7293,6 +7325,8 @@ function initRecognition() {
         // Reset per-session state when a new session begins
         processedResults = new Set();
         currentSessionText = '';
+        // 🔧 v172: ثبت زمان شروع session برای دورهٔ مهلت ۵ ثانیه‌ای
+        _recordingStartedAt = Date.now();
     };
 
     recognition.onresult = (event) => {
@@ -7320,6 +7354,19 @@ function initRecognition() {
 
     recognition.onerror = (event) => {
         console.error('Recognition error:', event.error, 'protocol:', location.protocol);
+        // 🔧 v172: خطای no-speech را به‌طور کامل نادیده بگیر — کاربر را از
+        // حالت ضبط بیرون نینداز. با continuous=true، session باز می‌ماند و
+        // onend یک session جدید را (در صورت نیاز) auto-restart می‌کند.
+        // اینطوری کاربر فرصت صحبت پیدا می‌کند — حتی اگر چند ثانیه سکوت کند.
+        if (event.error === 'no-speech' || event.error === 'aborted') {
+            // 🤫 صدایی شنیده نشد — ولی ضبط ادامه می‌یابد.
+            // فقط یک راهنمای ملایم در hint نمایش بده (نه toast)
+            const hintEl = document.getElementById('interimText');
+            if (hintEl && isRecording) {
+                hintEl.textContent = 'در انتظار صحبت شما...';
+            }
+            return;  // 🔧 v172: از kick-out جلوگیری کن
+        }
         const errMsg = getSpeechErrorMessage(event.error);
         if (errMsg) showToast(errMsg);
         if (isRecording) {
@@ -7340,7 +7387,9 @@ function initRecognition() {
     function getSpeechErrorMessage(error) {
         switch(error) {
             case 'no-speech':
-                return 'صدایی شنیده نشد. دوباره تلاش کنید یا متن را تایپ کنید.';
+                // 🔧 v172: این پیام دیگر نمایش داده نمی‌شود چون no-speech در
+                // بالای onerror نادیده گرفته می‌شود. اما برای ایمنی برگردانده می‌شود.
+                return null;
             case 'not-allowed':
             case 'service-not-allowed':
                 if (location.protocol === 'file:') {
@@ -7369,6 +7418,10 @@ function initRecognition() {
         }
 
         if (isRecording) {
+            // 🔧 v172: با continuous=true، onend معمولاً فقط پس از یک خطای no-speech
+            // (که در onerror نادیده گرفته می‌شود) یا پس از stop دستی fire می‌شود.
+            // اگر کاربر هنوز در حال ضبط است (isRecording=true)، session جدید را
+            // بعد از ۳۰۰ms شروع کن. این چرخه بی‌خطر است چون کاربر در UI ضبط می‌ماند.
             // Auto-restart with 300ms delay (same as working backup)
             setTimeout(() => {
                 if (!isRecording) return;
