@@ -789,12 +789,12 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.55);
-    z-index: 1000;
+    z-index: 10500;  /* 🔧 v155: بالاتر از contactsOverlay (10000) — تقویم روی اشpersons باز شود */
     display: none;
     align-items: center;
     justify-content: center;
     padding: 16px;
-    padding-top: 78px;  /* 🔧 v152: ۶۲px هدر + ۱۶px padding */
+    padding-top: 78px;
     backdrop-filter: blur(2px);
     /* 🔧 وقتی مودال باز است، صفحه زیر آن اسکرول نشود */
     overflow: hidden;
@@ -2639,18 +2639,20 @@ body.locked .header-actions button {
 /* ============ 📝 صفحه یادداشت ============ */
 .notes-overlay {
     position: fixed;
-    inset: 0;
+    top: 62px;  /* 🔧 v155: زیر هدر اصلی شروع شود — نه inset:0 */
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: #fff;
     z-index: 10000;
     display: none;
     flex-direction: column;
     direction: rtl;
-    padding-top: 62px;  /* 🔧 v152: فضا برای هدر fixed */
 }
 .notes-overlay.active { display: flex; }
 .notes-header {
     position: sticky;
-    top: 62px;  /* 🔧 v154: زیر هدر اصلی فیکس شود */
+    top: 0;  /* 🔧 v155: داخل overlay که top:62px شروع می‌شود */
     background: linear-gradient(135deg, #FF9800, #F57C00);
     color: white;
     padding: 14px 16px;
@@ -2734,20 +2736,22 @@ body.locked .header-actions button {
 /* ============ 👥 بانک اطلاعاتی اشخاص (CRM) ============ */
 .contacts-overlay {
     position: fixed;
-    inset: 0;
+    top: 62px;  /* 🔧 v155: زیر هدر اصلی شروع شود — نه inset:0 */
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: #f0f2f5;
     z-index: 10000;
     display: none;
     flex-direction: column;
     direction: rtl;
-    padding-top: 62px;  /* v151: header fixed */
 }
 .contacts-overlay.active { display: flex; }
 
 .contacts-header {
     position: sticky;
-    top: 62px;  /* 🔧 v154: زیر هدر اصلی فیکس شود */
-    background: linear-gradient(135deg, #1976D2, #0D47A1);
+    top: 0;  /* 🔧 v155: داخل overlay که top:62px شروع می‌شود، top:0 یعنی زیر هدر */
+    background: linear-gradient(135deg, #00695C, #004D40);  /* 🔧 v155: سبز تیره (غیر آبی) */
     color: white;
     padding: 14px 16px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.15);
@@ -4649,7 +4653,12 @@ body.locked .header-actions button {
 //         ۳) _refreshFloatingAddBtn: بازنویسی ساده — بررسی مستقیم ۶ شرط
 //         ۴) refreshFloatingContactBtn: بازنویسی ساده — بررسی مستقیم
 //         ۵) بدون isAnyOverlayOpen() — بررسی مستقیم و واضح
-const APP_VERSION = 'v154-2026-11-07-header-sticky-floating-simple';
+//   v155 - OVERLAY TOP FIX + CALENDAR Z-INDEX + CONTACTS COLOR:
+//         ۱) overlayها: inset:0 → top:62px (زیر هدر شروع، نه از top:0)
+//         ۲) sticky headers: top:0 (داخل overlay که top:62px شروع می‌شود)
+//         ۳) modal-overlay z-index: 1000 → 10500 (تقویم روی اشpersons باز شود)
+//         ۴) contacts-header: آبی → سبز تیره (#00695C)
+const APP_VERSION = 'v155-2026-11-07-overlay-top-calendar-zindex-color';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
