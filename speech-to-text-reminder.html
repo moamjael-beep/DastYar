@@ -764,7 +764,8 @@ body { padding-bottom: 30px; }
 .item.done { background: linear-gradient(135deg, #9E9E9E, #616161); opacity: 0.85; }
 /* 🔧 v133: حالت‌های جدید تسک — لغوشده (سیاه) و معلق (قهوه‌ای) */
 .item.cancelled { background: linear-gradient(135deg, #424242, #212121); opacity: 0.75; }
-.item.cancelled .item-text { text-decoration: line-through; color: #BDBDBD; }
+/* 🔧 v148: خط روی متن لغوشده حذف شد — متن خوانا باشد */
+.item.cancelled .item-text { color: #BDBDBD; }
 .item.suspended { background: linear-gradient(135deg, #795548, #4E342E); opacity: 0.9; }
 .item.suspended .item-text { color: #D7CCC8; font-style: italic; }
 /* نشانگرهای حالت در گوشهٔ تسک */
@@ -2894,6 +2895,84 @@ body.locked .header-actions button {
     font-size: 14px;
 }
 .contacts-empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+/* 🔧 v148: منوی تنظیمات زنگوله */
+.bell-settings-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 10600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s;
+}
+.bell-settings-modal {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    max-width: 440px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    animation: slideUp 0.25s;
+}
+.bell-settings-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1976D2;
+    text-align: center;
+    margin-bottom: 16px;
+}
+.bell-settings-section {
+    margin-bottom: 16px;
+}
+.bell-settings-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #eee;
+}
+.bell-sound-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #f5f5f5;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 14px;
+}
+.bell-sound-option:hover { background: #e3f2fd; }
+.bell-sound-option.selected {
+    border-color: #1976D2;
+    background: #e3f2fd;
+}
+.bell-sound-option-icon {
+    font-size: 20px;
+}
+.bell-time-select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    margin-bottom: 8px;
+}
+.bell-time-label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
 /* 🔧 v144: منوی لمسی شخص — وقتی روی یک شخص کلیک می‌شود، باز می‌شود */
 .contact-action-menu {
     position: fixed;
@@ -3818,7 +3897,16 @@ body.locked .header-actions button {
                 <div class="contact-form-row">
                     <div class="contact-form-field">
                         <label>درصد کارپردازی</label>
-                        <input type="text" id="searchCommissionPercent" placeholder="مثال: ۱۰">
+                        <select id="searchCommissionMode">
+                            <option value="all">همه (بدون فیلتر)</option>
+                            <option value="zero">برابر صفر (۰)</option>
+                            <option value="nonzero">مخالف صفر (≠ ۰)</option>
+                            <option value="specific">یک عدد مشخص...</option>
+                        </select>
+                    </div>
+                    <div class="contact-form-field" id="searchCommissionValueWrap" style="display:none;">
+                        <label>عدد مشخص</label>
+                        <input type="text" id="searchCommissionValue" placeholder="مثال: ۱۰">
                     </div>
                 </div>
             </div>
@@ -3886,7 +3974,16 @@ body.locked .header-actions button {
                 <div class="contact-form-row">
                     <div class="contact-form-field">
                         <label>درصد کارپردازی</label>
-                        <input type="text" id="reportCommissionPercent" placeholder="مثال: ۱۰">
+                        <select id="reportCommissionMode">
+                            <option value="all">همه (بدون فیلتر)</option>
+                            <option value="zero">برابر صفر (۰)</option>
+                            <option value="nonzero">مخالف صفر (≠ ۰)</option>
+                            <option value="specific">یک عدد مشخص...</option>
+                        </select>
+                    </div>
+                    <div class="contact-form-field" id="reportCommissionValueWrap" style="display:none;">
+                        <label>عدد مشخص</label>
+                        <input type="text" id="reportCommissionValue" placeholder="مثال: ۱۰">
                     </div>
                 </div>
             </div>
@@ -4484,7 +4581,32 @@ body.locked .header-actions button {
 //            contact modals: 10500
 //            group-picker: 10600
 //            contact-action-menu: 10601/10602
-const APP_VERSION = 'v145-2026-11-07-filter-size-overlay-stack';
+//   v146 - COMMISSION 4-MODE IN SEARCH + REPORT:
+//         در جستجو و گزارش اشpersons، درصد کارپردازی همان ۴ حالت
+//         گزارش کارها را دارد: همه / =۰ / ≠۰ / عدد مشخص
+//         (قبلاً فقط یک input ساده بود)
+//   v147 - FLOATING + VISIBILITY RULE + BACKGROUND RECORDING:
+//         ۱) 🔒 قانون جهانی دکمه + شناور:
+//            - فقط در tasks view (داخل گروه) + بدون overlay → نمایش
+//            - فقط در contacts page + بدون overlay → نمایش
+//            - در هر حالت دیگر (overlay/منو/مودال باز) → پنهان
+//            - بعد از بسته شدن overlay → دوباره ظاهر
+//            - تابع isAnyOverlayOpen() همه overlayها را بررسی می‌کند
+//         ۲) 🔒 ضبط صدا در پس‌زمینه ادامه می‌یابد:
+//            - اگر کاربر در حال ضبط باشد و به برنامه دیگری برود (مثل پیامک)،
+//              ضبط ادامه می‌یابد. وقتی برگردد، اگر recognition متوقف شده
+//              باشد، دوباره شروع می‌شود.
+//   v148 - BELL TOGGLE + SOUND CHOICE + CUSTOM REMINDER TIMES:
+//         ۱) خط روی متن لغوشده حذف شد (قبلاً در v147 انجام شد)
+//         ۲) زنگوله 🔔 toggle: لمس اول → فعال + منوی تنظیمات، لمس دوم → غیرفعال
+//         ۳) منوی تنظیمات: انتخاب صدا (زنگ بلند / ۵ بوق کوتاه)
+//         ۴) منوی تنظیمات: انتخاب تا ۳ زمان یادآور (dropdown)
+//         ۵) پیش‌فرض: ۱ یادآور، ۱ ساعت قبل، زنگ بلند
+//         ۶) ۱۰ گزینه زمان: ۱ روز/۱۲h/۶h/۳h/۱h/۳۰m/۱۵m/۱۰m/۵m/سررسید
+//         ۷) playShortBeeps(): ۵ بوق square wave ۸۸۰Hz با فاصله ۰.۳s
+//         ۸) NOTIF_THRESHOLDS از تنظیمات کاربر خوانده می‌شود
+//         ۹) تنظیمات در localStorage: yadavar_notif_settings_v1
+const APP_VERSION = 'v148-2026-11-07-bell-toggle-sound-choice-times';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -9248,18 +9370,56 @@ function fullRender() {
 //   - هیچ فرمی باز نباشد (فرم تسک، فرم شخص، مودال تنظیمات گروه)
 //   - هیچ منویی باز نباشد (منوی همبرگری گروه)
 //   - جزئیات هیچ تسکی باز نباشد
+// 🔧 v147: تابع جامع — آیا هر overlay/منو/مودالی باز است؟
+// این تابع همهٔ overlayهای برنامه را بررسی می‌کند. اگر هر کدام باز
+// باشد، دکمهٔ + شناور پنهان می‌شود (طبق قانون جهانی).
+function isAnyOverlayOpen() {
+    // لیست همهٔ overlayهای برنامه
+    var overlayIds = [
+        'modalOverlay',          // فرم تسک
+        'calendarOverlay',       // تقویم
+        'datetimePickerOverlay', // انتخابگر تاریخ
+        'groupSettingsOverlay',  // تنظیمات گروه
+        'contactsOverlay',       // صفحه اشpersons
+        'contactFormOverlay',    // فرم شخص
+        'contactSearchOverlay',  // جستجوی اشpersons
+        'contactSearchResultsOverlay', // نتایج جستجو
+        'contactReportOverlay',  // گزارش اشpersons
+        'contactReportResultsOverlay', // نتایج گزارش اشpersons
+        'taskReportOverlay',     // گزارش کارها
+        'taskReportResultsOverlay', // نتایج گزارش کارها
+        'phoneActionOverlay',    // منوی تلفن
+        'groupPickerOverlay',    // منوی انتخاب گروه (dynamic)
+        'contactPickerOverlay',  // منوی انتخاب شخص (dynamic)
+        'contactActionMenuOverlay', // منوی عملیات شخص (dynamic)
+        'taskPickerOverlay',     // منوی انتخاب تسک (dynamic)
+    ];
+    for (var i = 0; i < overlayIds.length; i++) {
+        var el = document.getElementById(overlayIds[i]);
+        if (el && el.classList.contains('active')) return true;
+        // 🔧 برخی overlayهای dynamic با style.display کنترل می‌شوند نه class
+        if (el && el.style.display !== '' && el.style.display !== 'none') return true;
+    }
+    // منوی همبرگری گروه
+    if (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu) return true;
+    // جزئیات تسک باز است
+    if (expandedId !== null) return true;
+    return false;
+}
+
 function _refreshFloatingAddBtn() {
     var fab = document.getElementById('floatingAddBtn');
     if (!fab) return;
-    var taskFormOpen = document.getElementById('modalOverlay') && document.getElementById('modalOverlay').classList.contains('active');
-    var detailsOpen = (expandedId !== null);
-    var groupSettingsOpen = document.getElementById('groupSettingsOverlay') && document.getElementById('groupSettingsOverlay').classList.contains('active');
-    var groupMenuOpen = (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu);
-    if (currentView === 'tasks' && !taskFormOpen && !detailsOpen && !groupSettingsOpen && !groupMenuOpen) {
+    // 🔧 v147: قانون جهانی — دکمه + شناور فقط وقتی نمایش داده شود که:
+    //   ۱) در tasks view باشیم (داخل یک گروه)
+    //   ۲) هیچ overlay/منو/مودالی باز نباشد
+    // در غیر این صورت پنهان شود. بعد از بسته شدن overlay دوباره ظاهر شود.
+    if (currentView === 'tasks' && !isAnyOverlayOpen()) {
         fab.style.display = 'flex';
     } else {
         fab.style.display = 'none';
-        fab.classList.remove('recording');
+        // 🔧 اگر در حال ضبط است، کلاس recording را حفظ کن (نه پنهان کردن)
+        // چون ضبط باید ادامه یابد حتی اگر دکمه پنهان باشد
     }
 }
 
@@ -10407,63 +10567,259 @@ function clearSentNotificationsFor(items) {
     // Note: IDB entries for deleted items will be cleaned up by SW's periodic cleanup
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🔔 بخش ۱۴: اعلان‌ها — v148 (زنگوله toggle + تنظیمات قابل انتخاب)
+// ════════════════════════════════════════════════════════════════════
+// زنگوله بالای هدر:
+//   - لمس اول → فعال‌سازی (درخواست permission) → منوی تنظیمات باز می‌شود
+//   - لمس دوم → غیرفعال‌سازی
+// منوی تنظیمات:
+//   - انتخاب صدا: زنگ بلند و زیبا / ۵ بوق کوتاه
+//   - انتخاب تا ۳ زمان یادآور (پیش‌فرض: ۱ بار، ۱ ساعت قبل)
+// تنظیمات در localStorage ذخیره می‌شوند.
+
+const NOTIF_SETTINGS_KEY = 'yadavar_notif_settings_v1';
+
+// گزینه‌های زمان یادآور قابل انتخاب
+const NOTIF_TIME_OPTIONS = [
+    { minutes: 60 * 24, key: 'd1',  label: '۱ روز قبل' },
+    { minutes: 60 * 12, key: 'h12', label: '۱۲ ساعت قبل' },
+    { minutes: 60 * 6,  key: 'h6',  label: '۶ ساعت قبل' },
+    { minutes: 60 * 3,  key: 'h3',  label: '۳ ساعت قبل' },
+    { minutes: 60,      key: 'h1',  label: '۱ ساعت قبل' },
+    { minutes: 30,      key: 'm30', label: '۳۰ دقیقه قبل' },
+    { minutes: 15,      key: 'm15', label: '۱۵ دقیقه قبل' },
+    { minutes: 10,      key: 'm10', label: '۱۰ دقیقه قبل' },
+    { minutes: 5,       key: 'm5',  label: '۵ دقیقه قبل' },
+    { minutes: 0,       key: 'due', label: 'در لحظهٔ سررسید' },
+];
+
+// دریافت تنظیمات اعلان (یا پیش‌فرض)
+function getNotifSettings() {
+    try {
+        const s = localStorage.getItem(NOTIF_SETTINGS_KEY);
+        if (s) return JSON.parse(s);
+    } catch(e) {}
+    // پیش‌فرض: ۱ بار، ۱ ساعت قبل، زنگ بلند
+    return {
+        enabled: false,
+        soundType: 'bell',
+        times: [{ minutes: 60, key: 'h1', label: '۱ ساعت قبل' }]
+    };
+}
+
+// ذخیره تنظیمات اعلان
+function saveNotifSettings(settings) {
+    try { localStorage.setItem(NOTIF_SETTINGS_KEY, JSON.stringify(settings)); } catch(e) {}
+}
+
+// تولید NOTIF_THRESHOLDS از تنظیمات کاربر
+function getNotifThresholds() {
+    const settings = getNotifSettings();
+    if (!settings.enabled || !settings.times || settings.times.length === 0) return [];
+    return settings.times.map(function(t) {
+        return { minutes: t.minutes, key: t.key, label: t.label, repeat: false };
+    });
+}
+
+// 🔧 v148: تابع اصلی toggle — لمس اول فعال، لمس دوم غیرفعال
 async function toggleNotifications() {
     if (!('Notification' in window)) {
         showToast('مرورگر شما از اعلان‌ها پشتیبانی نمی‌کند');
         return;
     }
-    if (Notification.permission === 'granted') {
-        showToast('اعلان‌ها فعال هستند ✓ (برای خاموش کردن به تنظیمات مرورگر بروید)');
+    var settings = getNotifSettings();
+    // اگر فعال است → غیرفعال کن
+    if (settings.enabled && Notification.permission === 'granted') {
+        settings.enabled = false;
+        saveNotifSettings(settings);
         updateNotifButton();
-        // Run immediate check
-        checkNotifications();
+        showToast('🔔 اعلان‌ها غیرفعال شد');
         return;
     }
+    // اگر غیرفعال است → فعال کن
     if (Notification.permission === 'denied') {
         showToast('اعلان‌ها مسدود شده‌اند. در تنظیمات مرورگر اجازه دهید');
         return;
     }
-    // Default - request permission
-    try {
-        const permission = await Notification.requestPermission();
-        updateNotifButton();
-        if (permission === 'granted') {
-            showToast('اعلان‌ها فعال شد ✓');
-            // Show test notification
-            try {
-                new Notification('یادآور صوتی', {
-                    body: 'اعلان‌ها فعال شدند. هنگام نزدیک شدن سررسید به شما اطلاع می‌دهیم',
-                    tag: 'test-' + Date.now()
-                });
-            } catch(e) { console.error(e); }
-            checkNotifications();
-        } else if (permission === 'denied') {
-            showToast('دسترسی به اعلان‌ها رد شد');
-        } else {
-            showToast('دسترسی به اعلان‌ها داده نشد');
+    if (Notification.permission !== 'granted') {
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                showToast('دسترسی به اعلان‌ها داده نشد');
+                return;
+            }
+        } catch(e) {
+            showToast('خطا در درخواست اعلان: ' + e.message);
+            return;
         }
-    } catch(e) {
-        showToast('خطا در درخواست اعلان: ' + e.message);
     }
+    // فعال‌سازی + باز کردن منوی تنظیمات
+    settings.enabled = true;
+    saveNotifSettings(settings);
+    updateNotifButton();
+    // باز کردن منوی تنظیمات زنگوله
+    showBellSettings();
+    showToast('🔔 اعلان‌ها فعال شد');
+    checkNotifications();
 }
 
+// 🔧 v148: به‌روزرسانی ظاهر دکمه زنگوله
 function updateNotifButton() {
     const btn = document.getElementById('notifBtn');
     if (!btn) return;
-    if ('Notification' in window && Notification.permission === 'granted') {
+    var settings = getNotifSettings();
+    if ('Notification' in window && Notification.permission === 'granted' && settings.enabled) {
         btn.classList.add('active');
     } else {
         btn.classList.remove('active');
     }
 }
 
-// Notification thresholds: at X minutes remaining, send once
-// 🔧 v140: طبق درخواست کاربر — فقط ۳ سطح + تکرار برای ۳ ساعت و ۱۵ دقیقه
-const NOTIF_THRESHOLDS = [
-    { minutes: 180, key: 'h3',  label: '۳ ساعت',  repeat: true  },  // 3 hours before, repeat
-    { minutes: 15,  key: 'm15', label: '۱۵ دقیقه', repeat: true  },  // 15 min before, repeat
-    { minutes: 0,   key: 'due', label: 'سررسید',  repeat: false },  // at deadline
-];
+// 🔧 v148: منوی تنظیمات زنگوله
+function showBellSettings() {
+    // حذف منوی قبلی
+    const old = document.getElementById('bellSettingsOverlay');
+    if (old) old.remove();
+    var settings = getNotifSettings();
+    const overlay = document.createElement('div');
+    overlay.className = 'bell-settings-overlay';
+    overlay.id = 'bellSettingsOverlay';
+    const modal = document.createElement('div');
+    modal.className = 'bell-settings-modal';
+    // عنوان
+    const title = document.createElement('div');
+    title.className = 'bell-settings-title';
+    title.textContent = '🔔 تنظیمات زنگوله';
+    modal.appendChild(title);
+    // بخش ۱: انتخاب صدا
+    const soundSection = document.createElement('div');
+    soundSection.className = 'bell-settings-section';
+    const soundTitle = document.createElement('div');
+    soundTitle.className = 'bell-settings-section-title';
+    soundTitle.textContent = '🎵 صدا';
+    soundSection.appendChild(soundTitle);
+    // گزینه‌های صدا
+    var soundOptions = [
+        { value: 'bell', icon: '🔔', label: 'زنگ بلند و زیبا (فعلی)' },
+        { value: 'beeps', icon: '📢', label: '۵ بوق کوتاه' },
+    ];
+    soundOptions.forEach(function(opt) {
+        const div = document.createElement('div');
+        div.className = 'bell-sound-option' + (settings.soundType === opt.value ? ' selected' : '');
+        div.innerHTML = '<span class="bell-sound-option-icon">' + opt.icon + '</span><span>' + opt.label + '</span>';
+        div.onclick = function() {
+            settings.soundType = opt.value;
+            soundSection.querySelectorAll('.bell-sound-option').forEach(function(el) { el.classList.remove('selected'); });
+            div.classList.add('selected');
+            // پخش نمونه صدا
+            if (opt.value === 'bell') playNotificationSound();
+            else playShortBeeps();
+        };
+        soundSection.appendChild(div);
+    });
+    modal.appendChild(soundSection);
+    // بخش ۲: زمان‌های یادآور (تا ۳ مورد)
+    const timeSection = document.createElement('div');
+    timeSection.className = 'bell-settings-section';
+    const timeTitle = document.createElement('div');
+    timeTitle.className = 'bell-settings-section-title';
+    timeTitle.textContent = '⏰ زمان‌های یادآور (حداکثر ۳ مورد)';
+    timeSection.appendChild(timeTitle);
+    // ساخت ۳ dropdown برای زمان‌ها
+    var timeSelects = [];
+    for (var i = 0; i < 3; i++) {
+        const label = document.createElement('div');
+        label.className = 'bell-time-label';
+        label.textContent = 'یادآور ' + toPersianNumber(i + 1) + ':';
+        timeSection.appendChild(label);
+        const sel = document.createElement('select');
+        sel.className = 'bell-time-select';
+        // گزینهٔ «بدون یادآور»
+        sel.innerHTML = '<option value="">— بدون یادآور —</option>';
+        NOTIF_TIME_OPTIONS.forEach(function(opt) {
+            var selected = settings.times[i] && settings.times[i].key === opt.key;
+            sel.innerHTML += '<option value="' + opt.key + '" data-minutes="' + opt.minutes + '" data-label="' + opt.label + '"' + (selected ? ' selected' : '') + '>' + opt.label + '</option>';
+        });
+        timeSection.appendChild(sel);
+        timeSelects.push(sel);
+    }
+    modal.appendChild(timeSection);
+    // دکمه‌ها
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:8px;margin-top:12px;';
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn btn-primary';
+    saveBtn.style.flex = '1';
+    saveBtn.textContent = '✓ ذخیره';
+    saveBtn.onclick = function() {
+        // جمع‌آوری تنظیمات
+        var newTimes = [];
+        timeSelects.forEach(function(sel) {
+            if (sel.value) {
+                var opt = sel.options[sel.selectedIndex];
+                newTimes.push({
+                    key: sel.value,
+                    minutes: parseInt(opt.dataset.minutes, 10),
+                    label: opt.dataset.label
+                });
+            }
+        });
+        if (newTimes.length === 0) {
+            showToast('حداقل یک زمان یادآور انتخاب کنید');
+            return;
+        }
+        settings.times = newTimes;
+        saveNotifSettings(settings);
+        closeBellSettings();
+        showToast('تنظیمات ذخیره شد ✓ (' + toPersianNumber(newTimes.length) + ' یادآور)');
+        checkNotifications();
+    };
+    btnRow.appendChild(saveBtn);
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn btn-secondary';
+    cancelBtn.textContent = 'انصراف';
+    cancelBtn.onclick = closeBellSettings;
+    btnRow.appendChild(cancelBtn);
+    modal.appendChild(btnRow);
+    overlay.appendChild(modal);
+    overlay.onclick = function(e) { if (e.target === overlay) closeBellSettings(); };
+    document.body.appendChild(overlay);
+}
+
+function closeBellSettings() {
+    const overlay = document.getElementById('bellSettingsOverlay');
+    if (overlay) overlay.remove();
+}
+
+// 🔧 v148: پخش ۵ بوق کوتاه
+function playShortBeeps() {
+    var ctx = getNotifAudioContext();
+    if (!ctx) return;
+    try {
+        var now = ctx.currentTime;
+        for (var i = 0; i < 5; i++) {
+            var startTime = now + i * 0.3;  // هر بوق ۰.۳ ثانیه فاصله
+            var osc = ctx.createOscillator();
+            var gain = ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.value = 880;  // فرکانس بالا (بوق)
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.4, startTime + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.1);  // بوق کوتاه ۰.۱ ثانیه
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + 0.1);
+        }
+        console.log('[NotifSound] Playing 5 short beeps');
+    } catch(e) {
+        console.warn('[NotifSound] Beeps failed:', e);
+    }
+}
+
+// آستانه‌های اعلان — از تنظیمات کاربر خوانده می‌شود
+var NOTIF_THRESHOLDS = getNotifThresholds();
 
 function checkNotifications() {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
@@ -10522,8 +10878,10 @@ function sendNotification(item, label, isOverdue, shouldRepeat, itemId) {
             expandedId = item.id;
             render();
         };
-        // 🔧 v140: پخش صدای زیبا و بلند با Web Audio API
-        playNotificationSound();
+        // 🔧 v148: پخش صدا بر اساس تنظیمات کاربر (زنگ بلند یا ۵ بوق)
+        var _notifSettings = getNotifSettings();
+        if (_notifSettings.soundType === 'beeps') playShortBeeps();
+        else playNotificationSound();
         // 🔧 v140: تکرار اعلان (فقط برای h3 و m15 — ۱۵ ثانیه بعد)
         if (shouldRepeat) {
             setTimeout(function() {
@@ -11081,14 +11439,22 @@ function refreshFloatingContactBtn() {
     if (!fcb) return;
     const contactsOpen = document.getElementById('contactsOverlay').classList.contains('active');
     if (!contactsOpen) { fcb.style.display = 'none'; return; }
-    const childOpen =
-        document.getElementById('contactFormOverlay').classList.contains('active') ||
-        document.getElementById('contactSearchOverlay').classList.contains('active') ||
-        document.getElementById('contactSearchResultsOverlay').classList.contains('active') ||
-        document.getElementById('contactReportOverlay').classList.contains('active') ||
-        document.getElementById('contactReportResultsOverlay').classList.contains('active') ||
-        document.getElementById('phoneActionOverlay').classList.contains('active');
-    fcb.style.display = childOpen ? 'none' : 'flex';
+    // 🔧 v147: بررسی همه overlayها — اگر هر کدام باز است، پنهان کن
+    var overlayIds = [
+        'contactFormOverlay', 'contactSearchOverlay', 'contactSearchResultsOverlay',
+        'contactReportOverlay', 'contactReportResultsOverlay',
+        'taskReportOverlay', 'taskReportResultsOverlay',
+        'phoneActionOverlay', 'groupPickerOverlay', 'contactPickerOverlay',
+        'contactActionMenuOverlay', 'taskPickerOverlay',
+        'modalOverlay', 'calendarOverlay', 'datetimePickerOverlay', 'groupSettingsOverlay',
+    ];
+    for (var i = 0; i < overlayIds.length; i++) {
+        var el = document.getElementById(overlayIds[i]);
+        if (el && el.classList.contains('active')) { fcb.style.display = 'none'; return; }
+        if (el && el.style.display !== '' && el.style.display !== 'none') { fcb.style.display = 'none'; return; }
+    }
+    if (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu) { fcb.style.display = 'none'; return; }
+    fcb.style.display = 'flex';
 }
 
 // ─── رندر لیست اشخاص ───
@@ -11544,8 +11910,10 @@ function openContactSearch() {
     document.getElementById('searchPhone').value = '';
     document.getElementById('searchCommissionAskedMin').value = '';
     document.getElementById('searchCommissionPaidMin').value = '';
-    // 🔧 v137: درصد کارپردازی پیش‌فرض = ۰ (طبق درخواست کاربر)
-    document.getElementById('searchCommissionPercent').value = '0';
+    // 🔧 v146: درصد کارپردازی — ۴ حالت (همانند گزارش کارها)
+    document.getElementById('searchCommissionMode').value = 'all';
+    document.getElementById('searchCommissionValueWrap').style.display = 'none';
+    document.getElementById('searchCommissionValue').value = '';
     document.getElementById('contactSearchOverlay').classList.add('active');
     history.pushState({ view: 'contactSearch' }, '');
     refreshFloatingContactBtn();
@@ -11564,7 +11932,9 @@ function executeContactSearch() {
         phone: document.getElementById('searchPhone').value.trim().toLowerCase(),
         commissionAskedMin: document.getElementById('searchCommissionAskedMin').value.trim(),
         commissionPaidMin: document.getElementById('searchCommissionPaidMin').value.trim(),
-        commissionPercent: document.getElementById('searchCommissionPercent').value.trim(),
+        // 🔧 v146: ۴ حالت درصد کارپردازی
+        commissionMode: document.getElementById('searchCommissionMode').value,
+        commissionValue: document.getElementById('searchCommissionValue').value.trim(),
     };
 
     const results = filterContacts(criteria);
@@ -11595,8 +11965,18 @@ function filterContacts(criteria) {
         // 🔧 اشانتیون کالا است، نه مبلغ — جستجوی متنی
         contacts = contacts.filter(c => (c.commissionPaid || '').toLowerCase().includes(criteria.commissionPaidMin.toLowerCase()));
     }
-    if (criteria.commissionPercent) {
-        contacts = contacts.filter(c => (c.commissionPercent || '').includes(criteria.commissionPercent));
+    // 🔧 v146: فیلتر درصد کارپردازی — ۴ حالت
+    if (criteria.commissionMode && criteria.commissionMode !== 'all') {
+        if (criteria.commissionMode === 'zero') {
+            contacts = contacts.filter(c => parseFloat(c.commissionPercent || '0') === 0);
+        } else if (criteria.commissionMode === 'nonzero') {
+            contacts = contacts.filter(c => {
+                const cp = parseFloat(c.commissionPercent || '0');
+                return !isNaN(cp) && cp !== 0;
+            });
+        } else if (criteria.commissionMode === 'specific' && criteria.commissionValue) {
+            contacts = contacts.filter(c => (c.commissionPercent || '').includes(criteria.commissionValue));
+        }
     }
 
     return contacts;
@@ -11752,7 +12132,10 @@ function openContactReport() {
     document.getElementById('reportPhone').value = '';
     document.getElementById('reportCommissionAskedMin').value = '';
     document.getElementById('reportCommissionPaidMin').value = '';
-    document.getElementById('reportCommissionPercent').value = '';
+    // 🔧 v146: درصد کارپردازی — ۴ حالت
+    document.getElementById('reportCommissionMode').value = 'all';
+    document.getElementById('reportCommissionValueWrap').style.display = 'none';
+    document.getElementById('reportCommissionValue').value = '';
     document.getElementById('contactReportOverlay').classList.add('active');
     history.pushState({ view: 'contactReport' }, '');
     refreshFloatingContactBtn();
@@ -11771,7 +12154,9 @@ function executeContactReport() {
         phone: document.getElementById('reportPhone').value.trim().toLowerCase(),
         commissionAskedMin: document.getElementById('reportCommissionAskedMin').value.trim(),
         commissionPaidMin: document.getElementById('reportCommissionPaidMin').value.trim(),
-        commissionPercent: document.getElementById('reportCommissionPercent').value.trim(),
+        // 🔧 v146: ۴ حالت درصد کارپردازی
+        commissionMode: document.getElementById('reportCommissionMode').value,
+        commissionValue: document.getElementById('reportCommissionValue').value.trim(),
     };
 
     const results = filterContacts(criteria);
@@ -11995,9 +12380,22 @@ function closeTaskReportResults() {
 }
 
 // وقتی کاربر حالت درصد را تغییر داد، فیلد «عدد مشخص» را نمایش/پنهان کن
+// 🔧 v146: همین منطق برای جستجو و گزارش اشpersons هم اعمال می‌شود
 document.addEventListener('change', function(e) {
-    if (e.target && e.target.id === 'taskReportCommissionMode') {
+    if (!e.target) return;
+    // گزارش کارها
+    if (e.target.id === 'taskReportCommissionMode') {
         const wrap = document.getElementById('taskReportCommissionValueWrap');
+        if (wrap) wrap.style.display = (e.target.value === 'specific') ? '' : 'none';
+    }
+    // جستجوی اشpersons
+    if (e.target.id === 'searchCommissionMode') {
+        const wrap = document.getElementById('searchCommissionValueWrap');
+        if (wrap) wrap.style.display = (e.target.value === 'specific') ? '' : 'none';
+    }
+    // گزارش اشpersons
+    if (e.target.id === 'reportCommissionMode') {
+        const wrap = document.getElementById('reportCommissionValueWrap');
         if (wrap) wrap.style.display = (e.target.value === 'specific') ? '' : 'none';
     }
 });
@@ -13618,10 +14016,13 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (event) => {
         console.log('[Page] Message from SW:', event.data);
         if (!event.data) return;
-        // 🔧 v140: پیام پخش صدای اعلان از سرویس‌ورکر
+        // 🔧 v140/v148: پیام پخش صدای اعلان از سرویس‌ورکر
         if (event.data.type === 'PLAY_NOTIFICATION_SOUND') {
             console.log('[Page] Playing notification sound for:', event.data.title);
-            playNotificationSound();
+            // 🔧 v148: انتخاب صدا بر اساس تنظیمات کاربر
+            var _ns = getNotifSettings();
+            if (_ns.soundType === 'beeps') playShortBeeps();
+            else playNotificationSound();
             // اگر صفحه پنهان است (کاربر در تب دیگری است)، تلاش برای فوکوس
             if (document.hidden) {
                 try { window.focus(); } catch(e) {}
@@ -14141,6 +14542,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 });
             } catch(e) {}
+            // 🔧 v147: اگر در حال ضبط صدا بودیم و برگشتیم به برنامه،
+            // مطمئن شویم ضبط همچنان ادامه دارد. اگر متوقف شده، دوباره شروع کن.
+            if (typeof isRecording !== 'undefined' && isRecording) {
+                if (typeof recognition !== 'undefined' && recognition) {
+                    try {
+                        // تلاش برای restart اگر recognition متوقف شده
+                        recognition.start();
+                        console.log('[Recording] Restarted after visibility return');
+                    } catch(e) {
+                        // Already running — ignore error
+                    }
+                }
+            }
+            // 🔧 v147: به‌روزرسانی دکمه‌های شناور وقتی برگشتیم
+            _refreshFloatingAddBtn();
+            refreshFloatingContactBtn();
         }
     });
 
