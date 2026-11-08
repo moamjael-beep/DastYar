@@ -744,25 +744,25 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .item.warning { background: linear-gradient(135deg, #FB8C00, #E65100); }
 .item.urgent { background: linear-gradient(135deg, #E53935, #B71C1C); }
 
-/* 🔧 v175: Overdue: blinking orange <-> dark orange, 2s cycle */
+/* 🔧 v176: Overdue: blinking light black <-> pure black, 2s cycle */
 @keyframes overdueBlink {
     0%, 100% {
-        background-color: #FF9800;  /* 🔧 v175: نارنجی روشن (Material Orange 500) */
-        box-shadow: 0 2px 14px rgba(255, 152, 0, 0.4);
+        background-color: #616161;  /* 🔧 v176: مشکی روشن (Material Gray 700) */
+        box-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
     }
     50% {
-        background-color: #E65100;  /* 🔧 v175: نارنجی تیره (Material Orange 900) */
-        box-shadow: 0 2px 18px rgba(230, 81, 0, 0.6);
+        background-color: #000000;  /* 🔧 v176: مشکی خالص */
+        box-shadow: 0 2px 18px rgba(0, 0, 0, 0.8);
     }
 }
 .item.overdue {
-    background-color: #FF9800; /* fallback — 🔧 v175: نارنجی */
+    background-color: #616161; /* fallback — 🔧 v176: مشکی */
     animation: overdueBlink 2s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
     .item.overdue {
         animation: none;
-        background-color: #FF9800; /* 🔧 v175: نارنجی */
+        background-color: #616161; /* 🔧 v176: مشکی */
     }
 }
 
@@ -4912,7 +4912,16 @@ body.locked .header-actions button {
 //         - fallback bg + prefers-reduced-motion fallback: هر دو به #FF9800
 //         - box-shadow rgba هماهنگ با رنگ‌های نارنجی جدید
 //         نتیجه: چشمک بین دو نارنجی (روشن ↔ تیره).
-const APP_VERSION = 'v175-2026-11-08-overdue-blink-orange';
+//   v176 - OVERDUE BLINK BLACK (was orange in v175):
+//         کاربر درخواست کرد: «چشمک تسک‌های گذشته اکنون بین دو مشکی
+//         (روشن ↔ تیره) است».
+//         🔧 تغییر:
+//         - فاز ۱ (0%/100%): #FF9800 (نارنجی روشن) → #616161 (مشکی روشن، Gray 700)
+//         - فاز ۲ (50%):     #E65100 (نارنجی تیره) → #000000 (مشکی خالص)
+//         - fallback bg + prefers-reduced-motion fallback: هر دو به #616161
+//         - box-shadow rgba(0,0,0,...) — هماهنگ با رنگ‌های مشکی
+//         نتیجه: چشمک بین دو مشکی (روشن ↔ تیره).
+const APP_VERSION = 'v176-2026-11-08-overdue-blink-black';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
