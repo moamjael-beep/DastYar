@@ -2650,7 +2650,7 @@ body.locked .header-actions button {
 .notes-overlay.active { display: flex; }
 .notes-header {
     position: sticky;
-    top: 0;
+    top: 62px;  /* 🔧 v154: زیر هدر اصلی فیکس شود */
     background: linear-gradient(135deg, #FF9800, #F57C00);
     color: white;
     padding: 14px 16px;
@@ -2746,7 +2746,7 @@ body.locked .header-actions button {
 
 .contacts-header {
     position: sticky;
-    top: 0;  /* 🔧 v152: sticky داخل overlay با padding-top:62px — top:0 یعنی زیر هدر */
+    top: 62px;  /* 🔧 v154: زیر هدر اصلی فیکس شود */
     background: linear-gradient(135deg, #1976D2, #0D47A1);
     color: white;
     padding: 14px 16px;
@@ -4643,7 +4643,13 @@ body.locked .header-actions button {
 //         _refreshFloatingAddBtn: فقط اگر مقدار تغییر کرده style را به‌روزرسانی کن
 //         🔒 قانون: دکمه + شناور فقط در tasks view + بدون overlay
 //         🔒 قانون: دکمه + شناور اشpersons فقط در contacts + بدون overlay
-const APP_VERSION = 'v153-2026-11-07-floating-button-fix';
+//   v154 - HEADER STICKY FIX + FLOATING BUTTON SIMPLE MECHANISM:
+//         ۱) contacts-header: sticky top 0 → 62px (زیر هدر اصلی فیکس)
+//         ۲) notes-header: sticky top 0 → 62px (زیر هدر اصلی فیکس)
+//         ۳) _refreshFloatingAddBtn: بازنویسی ساده — بررسی مستقیم ۶ شرط
+//         ۴) refreshFloatingContactBtn: بازنویسی ساده — بررسی مستقیم
+//         ۵) بدون isAnyOverlayOpen() — بررسی مستقیم و واضح
+const APP_VERSION = 'v154-2026-11-07-header-sticky-floating-simple';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -9481,16 +9487,29 @@ function isAnyOverlayOpen() {
 function _refreshFloatingAddBtn() {
     var fab = document.getElementById('floatingAddBtn');
     if (!fab) return;
-    // 🔧 v153: قانون ساده و واضح:
+    // 🔧 v154: مکانیزم ساده و مستقیم — بدون isAnyOverlayOpen
     // دکمه + شناور فقط وقتی نمایش داده شود که:
-    //   ۱) currentView === 'tasks' (داخل یک گروه)
-    //   ۲) هیچ overlay/منو/مودالی باز نباشد (isAnyOverlayOpen() === false)
-    var shouldShow = (currentView === 'tasks' && !isAnyOverlayOpen());
-    // فقط اگر مقدار تغییر کرده، style را به‌روزرسانی کن (جلوگیری از تغییرهای بی‌مورد)
-    if (shouldShow && fab.style.display !== 'flex') {
-        fab.style.display = 'flex';
-    } else if (!shouldShow && fab.style.display !== 'none') {
-        fab.style.display = 'none';
+    //   ۱) در tasks view باشیم (داخل یک گروه)
+    //   ۲) فرم تسک باز نباشد
+    //   ۳) جزئیات تسک باز نباشد
+    //   ۴) صفحه اشpersons باز نباشد
+    //   ۵) هیچ منوی داینامیکی وجود نداشته باشد
+    var inTasks = (currentView === 'tasks');
+    var modalActive = document.getElementById('modalOverlay') && document.getElementById('modalOverlay').classList.contains('active');
+    var detailsOpen = (expandedId !== null);
+    var contactsEl = document.getElementById('contactsOverlay');
+    var contactsVisible = contactsEl && contactsEl.classList.contains('active') && contactsEl.style.display !== 'none';
+    var dynExists = document.getElementById('groupPickerOverlay')
+        || document.getElementById('contactPickerOverlay')
+        || document.getElementById('contactActionMenuOverlay')
+        || document.getElementById('taskPickerOverlay')
+        || document.getElementById('bellSettingsOverlay');
+    var groupMenuOpen = (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu);
+    var shouldShow = inTasks && !modalActive && !detailsOpen && !contactsVisible && !dynExists && !groupMenuOpen;
+    if (shouldShow) {
+        if (fab.style.display !== 'flex') fab.style.display = 'flex';
+    } else {
+        if (fab.style.display !== 'none') fab.style.display = 'none';
     }
 }
 
@@ -11506,47 +11525,38 @@ function closeContacts() {
 // 🔧 تابع کمکی: دکمهٔ شناور افزودن شخص را فقط وقتی نشان بده که صفحهٔ
 // اشخاص باز است و هیچ زیر-صفحه‌ای (فرم/جستجو/گزارش/نتایج) روی آن باز نیست.
 function refreshFloatingContactBtn() {
-    const fcb = document.getElementById('floatingContactBtn');
+    var fcb = document.getElementById('floatingContactBtn');
     if (!fcb) return;
-    const contactsOpen = document.getElementById('contactsOverlay').classList.contains('active');
-    // 🔧 v150: اگر contactsOverlay پنهان است (display:none = پس‌زمینه)، پنهان کن
-    if (!contactsOpen || document.getElementById('contactsOverlay').style.display === 'none') {
-        fcb.style.display = 'none';
-        return;
+    // 🔧 v154: مکانیزم ساده و مستقیم
+    // دکمه + شناور اشpersons فقط وقتی نمایش داده شود که:
+    //   ۱) صفحه اشpersons باز و visible باشد
+    //   ۲) هیچ overlay/منوی دیگری باز نباشد
+    var contactsEl = document.getElementById('contactsOverlay');
+    var contactsVisible = contactsEl && contactsEl.classList.contains('active') && contactsEl.style.display !== 'none';
+    // بررسی overlayهای فرزند
+    var childIds = ['contactFormOverlay', 'contactSearchOverlay', 'contactSearchResultsOverlay',
+        'contactReportOverlay', 'contactReportResultsOverlay', 'taskReportOverlay',
+        'taskReportResultsOverlay', 'modalOverlay', 'calendarOverlay', 'datetimePickerOverlay',
+        'groupSettingsOverlay', 'phoneActionOverlay'];
+    var childOpen = false;
+    for (var i = 0; i < childIds.length; i++) {
+        var el = document.getElementById(childIds[i]);
+        if (el && el.classList.contains('active') && el.style.display !== 'none') { childOpen = true; break; }
     }
-    // 🔧 v150: استفاده از isAnyOverlayOpen برای بررسی همه overlayها
-    // (به‌جز contactsOverlay خودش که باز است)
-    // بررسی مستقیم: اگر هر overlay دیگری باز است → پنهان
-    var staticOverlays = [
-        'modalOverlay', 'calendarOverlay', 'datetimePickerOverlay',
-        'groupSettingsOverlay', 'contactFormOverlay', 'contactSearchOverlay',
-        'contactSearchResultsOverlay', 'contactReportOverlay',
-        'contactReportResultsOverlay', 'taskReportOverlay',
-        'taskReportResultsOverlay', 'phoneActionOverlay',
-    ];
-    for (var i = 0; i < staticOverlays.length; i++) {
-        var el = document.getElementById(staticOverlays[i]);
-        if (el && el.classList.contains('active') && el.style.display !== 'none') {
-            fcb.style.display = 'none';
-            return;
-        }
+    // بررسی منوهای داینامیک
+    var dynExists = document.getElementById('groupPickerOverlay')
+        || document.getElementById('contactPickerOverlay')
+        || document.getElementById('contactActionMenuOverlay')
+        || document.getElementById('taskPickerOverlay')
+        || document.getElementById('bellSettingsOverlay');
+    var menuOpen = (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu);
+    var detailsOpen = (expandedId !== null);
+    var shouldShow = contactsVisible && !childOpen && !dynExists && !menuOpen && !detailsOpen;
+    if (shouldShow) {
+        if (fcb.style.display !== 'flex') fcb.style.display = 'flex';
+    } else {
+        if (fcb.style.display !== 'none') fcb.style.display = 'none';
     }
-    // Dynamic overlays — اگر وجود دارند → باز هستند
-    var dynamicOverlays = [
-        'groupPickerOverlay', 'contactPickerOverlay',
-        'contactActionMenuOverlay', 'taskPickerOverlay', 'bellSettingsOverlay',
-    ];
-    for (var j = 0; j < dynamicOverlays.length; j++) {
-        if (document.getElementById(dynamicOverlays[j])) {
-            fcb.style.display = 'none';
-            return;
-        }
-    }
-    if (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu) {
-        fcb.style.display = 'none';
-        return;
-    }
-    fcb.style.display = 'flex';
 }
 
 // ─── رندر لیست اشخاص ───
