@@ -4710,17 +4710,15 @@ body.locked .header-actions button {
 //         در جستجو و گزارش اشpersons، درصد کارپردازی همان ۴ حالت
 //         گزارش کارها را دارد: همه / =۰ / ≠۰ / عدد مشخص
 //         (قبلاً فقط یک input ساده بود)
-//   v147 - FLOATING + VISIBILITY RULE + BACKGROUND RECORDING:
+//   v147 - FLOATING + VISIBILITY RULE:
 //         ۱) 🔒 قانون جهانی دکمه + شناور:
 //            - فقط در tasks view (داخل گروه) + بدون overlay → نمایش
 //            - فقط در contacts page + بدون overlay → نمایش
 //            - در هر حالت دیگر (overlay/منو/مودال باز) → پنهان
 //            - بعد از بسته شدن overlay → دوباره ظاهر
 //            - تابع isAnyOverlayOpen() همه overlayها را بررسی می‌کند
-//         ۲) 🔒 ضبط صدا در پس‌زمینه ادامه می‌یابد:
-//            - اگر کاربر در حال ضبط باشد و به برنامه دیگری برود (مثل پیامک)،
-//              ضبط ادامه می‌یابد. وقتی برگردد، اگر recognition متوقف شده
-//              باشد، دوباره شروع می‌شود.
+//         (🔧 v171: بخش «BACKGROUND RECORDING» که در پاسخ به درخواست ضبط صدای
+//          داخلی/پس‌زمینه اضافه شده بود، حذف شد — به حالت قبل برگردانده شد.)
 //   v148 - BELL TOGGLE + SOUND CHOICE + CUSTOM REMINDER TIMES:
 //         ۱) خط روی متن لغوشده حذف شد (قبلاً در v147 انجام شد)
 //         ۲) زنگوله 🔔 toggle: لمس اول → فعال + منوی تنظیمات، لمس دوم → غیرفعال
@@ -4731,13 +4729,12 @@ body.locked .header-actions button {
 //         ۷) playShortBeeps(): ۵ بوق square wave ۸۸۰Hz با فاصله ۰.۳s
 //         ۸) NOTIF_THRESHOLDS از تنظیمات کاربر خوانده می‌شود
 //         ۹) تنظیمات در localStorage: yadavar_notif_settings_v1
-//   v149 - WAKELOCK + MUTATIONOBSERVER + RECORDING FIX:
-//         ۱) WakeLock: هنگام ضبط، صفحه خواب نمی‌کند (acquireWakeLock/releaseWakeLock)
-//         ۲) MutationObserver: دکمه + شناور به‌طور خودکار به‌روزرسانی می‌شود
+//   v149 - MUTATIONOBSERVER (RECORDING FIX REVERTED IN v171):
+//         ۱) MutationObserver: دکمه + شناور به‌طور خودکار به‌روزرسانی می‌شود
 //            وقتی هر overlay/منو باز/بسته می‌شود — بدون نیاز به صدا زدن دستی
-//         ۳) visibilitychange: WakeLock دوباره گرفته می‌شود وقتی برگشتیم
-//         ⚠️ محدودیت: ضبط صدای داخلی (مکالمه تلفنی، صدای برنامه‌ها)
-//            امکان‌پذیر نیست — Web Speech API فقط میکروفون را استفاده می‌کند.
+//         (🔧 v171: WakeLock و منطق restart-after-visibility که در v149 برای
+//          ادامهٔ ضبط در پس‌زمینه اضافه شده بود، حذف شد — به حالت قبل برگردانده شد.
+//          فقط MutationObserver باقی می‌ماند. محدودیت ضبط صدای داخلی هم حذف شد.)
 //   v150 - OVERLAY DETECTION FIX FOR ALL MENUS:
 //         ۱) isAnyOverlayOpen بازنویسی شد:
 //            - Static overlays: بررسی class 'active' + display !== 'none'
@@ -4865,7 +4862,22 @@ body.locked .header-actions button {
 //            برنامه (همیشه قابل دیدن) اکنون هوشمند است: اگر صفحهٔ اشخاص باز است،
 //            شخص جدید اضافه می‌کند؛ در غیر این صورت، یادآور جدید (رفتار قبلی).
 //            تابع handleAddButtonClick() این منطق را مدیریت می‌کند.
-const APP_VERSION = 'v170-2026-11-08-red-blink-percent-single-newest-top-header-plus';
+//   v171 - REVERT BACKGROUND-RECORDING + WAKELOCK (per user request):
+//         کاربر درخواست کرد تغییراتی که در پاسخ به پیام «ضبط صوت از صدای داخلی
+//         موبایل... از برنامه میرون بیرون ضبط متوقف میشود مشکل را حل کن» اضافه
+//         شده بود، کنسل و به حالت قبل برگردانده شوند.
+//         🔧 حذف شد:
+//         ۱) WakeLock: توابع acquireWakeLock() / releaseWakeLock() و متغیر _wakeLock
+//            کامل حذف شدند. فراخوانی‌های آن‌ها در startRecording و stopRecording
+//            و visibilitychange حذف شدند.
+//         ۲) Background recording restart: بلوک visibilitychange که پس از بازگشت
+//            کاربر به برنامه، recognition را restart می‌کرد، حذف شد.
+//         ۳) یادداشت «⚠️ محدودیت: ضبط صدای داخلی» حذف شد.
+//         🔧 دست‌نخورده باقی ماند:
+//         - قانون دکمهٔ + شناور (separate concern — مربوط به recording نیست)
+//         - auto-restart در recognition.onend (طبق کامنت «same as working backup»،
+//           این رفتار از قبل وجود داشته و جزو تغییرات recording-request نیست)
+const APP_VERSION = 'v171-2026-11-08-revert-bg-record-wakelock';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -7257,24 +7269,6 @@ async function migrateLegacyData() {
 // ============ Speech Recognition ============
 let recognition = null;
 let isRecording = false;
-// 🔧 v149: WakeLock برای جلوگیری از خواب موبایل هنگام ضبط
-let _wakeLock = null;
-async function acquireWakeLock() {
-    if (!('wakeLock' in navigator)) return;
-    try {
-        _wakeLock = await navigator.wakeLock.request('screen');
-        console.log('[WakeLock] Acquired — screen will stay awake during recording');
-    } catch(e) {
-        console.warn('[WakeLock] Failed:', e.message);
-    }
-}
-function releaseWakeLock() {
-    if (_wakeLock) {
-        try { _wakeLock.release(); _wakeLock = null; console.log('[WakeLock] Released'); } catch(e) {}
-    }
-}
-// وقتی صفحه دوباره visible می‌شود و در حال ضبط هستیم، wakeLock را دوباره بگیر
-// (چون wakeLock با visibilitychange از دست می‌رود)
 // Two-level tracking (same as the WORKING backup version):
 //   allFinalText: accumulated across sessions (committed in onend)
 //   currentSessionText: current session only (reset in onstart)
@@ -7439,8 +7433,6 @@ function startRecording() {
     currentSessionText = '';
     document.getElementById('itemText').value = '';
     isRecording = true;
-    // 🔧 v149: WakeLock بگیر تا موبایل خواب نکند و ضبط ادامه یابد
-    acquireWakeLock();
     document.getElementById('recordingSection').style.display = 'block';
     document.getElementById('formSection').style.display = 'none';
     document.getElementById('modalTitle').textContent = 'در حال ضبط صوت';
@@ -7467,8 +7459,6 @@ function startRecording() {
 
 function stopRecording() {
     isRecording = false;
-    // 🔧 v149: WakeLock را آزاد کن
-    releaseWakeLock();
     document.getElementById('addBtn').classList.remove('recording');
     // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
     const fabStop = document.getElementById('floatingAddBtn');
@@ -15141,21 +15131,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 });
             } catch(e) {}
-            // 🔧 v147: اگر در حال ضبط صدا بودیم و برگشتیم به برنامه،
-            // مطمئن شویم ضبط همچنان ادامه دارد. اگر متوقف شده، دوباره شروع کن.
-            if (typeof isRecording !== 'undefined' && isRecording) {
-                // 🔧 v149: WakeLock را دوباره بگیر (چون با visibility از دست می‌رود)
-                if (typeof acquireWakeLock === 'function') acquireWakeLock();
-                if (typeof recognition !== 'undefined' && recognition) {
-                    try {
-                        // تلاش برای restart اگر recognition متوقف شده
-                        recognition.start();
-                        console.log('[Recording] Restarted after visibility return');
-                    } catch(e) {
-                        // Already running — ignore error
-                    }
-                }
-            }
             // 🔧 v147: به‌روزرسانی دکمه‌های شناور وقتی برگشتیم
             _refreshFloatingAddBtn();
             refreshFloatingContactBtn();
