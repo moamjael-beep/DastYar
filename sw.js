@@ -30,8 +30,8 @@
 // نام «نسخهٔ حافظهٔ پنهان». هر بار که کد را تغییر دادید و در گیت‌هاب
 // گذاشتید، این عدد را یکی بالا ببرید (مثلاً v17 → v18) تا مرورگر
 // بداند باید فایل‌های جدید را دوباره دانلود کند.
-// 🔒 v130: floating button class-based (show class + !important).
-const CACHE_NAME = 'yadavar-cache-v130';
+// 🔒 v131: overdue brown + add always on + floating unconditional.
+const CACHE_NAME = 'yadavar-cache-v131';
 
 // نام پایگاه دادهٔ IndexedDB. این پایگاه داده بین سرویس ورکر و صفحهٔ
 // HTML مشترک است و یادآورها + تاریخچهٔ اعلان‌ها را در خود نگه می‌دارد.

@@ -742,25 +742,25 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .item.warning { background: linear-gradient(135deg, #FB8C00, #E65100); }
 .item.urgent { background: linear-gradient(135deg, #E53935, #B71C1C); }
 
-/* 🔧 v162: Overdue: blinking orange <-> yellow, 2s cycle (سریع‌تر), stays at top */
+/* 🔧 v164: Overdue: blinking orange pale <-> brown, 2s cycle */
 @keyframes overdueBlink {
     0%, 100% {
-        background-color: #E65100;  /* نارنجی تیره */
-        box-shadow: 0 2px 14px rgba(251, 140, 0, 0.5);
+        background-color: #FFB74D;  /* نارنجی کمرنگ */
+        box-shadow: 0 2px 14px rgba(255, 183, 77, 0.4);
     }
     50% {
-        background-color: #F9A825;  /* زرد پررنگ */
-        box-shadow: 0 2px 18px rgba(249, 168, 37, 0.7);
+        background-color: #795548;  /* قهوه‌ای */
+        box-shadow: 0 2px 18px rgba(121, 85, 72, 0.6);
     }
 }
 .item.overdue {
-    background-color: #E65100; /* fallback (نارنجی) */
+    background-color: #FFB74D; /* fallback */
     animation: overdueBlink 2s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
     .item.overdue {
         animation: none;
-        background-color: #E65100;
+        background-color: #FFB74D;
     }
 }
 
@@ -4698,7 +4698,12 @@ body.locked .header-actions button {
 //         JS: classList.add/remove('show') — نه inline style
 //         HTML: style="display:none" حذف شد
 //         مشکل: inline style با CSS تداخل داشت → class بدون تداخل
-const APP_VERSION = 'v163-2026-11-07-floating-class-based';
+//   v164 - OVERDUE ORANGE-PALE↔BROWN + ADD BTN ALWAYS ON + FLOATING SIMPLE:
+//         ۱) overdueBlink: نارنجی کمرنگ (#FFB74D) ↔ قهوه‌ای (#795548)
+//         ۲) کلید + هدر: هرگز disabled نمی‌شود (همیشه روشن)
+//         ۳) کلید + شناور: فقط شرط tasks view — هیچ شرط پنهان شدن دیگر
+//         ۴) کلید + شناور اشpersons: فقط شرط contacts فعال — هیچ شرط دیگر
+const APP_VERSION = 'v164-2026-11-07-overdue-brown-add-always-floating-simple';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -9543,19 +9548,9 @@ function _isVisible(id) {
 function _refreshFloatingAddBtn() {
     var fab = document.getElementById('floatingAddBtn');
     if (!fab) return;
-    // 🔧 v163: مکانیزم با class — نه inline style
-    // CSS: .floating-add-btn { display: none } + .floating-add-btn.show { display: flex !important }
-    var shouldShow = (currentView === 'tasks' && expandedId === null);
-    if (shouldShow) {
-        var actives = document.querySelectorAll('.modal-overlay.active, .contacts-overlay.active, .notes-overlay.active');
-        for (var i = 0; i < actives.length; i++) {
-            if (actives[i].style.display !== 'none') { shouldShow = false; break; }
-        }
-    }
-    if (shouldShow && typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu) shouldShow = false;
-    if (shouldShow && (document.getElementById('groupPickerOverlay') || document.getElementById('bellSettingsOverlay'))) shouldShow = false;
-    // فقط class را toggle کن — نه inline style
-    if (shouldShow) {
+    // 🔧 v164: فوق ساده — همیشه در tasks view روشن، در غیر این صورت خاموش
+    // هیچ شرط دیگری برای پنهان شدن وجود ندارد
+    if (currentView === 'tasks') {
         fab.classList.add('show');
     } else {
         fab.classList.remove('show');
@@ -9567,15 +9562,9 @@ function render() {
     // 🔧 v156: همگام‌سازی ارتفاع هدر با overlayها (پویا)
     syncHeaderHeight();
 
-    // Toggle the + button's disabled state based on the current view.
+    // 🔧 v164: کلید + هدر همیشه روشن است — هیچ‌وقت disabled نمی‌شود
     const addBtn = document.getElementById('addBtn');
-    if (addBtn) {
-        if (currentView === 'groups') {
-            addBtn.classList.add('disabled');
-        } else {
-            addBtn.classList.remove('disabled');
-        }
-    }
+    if (addBtn) addBtn.classList.remove('disabled');
     _refreshFloatingAddBtn();
 
     if (currentView === 'groups') {
@@ -11607,25 +11596,13 @@ function closeContacts() {
 function refreshFloatingContactBtn() {
     var fcb = document.getElementById('floatingContactBtn');
     if (!fcb) return;
-    // 🔧 v158: مکانیزم ساده و درست
-    var shouldShow = false;
-    if (_isVisible('contactsOverlay')) {
-        // بررسی: آیا چیزی روی اشpersons باز و قابل دیدن است؟
-        var anyChild = _isVisible('contactFormOverlay') || _isVisible('contactSearchOverlay')
-            || _isVisible('contactSearchResultsOverlay') || _isVisible('contactReportOverlay')
-            || _isVisible('contactReportResultsOverlay') || _isVisible('taskReportOverlay')
-            || _isVisible('taskReportResultsOverlay') || _isVisible('modalOverlay')
-            || _isVisible('calendarOverlay') || _isVisible('datetimePickerOverlay')
-            || _isVisible('groupSettingsOverlay') || _isVisible('notesOverlay')
-            || _isVisible('phoneActionOverlay');
-        var dyn = document.getElementById('groupPickerOverlay') || document.getElementById('contactPickerOverlay')
-            || document.getElementById('contactActionMenuOverlay') || document.getElementById('taskPickerOverlay')
-            || document.getElementById('bellSettingsOverlay');
-        var menu = (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu);
-        var details = (expandedId !== null);
-        shouldShow = !anyChild && !dyn && !menu && !details;
+    // 🔧 v164: فوق ساده — همیشه در صفحه اشpersons روشن
+    var co = document.getElementById('contactsOverlay');
+    if (co && co.classList.contains('active') && co.style.display !== 'none') {
+        fcb.style.display = 'flex';
+    } else {
+        fcb.style.display = 'none';
     }
-    fcb.style.display = shouldShow ? 'flex' : 'none';
 }
 
 // ─── رندر لیست اشخاص ───
