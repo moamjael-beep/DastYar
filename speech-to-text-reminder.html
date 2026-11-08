@@ -2858,6 +2858,22 @@ body.locked .header-actions button {
     border-bottom: 1px solid #eee;
     vertical-align: top;
 }
+/* 🔧 v144: فونت بزرگ‌تر برای نام شرکت/نام/سمت */
+.contacts-table td:nth-child(2),
+.contacts-table td:nth-child(3) {
+    font-size: 15px;
+    font-weight: 600;
+}
+.contacts-table td:nth-child(4) {
+    font-size: 14px;
+}
+/* 🔧 v144: ردیف قابل کلیک — وقتی روی شخص کلیک می‌شود، منو باز می‌شود */
+.contacts-table tr.contact-clickable {
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.contacts-table tr.contact-clickable:hover { background: #f5f9ff; }
+.contacts-table tr.contact-clickable:active { background: #e3f2fd; }
 .contacts-table tr:hover { background: #f5f9ff; }
 .contacts-table tr:last-child td { border-bottom: none; }
 .contacts-empty {
@@ -2867,6 +2883,82 @@ body.locked .header-actions button {
     font-size: 14px;
 }
 .contacts-empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+/* 🔧 v144: منوی لمسی شخص — وقتی روی یک شخص کلیک می‌شود، باز می‌شود */
+.contact-action-menu {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+    z-index: 10003;
+    padding: 16px;
+    animation: slideUpMenu 0.25s;
+    max-width: 500px;
+    margin: 0 auto;
+}
+@keyframes slideUpMenu {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+.contact-action-menu-header {
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1976D2;
+    padding: 8px 0 12px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 12px;
+}
+.contact-action-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #f5f5f5;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.15s;
+}
+.contact-action-menu-item:hover {
+    background: #e3f2fd;
+}
+.contact-action-menu-item:active {
+    background: #bbdefb;
+}
+.contact-action-menu-item-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: white;
+    flex-shrink: 0;
+}
+.contact-action-menu-close {
+    width: 100%;
+    padding: 12px;
+    background: #f5f5f5;
+    color: #666;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 4px;
+}
+.contact-action-menu-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 10002;
+}
 
 .contact-row-actions { display: flex; gap: 4px; }
 .contact-row-btn {
@@ -3813,21 +3905,21 @@ body.locked .header-actions button {
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════════
-     📋 مودال گزارش کارها — v143 (جامع)
+     📋 مودال گزارش کارها — v144 (جامع)
      ════════════════════════════════════════════════════════════════════
      گزارش جامع با فیلترهای متعدد:
-       - متن تسک / شرکت / سمت (dropdown قابل جستجو با اسکرول)
+       - متن تسک / شرکت / سمت / نام شخص / گروه (dropdown قابل جستجو)
        - درصد کارپردازی شخص (۳ حالت) + داشتن شخص
-       - حالت تسک: فعال / انجام‌شده / لغوشده / معلق
-       - بازه سررسید / بازه تاریخ ایجاد / بازه تاریخ انجام (با تقویم شمسی)
+       - حالت تسک + پین/فوری (با خط نازک جداکننده)
+       - بازه سررسید / ایجاد / انجام (با تقویم شمسی)
      ════════════════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="taskReportOverlay">
     <div class="modal search-form-modal" style="max-width:600px;">
         <h2>📋 گزارش کارها</h2>
         <div class="search-form-body">
-            <!-- بخش ۱: جستجوی متن/شرکت/سمت (dropdown قابل جستجو) -->
+            <!-- بخش ۱: جستجوی متن/شرکت/سمت/نام شخص/گروه (dropdown قابل جستجو) -->
             <div class="contact-form-section">
-                <div class="contact-form-section-title">🔍 جستجوی متن، شرکت و سمت</div>
+                <div class="contact-form-section-title">🔍 جستجو</div>
                 <div class="contact-form-row">
                     <div class="contact-form-field">
                         <label>📝 متن تسک</label>
@@ -3852,6 +3944,18 @@ body.locked .header-actions button {
                         </div>
                     </div>
                     <div class="contact-form-field">
+                        <label>👤 نام شخص</label>
+                        <div style="position:relative;">
+                            <input type="text" id="taskReportContactName" placeholder="تایپ کنید..." autocomplete="off"
+                                oninput="filterReportDropdown('taskReportContactName','contactName')"
+                                onfocus="showReportDropdown('taskReportContactName','contactName')"
+                                onblur="setTimeout(function(){hideReportDropdown('taskReportContactName')},200)">
+                            <div id="taskReportContactName_dd" class="report-search-dropdown"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
                         <label>💼 سمت</label>
                         <div style="position:relative;">
                             <input type="text" id="taskReportPosition" placeholder="تایپ کنید..." autocomplete="off"
@@ -3861,9 +3965,19 @@ body.locked .header-actions button {
                             <div id="taskReportPosition_dd" class="report-search-dropdown"></div>
                         </div>
                     </div>
+                    <div class="contact-form-field">
+                        <label>📁 گروه</label>
+                        <div style="position:relative;">
+                            <input type="text" id="taskReportGroup" placeholder="تایپ کنید..." autocomplete="off"
+                                oninput="filterReportDropdown('taskReportGroup','groupName')"
+                                onfocus="showReportDropdown('taskReportGroup','groupName')"
+                                onblur="setTimeout(function(){hideReportDropdown('taskReportGroup')},200)">
+                            <div id="taskReportGroup_dd" class="report-search-dropdown"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <!-- بخش ۲: فیلتر بر اساس شخص مرتبط -->
+            <!-- بخش ۲: فیلتر شخص مرتبط -->
             <div class="contact-form-section">
                 <div class="contact-form-section-title">👤 فیلتر شخص مرتبط</div>
                 <div class="contact-form-row">
@@ -3892,7 +4006,7 @@ body.locked .header-actions button {
                     </div>
                 </div>
             </div>
-            <!-- بخش ۳: حالت تسک -->
+            <!-- بخش ۳: حالت تسک + پین/فوری (با خط نازک جداکننده) -->
             <div class="contact-form-section">
                 <div class="contact-form-section-title">📊 حالت تسک</div>
                 <div class="contact-form-row" style="flex-wrap:wrap;gap:8px;">
@@ -3907,6 +4021,16 @@ body.locked .header-actions button {
                     </label>
                     <label style="display:flex;align-items:center;gap:4px;font-size:13px;">
                         <input type="checkbox" id="taskReportStateSuspended" checked> معلق
+                    </label>
+                </div>
+                <!-- 🔧 v144: خط نازک جداکننده + پین و فوری -->
+                <hr style="border:none;border-top:1px solid #ddd;margin:8px 0;">
+                <div class="contact-form-row" style="flex-wrap:wrap;gap:8px;">
+                    <label style="display:flex;align-items:center;gap:4px;font-size:13px;">
+                        <input type="checkbox" id="taskReportPinned" value="all"> 📌 پین شده
+                    </label>
+                    <label style="display:flex;align-items:center;gap:4px;font-size:13px;">
+                        <input type="checkbox" id="taskReportUrgent" value="all"> 🚨 فوری
                     </label>
                 </div>
             </div>
@@ -3938,7 +4062,7 @@ body.locked .header-actions button {
                     </div>
                 </div>
             </div>
-            <!-- بخش ۶: بازه تاریخ انجام (با تقویم) — v143 -->
+            <!-- بخش ۶: بازه تاریخ انجام (با تقویم) -->
             <div class="contact-form-section">
                 <div class="contact-form-section-title">✅ بازه تاریخ انجام</div>
                 <div class="contact-form-row">
@@ -4322,7 +4446,17 @@ body.locked .header-actions button {
 //         ۷) توابع جدید: showReportDropdown, hideReportDropdown,
 //            filterReportDropdown, renderReportDropdown, selectReportDropdown,
 //            returnToTaskReport.
-const APP_VERSION = 'v143-2026-11-07-report-redesign-return';
+//   v144 - REPORT + CONTACTS TABLE REDESIGN:
+//         ۱) گزارش: افزودن سرچ بر اساس نام شخص + گروه (dropdown)
+//         ۲) گزارش: بازگشت پین/فوری با خط نازک جداکننده در بخش حالت
+//         ۳) جدول اشpersons: فونت بزرگ‌تر برای نام شرکت/نام (۱۵px) و سمت (۱۴px)
+//         ۴) جدول اشpersons: sort+filter برای ستون سمت (قابل کلیک + textbox)
+//         ۵) جدول اشpersons: حذف ستون تلفن و دکمه‌های ➕/✏️/🗑
+//         ۶) جدول اشpersons: ردیف‌ها قابل کلیک → منوی لمسی (bottom sheet)
+//            شامل: ➕ تسک، ✏️ ویرایش، 🗑 حذف، 📞 تماس، 💬 پیامک
+//         ۷) نتایج جستجو: شبیه جدول اصلی (همان ستون‌ها + sort + filter + منو)
+//         ۸) توابع جدید: showContactActionMenu, closeContactActionMenu
+const APP_VERSION = 'v144-2026-11-07-report-contacts-redesign';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -10933,8 +11067,8 @@ function refreshFloatingContactBtn() {
 // این متغیرها وضعیت فیلتر و sort جدول اشخاص را نگه می‌دارند.
 // وقتی کاربر در textbox تایپ می‌کند یا روی هدر کلیک می‌کند،
 // renderContactsList دوباره صدا زده می‌شود و این مقادیر اعمال می‌شوند.
-let _contactsSort = { field: null, dir: 'asc' };  // field: 'company' | 'name' | null
-let _contactsFilter = { company: '', name: '' };  // متن فیلتر برای هر ستون
+let _contactsSort = { field: null, dir: 'asc' };  // field: 'company' | 'name' | 'position' | null
+let _contactsFilter = { company: '', name: '', position: '' };  // متن فیلتر برای هر ستون
 
 // تابع کمکی: مقایسهٔ فارسی برای sort
 // از localeCompare با 'fa' استفاده می‌کند تا حروف فارسی درست مرتب شوند.
@@ -10998,6 +11132,11 @@ function renderContactsList() {
         const q = _contactsFilter.name.toLowerCase();
         filtered = filtered.filter(c => (c.name || '').toLowerCase().includes(q));
     }
+    // 🔧 v144: فیلتر سمت
+    if (_contactsFilter.position) {
+        const q = _contactsFilter.position.toLowerCase();
+        filtered = filtered.filter(c => (c.position || '').toLowerCase().includes(q));
+    }
 
     // 🔧 v136: اعمال sort
     if (_contactsSort.field) {
@@ -11009,8 +11148,9 @@ function renderContactsList() {
         });
     }
 
-    // ساخت جدول — هدر با دو ردیف: ردیف اول عناوین (قابل کلیک برای sort)،
-    // ردیف دوم textbox فیلتر (فقط برای ستون‌های «نام شرکت» و «نام»)
+    // 🔧 v144: جدول — بدون ستون تلفن و عملیات. ردیف‌ها قابل کلیک.
+    // ستون‌ها: ردیف | نام شرکت | نام | سمت
+    // هر ردیف قابل کلیک → منوی لمسی باز می‌شود
     let html = '<table class="contacts-table"><thead>';
     // ردیف اول: عناوین
     html += '<tr>';
@@ -11025,56 +11165,98 @@ function renderContactsList() {
     html += '<th class="sortable ' + nameSortClass + '" onclick="toggleContactsSort(\'name\')">';
     html += '<span class="sort-indicator"></span>نام';
     html += '</th>';
-    html += '<th>سمت</th>';
-    html += '<th>تلفن</th>';
-    html += '<th>عملیات</th>';
+    // 🔧 v144: ستون «سمت» — قابل کلیک برای sort (جدید)
+    const positionSortClass = _contactsSort.field === 'position' ? (_contactsSort.dir === 'asc' ? 'sorted-asc' : 'sorted-desc') : '';
+    html += '<th class="sortable ' + positionSortClass + '" onclick="toggleContactsSort(\'position\')">';
+    html += '<span class="sort-indicator"></span>سمت';
+    html += '</th>';
     html += '</tr>';
-    // ردیف دوم: textbox فیلتر (فقط برای «نام شرکت» و «نام»)
+    // ردیف دوم: textbox فیلتر
     html += '<tr>';
-    html += '<th></th>';  // ردیف — بدون فیلتر
+    html += '<th></th>';  // ردیف
     html += '<th class="filter-header"><input type="text" data-field="company" value="' + escapeHtml(_contactsFilter.company) + '" placeholder="فیلتر شرکت..." oninput="updateContactsFilter(\'company\', this.value)"></th>';
     html += '<th class="filter-header"><input type="text" data-field="name" value="' + escapeHtml(_contactsFilter.name) + '" placeholder="فیلتر نام..." oninput="updateContactsFilter(\'name\', this.value)"></th>';
-    html += '<th></th>';  // سمت
-    html += '<th></th>';  // تلفن
-    html += '<th></th>';  // عملیات
+    // 🔧 v144: textbox فیلتر سمت (جدید)
+    html += '<th class="filter-header"><input type="text" data-field="position" value="' + escapeHtml(_contactsFilter.position) + '" placeholder="فیلتر سمت..." oninput="updateContactsFilter(\'position\', this.value)"></th>';
     html += '</tr>';
     html += '</thead><tbody>';
 
     if (filtered.length === 0) {
-        // هیچ نتیجه‌ای بعد از فیلتر
-        const cols = 6;
+        const cols = 4;
         html += '<tr><td colspan="' + cols + '" style="text-align:center; padding:30px; color:#999;">';
         html += 'هیچ شخصی با این فیلتر یافت نشد';
         html += '</td></tr>';
     } else {
         filtered.forEach((c, idx) => {
-            // 🔧 اگر primaryPhone وجود دارد، آن را نمایش بده؛ وگرنه اولین تلفن
-            const displayPhone = c.primaryPhone || ((c.phones && c.phones.length > 0) ? c.phones[0] : '');
-            html += '<tr>';
+            // 🔧 v144: ردیف قابل کلیک — منوی لمسی باز می‌شود
+            html += '<tr class="contact-clickable" onclick="showContactActionMenu(\'' + c.id + '\')">';
             html += '<td>' + toPersianNumber(idx + 1) + '</td>';
             html += '<td>' + escapeHtml(c.company || '—') + '</td>';
             html += '<td>' + escapeHtml(c.name || '—') + '</td>';
             html += '<td>' + escapeHtml(c.position || '—') + '</td>';
-            html += '<td>' + renderClickablePhone(displayPhone) + '</td>';
-            html += '<td><div class="contact-row-actions">';
-            // 🔧 v134: دکمهٔ «➕ تسک» برای ایجاد تسک برای این شخص
-            html += '<button class="contact-row-btn add-task" onclick="addTaskForContact(\'' + c.id + '\')" title="ایجاد تسک برای این شخص">➕</button>';
-            html += '<button class="contact-row-btn" onclick="editContact(\'' + c.id + '\')">✏️</button>';
-            html += '<button class="contact-row-btn danger" onclick="deleteContact(\'' + c.id + '\')">🗑</button>';
-            html += '</div></td>';
             html += '</tr>';
         });
     }
 
     html += '</tbody></table>';
-    // 🔧 v136: نمایش تعداد نتایج اگر فیلتر فعال است
-    if (_contactsFilter.company || _contactsFilter.name) {
+    if (_contactsFilter.company || _contactsFilter.name || _contactsFilter.position) {
         html += '<div style="text-align:center; padding:10px; color:#666; font-size:12px;">';
         html += toPersianNumber(filtered.length) + ' نفر از ' + toPersianNumber(allContacts.length) + ' نفر نمایش داده شد';
-        html += ' — <a href="javascript:void(0)" onclick="_contactsFilter={company:\'\',name:\'\'}; _contactsSort={field:null,dir:\'asc\'}; renderContactsList();" style="color:#1976D2; font-weight:600;">پاک کردن فیلتر</a>';
+        html += ' — <a href="javascript:void(0)" onclick="_contactsFilter={company:\'\',name:\'\',position:\'\'}; _contactsSort={field:null,dir:\'asc\'}; renderContactsList();" style="color:#1976D2; font-weight:600;">پاک کردن فیلتر</a>';
         html += '</div>';
     }
     body.innerHTML = html;
+}
+
+// 🔧 v144: منوی لمسی شخص — وقتی روی یک شخص کلیک می‌شود، باز می‌شود
+function showContactActionMenu(contactId) {
+    const c = getContactById(contactId);
+    if (!c) return;
+    // حذف منوی قبلی
+    const old = document.getElementById('contactActionMenuOverlay');
+    if (old) old.remove();
+    const displayPhone = c.primaryPhone || ((c.phones && c.phones.length > 0) ? c.phones[0] : '');
+    const overlay = document.createElement('div');
+    overlay.className = 'contact-action-menu-overlay';
+    overlay.id = 'contactActionMenuOverlay';
+    overlay.onclick = closeContactActionMenu;
+    const menu = document.createElement('div');
+    menu.className = 'contact-action-menu';
+    menu.onclick = function(e) { e.stopPropagation(); };
+    let headerHtml = '<div class="contact-action-menu-header">' + escapeHtml(c.name || '—');
+    if (c.company) headerHtml += ' — ' + escapeHtml(c.company);
+    headerHtml += '</div>';
+    menu.innerHTML = headerHtml;
+    // گزینه‌ها
+    const items = [
+        { icon: '➕', label: 'ایجاد تسک برای این شخص', color: '#4CAF50', action: "closeContactActionMenu(); addTaskForContact('" + contactId + "')" },
+        { icon: '✏️', label: 'ویرایش شخص', color: '#1976D2', action: "closeContactActionMenu(); editContact('" + contactId + "')" },
+        { icon: '🗑', label: 'حذف شخص', color: '#f44336', action: "closeContactActionMenu(); deleteContact('" + contactId + "')" },
+    ];
+    // اگر تلفن دارد، گزینه‌های تلفن را اضافه کن
+    if (displayPhone) {
+        items.push({ icon: '📞', label: 'تماس: ' + escapeHtml(displayPhone), color: '#009688', action: "closeContactActionMenu(); window.location.href='tel:" + displayPhone + "'" });
+        items.push({ icon: '💬', label: 'پیامک', color: '#FF9800', action: "closeContactActionMenu(); window.location.href='sms:" + displayPhone + "'" });
+    }
+    items.forEach(function(item) {
+        const div = document.createElement('div');
+        div.className = 'contact-action-menu-item';
+        div.innerHTML = '<div class="contact-action-menu-item-icon" style="background:' + item.color + '">' + item.icon + '</div><span>' + item.label + '</span>';
+        div.setAttribute('onclick', item.action);
+        menu.appendChild(div);
+    });
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'contact-action-menu-close';
+    closeBtn.textContent = '✕ بستن';
+    closeBtn.onclick = closeContactActionMenu;
+    menu.appendChild(closeBtn);
+    overlay.appendChild(menu);
+    document.body.appendChild(overlay);
+}
+
+function closeContactActionMenu() {
+    const overlay = document.getElementById('contactActionMenuOverlay');
+    if (overlay) overlay.remove();
 }
 
 // ─── فرم تعریف/ویرایش شخص ───
@@ -11390,7 +11572,7 @@ function filterContacts(criteria) {
 
 // 🔧 v137: state فیلتر و sort برای نتایج جستجو (مستقل از جدول اصلی)
 let _searchResultsSort = { field: null, dir: 'asc' };
-let _searchResultsFilter = { company: '', name: '' };
+let _searchResultsFilter = { company: '', name: '', position: '' };
 let _lastSearchResults = [];  // نتایج جستجوی قبلی (برای re-render بعد از sort/filter)
 
 function toggleSearchResultsSort(field) {
@@ -11436,6 +11618,11 @@ function renderSearchResultsTable() {
         const q = _searchResultsFilter.name.toLowerCase();
         filtered = filtered.filter(c => (c.name || '').toLowerCase().includes(q));
     }
+    // 🔧 v144: فیلتر سمت در نتایج جستجو
+    if (_searchResultsFilter.position) {
+        const q = _searchResultsFilter.position.toLowerCase();
+        filtered = filtered.filter(c => (c.position || '').toLowerCase().includes(q));
+    }
 
     // اعمال sort
     if (_searchResultsSort.field) {
@@ -11447,9 +11634,8 @@ function renderSearchResultsTable() {
         });
     }
 
-    // ساخت جدول — دقیقاً همان ساختار جدول اصلی اشخاص
+    // 🔧 v144: جدول نتایج — شبیه جدول اصلی (بدون تلفن/عملیات، ردیف قابل کلیک)
     let html = '<table class="contacts-table"><thead>';
-    // ردیف اول: عناوین (قابل کلیک برای sort)
     html += '<tr>';
     html += '<th>ردیف</th>';
     const companySortClass = _searchResultsSort.field === 'company' ? (_searchResultsSort.dir === 'asc' ? 'sorted-asc' : 'sorted-desc') : '';
@@ -11460,47 +11646,39 @@ function renderSearchResultsTable() {
     html += '<th class="sortable ' + nameSortClass + '" onclick="toggleSearchResultsSort(\'name\')">';
     html += '<span class="sort-indicator"></span>نام';
     html += '</th>';
-    html += '<th>سمت</th>';
-    html += '<th>تلفن</th>';
-    html += '<th>عملیات</th>';
+    const positionSortClass = _searchResultsSort.field === 'position' ? (_searchResultsSort.dir === 'asc' ? 'sorted-asc' : 'sorted-desc') : '';
+    html += '<th class="sortable ' + positionSortClass + '" onclick="toggleSearchResultsSort(\'position\')">';
+    html += '<span class="sort-indicator"></span>سمت';
+    html += '</th>';
     html += '</tr>';
-    // ردیف دوم: textbox فیلتر
     html += '<tr>';
     html += '<th></th>';
     html += '<th class="filter-header"><input type="text" data-field="company" value="' + escapeHtml(_searchResultsFilter.company) + '" placeholder="فیلتر شرکت..." oninput="updateSearchResultsFilter(\'company\', this.value)"></th>';
     html += '<th class="filter-header"><input type="text" data-field="name" value="' + escapeHtml(_searchResultsFilter.name) + '" placeholder="فیلتر نام..." oninput="updateSearchResultsFilter(\'name\', this.value)"></th>';
-    html += '<th></th>';
-    html += '<th></th>';
-    html += '<th></th>';
+    html += '<th class="filter-header"><input type="text" data-field="position" value="' + escapeHtml(_searchResultsFilter.position) + '" placeholder="فیلتر سمت..." oninput="updateSearchResultsFilter(\'position\', this.value)"></th>';
     html += '</tr>';
     html += '</thead><tbody>';
 
     if (filtered.length === 0) {
-        html += '<tr><td colspan="6" style="text-align:center; padding:30px; color:#999;">';
+        html += '<tr><td colspan="4" style="text-align:center; padding:30px; color:#999;">';
         html += 'هیچ شخصی با این فیلتر یافت نشد';
         html += '</td></tr>';
     } else {
         filtered.forEach((c, idx) => {
-            const displayPhone = c.primaryPhone || ((c.phones && c.phones.length > 0) ? c.phones[0] : '');
-            html += '<tr>';
+            html += '<tr class="contact-clickable" onclick="showContactActionMenu(\'' + c.id + '\')">';
             html += '<td>' + toPersianNumber(idx + 1) + '</td>';
             html += '<td>' + escapeHtml(c.company || '—') + '</td>';
             html += '<td>' + escapeHtml(c.name || '—') + '</td>';
             html += '<td>' + escapeHtml(c.position || '—') + '</td>';
-            html += '<td>' + renderClickablePhone(displayPhone) + '</td>';
-            html += '<td><div class="contact-row-actions">';
-            html += '<button class="contact-row-btn add-task" onclick="addTaskForContact(\'' + c.id + '\')" title="ایجاد تسک برای این شخص">➕</button>';
-            html += '<button class="contact-row-btn" onclick="editContactFromSearch(\'' + c.id + '\')">✏️</button>';
-            html += '</div></td>';
             html += '</tr>';
         });
     }
 
     html += '</tbody></table>';
-    if (_searchResultsFilter.company || _searchResultsFilter.name) {
+    if (_searchResultsFilter.company || _searchResultsFilter.name || _searchResultsFilter.position) {
         html += '<div style="text-align:center; padding:10px; color:#666; font-size:12px;">';
         html += toPersianNumber(filtered.length) + ' نفر از ' + toPersianNumber(allResults.length) + ' نفر نمایش داده شد';
-        html += ' — <a href="javascript:void(0)" onclick="_searchResultsFilter={company:\'\',name:\'\'}; _searchResultsSort={field:null,dir:\'asc\'}; renderSearchResultsTable();" style="color:#1976D2; font-weight:600;">پاک کردن فیلتر</a>';
+        html += ' — <a href="javascript:void(0)" onclick="_searchResultsFilter={company:\'\',name:\'\',position:\'\'}; _searchResultsSort={field:null,dir:\'asc\'}; renderSearchResultsTable();" style="color:#1976D2; font-weight:600;">پاک کردن فیلتر</a>';
         html += '</div>';
     }
     body.innerHTML = html;
@@ -11657,7 +11835,9 @@ function openTaskReport() {
     // ریست فیلدها
     document.getElementById('taskReportText').value = '';
     document.getElementById('taskReportCompany').value = '';
+    document.getElementById('taskReportContactName').value = '';
     document.getElementById('taskReportPosition').value = '';
+    document.getElementById('taskReportGroup').value = '';
     document.getElementById('taskReportCommissionMode').value = 'all';
     document.getElementById('taskReportCommissionValueWrap').style.display = 'none';
     document.getElementById('taskReportCommissionValue').value = '';
@@ -11666,12 +11846,13 @@ function openTaskReport() {
     document.getElementById('taskReportStateDone').checked = true;
     document.getElementById('taskReportStateCancelled').checked = true;
     document.getElementById('taskReportStateSuspended').checked = true;
-    // 🔧 v143: فوری و پین حذف شدند
+    // 🔧 v144: پین و فوری (چک‌باکس، پیش‌فرض unchecked = همه)
+    document.getElementById('taskReportPinned').checked = false;
+    document.getElementById('taskReportUrgent').checked = false;
     document.getElementById('taskReportDeadlineFrom').value = '';
     document.getElementById('taskReportDeadlineTo').value = '';
     document.getElementById('taskReportCreatedFrom').value = '';
     document.getElementById('taskReportCreatedTo').value = '';
-    // 🔧 v143: بازه تاریخ انجام اضافه شد
     document.getElementById('taskReportCompletedFrom').value = '';
     document.getElementById('taskReportCompletedTo').value = '';
     document.getElementById('taskReportOverlay').classList.add('active');
@@ -11719,11 +11900,22 @@ function renderReportDropdown(fieldId, type, query) {
                 values.push(text);
             }
         });
-    } else if (type === 'company' || type === 'position') {
+    } else if (type === 'company' || type === 'position' || type === 'contactName') {
         const contacts = getContacts();
         const seen = new Set();
+        const fieldKey = (type === 'contactName') ? 'name' : type;
         contacts.forEach(c => {
-            const val = (c[type] || '').trim();
+            const val = (c[fieldKey] || '').trim();
+            if (val && !seen.has(val.toLowerCase())) {
+                seen.add(val.toLowerCase());
+                values.push(val);
+            }
+        });
+    } else if (type === 'groupName') {
+        const groups = getGroups().filter(g => g.id !== 'urgent');
+        const seen = new Set();
+        groups.forEach(g => {
+            const val = (g.name || '').trim();
             if (val && !seen.has(val.toLowerCase())) {
                 seen.add(val.toLowerCase());
                 values.push(val);
@@ -11798,7 +11990,9 @@ function parseJalaliDate(str) {
 function executeTaskReport() {
     const text = document.getElementById('taskReportText').value.trim().toLowerCase();
     const company = document.getElementById('taskReportCompany').value.trim().toLowerCase();
+    const contactName = document.getElementById('taskReportContactName').value.trim().toLowerCase();
     const position = document.getElementById('taskReportPosition').value.trim().toLowerCase();
+    const groupName = document.getElementById('taskReportGroup').value.trim().toLowerCase();
     const commissionMode = document.getElementById('taskReportCommissionMode').value;
     const commissionValue = document.getElementById('taskReportCommissionValue').value.trim();
     const hasContact = document.getElementById('taskReportHasContact').value;
@@ -11806,12 +12000,13 @@ function executeTaskReport() {
     const stateDone = document.getElementById('taskReportStateDone').checked;
     const stateCancelled = document.getElementById('taskReportStateCancelled').checked;
     const stateSuspended = document.getElementById('taskReportStateSuspended').checked;
-    // 🔧 v143: فوری و پین حذف شدند
+    // 🔧 v144: پین و فوری (چک‌باکس — اگر checked باشد، فقط آن حالت)
+    const pinnedOnly = document.getElementById('taskReportPinned').checked;
+    const urgentOnly = document.getElementById('taskReportUrgent').checked;
     const deadlineFrom = parseJalaliDate(document.getElementById('taskReportDeadlineFrom').value);
     const deadlineTo = parseJalaliDate(document.getElementById('taskReportDeadlineTo').value);
     const createdFrom = parseJalaliDate(document.getElementById('taskReportCreatedFrom').value);
     const createdTo = parseJalaliDate(document.getElementById('taskReportCreatedTo').value);
-    // 🔧 v143: بازه تاریخ انجام اضافه شد
     const completedFrom = parseJalaliDate(document.getElementById('taskReportCompletedFrom').value);
     const completedTo = parseJalaliDate(document.getElementById('taskReportCompletedTo').value);
 
@@ -11819,6 +12014,10 @@ function executeTaskReport() {
     const contacts = getContacts();
     const contactsById = {};
     contacts.forEach(c => { contactsById[c.id] = c; });
+    // ساخت lookup گروه‌ها برای فیلتر groupName
+    const groups = getGroups();
+    const groupsById = {};
+    groups.forEach(g => { groupsById[g.id] = g; });
 
     // اعمال فیلترها
     items = items.filter(item => {
@@ -11833,13 +12032,22 @@ function executeTaskReport() {
         if (isDone && !stateDone) return false;
         if (isCancelled && !stateCancelled) return false;
         if (isSuspended && !stateSuspended) return false;
-        // 🔧 v143: فوری و پین حذف شدند — حالت تسک کافی است
+        // 🔧 v144: پین و فوری (فیلتر اختیاری — فقط اگر checked باشند)
+        if (pinnedOnly && item.pinned != true) return false;
+        if (urgentOnly && item.urgent != true) return false;
+        // 🔧 v144: فیلتر groupName — بررسی نام گروه تسک
+        if (groupName) {
+            const grp = groupsById[item.groupId || 'all'];
+            if (!grp || !(grp.name || '').toLowerCase().includes(groupName)) return false;
+        }
         // شخص مرتبط
         const contact = item.contactId ? contactsById[item.contactId] : null;
         if (hasContact === 'yes' && !contact) return false;
         if (hasContact === 'no' && contact) return false;
         if (contact) {
             if (company && !(contact.company || '').toLowerCase().includes(company)) return false;
+            // 🔧 v144: فیلتر نام شخص
+            if (contactName && !(contact.name || '').toLowerCase().includes(contactName)) return false;
             if (position && !(contact.position || '').toLowerCase().includes(position)) return false;
             const cp = (contact.commissionPercent || '0').toString();
             if (commissionMode === 'zero') {
@@ -11849,9 +12057,9 @@ function executeTaskReport() {
             } else if (commissionMode === 'specific') {
                 if (cp !== commissionValue) return false;
             }
-        } else if (commissionMode !== 'all' || company || position) {
+        } else if (commissionMode !== 'all' || company || contactName || position) {
             // اگر فیلتر شخصی فعال است ولی تسک شخص ندارد → رد کن
-            if (company || position || commissionMode !== 'all') return false;
+            if (company || contactName || position || commissionMode !== 'all') return false;
         }
         // بازه سررسید
         if (deadlineFrom || deadlineTo) {
@@ -11883,8 +12091,9 @@ function executeTaskReport() {
 
     closeTaskReport();
     showTaskReportResults(items, {
-        text, company, position, commissionMode, commissionValue,
+        text, company, contactName, position, groupName, commissionMode, commissionValue,
         hasContact, stateActive, stateDone, stateCancelled, stateSuspended,
+        pinnedOnly, urgentOnly,
         deadlineFrom: document.getElementById('taskReportDeadlineFrom').value,
         deadlineTo: document.getElementById('taskReportDeadlineTo').value,
         createdFrom: document.getElementById('taskReportCreatedFrom').value,
