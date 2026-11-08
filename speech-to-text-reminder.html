@@ -4676,7 +4676,12 @@ body.locked .header-actions button {
 //            contactSearch, contactSearchResults, contactReport,
 //            contactReportResults, taskReport, taskReportResults, contactForm
 //         نتیجه: هر overlay روی قبلی باز می‌شود (قانون overlay stack)
-const APP_VERSION = 'v158-2026-11-07-floating-real-fix-bring-front';
+//   v159 - FLOATING BUTTON FINAL FIX:
+//         ۱) حذف همه fab.style.display = 'none' دستی — فقط _refreshFloatingAddBtn کنترل می‌کند
+//         ۲) toggleGroupMenu: به‌جای fab.style.display='none' → _refreshFloatingAddBtn()
+//         ۳) openGroupSettings: همان
+//         ۴) querySelectorAll برای بررسی همه overlayهای active
+const APP_VERSION = 'v159-2026-11-07-floating-final-fix';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -6659,9 +6664,8 @@ function toggleGroupMenu(groupId, btnEl) {
     // اکنون منو را قابل مشاهده کن
     menu.style.visibility = 'visible';
     _activeGroupMenu = menu;
-    // 🔧 پنهان کردن کلید + شناور وقتی منو باز است
-    var fab = document.getElementById('floatingAddBtn');
-    if (fab) fab.style.display = 'none';
+    // 🔧 v159: پنهان کردن + شناور — از _refreshFloatingAddBtn استفاده کن
+    _refreshFloatingAddBtn();
 
     // بستن منو با کلیک خارج از آن
     setTimeout(function() {
@@ -6788,9 +6792,8 @@ function openGroupSettings(groupId) {
 
     // نمایش مودال
     document.getElementById('groupSettingsOverlay').classList.add('active');
-    // 🔧 پنهان کردن کلید + شناور وقتی مودال تنظیمات باز است
-    var fab = document.getElementById('floatingAddBtn');
-    if (fab) fab.style.display = 'none';
+    // 🔧 v159: پنهان کردن + شناور — از _refreshFloatingAddBtn استفاده کن
+    _refreshFloatingAddBtn();
 }
 
 // 🔧 متغیر موقت برای نگه‌داشتن عکس آپلود‌شده
@@ -9523,26 +9526,27 @@ function _isVisible(id) {
 function _refreshFloatingAddBtn() {
     var fab = document.getElementById('floatingAddBtn');
     if (!fab) return;
-    // 🔧 v158: مکانیزم ساده و درست
-    // دکمه + شناور فقط وقتی نمایش داده شود که:
-    //   ۱) currentView === 'tasks' (داخل یک گروه)
-    //   ۲) هیچ overlay/منو/مودالی باز و قابل دیدن نباشد
+    // 🔧 v159: مکانیزم نهایی — کاملا ساده
+    // فقط دو شرط: در tasks view باشیم + هیچ overlay فعالی نباشد
     var shouldShow = false;
-    if (currentView === 'tasks') {
-        // بررسی همه overlayها — فقط اگر فعال و قابل دیدن باشند
-        var anyVisible = _isVisible('modalOverlay') || _isVisible('calendarOverlay')
-            || _isVisible('datetimePickerOverlay') || _isVisible('groupSettingsOverlay')
-            || _isVisible('contactsOverlay') || _isVisible('contactFormOverlay')
-            || _isVisible('contactSearchOverlay') || _isVisible('contactSearchResultsOverlay')
-            || _isVisible('contactReportOverlay') || _isVisible('contactReportResultsOverlay')
-            || _isVisible('taskReportOverlay') || _isVisible('taskReportResultsOverlay')
-            || _isVisible('notesOverlay') || _isVisible('phoneActionOverlay');
-        var dyn = document.getElementById('groupPickerOverlay') || document.getElementById('contactPickerOverlay')
-            || document.getElementById('contactActionMenuOverlay') || document.getElementById('taskPickerOverlay')
-            || document.getElementById('bellSettingsOverlay');
-        var menu = (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu);
-        var details = (expandedId !== null);
-        shouldShow = !anyVisible && !dyn && !menu && !details;
+    if (currentView === 'tasks' && expandedId === null) {
+        // بررسی ساده: آیا هیچ element با class active و display قابل دیدن هست؟
+        var activeOverlays = document.querySelectorAll(
+            '.modal-overlay.active, .contacts-overlay.active, .notes-overlay.active'
+        );
+        var found = false;
+        for (var i = 0; i < activeOverlays.length; i++) {
+            if (activeOverlays[i].style.display !== 'none') { found = true; break; }
+        }
+        // منوی همبرگری
+        if (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu) found = true;
+        // منوهای داینامیک
+        if (document.getElementById('groupPickerOverlay') ||
+            document.getElementById('contactPickerOverlay') ||
+            document.getElementById('contactActionMenuOverlay') ||
+            document.getElementById('taskPickerOverlay') ||
+            document.getElementById('bellSettingsOverlay')) found = true;
+        shouldShow = !found;
     }
     fab.style.display = shouldShow ? 'flex' : 'none';
 }
