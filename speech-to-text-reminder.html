@@ -4708,7 +4708,14 @@ body.locked .header-actions button {
 //         ۲) toast z-index: 10001 → 10800 (بالاتر از همه)
 //         ۳) checkReachability: فقط navigator.onLine (نه fetch) + ۲ دقیقه فاصله
 //         نتیجه: هدر دیگر بی‌جهت چشمک نمی‌زند + ضبط صدا قطع نمی‌شود
-const APP_VERSION = 'v165-2026-11-07-add-contacts-toast-no-flash';
+//   v166 - REMOVE ALL REACHABILITY CHECKS:
+//         ۱) checkReachability تابع وجود دارد ولی دیگر صدا زده نمی‌شود
+//         ۲) setInterval برای checkReachability حذف شد
+//         ۳) startRecording: !isReachable → !navigator.onLine
+//         ۴) recognition.onerror network: دیگر isReachable=false نمی‌کند
+//         ۵) فقط online/offline events → isReachable = true/false
+//         نتیجه: هدر هرگز چشمک نمی‌زند مگر واقعاً اینترنت قطع باشد
+const APP_VERSION = 'v166-2026-11-07-remove-reachability-no-flash';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -7141,12 +7148,7 @@ function initRecognition() {
                 }
                 return 'دسترسی به میکروفون رد شد. در تنظیمات مرورگر اجازه دهید.';
             case 'network':
-                // 🔧 خطای شبکه — احتمالاً اینترنت قطع شده هنگام ضبط
-                // isReachable را به‌روزرسانی کن تا هدر آفلاین شود
-                if (isReachable) {
-                    isReachable = false;
-                    updateOnlineStatus();
-                }
+                // 🔧 v166: خطای شبکه هنگام ضبط — فقط پیام بده، هدر را چشمک نزن
                 return 'اتصال اینترنت قطع شد. ضبط متوقف شد. می‌توانید متن را تایپ کنید.';
             case 'audio-capture':
                 return 'میکروفون پیدا نشد. یک میکروفون وصل کنید.';
@@ -7204,18 +7206,13 @@ function startRecording() {
         showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. لطفاً از Chrome یا Edge استفاده کنید.');
         return;
     }
-    // Check REAL reachability (not just navigator.onLine). If the header is
-    // flashing blue-yellow (offline / no real internet — VPN with no
-    // connectivity, quota exhausted, GitHub unreachable, etc.), skip
-    // recording and go directly to manual typing.
-    // 🔧 طبق درخواست کاربر: در حالت آفلاین، دکمه‌های «ضبط دوباره» و
-    // «ذخیره» همچنان نمایش داده شوند (کاربر می‌تواند متن را تایپ کند
-    // یا دوباره ضبط را امتحان کند). عنوان و متن ویرایش نیز حفظ می‌شود.
-    if (!isReachable) {
+    // 🔧 v166: بررسی اینترنت فقط برای ضبط صدا — navigator.onLine کافی است
+    // اگر مرورگر آنلاین است → ضبط شروع کن (حتی اگر GitHub کند باشد)
+    // اگر آفلاین است → فرم تایپ دستی نمایش بده
+    if (!navigator.onLine) {
         document.getElementById('modalOverlay').classList.add('active');
         document.getElementById('recordingSection').style.display = 'none';
         document.getElementById('formSection').style.display = 'block';
-        // 🔧 حفظ عنوان (ویرایش یا جدید) و نمایش دکمه‌ها
         const isEditing = !!editTaskId;
         document.getElementById('modalTitle').textContent = isEditing ? 'ویرایش یادآور' : 'یادآور جدید';
         const saveBtn = document.getElementById('saveBtn');
@@ -14609,34 +14606,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     registerServiceWorker();
 
     // ─────────────────────────────────────────────────────────────────────
-    // REACHABILITY DETECTION — kept minimal to avoid slowing down load.
+    // 🔧 v166: بررسی اینترنت — کاملا حذف شد
+    // فقط navigator.onLine کافی است (مرورگر خودش مدیریت می‌کند)
+    // هیچ fetch، هیچ checkReachability، هیچ چشمک
     // ─────────────────────────────────────────────────────────────────────
-    // Initial check on page load — delayed 8s so it doesn't compete with
-    // initial rendering or service worker registration.
-    setTimeout(() => { try { checkReachability(true).then(() => updateOnlineStatus()); } catch(e) {} }, 8000);
-
-    // Online/offline transitions (from navigator.onLine)
+    // فقط online/offline events را گوش بده
     window.addEventListener('online', () => {
-        setTimeout(() => {
-            try {
-                checkReachability(true).then(() => {
-                    updateOnlineStatus();
-                    render();
-                });
-            } catch(e) {}
-        }, 2000);
+        isReachable = true;
+        updateOnlineStatus();
+        render();
     });
     window.addEventListener('offline', () => {
         isReachable = false;
         updateOnlineStatus();
         render();
     });
-
-    // Periodic reachability check — every 30 seconds (was 5s, which was
-    // too aggressive and slowed down low-end devices).
-    setInterval(() => {
-        try { checkReachability().then(() => updateOnlineStatus()); } catch(e) {}
-    }, 30000);
+    // وضعیت اولیه
+    isReachable = navigator.onLine;
+    updateOnlineStatus();
 
     // Check when tab becomes visible (user came back from another tab/app)
     document.addEventListener('visibilitychange', () => {

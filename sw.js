@@ -30,8 +30,8 @@
 // نام «نسخهٔ حافظهٔ پنهان». هر بار که کد را تغییر دادید و در گیت‌هاب
 // گذاشتید، این عدد را یکی بالا ببرید (مثلاً v17 → v18) تا مرورگر
 // بداند باید فایل‌های جدید را دوباره دانلود کند.
-// 🔒 v132: add in contacts + toast 10800 + no flash (navigator.onLine only).
-const CACHE_NAME = 'yadavar-cache-v132';
+// 🔒 v133: حذف کامل checkReachability + فقط navigator.onLine.
+const CACHE_NAME = 'yadavar-cache-v133';
 
 // نام پایگاه دادهٔ IndexedDB. این پایگاه داده بین سرویس ورکر و صفحهٔ
 // HTML مشترک است و یادآورها + تاریخچهٔ اعلان‌ها را در خود نگه می‌دارد.
