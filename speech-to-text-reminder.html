@@ -744,15 +744,15 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .item.warning { background: linear-gradient(135deg, #FB8C00, #E65100); }
 .item.urgent { background: linear-gradient(135deg, #E53935, #B71C1C); }
 
-/* 🔧 v164: Overdue: blinking orange pale <-> brown, 2s cycle */
+/* 🔧 v170: Overdue: blinking orange pale <-> RED (was brown), 2s cycle */
 @keyframes overdueBlink {
     0%, 100% {
         background-color: #FFB74D;  /* نارنجی کمرنگ */
         box-shadow: 0 2px 14px rgba(255, 183, 77, 0.4);
     }
     50% {
-        background-color: #795548;  /* قهوه‌ای */
-        box-shadow: 0 2px 18px rgba(121, 85, 72, 0.6);
+        background-color: #D32F2F;  /* 🔧 v170: قرمز (قبلاً قهوه‌ای #795548 بود) */
+        box-shadow: 0 2px 18px rgba(211, 47, 47, 0.6);
     }
 }
 .item.overdue {
@@ -3137,6 +3137,11 @@ body.locked .header-actions button {
     font-weight: 600;
     direction: rtl;
 }
+.contact-action-commission-row.percent-single {
+    background: #fff3e0;
+    color: #E65100;
+    border: 1px solid #ffe0b2;
+}
 .contact-action-commission-idx {
     color: #1565C0;
     font-weight: 700;
@@ -3669,7 +3674,7 @@ body.locked .header-actions button {
         <button class="icon-btn share-btn" id="importBtn" onclick="importDatabase()" title="وارد کردن دیتابیس از فایل JSON">📥</button>
         <button class="icon-btn share-btn" id="notifBtn" onclick="toggleNotifications()" title="فعال‌سازی اعلان‌ها">🔔<span class="notif-badge"></span></button>
         <button class="icon-btn share-btn" id="shareBtn" onclick="confirmBackup()" title="ذخیره بک‌آپ در فضای ذخیره‌سازی">📤</button>
-        <button class="icon-btn add-btn" id="addBtn" onclick="startAdding()" title="افزودن یادآور">+</button>
+        <button class="icon-btn add-btn" id="addBtn" onclick="handleAddButtonClick()" title="افزودن یادآور / شخص">+</button>
     </div>
 </div>
 
@@ -3863,7 +3868,6 @@ body.locked .header-actions button {
             <h2>👥 بانک اطلاعاتی اشخاص</h2>
         </div>
         <div class="contacts-header-actions">
-            <button class="contacts-action-btn primary" onclick="openContactForm()">➕ جدید</button>
             <button class="contacts-action-btn" onclick="openContactSearch()">🔍 جستجو</button>
             <button class="contacts-action-btn" onclick="openTaskReport()">📋 گزارش کارها</button>
             <button class="contacts-action-btn" onclick="openContactReport()">📊 گزارش اشخاص</button>
@@ -3915,9 +3919,16 @@ body.locked .header-actions button {
                 </div>
             </div>
 
-            <!-- 🔧 v169: بخش اشانتیون‌ها (نامحدود) — هر رکورد دارای خواسته‌شده، داده‌شده، درصد -->
+            <!-- 🔧 v170: بخش اشانتیون‌ها (نامحدود) + درصد کارپردازی (یک بار، جدا از لیست) -->
             <div class="contact-form-section">
-                <div class="contact-form-section-title">🎁 اشانتیون (نامحدود)</div>
+                <div class="contact-form-section-title">🎁 اشانتیون (نامحدود) + درصد کارپردازی</div>
+                <!-- 🔧 v170: درصد کارپردازی یک‌بار مقداردهی می‌شود — جزوی از لیست اشانتیون‌ها نیست -->
+                <div class="contact-form-row" style="margin-bottom: 8px;">
+                    <div class="contact-form-field">
+                        <label>اعلام درصد کارپردازی به ایشان</label>
+                        <input type="text" id="contactCommissionPercent" placeholder="مثال: ۱۰">
+                    </div>
+                </div>
                 <div class="contact-dynamic-list" id="contactCommissionsList"></div>
                 <button class="contact-dynamic-add-btn" onclick="addContactCommission()">➕ افزودن اشانتیون</button>
             </div>
@@ -4831,7 +4842,7 @@ body.locked .header-actions button {
 //         موبایل: left: 12px, bottom: 12px
 //   v169 - REMOVE FLOATING CONTACT BTN + PHONE PER-NUMBER ACTIONS + UNLIMITED COMMISSIONS:
 //         ۱) دکمهٔ شناور ➕ شخص از صفحه اشخاص حذف شد — به‌جای آن دکمهٔ «➕ جدید»
-//            در هدر صفحه اشخاص قرار گرفت.
+//            در هدر صفحه اشpersons قرار گرفت.
 //         ۲) منوی لمسی شخص: تمام تلفن‌ها به‌صورت جداگانه نمایش داده می‌شوند.
 //            برای هر شماره دو دکمه «📞 تماس» و «💬 پیامک» وجود دارد که دقیقاً
 //            روی همان شماره (tel:/sms:) باز می‌شوند. موبایل اصلی با نشان طلایی
@@ -4841,7 +4852,20 @@ body.locked .header-actions button {
 //            جایگزین شد. در فرم، هر رکورد سه input دارد. مهاجرت خودکار از داده‌های
 //            قدیمی در migrateContacts پشتیبانی می‌شود. جستجو/گزارش/گزارش کارها
 //            همگی به‌روزرسانی شدند تا روی همهٔ رکوردها کار کنند.
-const APP_VERSION = 'v169-2026-11-08-no-fab-per-phone-comm-unlimited';
+//   v170 - OVERDUE BLINK RED + COMMISSION PERCENT SINGLE + NEWEST COMMISSION ON TOP + HEADER + ONLY:
+//         ۱) رنگ چشمک‌زن تسک‌های گذشته از قهوه‌ای (#795548) به قرمز (#D32F2F) تغییر کرد.
+//            فاز نارنجی کمرنگ (#FFB74D) دست‌نخورده ماند.
+//         ۲) درصد کارپردازی از لیست اشانتیون‌ها جدا شد و دوباره یک فیلد تکی
+//            commissionPercent روی شخص شد — فقط یک‌بار مقداردهی می‌شود. هر رکورد
+//            اشانتیون اکنون فقط شامل {asked, paid} است. مهاجرت خودکار از v169:
+//            percent اولین رکورد با percent به commissionPercent منتقل می‌شود.
+//         ۳) رکورد جدید اشانتیون همیشه در بالای لیست (اندیس ۰) درج می‌شود —
+//            آخرین اشانتیون بالاترین قرار می‌گیرد و بقیه یکی به پایین می‌روند.
+//         ۴) دکمهٔ «➕ جدید» از هدر صفحهٔ اشخاص حذف شد. دکمهٔ «+» در هدر اصلی
+//            برنامه (همیشه قابل دیدن) اکنون هوشمند است: اگر صفحهٔ اشخاص باز است،
+//            شخص جدید اضافه می‌کند؛ در غیر این صورت، یادآور جدید (رفتار قبلی).
+//            تابع handleAddButtonClick() این منطق را مدیریت می‌کند.
+const APP_VERSION = 'v170-2026-11-08-red-blink-percent-single-newest-top-header-plus';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 
 // ════════════════════════════════════════════════════════════════════
@@ -5862,34 +5886,66 @@ function migrateGroups(rawGroups) {
 // اگر بک‌آپ قدیمی است و contacts ندارد، آرایه خالی برمی‌گرداند
 // 🔧 v169: مهاجرت از فیلدهای تکی commissionAsked/commissionPaid/commissionPercent
 //          به آرایه commissions: [{asked, paid, percent}, ...]
+// 🔧 v170: درصد از هر رکورد جدا شد و دوباره یک فیلد تکی commissionPercent شد.
+//          commissions فقط شامل {asked, paid} است.
+//          مهاجرت: از v169 — percent اولین رکورد با percent به commissionPercent منتقل می‌شود.
+//          مهاجرت: از ساختار قدیمی تکی — یک رکورد از commissionAsked/commissionPaid ساخته می‌شود.
 function migrateContacts(rawContacts) {
     if (!Array.isArray(rawContacts)) return [];
     return rawContacts
         .filter(c => c && c.id && c.name)
         .map(c => {
-            // 🔧 v169: مهاجرت اشانتیون — اگر آرایه commissions ندارد ولی فیلدهای تکی دارد،
-            // یک رکورد از آن‌ها بساز. اگر هر دو ساختار وجود دارند، آرایه را اولویت بده.
+            // 🔧 v170: مهاجرت اشانتیون‌ها
+            // خروجی: commissions = [{asked, paid}] (بدون percent)
+            //         commissionPercent = string (یک فیلد تکی)
             let commissions = [];
+            let commissionPercent = '';
+
+            // اولویت ۱: ساختار v170 (commissions بدون percent + commissionPercent تکی)
             if (Array.isArray(c.commissions)) {
                 commissions = c.commissions.filter(function(cm) {
                     return cm && typeof cm === 'object';
                 }).map(function(cm) {
                     return {
                         asked: cm.asked ? String(cm.asked) : '',
-                        paid: cm.paid ? String(cm.paid) : '',
-                        percent: cm.percent ? String(cm.percent) : ''
+                        paid: cm.paid ? String(cm.paid) : ''
                     };
                 });
             }
-            // اگر commissions خالی است ولی فیلدهای تکی قدیمی پر هستند، یک رکورد بساز
-            if (commissions.length === 0) {
-                const oldAsked = c.commissionAsked ? String(c.commissionAsked).trim() : '';
-                const oldPaid = c.commissionPaid ? String(c.commissionPaid).trim() : '';
-                const oldPercent = c.commissionPercent ? String(c.commissionPercent).trim() : '';
-                if (oldAsked || oldPaid || oldPercent) {
-                    commissions = [ { asked: oldAsked, paid: oldPaid, percent: oldPercent } ];
+            // commissionPercent — اولویت: فیلد تکی روی شخص
+            if (c.commissionPercent && String(c.commissionPercent).trim()) {
+                commissionPercent = String(c.commissionPercent).trim();
+            }
+
+            // اولویت ۲: مهاجرت از v169 (commissions با percent در هر رکورد)
+            // اگر commissionPercent تکی خالی است، از اولین رکورد با percent بگیر
+            if (!commissionPercent && Array.isArray(c.commissions)) {
+                for (let i = 0; i < c.commissions.length; i++) {
+                    const cm = c.commissions[i];
+                    if (cm && cm.percent && String(cm.percent).trim()) {
+                        commissionPercent = String(cm.percent).trim();
+                        break;
+                    }
                 }
             }
+
+            // اولویت ۳: مهاجرت از ساختار قدیمی تکی (commissionAsked/commissionPaid)
+            // اگر commissions خالی است ولی فیلدهای تکی قدیمی پر هستند، یک رکورد بساز
+            const commissionsFiltered = commissions.filter(function(cm) {
+                return cm.asked.trim() || cm.paid.trim();
+            });
+            if (commissionsFiltered.length === 0) {
+                const oldAsked = c.commissionAsked ? String(c.commissionAsked).trim() : '';
+                const oldPaid = c.commissionPaid ? String(c.commissionPaid).trim() : '';
+                if (oldAsked || oldPaid) {
+                    commissions = [ { asked: oldAsked, paid: oldPaid } ];
+                } else {
+                    commissions = [];
+                }
+            } else {
+                commissions = commissionsFiltered;
+            }
+
             const out = {
                 id: String(c.id),
                 company: c.company ? String(c.company) : '',
@@ -5898,8 +5954,9 @@ function migrateContacts(rawContacts) {
                 startDate: c.startDate ? String(c.startDate) : '',
                 birthDate: c.birthDate ? String(c.birthDate) : '',
                 commissions: commissions,
+                commissionPercent: commissionPercent,
                 phones: Array.isArray(c.phones) ? c.phones.filter(p => p).map(p => String(p)) : [],
-                primaryPhone: c.primaryPhone ? String(c.primaryPhone) : '',  // 🔧 موبایل اصلی
+                primaryPhone: c.primaryPhone ? String(c.primaryPhone) : '',
                 addresses: Array.isArray(c.addresses) ? c.addresses.filter(a => a).map(a => String(a)) : [],
                 notes: Array.isArray(c.notes) ? c.notes.filter(n => n).map(n => String(n)) : [],
                 createdAt: c.createdAt ? String(c.createdAt) : new Date().toISOString(),
@@ -5908,7 +5965,7 @@ function migrateContacts(rawContacts) {
             const knownContactKeys = new Set([
                 'id', 'company', 'name', 'position',
                 'startDate', 'birthDate',
-                'commissions',
+                'commissions', 'commissionPercent',
                 'phones', 'primaryPhone', 'addresses', 'notes', 'createdAt'
             ]);
             for (const key of Object.keys(c)) {
@@ -11224,9 +11281,10 @@ let toastTimer;
 //     position: string,        // سمت
 //     startDate: string,       // تاریخ شروع همکاری (شمسی)
 //     birthDate: string,       // تاریخ تولد (شمسی)
-//     commissions: [           // لیست اشانتیون‌ها (نامحدود) — v169
-//       { asked: string, paid: string, percent: string }
+//     commissions: [           // لیست اشانتیون‌ها (نامحدود) — v170 فقط asked/paid
+//       { asked: string, paid: string }
 //     ],
+//     commissionPercent: string,  // 🔧 v170: اعلام درصد کارپردازی — یک فیلد تکی روی شخص
 //     phones: [string],        // لیست تلفن‌ها (نامحدود)
 //     primaryPhone: string,    // موبایل اصلی (یکی از phones)
 //     addresses: [string],     // لیست آدرس‌ها (نامحدود)
@@ -11234,7 +11292,11 @@ let toastTimer;
 //     createdAt: string        // تاریخ ایجاد (ISO)
 //   }
 // 🔧 v169: فیلدهای تکی قدیمی commissionAsked/commissionPaid/commissionPercent
-//          به‌صورت خودکار به یک رکورد در commissions مهاجرت می‌شوند.
+//          به‌صورت خودکار به آرایه commissions مهاجرت می‌شوند.
+// 🔧 v170: درصد از هر رکورد اشانتیون جدا شد و دوباره یک فیلد تکی commissionPercent شد.
+//          commissions اکنون فقط شامل {asked, paid} است. مهاجرت خودکار از v169
+//          پشتیبانی می‌شود (percent اولین رکورد به commissionPercent منتقل می‌شود).
+// 🔧 v170: رکورد جدید اشانتیون همیشه در بالای لیست (اندیس ۰) درج می‌شود.
 
 const CONTACTS_KEY = 'contacts_db_v1';
 let _editingContactId = null;
@@ -11729,6 +11791,33 @@ function openContacts() {
     history.pushState({ view: 'contacts' }, '');
 }
 
+// 🔧 v170: تابع هوشمند برای دکمهٔ + هدر اصلی
+// اگر صفحهٔ اشخاص یا یکی از زیر-صفحه‌های آن (فرم/جستجو/گزارش/نتایج) باز است،
+// دکمهٔ + یک «شخص جدید» اضافه می‌کند (openContactForm). در غیر این صورت،
+// یک یادآور جدید اضافه می‌کند (startAdding) — همان رفتار قبلی.
+function handleAddButtonClick() {
+    var contactsOverlay = document.getElementById('contactsOverlay');
+    var contactsPageOpen = contactsOverlay &&
+        contactsOverlay.classList.contains('active') &&
+        contactsOverlay.style.display !== 'none';
+
+    // اگر زیر-صفحه‌ای (مثل فرم ویرایش شخص، جستجو، یا گزارش) روی صفحهٔ اشخاص باز است،
+    // دکمهٔ + نباید کاری کند چون کاربر در میان آن فرم است.
+    var subOverlayOpen = _isVisible('contactFormOverlay') ||
+                         _isVisible('contactSearchOverlay') ||
+                         _isVisible('contactSearchResultsOverlay') ||
+                         _isVisible('contactReportOverlay') ||
+                         _isVisible('contactReportResultsOverlay') ||
+                         _isVisible('contactActionMenuOverlay') ||
+                         _isVisible('phoneActionOverlay');
+
+    if (contactsPageOpen && !subOverlayOpen) {
+        openContactForm();
+    } else {
+        startAdding();
+    }
+}
+
 function closeContacts() {
     document.getElementById('contactFormOverlay').classList.remove('active');
     document.getElementById('contactSearchOverlay').classList.remove('active');
@@ -11815,7 +11904,7 @@ function renderContactsList() {
     const allContacts = getContacts();
 
     if (allContacts.length === 0) {
-        body.innerHTML = '<div class="contacts-empty"><div class="contacts-empty-icon">👥</div><div>هیچ شخصی تعریف نشده است<br>برای افزودن، دکمه «جدید» را بزنید</div></div>';
+        body.innerHTML = '<div class="contacts-empty"><div class="contacts-empty-icon">👥</div><div>هیچ شخصی تعریف نشده است<br>برای افزودن، دکمه «+» در هدر بالای صفحه را بزنید</div></div>';
         return;
     }
 
@@ -11981,21 +12070,31 @@ function showContactActionMenu(contactId) {
         });
     }
 
-    // 🔧 v169: بخش اشانتیون‌ها — هر رکورد به‌صورت جداگانه نمایش داده می‌شود
+    // 🔧 v170: بخش اشانتیون‌ها — هر رکورد به‌صورت جداگانه نمایش داده می‌شود (بدون درصد)
+    //          درصد کارپردازی جداگانه و فقط یک‌بار نمایش داده می‌شود.
     const commissions = getContactCommissions(c);
-    if (commissions.length > 0) {
+    const commissionPercent = getContactCommissionPercent(c);
+    if (commissions.length > 0 || commissionPercent) {
         const commHeader = document.createElement('div');
         commHeader.className = 'contact-action-phones-header';
         commHeader.textContent = '🎁 اشانتیون‌ها';
         itemsContainer.appendChild(commHeader);
+
+        // 🔧 v170: نمایش درصد کارپردازی (یک فیلد تکی) — جدا از لیست رکوردها
+        if (commissionPercent) {
+            const percentRow = document.createElement('div');
+            percentRow.className = 'contact-action-commission-row percent-single';
+            percentRow.innerHTML = '<span class="contact-action-commission-idx">٪</span> درصد کارپردازی: <b>' + escapeHtml(commissionPercent) + '٪</b>';
+            itemsContainer.appendChild(percentRow);
+        }
+
         commissions.forEach(function(cm, idx) {
             const row = document.createElement('div');
             row.className = 'contact-action-commission-row';
             let parts = [];
             if (cm.asked) parts.push('خواسته: ' + escapeHtml(cm.asked));
             if (cm.paid) parts.push('داده: ' + escapeHtml(cm.paid));
-            if (cm.percent) parts.push('درصد: ' + escapeHtml(cm.percent) + '٪');
-            row.innerHTML = '<span class="contact-action-commission-idx">' + toPersianNumber(idx + 1) + '.</span> ' + parts.join(' — ');
+            row.innerHTML = '<span class="contact-action-commission-idx">' + toPersianNumber(idx + 1) + '.</span> ' + (parts.length ? parts.join(' — ') : 'خالی');
             itemsContainer.appendChild(row);
         });
     }
@@ -12029,8 +12128,9 @@ function openContactForm(id) {
         document.getElementById('contactPosition').value = c.position || '';
         document.getElementById('contactStartDate').value = c.startDate || '';
         document.getElementById('contactBirthDate').value = c.birthDate || '';
-        // 🔧 v169: اشانتیون‌های نامحدود — رکوردها از getContactCommissions گرفته می‌شود
-        //          (هم ساختار جدید commissions و هم ساختار قدیمی تکی پشتیبانی می‌شود)
+        // 🔧 v170: درصد کارپردازی یک فیلد تکی روی شخص (مستقل از لیست اشانتیون‌ها)
+        document.getElementById('contactCommissionPercent').value = getContactCommissionPercent(c) || '';
+        // 🔧 v170: اشانتیون‌ها فقط شامل asked و paid هستند (درصد حذف شده)
         renderCommissionsList(getContactCommissions(c));
         renderDynamicList('contactPhonesList', c.phones || [], 'تلفن', c.primaryPhone);
         renderDynamicList('contactAddressesList', c.addresses || [], 'آدرس');
@@ -12041,8 +12141,10 @@ function openContactForm(id) {
         document.getElementById('contactPosition').value = '';
         document.getElementById('contactStartDate').value = '';
         document.getElementById('contactBirthDate').value = '';
-        // 🔧 v169: یک ردیف خالی اشانتیون به‌صورت پیش‌فرض
-        renderCommissionsList([ { asked: '', paid: '', percent: '' } ]);
+        // 🔧 v170: درصد کارپردازی خالی به‌صورت پیش‌فرض
+        document.getElementById('contactCommissionPercent').value = '';
+        // 🔧 v170: یک ردیف خالی اشانتیون به‌صورت پیش‌فرض (بدون درصد)
+        renderCommissionsList([ { asked: '', paid: '' } ]);
         renderDynamicList('contactPhonesList', [''], 'تلفن');
         renderDynamicList('contactAddressesList', [''], 'آدرس');
         renderDynamicList('contactNotesList', [''], 'توضیح');
@@ -12198,10 +12300,13 @@ function getPrimaryPhone() {
 }
 
 // ════════════════════════════════════════════════════════════════════
-// 🔧 v169: اشانتیون‌های نامحدود
+// 🔧 v170: اشانتیون‌های نامحدود (بدون درصد) + درصد کارپردازی یک‌بار
 // هر شخص می‌تواند چندین رکورد اشانتیون داشته باشد. هر رکورد شامل:
-//   { asked: 'کالای خواسته شده', paid: 'کالای داده شده', percent: 'درصد کارپردازی' }
-// در فرم، هر رکورد به‌صورت یک ردیف با سه input نمایش داده می‌شود.
+//   { asked: 'کالای خواسته شده', paid: 'کالای داده شده' }
+// درصد کارپردازی (commissionPercent) دیگر جزوی از هر رکورد نیست — یک فیلد
+// تکی روی شخص است که فقط یک‌بار مقداردهی می‌شود.
+// 🔧 v170: رکورد جدید همیشه در بالای لیست (اندیس ۰) درج می‌شود — آخرین
+// اشانتیون بالاترین قرار می‌گیرد و بقیه یکی به پایین می‌روند.
 // برای سازگاری با داده‌های قدیمی، تابع getContactCommissions هم رکوردهای
 // commissions جدید و هم فیلدهای تکی قدیمی را به‌صورت یک آرایه برمی‌گرداند.
 // ════════════════════════════════════════════════════════════════════
@@ -12222,18 +12327,18 @@ function _makeCommissionField(parent, labelText, value, placeholder, extraClass)
     return input;
 }
 
-// رندر لیست اشانتیون‌ها — هر رکورد شامل سه input
+// رندر لیست اشانتیون‌ها — هر رکورد شامل دو input (خواسته + داده)
+// 🔧 v170: درصد حذف شد — درصد یک فیلد تکی روی شخص است.
 function renderCommissionsList(items) {
     const list = document.getElementById('contactCommissionsList');
     if (!list) return;
     list.innerHTML = '';
-    if (!items || items.length === 0) items = [ { asked: '', paid: '', percent: '' } ];
+    if (!items || items.length === 0) items = [ { asked: '', paid: '' } ];
     items.forEach(function(cm) {
         const div = document.createElement('div');
         div.className = 'contact-commission-item';
         _makeCommissionField(div, 'خواسته شده (کالا)', cm.asked, 'مثال: گوشی سامسونگ');
         _makeCommissionField(div, 'داده شده (کالا)', cm.paid, 'مثال: لپ‌تاپ ایسوس');
-        _makeCommissionField(div, 'درصد کارپردازی', cm.percent, 'مثال: ۱۰', 'comm-percent');
         const removeBtn = document.createElement('button');
         removeBtn.className = 'contact-dynamic-remove';
         removeBtn.textContent = '×';
@@ -12252,6 +12357,8 @@ function renderCommissionsList(items) {
 }
 
 // افزودن یک ردیف اشانتیون جدید
+// 🔧 v170: رکورد جدید در بالای لیست (اندیس ۰) درج می‌شود — آخرین اشانتیون
+// بالاترین قرار می‌گیرد و بقیه یکی به پایین می‌روند.
 function addContactCommission() {
     const list = document.getElementById('contactCommissionsList');
     if (!list) return;
@@ -12259,7 +12366,6 @@ function addContactCommission() {
     div.className = 'contact-commission-item';
     _makeCommissionField(div, 'خواسته شده (کالا)', '', 'مثال: گوشی سامسونگ');
     _makeCommissionField(div, 'داده شده (کالا)', '', 'مثال: لپ‌تاپ ایسوس');
-    _makeCommissionField(div, 'درصد کارپردازی', '', 'مثال: ۱۰', 'comm-percent');
     const removeBtn = document.createElement('button');
     removeBtn.className = 'contact-dynamic-remove';
     removeBtn.textContent = '×';
@@ -12272,57 +12378,82 @@ function addContactCommission() {
         }
     };
     div.appendChild(removeBtn);
-    list.appendChild(div);
+    // 🔧 v170: insert at top (index 0) — newest first
+    if (list.firstChild) {
+        list.insertBefore(div, list.firstChild);
+    } else {
+        list.appendChild(div);
+    }
     // فوکوس روی اولین input ردیف جدید
     const firstInput = div.querySelector('input');
     if (firstInput) firstInput.focus();
 }
 
-// گرفتن لیست اشانتیون‌ها از فرم (فقط رکوردهایی که حداقل یکی از سه فیلد پر شده)
+// گرفتن لیست اشانتیون‌ها از فرم (فقط رکوردهایی که حداقل یکی از دو فیلد پر شده)
+// 🔧 v170: فقط asked و paid — بدون percent
 function getCommissionsFromForm() {
     const list = document.getElementById('contactCommissionsList');
     if (!list) return [];
     const result = [];
     list.querySelectorAll('.contact-commission-item').forEach(function(item) {
         const inputs = item.querySelectorAll('input');
-        if (inputs.length < 3) return;
+        if (inputs.length < 2) return;
         const asked = (inputs[0].value || '').trim();
         const paid = (inputs[1].value || '').trim();
-        const percent = (inputs[2].value || '').trim();
-        if (asked || paid || percent) {
-            result.push({ asked: asked, paid: paid, percent: percent });
+        if (asked || paid) {
+            result.push({ asked: asked, paid: paid });
         }
     });
     return result;
 }
 
 // گرفتن لیست اشانتیون‌ها از یک شخص ذخیره‌شده
-// این تابع هم ساختار جدید (commissions: []) و هم ساختار قدیمی
-// (commissionAsked/commissionPaid/commissionPercent) را پشتیبانی می‌کند.
+// 🔧 v170: هر رکورد فقط شامل asked و paid است. درصد از روی شخص خوانده می‌شود.
+// این تابع هم ساختار جدید (commissions: [{asked, paid}]) و هم ساختار قدیمی
+// (commissionAsked/commissionPaid) را پشتیبانی می‌کند.
+// همچنین برای مهاجرت از v169 (commissions با percent) — درصد هر رکورد نادیده
+// گرفته می‌شود چون در v170 درصد یک فیلد تکی روی شخص است.
 function getContactCommissions(c) {
     if (!c) return [];
     // ساختار جدید
     if (Array.isArray(c.commissions)) {
         return c.commissions.filter(function(cm) {
-            return cm && ((cm.asked && String(cm.asked).trim()) ||
-                          (cm.paid && String(cm.paid).trim()) ||
-                          (cm.percent && String(cm.percent).trim()));
+            return cm && typeof cm === 'object';
         }).map(function(cm) {
             return {
                 asked: cm.asked ? String(cm.asked) : '',
-                paid: cm.paid ? String(cm.paid) : '',
-                percent: cm.percent ? String(cm.percent) : ''
+                paid: cm.paid ? String(cm.paid) : ''
             };
+        }).filter(function(cm) {
+            return cm.asked.trim() || cm.paid.trim();
         });
     }
-    // مهاجرت از ساختار قدیمی
+    // مهاجرت از ساختار قدیمی (تکی)
     const oldAsked = c.commissionAsked ? String(c.commissionAsked).trim() : '';
     const oldPaid = c.commissionPaid ? String(c.commissionPaid).trim() : '';
-    const oldPercent = c.commissionPercent ? String(c.commissionPercent).trim() : '';
-    if (oldAsked || oldPaid || oldPercent) {
-        return [ { asked: oldAsked, paid: oldPaid, percent: oldPercent } ];
+    if (oldAsked || oldPaid) {
+        return [ { asked: oldAsked, paid: oldPaid } ];
     }
     return [];
+}
+
+// 🔧 v170: گرفتن درصد کارپردازی یک شخص (یک فیلد تکی)
+// اولویت: commissionPercent روی شخص، سپس درصد اولین رکورد commissions قدیمی (v169)
+function getContactCommissionPercent(c) {
+    if (!c) return '';
+    if (c.commissionPercent && String(c.commissionPercent).trim()) {
+        return String(c.commissionPercent).trim();
+    }
+    // مهاجرت از v169: اگر commissions قدیمی percent دارد، اولین رکورد با percent را بگیر
+    if (Array.isArray(c.commissions)) {
+        for (let i = 0; i < c.commissions.length; i++) {
+            const cm = c.commissions[i];
+            if (cm && cm.percent && String(cm.percent).trim()) {
+                return String(cm.percent).trim();
+            }
+        }
+    }
+    return '';
 }
 
 // ─── ذخیره شخص ───
@@ -12340,8 +12471,9 @@ function saveContact() {
         position: document.getElementById('contactPosition').value.trim(),
         startDate: document.getElementById('contactStartDate').value.trim(),
         birthDate: document.getElementById('contactBirthDate').value.trim(),
-        // 🔧 v169: اشانتیون‌های نامحدود — ذخیره به‌صورت آرایه از رکوردها
+        // 🔧 v170: اشانتیون‌های نامحدود (فقط asked و paid) + درصد کارپردازی یک‌بار
         commissions: getCommissionsFromForm(),
+        commissionPercent: document.getElementById('contactCommissionPercent').value.trim(),
         phones: getDynamicListValues('contactPhonesList'),
         primaryPhone: getPrimaryPhone(),  // 🔧 موبایل اصلی
         addresses: getDynamicListValues('contactAddressesList'),
@@ -12462,33 +12594,21 @@ function filterContacts(criteria) {
         });
     }
     // 🔧 v146: فیلتر درصد کارپردازی — ۴ حالت
-    // 🔧 v169: اکنون بر اساس همهٔ رکوردهای commissions[].percent بررسی می‌شود
+    // 🔧 v170: درصد اکنون یک فیلد تکی روی شخص (commissionPercent) است
     if (criteria.commissionMode && criteria.commissionMode !== 'all') {
         if (criteria.commissionMode === 'zero') {
-            // هیچ رکوردی با درصد مخالف صفر نباشد
             contacts = contacts.filter(c => {
-                const cms = getContactCommissions(c);
-                if (cms.length === 0) return true;  // بدون اشانتیون = صفر
-                return cms.every(function(cm) {
-                    return parseFloat(cm.percent || '0') === 0;
-                });
+                const cp = parseFloat(getContactCommissionPercent(c) || '0');
+                return isNaN(cp) || cp === 0;
             });
         } else if (criteria.commissionMode === 'nonzero') {
-            // حداقل یک رکورد با درصد مخالف صفر داشته باشد
             contacts = contacts.filter(c => {
-                const cms = getContactCommissions(c);
-                return cms.some(function(cm) {
-                    const cp = parseFloat(cm.percent || '0');
-                    return !isNaN(cp) && cp !== 0;
-                });
+                const cp = parseFloat(getContactCommissionPercent(c) || '0');
+                return !isNaN(cp) && cp !== 0;
             });
         } else if (criteria.commissionMode === 'specific' && criteria.commissionValue) {
-            // حداقل یک رکورد با درصد شامل مقدار مشخص داشته باشد
             contacts = contacts.filter(c => {
-                const cms = getContactCommissions(c);
-                return cms.some(function(cm) {
-                    return (cm.percent || '').includes(criteria.commissionValue);
-                });
+                return (getContactCommissionPercent(c) || '').includes(criteria.commissionValue);
             });
         }
     }
@@ -12702,8 +12822,8 @@ function showContactReportResults(results, criteria) {
     if (results.length === 0) {
         html += '<div class="contacts-empty"><div class="contacts-empty-icon">📊</div><div>هیچ نتیجه‌ای برای گزارش یافت نشد</div></div>';
     } else {
-        // 🔧 v169: شمارش رکوردهای اشانتیون خواسته/داده شده در همهٔ persons
-        let askedCount = 0, paidCount = 0, totalCommissionRecords = 0;
+        // 🔧 v170: شمارش رکوردهای اشانتیون خواسته/داده شده + شمارش اشخاص دارای درصد
+        let askedCount = 0, paidCount = 0, totalCommissionRecords = 0, withPercentCount = 0;
         results.forEach(c => {
             const cms = getContactCommissions(c);
             totalCommissionRecords += cms.length;
@@ -12711,6 +12831,7 @@ function showContactReportResults(results, criteria) {
                 if (cm.asked && cm.asked.trim()) askedCount++;
                 if (cm.paid && cm.paid.trim()) paidCount++;
             });
+            if (getContactCommissionPercent(c)) withPercentCount++;
         });
 
         html += '<div class="contact-form-section" style="margin-bottom:12px;">';
@@ -12720,16 +12841,18 @@ function showContactReportResults(results, criteria) {
         html += '<div>🎁 مجموع رکوردهای اشانتیون: <b>' + toPersianNumber(totalCommissionRecords) + '</b></div>';
         html += '<div>🎁 دارای اشانتیون خواسته شده: <b>' + toPersianNumber(askedCount) + '</b></div>';
         html += '<div>🎁 دارای اشانتیون داده شده: <b>' + toPersianNumber(paidCount) + '</b></div>';
+        html += '<div>٪ دارای درصد کارپردازی: <b>' + toPersianNumber(withPercentCount) + '</b></div>';
         html += '</div></div>';
 
         // جدول کامل
         html += '<table class="search-results-table"><thead><tr>';
         html += '<th>ردیف</th><th>نام شرکت</th><th>نام</th><th>سمت</th>';
         html += '<th>تلفن‌ها</th><th>آدرس</th><th>شروع همکاری</th><th>تولد</th>';
-        html += '<th>اشانتیون‌ها (خواسته / داده / درصد)</th><th>توضیحات</th>';
+        html += '<th>درصد</th><th>اشانتیون‌ها (خواسته / داده)</th><th>توضیحات</th>';
         html += '</tr></thead><tbody>';
         results.forEach((c, idx) => {
             const cms = getContactCommissions(c);
+            const percent = getContactCommissionPercent(c);
             let commissionsHtml;
             if (cms.length === 0) {
                 commissionsHtml = '—';
@@ -12738,7 +12861,6 @@ function showContactReportResults(results, criteria) {
                     let parts = [];
                     if (cm.asked) parts.push('خواسته: ' + escapeHtml(cm.asked));
                     if (cm.paid) parts.push('داده: ' + escapeHtml(cm.paid));
-                    if (cm.percent) parts.push('درصد: ' + escapeHtml(cm.percent) + '٪');
                     const line = (i + 1) + '. ' + (parts.length ? parts.join(' — ') : 'خالی');
                     return '<div style="margin-bottom:3px;">' + line + '</div>';
                 }).join('');
@@ -12752,6 +12874,7 @@ function showContactReportResults(results, criteria) {
             html += '<td>' + (c.addresses || []).map(a => escapeHtml(a)).join('<br>') + '</td>';
             html += '<td>' + escapeHtml(c.startDate || '—') + '</td>';
             html += '<td>' + escapeHtml(c.birthDate || '—') + '</td>';
+            html += '<td>' + (percent ? escapeHtml(percent) + '٪' : '—') + '</td>';
             html += '<td style="font-size:11px;">' + commissionsHtml + '</td>';
             html += '<td>' + (c.notes || []).map(n => escapeHtml(n)).join('<br>') + '</td>';
             html += '</tr>';
@@ -13014,28 +13137,15 @@ function executeTaskReport() {
             // 🔧 v144: فیلتر نام شخص
             if (contactName && !(contact.name || '').toLowerCase().includes(contactName)) return false;
             if (position && !(contact.position || '').toLowerCase().includes(position)) return false;
-            // 🔧 v169: درصد کارپردازی اکنون از آرایه commissions بررسی می‌شود
-            const cms = getContactCommissions(contact);
+            // 🔧 v170: درصد کارپردازی اکنون یک فیلد تکی روی شخص (commissionPercent) است
+            const cpStr = getContactCommissionPercent(contact);
+            const cpNum = parseFloat(cpStr || '0');
             if (commissionMode === 'zero') {
-                // هیچ رکوردی با درصد مخالف صفر نباشد
-                const hasNonZero = cms.some(function(cm) {
-                    const cp = parseFloat(cm.percent || '0');
-                    return !isNaN(cp) && cp !== 0;
-                });
-                if (hasNonZero) return false;
+                if (!isNaN(cpNum) && cpNum !== 0) return false;
             } else if (commissionMode === 'nonzero') {
-                // حداقل یک رکورد با درصد مخالف صفر داشته باشد
-                const hasNonZero = cms.some(function(cm) {
-                    const cp = parseFloat(cm.percent || '0');
-                    return !isNaN(cp) && cp !== 0;
-                });
-                if (!hasNonZero) return false;
+                if (isNaN(cpNum) || cpNum === 0) return false;
             } else if (commissionMode === 'specific') {
-                // حداقل یک رکورد با درصد دقیقاً برابر مقدار مشخص داشته باشد
-                const hasMatch = cms.some(function(cm) {
-                    return (cm.percent || '') === commissionValue;
-                });
-                if (!hasMatch) return false;
+                if (cpStr !== commissionValue) return false;
             }
         } else if (commissionMode !== 'all' || company || contactName || position) {
             // اگر فیلتر شخصی فعال است ولی تسک شخص ندارد → رد کن
