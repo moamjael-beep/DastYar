@@ -141,9 +141,9 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     transition: background 0.3s;
 }
 .header.offline {
-    /* Flash blue ↔ yellow to signal "offline / no real internet" — the user
-       specifically asked for a blue-yellow flashing header when GitHub is
-       unreachable (VPN with no real connectivity, quota exhausted, etc.). */
+    /* 🔧 v186: هدر آفلاین چشمک می‌زند (آبی ↔ کهربایی) — کاربر درخواست کرد:
+       «اگر بدرستی در دسترس نیست هدر چشمک زن شود و ضبط صوت باز نشود».
+       چشمک نشان می‌دهد که اینترنت واقعاً در دسترس نیست. */
     animation: headerOfflineFlash 1.2s infinite !important;
 }
 @keyframes headerOfflineFlash {
@@ -428,6 +428,14 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     margin: 0 6px;
     color: rgba(140, 140, 150, 0.55);
     font-weight: 300;
+}
+.credit-footer .credit-version {
+    display: block;
+    margin-top: 6px;
+    font-size: 9px;
+    color: rgba(160, 160, 170, 0.5);
+    letter-spacing: 0.04em;
+    direction: ltr;
 }
 
 .item {
@@ -744,7 +752,7 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .item.warning { background: linear-gradient(135deg, #FB8C00, #E65100); }
 .item.urgent { background: linear-gradient(135deg, #E53935, #B71C1C); }
 
-/* 🔧 v176: Overdue: blinking light black <-> pure black, 2s cycle */
+/* 🔧 v177: Overdue: blinking light black <-> pure black, 3s cycle (was 2s — slower) */
 @keyframes overdueBlink {
     0%, 100% {
         background-color: #616161;  /* 🔧 v176: مشکی روشن (Material Gray 700) */
@@ -757,7 +765,7 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 }
 .item.overdue {
     background-color: #616161; /* fallback — 🔧 v176: مشکی */
-    animation: overdueBlink 2s ease-in-out infinite;
+    animation: overdueBlink 3s ease-in-out infinite;  /* 🔧 v177: 2s → 3s (کمی کندتر) */
 }
 @media (prefers-reduced-motion: reduce) {
     .item.overdue {
@@ -1192,6 +1200,305 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .btn-secondary { background: #e0e0e0; color: var(--text); }
 .btn-danger { background: var(--red); color: white; }
 
+/* ════════════════════════════════════════════════════════════════
+   🔧 v209: منوی همبرگری هدر + بخش حسابداری
+   ════════════════════════════════════════════════════════════════ */
+/* منوی همبرگری — کارت کوچک زیر هدر، سمت راست (RTL) */
+.hamburger-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 10400;
+    display: none;
+    direction: rtl;
+}
+.hamburger-overlay.active { display: flex; align-items: flex-start; justify-content: flex-start; padding: 64px 10px 0 0; }
+.hamburger-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    width: 240px;
+    max-width: 82vw;
+    overflow: hidden;
+}
+.hamburger-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    user-select: none;
+}
+.hamburger-item:last-child { border-bottom: none; }
+.hamburger-item:active { background: #f0f2f5; }
+.hamburger-item .h-ico { font-size: 17px; width: 24px; text-align: center; }
+
+/* بخش حسابداری — تمام‌صفحه */
+.accounting-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #f0f2f5;
+    z-index: 10000;
+    display: none;
+    flex-direction: column;
+    direction: rtl;
+}
+.accounting-overlay.active { display: flex; }
+.acc-topbar {
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #4E342E, #3E2723);
+    color: #fff;
+    padding: 11px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.acc-back-btn {
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    flex-shrink: 0;
+}
+.acc-title { font-size: 15px; font-weight: 700; flex-shrink: 0; }
+.acc-doc-name {
+    font-size: 11px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 3px 10px;
+    margin-right: auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 45%;
+}
+/* نوار معادله — همیشه فیکس زیر topbar (مثل نوارهای فیکس صفحهٔ اصلی) */
+.acc-eq-bar {
+    flex-shrink: 0;
+    background: #fff;
+    border-bottom: 2px solid #e0e0e0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.acc-eq-row {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    padding: 7px 8px 0 8px;
+}
+.acc-eq-box {
+    flex: 1;
+    min-width: 0;
+    background: #fff;
+    border: 3px solid #9e9e9e;
+    border-radius: 10px;
+    padding: 5px 3px 4px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+.acc-eq-box.selected { box-shadow: 0 0 0 2px #4E342E inset; }
+.acc-eq-box .acc-box-title { font-size: 12px; font-weight: 700; color: #333; }
+.acc-eq-box .acc-box-total { font-size: 10px; color: #555; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acc-eq-sign { display: flex; align-items: center; font-size: 11px; font-weight: 700; color: #444; flex-shrink: 0; }
+.acc-eq-box.ok   { border-color: #2e7d32; background: #e8f5e9; }
+.acc-eq-box.bad  { border-color: #c62828; background: #ffebee; }
+.acc-eq-line { text-align: center; font-size: 10px; color: #666; padding: 3px 6px 6px; }
+.acc-eq-line.acc-eq-ok { color: #2e7d32; font-weight: 700; }
+.acc-eq-line.acc-eq-bad { color: #c62828; font-weight: 700; }
+/* ردیف سناد + دکمهٔ افزودن سند */
+.acc-docs-row {
+    flex-shrink: 0;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 6px 8px 2px;
+    -webkit-overflow-scrolling: touch;
+}
+.acc-doc-chip {
+    background: #fff;
+    border: 2px solid #bbb;
+    border-radius: 16px;
+    padding: 4px 10px;
+    font-size: 11px;
+    color: #333;
+    white-space: nowrap;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.acc-doc-chip.current { border-color: #4E342E; background: #efebe9; font-weight: 700; }
+.acc-doc-chip .acc-chip-ico { font-size: 11px; opacity: .75; }
+.acc-add-doc {
+    flex-shrink: 0;
+    margin: 6px 8px 4px;
+    background: linear-gradient(135deg, #9E9E9E, #757575);
+    color: #fff;
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+}
+.acc-add-doc:active { filter: brightness(0.92); }
+/* محتوای قابل اسکرول */
+.acc-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 8px 24px;
+    -webkit-overflow-scrolling: touch;
+}
+.acc-hint { text-align: center; color: #888; font-size: 12px; padding: 28px 14px; line-height: 2; }
+.acc-block-title { font-size: 11px; font-weight: 700; color: #5D4037; margin: 10px 2px 5px; display: flex; align-items: center; gap: 6px; }
+.acc-block-title .acc-block-line { flex: 1; height: 1px; background: #d7ccc8; }
+.acc-list-item {
+    background: #fff;
+    border: 2px solid #cfd8dc;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+}
+.acc-list-item.selected { border-color: #4E342E; background: #efebe9; }
+.acc-list-item .acc-item-name { flex: 1; font-size: 13px; font-weight: 600; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acc-list-item .acc-item-total { font-size: 10px; color: #6d4c41; white-space: nowrap; }
+.acc-list-item .acc-item-btn {
+    background: none; border: none; font-size: 13px; cursor: pointer;
+    padding: 2px 3px; opacity: .55; font-family: inherit;
+}
+.acc-list-item .acc-item-btn:active { opacity: 1; }
+.acc-indent { margin-right: 16px; }
+.acc-add-item {
+    background: linear-gradient(135deg, #9E9E9E, #757575);
+    color: #fff;
+    border-radius: 10px;
+    padding: 9px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 6px;
+    user-select: none;
+}
+.acc-add-item:active { filter: brightness(0.92); }
+.acc-record-row {
+    background: #fff;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 9px 11px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+}
+.acc-record-row:active { background: #fafafa; }
+.acc-record-main { flex: 1; min-width: 0; }
+.acc-record-text { font-size: 12.5px; font-weight: 600; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acc-record-meta { font-size: 10px; color: #888; margin-top: 2px; }
+.acc-record-amount { font-size: 12px; font-weight: 700; color: #333; white-space: nowrap; }
+.acc-side-badge {
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 10px;
+    padding: 3px 8px;
+    white-space: nowrap;
+}
+.acc-side-badge.debit  { color: #e65100; background: #fff3e0; }
+.acc-side-badge.credit { color: #00695c; background: #e0f2f1; }
+/* فرم رکورد حسابداری — کارت وسط */
+.acc-form-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 10500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+    direction: rtl;
+}
+.acc-form-overlay.active { display: flex; }
+.acc-form-card {
+    background: #fff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 430px;
+    max-height: 92vh;
+    overflow-y: auto;
+    padding: 16px 16px 14px;
+}
+.acc-form-card h3 { margin: 0 0 12px; font-size: 15px; color: #4E342E; }
+.acc-form-card label { display: block; font-size: 12px; color: #555; margin: 10px 2px 4px; }
+.acc-form-card textarea, .acc-form-card input, .acc-form-card select {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1.5px solid #ccc;
+    border-radius: 8px;
+    padding: 9px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    background: #fafafa;
+}
+.acc-form-card textarea { min-height: 58px; resize: vertical; }
+.acc-form-card input:focus, .acc-form-card textarea:focus, .acc-form-card select:focus { outline: none; border-color: #4E342E; background: #fff; }
+.acc-date-row { display: flex; gap: 6px; align-items: center; }
+.acc-date-row select { flex: 1; min-width: 0; padding: 8px 4px; }
+.acc-today-btn {
+    flex-shrink: 0;
+    background: #efebe9;
+    border: 1px solid #d7ccc8;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+    color: #4E342E;
+}
+.acc-side-toggle { display: flex; gap: 8px; }
+.acc-side-toggle button {
+    flex: 1;
+    border: 2px solid #ccc;
+    background: #fafafa;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    color: #666;
+}
+.acc-side-toggle button.acc-side-debit.sel  { border-color: #e65100; background: #fff3e0; color: #e65100; }
+.acc-side-toggle button.acc-side-credit.sel { border-color: #00695c; background: #e0f2f1; color: #00695c; }
+.acc-form-buttons { display: flex; gap: 8px; margin-top: 16px; }
+.acc-form-buttons button {
+    flex: 1;
+    border: none;
+    border-radius: 10px;
+    padding: 11px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+}
+.acc-form-buttons .acc-btn-cancel { background: #e0e0e0; color: #333; }
+.acc-form-buttons .acc-btn-delete { background: var(--red); color: #fff; }
+.acc-form-buttons .acc-btn-save   { background: #2e7d32; color: #fff; }
+
 /* Toast */
 .toast {
     position: fixed;
@@ -1213,6 +1520,101 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .toast.show {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
+}
+
+/* 🔧 v201: بنر درون‌صفحه‌ای اعلان — remediation اصلی برای «حتی داخل برنامه، اعلان نمی‌آید» */
+.inpage-notif-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10900; /* بالاتر از toast (10800) و هدر (10700) */
+    background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+    color: #fff;
+    padding: 14px 16px 12px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+    transform: translateY(-110%);
+    transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+    direction: rtl;
+    font-family: inherit;
+    border-bottom: 3px solid #ffd54f;
+    animation: inpageNotifPulse 1.2s ease-in-out 3;
+}
+.inpage-notif-banner.show {
+    transform: translateY(0);
+}
+.inpage-notif-banner.overdue {
+    background: linear-gradient(135deg, #7b1fa2 0%, #4a148c 100%);
+    border-bottom-color: #ff8a65;
+}
+@keyframes inpageNotifPulse {
+    0%, 100% { box-shadow: 0 6px 24px rgba(0,0,0,0.35); }
+    50% { box-shadow: 0 6px 24px rgba(255,213,79,0.85), 0 0 0 4px rgba(255,213,79,0.35); }
+}
+.inpage-notif-banner .inb-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    max-width: 720px;
+    margin: 0 auto;
+}
+.inpage-notif-banner .inb-icon {
+    font-size: 26px;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+.inpage-notif-banner .inb-body {
+    flex: 1;
+    min-width: 0;
+}
+.inpage-notif-banner .inb-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 2px;
+    word-break: break-word;
+}
+.inpage-notif-banner .inb-text {
+    font-size: 13px;
+    opacity: 0.95;
+    line-height: 1.45;
+    word-break: break-word;
+}
+.inpage-notif-banner .inb-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+.inpage-notif-banner .inb-btn {
+    background: rgba(255,255,255,0.22);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.45);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+}
+.inpage-notif-banner .inb-btn:hover, .inpage-notif-banner .inb-btn:active {
+    background: rgba(255,255,255,0.38);
+}
+.inpage-notif-banner .inb-btn.primary {
+    background: #ffd54f;
+    color: #b71c1c;
+    border-color: #ffd54f;
+}
+.inpage-notif-banner .inb-btn.primary:hover, .inpage-notif-banner .inb-btn.primary:active {
+    background: #ffca28;
+}
+@media (max-width: 480px) {
+    .inpage-notif-banner { padding: 12px 12px 10px; }
+    .inpage-notif-banner .inb-icon { font-size: 22px; }
+    .inpage-notif-banner .inb-title { font-size: 14px; }
+    .inpage-notif-banner .inb-text { font-size: 12px; }
+    .inpage-notif-banner .inb-btn { padding: 5px 8px; font-size: 11px; }
 }
 
 /* small screens (phones) */
@@ -2811,6 +3213,7 @@ body.locked .header-actions button {
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     font-size: 13px;
+    table-layout: fixed; /* 🔧 v186: عرض ستون‌ها دقیقاً رعایت شود */
 }
 .contacts-table thead {
     background: linear-gradient(135deg, #1976D2, #0D47A1);
@@ -2822,7 +3225,18 @@ body.locked .header-actions button {
     font-weight: 700;
     font-size: 12px;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
+/* 🔧 v186: عرض ستون‌ها در ردیف اول هدر (برای table-layout: fixed)
+   - ستون ردیف: ۳۰px (نازک)
+   - ستون شرکت: ۳۵%
+   - ستون نام: ۳۵%
+   - ستون سمت: ۲۵% (باقی‌مانده) */
+.contacts-table thead tr:first-child th:nth-child(1) { width: 30px; }
+.contacts-table thead tr:first-child th:nth-child(2) { width: 35%; }
+.contacts-table thead tr:first-child th:nth-child(3) { width: 35%; }
+.contacts-table thead tr:first-child th:nth-child(4) { width: auto; }
 /* 🔧 v136: هدر قابل کلیک برای sort + textbox فیلتر */
 .contacts-table th.sortable {
     cursor: pointer;
@@ -2876,28 +3290,43 @@ body.locked .header-actions button {
     border-color: white;
     box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
 }
+/* 🔧 v186: ردیف نازک‌تر — عرض ستون ردیف نصف شد */
+/* 🔧 v197: فونت ردیف کوچک‌تر — 11px → 9px */
+.contacts-table th:first-child,
+.contacts-table td:first-child {
+    width: 24px;
+    min-width: 24px;
+    max-width: 30px;
+    text-align: center;
+    padding: 8px 4px;
+    font-size: 9px;
+    color: #888;
+}
 .contacts-table td {
-    padding: 10px;
+    padding: 8px 10px;
     border-bottom: 1px solid #eee;
     vertical-align: top;
 }
-/* 🔧 v144: فونت بزرگ‌تر برای نام شرکت/نام/سمت */
+/* 🔧 v186: فونت یکسان و کوچک‌تر برای همه ستون‌ها (۱۱px)
+   قبلاً ۱۳px بود — اکنون ۱۱px برای فشرده‌تر شدن جدول. */
 .contacts-table td:nth-child(2),
-.contacts-table td:nth-child(3) {
-    font-size: 15px;
-    font-weight: 600;
-}
+.contacts-table td:nth-child(3),
 .contacts-table td:nth-child(4) {
-    font-size: 14px;
+    font-size: 11px;
+    font-weight: 500;
 }
+/* 🔧 v186: zebra striping پررنگ‌تر — از #f0f7ff به #d6eaff (آبی روشن‌تر و متمایزتر) */
+.contacts-table tbody tr:nth-child(even) { background: #d6eaff; }
+.contacts-table tbody tr:nth-child(odd) { background: white; }
 /* 🔧 v144: ردیف قابل کلیک — وقتی روی شخص کلیک می‌شود، منو باز می‌شود */
 .contacts-table tr.contact-clickable {
     cursor: pointer;
     transition: background 0.15s;
 }
-.contacts-table tr.contact-clickable:hover { background: #f5f9ff; }
-.contacts-table tr.contact-clickable:active { background: #e3f2fd; }
-.contacts-table tr:hover { background: #f5f9ff; }
+/* 🔧 v186: hover روی zebra — آبی روشن‌تر */
+.contacts-table tbody tr.contact-clickable:hover,
+.contacts-table tbody tr:hover { background: #bbdefb; }
+.contacts-table tbody tr.contact-clickable:active { background: #90caf9; }
 .contacts-table tr:last-child td { border-bottom: none; }
 .contacts-empty {
     text-align: center;
@@ -3474,6 +3903,10 @@ body.locked .header-actions button {
     border-bottom: 1px solid #eee;
     vertical-align: top;
 }
+/* 🔧 v186: zebra striping برای جدول نتایج جستجو هم — پررنگ‌تر */
+.search-results-table tbody tr:nth-child(even) { background: #d6eaff; }
+.search-results-table tbody tr:nth-child(odd) { background: white; }
+.search-results-table tbody tr:hover { background: #bbdefb; }
 .report-header {
     background: linear-gradient(135deg, #FF9800, #E65100);
     color: white;
@@ -3665,15 +4098,22 @@ body.locked .header-actions button {
         <div class="header-date" id="headerDate"></div>
     </div>
     <div class="header-actions">
+        <!-- 🔧 v209: منوی همبرگری — بک‌آپ/بازیابی/زنگوله به داخل آن منتقل شد تا هدر خلوت شود -->
+        <button class="icon-btn share-btn" id="menuBtn" onclick="openHamburgerMenu()" title="منو">☰</button>
         <button class="icon-btn share-btn install-btn" id="installBtn" onclick="installApp()" title="نصب به عنوان اپلیکیشن" style="display:none;">⬇</button>
         <button class="icon-btn share-btn" id="calBtn" onclick="openCalendar()" title="تقویم شمسی">📅</button>
         <button class="icon-btn share-btn" id="contactsBtn" onclick="openContacts()" title="بانک اطلاعاتی اشخاص"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></button>
         <button class="icon-btn share-btn" id="notesBtn" onclick="openNotes()" title="یادداشت">📝</button>
+        <!-- 🔧 v209: کلید حسابداری — بخش تمام‌صفحهٔ دارایی = بدهی + سرمایه -->
+        <button class="icon-btn share-btn" id="accBtn" onclick="openAccounting()" title="حسابداری">💼</button>
         <!-- دکمه بازگردانی به هدر گروه‌ها منتقل شد (در منوی همبرگری هر گروه) -->
 <button class="icon-btn share-btn" id="resetOrderBtn" onclick="resetAllTaskPositions()" title="برگرداندن همه تسک‌ها به ترتیب اصلی" style="display:none;">↩</button>
-        <button class="icon-btn share-btn" id="importBtn" onclick="importDatabase()" title="وارد کردن دیتابیس از فایل JSON">📥</button>
-        <button class="icon-btn share-btn" id="notifBtn" onclick="toggleNotifications()" title="فعال‌سازی اعلان‌ها">🔔<span class="notif-badge"></span></button>
-        <button class="icon-btn share-btn" id="shareBtn" onclick="confirmBackup()" title="ذخیره بک‌آپ در فضای ذخیره‌سازی">📤</button>
+        <!-- 🔧 v209: این سه دکمه به منوی همبرگری منتقل شدند؛ در DOM می‌مانند
+             (display:none) تا همهٔ ارجاع‌های JS و تست‌ها سالم باشند — کلیک
+             برنامه‌ای از طریق منو انجام می‌شود. -->
+        <button class="icon-btn share-btn" id="importBtn" onclick="importDatabase()" title="وارد کردن دیتابیس از فایل JSON" style="display:none;">📥</button>
+        <button class="icon-btn share-btn" id="notifBtn" onclick="toggleNotifications()" title="فعال‌سازی اعلان‌ها" style="display:none;">🔔<span class="notif-badge"></span></button>
+        <button class="icon-btn share-btn" id="shareBtn" onclick="confirmBackup()" title="ذخیره بک‌آپ در فضای ذخیره‌سازی" style="display:none;">📤</button>
         <button class="icon-btn add-btn" id="addBtn" onclick="handleAddButtonClick()" title="افزودن یادآور / شخص">+</button>
     </div>
 </div>
@@ -3695,6 +4135,7 @@ body.locked .header-actions button {
     <span class="credit-names">Reza Jalili</span>
     <span class="credit-sep">&amp;</span>
     <span class="credit-names">Emad Tavakoli</span>
+    <span class="credit-version" id="creditVersion"></span>
 </div>
 
 <div class="modal-overlay" id="modalOverlay">
@@ -4128,8 +4569,11 @@ body.locked .header-actions button {
             <h2>📊 گزارش اشخاص</h2>
         </div>
         <div class="contacts-header-actions">
-            <button class="contacts-action-btn" onclick="saveContactReport()">💾 ذخیره</button>
-            <button class="contacts-action-btn" onclick="shareContactReport()">📤 ارسال</button>
+            <!-- 🔧 v204 (bugfix): قبلاً saveContactReport()/shareContactReport() صدا زده می‌شد
+                 که وجود نداشتند → ReferenceError هنگام کلیک (کرش). نام‌های درست:
+                 saveContactReportPrompt / shareContactReportPrompt (مودال انتخاب فرمت). -->
+            <button class="contacts-action-btn" onclick="saveContactReportPrompt()">💾 ذخیره</button>
+            <button class="contacts-action-btn" onclick="shareContactReportPrompt()">📤 ارسال</button>
             <button class="contacts-action-btn" onclick="printContactReport()">🖨️ چاپ</button>
         </div>
     </div>
@@ -4354,7 +4798,97 @@ body.locked .header-actions button {
     </div>
 </div>
 
+<!-- 🔧 v209: منوی همبرگری هدر — بک‌آپ، بازیابی بک‌آپ، اعلان‌ها (زنگوله).
+     هر آیتم اول منو را می‌بندد و بعد تابع اصلی همان دکمهٔ قبلی هدر را صدا می‌زند. -->
+<div class="hamburger-overlay" id="hamburgerMenuOverlay" onclick="closeHamburgerMenu()">
+    <div class="hamburger-card" onclick="event.stopPropagation()">
+        <div class="hamburger-item" onclick="closeHamburgerMenu(); confirmBackup();">
+            <span class="h-ico">📤</span><span>ذخیره بک‌آپ</span>
+        </div>
+        <div class="hamburger-item" onclick="closeHamburgerMenu(); importDatabase();">
+            <span class="h-ico">📥</span><span>بازیابی بک‌آپ</span>
+        </div>
+        <div class="hamburger-item" onclick="closeHamburgerMenu(); toggleNotifications();">
+            <span class="h-ico">🔔</span><span>اعلان‌ها (زنگوله)</span>
+        </div>
+    </div>
+</div>
+
+<!-- 🔧 v209: بخش حسابداری — تمام‌صفحه. معادلهٔ اصلی: دارایی = بدهی + سرمایه.
+     سه باکس بالایی همیشه فیکس‌اند (مثل نوارهای «همه کارها»/«کارهای فوری» صفحهٔ اصلی).
+     جمع هر باکس از رکوردهای زیرمجموعه‌اش محاسبه می‌شود؛ اگر معادله برقرار باشد
+     هر سه باکس سبز وگرنه هر سه قرمز می‌شوند. -->
+<div class="accounting-overlay" id="accountingOverlay">
+    <div class="acc-topbar">
+        <button class="acc-back-btn" onclick="closeAccounting()">بازگشت ❯</button>
+        <div class="acc-title">💼 حسابداری</div>
+        <div class="acc-doc-name" id="accDocName">—</div>
+    </div>
+    <div class="acc-eq-bar">
+        <div class="acc-eq-row">
+            <div class="acc-eq-box neutral" id="accBoxAssets" onclick="accToggleSection('assets')">
+                <div class="acc-box-title">دارایی</div>
+                <div class="acc-box-total" id="accTotalAssets">۰</div>
+            </div>
+            <div class="acc-eq-sign">=</div>
+            <div class="acc-eq-box neutral" id="accBoxLiabilities" onclick="accToggleSection('liabilities')">
+                <div class="acc-box-title">بدهی</div>
+                <div class="acc-box-total" id="accTotalLiabilities">۰</div>
+            </div>
+            <div class="acc-eq-sign">+</div>
+            <div class="acc-eq-box neutral" id="accBoxEquity" onclick="accToggleSection('equity')">
+                <div class="acc-box-title">سرمایه</div>
+                <div class="acc-box-total" id="accTotalEquity">۰</div>
+            </div>
+        </div>
+        <div class="acc-eq-line" id="accEqLine">—</div>
+    </div>
+    <div class="acc-docs-row" id="accDocsRow"></div>
+    <div class="acc-add-doc" onclick="accAddDoc()">+ افزودن سند حسابداری جدید +</div>
+    <div class="acc-content" id="accContent"></div>
+</div>
+
+<!-- 🔧 v209: فرم رکورد حسابداری — زیرصفحهٔ بخش حسابداری (جزئیات رکورد).
+     همهٔ فیلدها در همین صفحه قابل ویرایش‌اند: متن، تاریخ ایجاد، شخص، مبلغ، بدهکار/بستانکار. -->
+<div class="acc-form-overlay" id="accRecordFormOverlay">
+    <div class="acc-form-card">
+        <h3 id="accFormTitle">رکورد جدید</h3>
+        <label>متن</label>
+        <textarea id="accRecText" placeholder="شرح رکورد..."></textarea>
+        <label>تاریخ ایجاد</label>
+        <div class="acc-date-row" id="accRecDateRow"></div>
+        <label>شخص</label>
+        <select id="accRecContact"></select>
+        <label>مبلغ (ریال)</label>
+        <input type="number" id="accRecAmount" min="0" step="1" inputmode="numeric" placeholder="مثلاً 100">
+        <label>نوع رکورد (یکی را انتخاب کنید)</label>
+        <div class="acc-side-toggle">
+            <button type="button" id="accSideDebit" class="acc-side-debit" onclick="accSetSide('debit')">بدهکار</button>
+            <button type="button" id="accSideCredit" class="acc-side-credit" onclick="accSetSide('credit')">بستانکار</button>
+        </div>
+        <div class="acc-form-buttons">
+            <button type="button" class="acc-btn-cancel" onclick="accCloseRecordForm()">انصراف</button>
+            <button type="button" class="acc-btn-delete" id="accDeleteBtn" onclick="accDeleteRecord()" style="display:none;">حذف</button>
+            <button type="button" class="acc-btn-save" onclick="accSaveRecord()">ذخیره</button>
+        </div>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
+<!-- 🔧 v201: بنر درون‌صفحه‌ای اعلان — همیشه در foreground کار می‌کند، حتی بدون permission -->
+<div class="inpage-notif-banner" id="inpageNotifBanner" role="alert" aria-live="assertive">
+    <div class="inb-row">
+        <div class="inb-icon" id="inbIcon">🔔</div>
+        <div class="inb-body">
+            <div class="inb-title" id="inbTitle">—</div>
+            <div class="inb-text" id="inbText">—</div>
+        </div>
+        <div class="inb-actions">
+            <button type="button" class="inb-btn primary" id="inbDoneBtn">انجام شد ✓</button>
+            <button type="button" class="inb-btn" id="inbCloseBtn">بستن</button>
+        </div>
+    </div>
+</div>
 
 <!-- Calendar Modal -->
 <div class="modal-overlay" id="calendarOverlay">
@@ -4921,8 +5455,538 @@ body.locked .header-actions button {
 //         - fallback bg + prefers-reduced-motion fallback: هر دو به #616161
 //         - box-shadow rgba(0,0,0,...) — هماهنگ با رنگ‌های مشکی
 //         نتیجه: چشمک بین دو مشکی (روشن ↔ تیره).
-const APP_VERSION = 'v176-2026-11-08-overdue-blink-black';
+//   v177 - OVERDUE BLINK SLOWER (3s instead of 2s):
+//         کاربر درخواست کرد: «سرعت چشمک کمی کمتر شود».
+//         🔧 تغییر:
+//         - animation duration: 2s → 3s (۵۰٪ کندتر)
+//         - رنگ‌ها و easing (ease-in-out) دست‌نخورده باقی ماند
+//   v178 - NOTES MIC BTN FIXED ON MOBILE (no longer scrolls with content):
+//         مشکل: دکمه میکروفون شناور در صفحه یادداشت، با اسکرول محتوا حرکت
+//         می‌کرد (به‌خصوص روی موبایل / iOS Safari). علت: position:fixed داخل
+//         یک والد fixed با اسکرول داخلی، در برخی مرورگرهای موبایل به‌درستی
+//         کار نمی‌کند.
+//         🔧 راه‌حل: دکمه میکروفون از داخل .notes-overlay خارج شد و اکنون
+//         فرزند مستقیم <body> است. با openNotes نمایش داده می‌شود و با
+//         closeNotes پنهان می‌شود. اکنون همیشه نسبت به viewport ثابت است.
+//   v179 - REVERTED v178 (notes mic btn back inside overlay):
+//         کاربر گفت: «برگرد به نسخه قبل خراب شد».
+//         🔧 تغییرات v178 برگردانده شد:
+//         - دکمه میکروفون به داخل .notes-overlay برگشت (همان جای قبلی)
+//         - منطق show/hide در openNotes/closeNotes حذف شد
+//         - style="display:none" از دکمه حذف شد
+//         کد اکنون معادل v177 است (به‌جز overdue blink 3s که از v177 باقی است).
+//   v180 - NOTES RECORDING: INSERT TEXT AT CURSOR + PRESERVE SCROLL:
+//         مشکل: وقتی کاربر در یادداشت اسکرول می‌کرد، روی یک خط گذشته کلیک می‌کرد،
+//         و یک خط جدید بین دو خط ایجاد می‌کرد، سپس ضبط می‌کرد، متن به بالا
+//         (با منطق تاریخ) می‌رفت نه در خطی که کاربر جا باز کرده بود. همچنین
+//         صفحه می‌پرید (اسکرول ریست می‌شد) و انگار تازه وارد صفحه یادداشت شده بودیم.
+//         🔧 راه‌حل:
+//         ۱) ردیابی کرسر: listener روی selectionchange — هر بار که کرسر داخل
+//            #notesContent تغییر می‌کند، _notesSavedRange به‌روز می‌شود.
+//         ۲) فریز در شروع ضبط: در toggleNotesRecording (start)، _notesInsertionRange
+//            از _notesSavedRange کپی می‌شود — حتی اگر کاربر در حین ضبط جای دیگری
+//            کلیک کند، موقعیت اصلی حفظ می‌شود.
+//         ۳) درج در محل کرسر: در toggleNotesRecording (stop)، اگر کرسر در وسط
+//            محتواست (نه در انتها)، متن با _insertTextAtCursor در همان محل
+//            درج می‌شود (بدون منطق تاریخ) + <br> بعد از آن.
+//         ۴) ترتیب زیر هم: بعد از درج، _notesSavedRange به بعد از <br> به‌روز
+//            می‌شود — ضبط بعدی زیر درج قبلی قرار می‌گیرد.
+//         ۵) حفظ اسکرول: قبل از تغییر محتوا، scrollTop ذخیره می‌شود و بعد از
+//            درج بازگردانی می‌شود — صفحه نمی‌پرد، میکروفون همان‌جا می‌ماند.
+//         نتیجه: متن در خطی که کاربر جا باز کرده درج می‌شود + ضبط‌های بعدی
+//         زیر هم به ترتیب قرار می‌گیرند + صفحه نمی‌پرد.
+//   v181 - REMOVE OLD 3-HOUR + 15-MINUTE REPEAT NOTIFICATION PROCESS:
+//         کاربر درخواست کرد: «یک فرایند یادآوری ۳ ساعته و ۱۵ دقیقه از قبل
+//         در کد هست — آن را پاک کن». این فرایند، منطق تکرار (repeat) v140
+//         بود که به‌طور خاص برای h3 (۳ ساعت) و m15 (۱۵ دقیقه) طراحی شده
+//         بود — هر کدام ۱۵ ثانیه بعد اعلان را تکرار می‌کردند.
+//         🔧 حذف شد:
+//         - ویژگی `repeat` از خروجی getNotifThresholds()
+//         - پارامتر `shouldRepeat` از sendNotification()
+//         - کل بلوک تکرار در sendNotification (setTimeout 15000ms + Notification دوم)
+//         - کامنت «🔧 v140: تکرار اعلان (فقط برای h3 و m15)»
+//         - فراخوانی sendNotification در checkNotifications به‌روز شد (۴ پارامتر به‌جای ۵)
+//         🔧 دست‌نخورده باقی ماند:
+//         - فرایند نوتیفیکیشن (v148 — toggleNotifications + getNotifSettings)
+//         - انتخاب زنگ (soundType: 'bell' | 'beeps')
+//         - ۳ مقطع زمانی اختیاری (NOTIF_TIME_OPTIONS — کاربر تا ۳ زمان انتخاب می‌کند)
+//         - NOTIF_TIME_OPTIONS همچنان شامل h3 و m15 به‌عنوان گزینه‌های قابل انتخاب است
+//           (اما دیگر تکرار نمی‌شوند — فقط یک‌بار اعلان می‌فرستند)
+//         نتیجه: هر اعلان فقط یک‌بار ارسال می‌شود. فرایند تکرار قدامی حذف شد.
+//   v182 - REMOVE h3 AND m15 FROM NOTIF_TIME_OPTIONS:
+//         کاربر درخواست کرد: «NOTIF_TIME_OPTIONS همچنان شامل h3 و m15 به‌عنوان
+//         گزینه‌های قابل انتخاب است — را حذف کن. نوتیف‌های اختیاری کاربر کافی است.»
+//         🔧 حذف شد:
+//         - { minutes: 60 * 3, key: 'h3', label: '۳ ساعت قبل' }
+//         - { minutes: 15,      key: 'm15', label: '۱۵ دقیقه قبل' }
+//         🔧 باقی ماند (۸ گزینه):
+//         - ۱ روز قبل، ۱۲ ساعت، ۶ ساعت، ۱ ساعت، ۳۰ دقیقه، ۱۰ دقیقه، ۵ دقیقه، سررسید
+//         نتیجه: کاربر دیگر نمی‌تواند ۳ ساعت یا ۱۵ دقیقه را به‌عنوان زمان یادآور
+//         انتخاب کند. ۸ گزینهٔ دیگر کافی است.
+//   v183 - REMOVE HIDDEN HARDCODED 3H+15M FROM sw.js + CUSTOM TIME OPTION:
+//         مشکل: در sw.js یک NOTIF_THRESHOLDS ثابت (hardcoded) وجود داشت که
+//         ۳ ساعت و ۱۵ دقیقه و سررسید را بدون توجه به تنظیمات کاربر اعلان
+//         می‌کرد. یعنی حتی اگر کاربر نوتیفیکیشن را فعال نکرده بود یا زمان‌های
+//         دیگری انتخاب کرده بود، SW در پس‌زمینه باز هم ۳ ساعت و ۱۵ دقیقه قبل
+//         از سررسید زنگ می‌زد. کاربر گفت: «۱۵ و ۳ ساعته در کد پنهان شده بود
+//         و بدون تنظیم کاربر زنگ میزد و پیام میداد — گفتم آن‌ها را پاک کن.»
+//         🔧 راه‌حل:
+//         ۱) hardcoded NOTIF_THRESHOLDS از sw.js حذف شد.
+//         ۲) تابع getNotifThresholdsFromIDB() در sw.js اضافه شد — تنظیمات را
+//            از IndexedDB (STORE_BACKUP با کلید 'notif_settings') می‌خواند.
+//         ۳) اگر کاربر تنظیماتی ذخیره نکرده یا enabled=false → هیچ اعلانی
+//            در پس‌زمینه فرستاده نمی‌شود.
+//         ۴) HTML تابع‌های idbPutNotifSettings + idbGetNotifSettings اضافه کرد.
+//         ۵) saveNotifSettings اکنون هم در localStorage و هم در IndexedDB
+//            ذخیره می‌کند تا SW بتواند بخواند.
+//         ۶) بلوک تکرار در sw.js (که برای h3 و m15 بود) هم حذف شد (v181).
+//         🔧 NOTIF_TIME_OPTIONS به ۴ گزینه کاهش یافت:
+//         - ۱ ساعت قبل، ۵ دقیقه قبل، در لحظهٔ سررسید، و «سفارشی (دقیقه)...»
+//         - گزینهٔ «سفارشی» یک input عددی نشان می‌دهد — کاربر دقیقه دلخواه وارد می‌کند.
+//         - ذخیره با key = 'custom_<minutes>' و label = 'X دقیقه قبل'
+//         نتیجه: SW فقط همان زمان‌هایی که کاربر انتخاب کرده را اعلان می‌فرستد —
+//         هیچ اعلان پنهان بدون تنظیم کاربر نیست.
+//   v184 - CONTACTS TABLE ZEBRA + AUTO-UPDATE FROM GITHUB:
+//         ۱) جدول اشخاص: فونت شرکت/نام کوچک شد (۱۵px → ۱۳px، هم‌اندازه با سمت).
+//            zebra striping اضافه شد — ردیف‌های یکدرمیان با زمینهٔ آبی کم‌رنگ
+//            (#f0f7ff) برای خوانایی بهتر هنگام اسکرول. جدول نتایج جستجو هم همین.
+//         ۲) به‌روزرسانی خودکار از گیت‌هاب:
+//            - SW: تابع updateAppShellInBackground() اضافه شد — در پس‌زمینه
+//              آخرین نسخهٔ HTML و APP_SHELL را از گیت‌هاب دانلود و در کش
+//              ذخیره می‌کند. best-effort — اگر آفلاین باشد، نادیده گرفته می‌شود.
+//            - SW: پیام UPDATE_CACHE اضافه شد — صفحه HTML این پیام را
+//              هنگام بارگذاری (۵s بعد)، هنگام بازگشت کاربر (visibilitychange)،
+//              و هر ۳۰ دقیقه می‌فرستد.
+//            - HTML: ارسال UPDATE_CACHE در ۳ زمان (load + visibility + 30min).
+//            - استراتژی fetch: HTML «اول شبکه» (network-first) — وقتی آنلاین
+//              است، آخرین نسخه از گیت‌هاب. وقتی آفلاین است، نسخهٔ کش‌شده
+//              از حافظهٔ داخلی — حتی برای روزها و ماه‌ها.
+//            نتیجه: برنامه همیشه آخرین نسخهٔ گیت‌هاب را دارد وقتی آنلاین است،
+//            و از نسخهٔ داخلی ادامه می‌دهد وقتی آفلاین است.
+//   v185 - SW FETCH STRATEGY: STALE-WHILE-REVALIDATE (cache-first, background update):
+//         کاربر درخواست کرد: «اول برنامه در کش اجرا شود و منتظر تست اینترنت
+//         و گیت‌هاب نشود. بعد که نسخهٔ آفلاین بالا آمد و به سرعت لود شد،
+//         حالا در پس‌زمینه اگر دسترسی به آخرین نسخه در گیت‌هاب پیدا کرد،
+//         آن را بصورت اتوماتیک رفرش و آخرین نسخه را دریافت و استفاده کند.»
+//         🔧 تغییر:
+//         - استراتژی fetch برای HTML: «اول شبکه» → «اول حافظه، سپس به‌روزرسانی پس‌زمینه»
+//         - وقتی کش موجود است: فوراً کش را بده (میلی‌ثانیه — بدون انتظار شبکه)
+//         - در پس‌زمینه: آخرین نسخه از گیت‌هاب دانلود می‌شود
+//         - اگر با نسخهٔ کش فرق داشت: کش به‌روزرسانی + پیام RELOAD_PLEASE به صفحه
+//         - صفحه خودکار رفرش می‌شود (مگر در حال ضبط یا فرم باز باشد)
+//         - اگر کش موجود نیست (اولین بار): از شبکه بخوان
+//         - اگر نه شبکه نه کش: صفحهٔ آفلاین
+//         نتیجه: برنامه فوراً از کش بالا می‌آید (حتی آفلاین). سپس در پس‌زمینه
+//         آخرین نسخه را چک می‌کند و اگر جدیدتر باشد، خودکار رفرش می‌کند.
+//   v186 - CONTACTS TABLE TWEAKS + INTERNET CHECK FIX:
+//         ۱) جدول اشخاص:
+//            - عرض ستون ردیف نصف شد (width: 24px، max 30px)
+//            - zebra striping پررنگ‌تر شد: #f0f7ff → #d6eaff
+//            - فونت رکوردها کوچک‌تر شد: ۱۳px → ۱۱px
+//            - hover پررنگ‌تر: #e3f2fd → #bbdefb
+//         ۲) بررسی اینترنت برای ضبط صوت:
+//            - فاصله بررسی: ۱۲۰s → ۱۰s (بسیار کوتاه)
+//            - تایموت: ۵s → ۳s
+//            - تست واقعی با fetch به manifest.json (با AbortController)
+//              قبلاً فقط navigator.onLine بود (false positive در captive portal)
+//            - بلافاصله بعد از لود: checkReachability(true) (fire-and-forget)
+//            - هر ۱۰ ثانیه: checkReachability() در پس‌زمینه
+//            - هدر آفلاین: چشمک آبی ↔ کهربایی (headerOfflineFlash) — اگر
+//              اینترنت واقعاً در دسترس نیست، هدر چشمک می‌زند و ضبط صوت باز نمی‌شود.
+//            نتیجه: اگر اینترنت واقعاً در دسترس نیست، هدر چشمک می‌زند
+//            و ضبط صوت باز نمی‌شود.
+//   v187 - INTERNET CHECK = VOICE RECORDING TEST (2s interval, Google endpoint):
+//         کاربر درخواست کرد:
+//           «تست در دسترس بودن ضبط صوت از ۱۰ به ۲ ثانیه کاهش یابد»
+//           «اینترنت برگشته و درست هست هنوز هدر چشمک میزند — هر ۲ ثانیه چک کند»
+//           «تأکید میکنم تست اینترنت در تمام برنامه با تست قابلیت ضبط صوت انجام پذیرد»
+//         🔧 تغییرات:
+//         - فاصله بررسی: ۱۰s → ۲s
+//         - تایموت: ۳s → ۲s
+//         - endpoint: manifest.json → https://www.google.com/generate_204
+//           (تست سرورهای Google که Web Speech API از آن‌ها استفاده می‌کند
+//            = تست قابلیت ضبط صوت، نه فقط تست GitHub)
+//         - mode: no-cors (opaque response کافی است — فقط می‌خواهیم بدانیم
+//           آیا Google در دسترس است یا نه)
+//         - online event: دیگر isReachable=true فرض نمی‌کند — بگذار
+//           checkReachability تأیید کند (رفع باگ: هدر کوتاه به حالت اول
+//           برمی‌گشت و دوباره چشمک می‌زد)
+//         نتیجه: هر ۲ ثانیه قابلیت ضبط صوت تست می‌شود. اگر Google در
+//         دسترس باشد → هدر به حالت اول + ضبط صوت در دسترس. اگر نه →
+//         هدر چشمک + ضبط صوت مسدود.
+//   v188 - AUTO-UPDATE CHECK INTERVAL: 30 min → 2 min:
+//         کاربر درخواست کرد: «فاصله زمانی تست وجود نسخه جدید برنامه و
+//         استفاده از آن و رفرش اتومات برنامه را به ۲ دقیقه کاهش بده».
+//         🔧 تغییر: setInterval برای UPDATE_CACHE از ۳۰ دقیقه به ۲ دقیقه.
+//   v189 - LIGHTWEIGHT VERSION CHECK (version.txt — only ~50 bytes):
+//         کاربر درخواست کرد: «راهی برای چک ورژن در دسترس بدون دانلود کل
+//         فایل‌های برنامه پیدا کن تا مصرف اینترنت بالا نرود — مثل یک فایل
+//         پنجم که فقط ورژن برنامه در آن نوشته باشد.»
+//         🔧 راه‌حل:
+//         - فایل جدید version.txt اضافه شد (~50 bytes — فقط شامل APP_VERSION).
+//         - SW: updateAppShellInBackground اکنون اول version.txt را چک می‌کند.
+//           اگر نسخه یکسان بود → دانلود کامل HTML (700KB+) صرف‌نظر می‌شود.
+//           فقط اگر نسخه فرق داشت → HTML کامل دانلود می‌شود.
+//         - SW: stale-while-revalidate fetch handler هم اکنون از
+//           updateAppShellInBackground استفاده می‌کند (نه مقایسه متن کامل HTML).
+//         - SW: version.txt به APP_SHELL اضافه شد.
+//         صرفه‌جویی: هر ۲ دقیقه فقط 50 bytes دانلود می‌شود (به‌جای 700KB).
+//         وقتی نسخهٔ جدید موجود باشد، 700KB دانلود می‌شود + خودکار رفرش.
+//         ⚠️ هنگام انتشار نسخهٔ جدید: version.txt را هم به‌روزرسانی کنید.
+//   v190 - FIX: HEADER KEEPS BLINKING WHEN INTERNET RETURNS:
+//         علت باگ: SW درخواست checkReachability به Google را intercept می‌کرد
+//         و وقتی Google در دسترس نبود، یک Response 503 برمی‌گرداند (از catch).
+//         چون fetch خطا نمی‌داد، isReachable=true می‌شد — اما این Response
+//         از نوع 'basic' بود نه 'opaque'. قبلاً type را بررسی نمی‌کردیم.
+//         🔧 رفع:
+//         - _rc=1 به URL Google اضافه شد → SW کش را دور می‌زند و مستقیم
+//           به شبکه می‌رود. اگر Google در دسترس نباشد، SW یک 503 برمی‌گرداند.
+//         - بررسی res.type: فقط 'opaque' = موفق (Google واقعاً در دسترس است).
+//           غیر opaque (503 از SW) = ناموفق.
+//         - تایموت: ۲s → ۵s (VPN ها ممکن است کند باشند — ۲s خیلی کوتاه بود).
+//         - اگر اینترنت برگشت: render() هم صدا زده می‌شود تا UI به‌روز شود.
+//   v191 - FIX: HEADER BLINK WHEN INTERNET RETURNS (Google + fallback):
+//         کاربر گفت: «خراب هست همچنان چشمک میزند بعد از وصل مجدد اینترنت».
+//         علت: در ایران Google ممکن است مسدود باشد حتی وقتی اینترنت در دسترس
+//         است. قبلاً فقط Google چک می‌شد → اگر مسدود بود، هدر چشمک می‌زد
+//         حتی وقتی اینترنت بود.
+//         🔧 رفع: دو مرحله‌ای چک کن:
+//         ۱) Google (generate_204) — اگر موفق → isReachable=true (ضبط صوت هم کار می‌کند)
+//         ۲) اگر Google شکست خورد → fallback: version.txt از گیت‌هاب (هم‌مبدا)
+//            اگر موفق → isReachable=true (اینترنت هست، ضبط صوت ممکن است کار نکند
+//            ولی هدر چشمک نمی‌زند)
+//         ۳) اگر هر دو شکست خوردند → isReachable=false → هدر چشمک
+//         نتیجه: وقتی اینترنت برمی‌گردد (حتی اگر Google مسدود باشد)،
+//         هدر به حالت اول برمی‌گردد.
+//   v192 - SIMPLIFY: REMOVE GOOGLE CHECK — same-origin only:
+//         کاربر گفت: «خراب هست هنوز» — چک Google باعث مشکلات متعدد می‌شد:
+//         CORS، DNS cache، SW intercept، مسدودسازی منطقه‌ای (ایران).
+//         🔧 تغییر: Google چک کامل حذف شد. فقط چک هم‌مبدا (version.txt)
+//         باقی ماند — ساده، سریع، قابل‌اعتماد.
+//         اگر کاربر ضبط صوت بزند و Google در دسترس نباشد:
+//         recognition.onerror خطای 'network' → toast «اتصال اینترنت قطع شد»
+//         — این UX بهتر از چشمک بی‌وقفه هدر است.
+//   v196 - FIX CASE 4 + FIX AUTO-UPDATE (remove navigator.onLine completely):
+//         مشکل ۱ (حالت ۴): وقتی اینترنت قطع است و وصل می‌شود، هدر چشمک می‌زد.
+//         علت: navigator.onLine روی false گیر می‌کرد → checkReachability زود retour.
+//         رفع: navigator.onLine guard کامل حذف شد. فقط fetch تصمیم می‌گیرد.
+//         مشکل ۲ (آپدیت اتوماتیک): UPDATE_CACHE فقط وقتی navigator.onLine=true
+//         فرستاده می‌شد. اگر navigator.onLine گیر کرده بود، هیچ‌وقت فرستاده نمی‌شد.
+//         رفع: navigator.onLine check از UPDATE_CACHE interval حذف شد.
+//   v198 - PERSISTENCE: WAKELOCK + MEDIASESSION + RECORDING BACKGROUND + SW KEEPALIVE:
+//         کاربر درخواست کرد:
+//         «اگر روش‌های بیشتری میتوانی بکار ببری که برنامه در حافظه ماندگار
+//          و فعالیت داشته باشد و نوتیفیکیشن ها در پس زمینه هم کار کند
+//          یا اگر در حال ضبط از برنامه خارج شدیم به ضبط ادامه دهد»
+//         🔧 اضافه شد:
+//         ۱) WakeLock — هنگام ضبط، صفحه خاموش نمی‌شود (نavigator.wakeLock)
+//         ۲) MediaSession — اندروید برنامه را به‌عنوان media player نگه می‌دارد
+//         ۳) Recording keepalive — هر ۱۰ ثانیه به SW پیام KEEPALIVE + recording=true
+//         ۴) Auto-restart هنگام ضبط — اگر recognition متوقف شد، هر ۱۰ ثانیه دوباره شروع
+//         ۵) SW keepalive هنگام ضبط — SW خودش هم یادآورها را بررسی می‌کند
+//         ۶) WakeLock re-acquire — وقتی صفحه دوباره visible می‌شود
+//         نتیجه: هنگام ضبط، صفحه خاموش نمی‌شود، اندروید برنامه را نمی‌کشد،
+//         اعلان‌ها در پس‌زمینه کار می‌کنند، و اگر کاربر خارج شد و برگشت، ضبط ادامه دارد.
+//   v199 - FIX: NOTIFICATIONS CONFIGURED FROM THE BELL DIDN'T WORK IN BACKGROUND:
+//         کاربر گزارش کرد: «نوتیف های زنگوله بالا را که تنظیم میکنم عمل نمیکند»
+//         🔍 ریشه‌ها (با تست Playwright بازسازی و تأیید شد):
+//         ۰) ⚠️ ریشهٔ اصلی — در sw.js تابع getNotifThresholdsFromIDB تابع ناموجود
+//            openIDB() را صدا می‌زد (نام درست openDB() است) → ReferenceError
+//            در try/catch بلعیده می‌شد → همیشه [] → از v183 تا v198 سرویس‌ورکر
+//            هرگز هیچ اعلان پس‌زمینه‌ای نمی‌فرستاد!
+//         ۱) تنظیمات قدیمی هرگز به IndexedDB آینه نمی‌شدند — تابع idbGetNotifSettings
+//            هیچ‌وقت صدا زده نمی‌شد؛ پس SW (که فقط IDB را می‌خواند) تنظیمات نسخه‌های
+//            قبل از v183 را نمی‌دید و هیچ اعلان پس‌زمینه‌ای نمی‌فرستاد.
+//         ۲) Background Sync ('check-deadlines-on-reconnect') فقط در SW گوش داده
+//            می‌شد ولی صفحه هرگز reg.sync.register نمی‌کرد → هیچ مکانیزمی SW را
+//            بعد از بسته‌شدن صفحه بیدار نمی‌کرد.
+//         ۳) پنجرهٔ زمانی در صفحه (۶۰ دقیقه) کوچک‌تر از SW (۲۴ ساعت) بود → اگر
+//            کاربر دیر می‌آمد، اعلان از قلم می‌افتاد.
+//         🔧 اضافه/اصلاح شد:
+//         ۱) آینهٔ خودکار تنظیمات اعلان به IndexedDB هنگام شروع برنامه
+//         ۲) registerDeadlineSync() — ثبت Background Sync بعد از ذخیرهٔ تنظیمات،
+//            ذخیرهٔ تسک، بارگذاری و visibilitychange
+//         ۳) پنجرهٔ درصفحه به ۲۴ ساعت هماهنگ با SW widened شد
+//         ۴) pagehide → آخرین CHECK_DEADLINES قبل از انجماد صفحه
+//         ۵) ذخیرهٔ تسک → فوراً CHECK_DEADLINES + sync + زمان‌بندی تریگر
+//         ۶) SCHEDULE_TRIGGERS — اگر مرورگر Notification Triggers (TimestampTrigger)
+//            را پشتیبانی کند، اعلان‌ها دقیقاً در لحظهٔ آستانه زمان‌بندی می‌شوند
+//            (حتی با مرورگر بسته) — feature-detect شده، در غیر این صورت نادیده
+//         ۷) باگ ذخیرهٔ مقدار سفارشی نامعتبر — قبلاً به‌جای قطع کل ذخیره،
+//            فقط همان گزینه را رد می‌کرد و بقیه را ذخیره می‌کرد
+//         ۸) جلوگیری از اعلان تکراری وقتی تریگر زمان‌بندی‌شده قبلاً نمایش داده شده
+//
+//   v200 - FIX: NOTIFICATIONS NEVER APPEARED ON ANDROID — EVEN INSIDE THE APP:
+//         کاربر گزارش کرد: «هنوز نوتیف ها اعلام نمیشود و زنگ نمیزند حتی داخل برنامه که هستم»
+//         🔍 ریشهٔ اصلی (با تست Playwright تأیید شد):
+//         ۰) ⚠️ ریشهٔ اصلی — تابع sendNotification صفحه از new Notification() استفاده
+//            می‌کرد. در Chrome اندروید این سازنده مجاز نیست (Illegal constructor —
+//            فقط ServiceWorkerRegistration.showNotification کار می‌کند). خطا بی‌صدا
+//            catch می‌شد و checkNotifications بدون توجه به نتیجه، کلید اعلان را در
+//            sentNotifications + notif_log ثبت می‌کرد → اعلان «فرستاده‌شده» علامت
+//            می‌خورد بدون اینکه هیچ اعلانی نمایش داده شود — و هرگز هم تکرار نمی‌شد!
+//         ۱) کلیدهای notif_log (شکل id_threshold) به سررسید وابسته نیستند — وقتی
+//            کاربر سررسید تسک را ویرایش می‌کرد یا تسک انجام‌شده را دوباره باز می‌کرد،
+//            اعلان جدید هرگز نمی‌آمد.
+//         ۲) تشخیص تکراری تریگر با getNotifications({tag:'trig-'+key}) هرگز match
+//            نمی‌شد چون تگ واقعی تریگرها پسوند ts دارد ('trig-...-ts') — هم در صفحه
+//            هم در SW.
+//         🔧 اضافه/اصلاح شد:
+//         ۱) sendNotification → async و برگشت true/false: اول SW showNotification
+//            (اندروید + دسکتاپ، حتی با صفحهٔ باز) و فقط در نبود SW سازندهٔ صفحه؛
+//            کلید فقط بعد از نمایش موفق ثبت می‌شود — نمایش ناموفق = تلاش مجدد
+//         ۲) clearNotifLogForItem — پاک‌کردن تاریخچهٔ اعلان‌های یک تسک هنگام
+//            ویرایش سررسید یا بازکردن دوبارهٔ تسک انجام‌شده (حافظه + IndexedDB)
+//         ۳) prefix-match تگ‌های تریگر در صفحه و SW (یک fetch به‌جای هر آیتم)
+//         ۴) خطاهای گذرای تشخیص صوت (no-speech/network/aborted/audio-capture)
+//            هنگام ضبط kick-out نمی‌کنند — onend دوباره شروع می‌کند → «ادامهٔ
+//            ضبط پس از خروج» واقعاً کار می‌کند (kick-out فقط برای خطای مجوز)
+//         ۵) هر ۲ دقیقه CHECK_DEADLINES + SCHEDULE_TRIGGERS به SW (ماندگاری حافظه)
+//
+//   v201 - FIX: NOTIFICATIONS STILL NOT RINGING EVEN INSIDE THE APP (foreground):
+//         کاربر دوباره گزارش داد: «هنوز نوتیف ها اعلام نمیشود و زنگ نمیزند حتی داخل برنامه که هستم»
+//         🔍 تحلیل جدید — حتی بعد از v200، در حالت foreground هم زنجیره قطع است:
+//         ۰) ⚠️ AudioContext معلق (suspended) — مرورگرهای جدید AudioContext را فقط پس از
+//            تعامل کاربر resume می‌کنند. نمونهٔ صدای منوی زنگوله در gesture کار می‌کرد، اما
+//            checkNotifications خودکار (interval 60s) خارج از gesture اجرا می‌شود → ctx.resume()
+//            بی‌صدا رد می‌شود → هیچ صدایی پخش نمی‌شد (ریشهٔ «زنگ نمی‌زند»).
+//         ۱) ⚠️ در Chrome اندروید، reg.showNotification از page context گاهی بی‌صدا fail
+//            می‌کند (SW تازه register شده و هنوز active نشده، یا صفحه controlled نیست).
+//            هیچ fallback بصری در صفحه وجود نداشت → کاربر هیچی نمی‌دید («اعلام نمیشود»).
+//         ۲) checkNotifications در صورت Notification.permission !== 'granted' زود برمی‌گشت
+//            و حتی بنر درون‌صفحه‌ای هم نمایش نمی‌داد.
+//         🔧 تغییرات v201:
+//         ۱) بنر درون‌صفحه‌ای اعلان (#inpageNotifBanner) — یک بنر قرمز بزرگ که از بالای
+//            صفحه slide می‌شود، شامل عنوان + متن + دکمهٔ «انجام شد» / «بستن». این بنر
+//            مستقل از Notification API/SW است و همیشه (حتی بدون permission) کار می‌کند.
+//            مهم‌ترین remediation: کاربر حداقل چیزی می‌بیند و می‌شنود.
+//         ۲) warmAudioContextOnUserGesture() — روی اولین touch/click/keydown صفحه،
+//            AudioContext را resume می‌کند. از آن به بعد، ctx در حالت running می‌ماند
+//            و interval-triggered sound کار می‌کند.
+//         ۳) دکمهٔ «🔔 تست اعلان الان» در منوی زنگوله — کاربر می‌تواند زنجیره را
+//            فوراً تست کند تا مطمئن شود صدا + بنر + notification همگی کار می‌کنند.
+//         ۴) sendNotification حالا هم system notif می‌فرستد و هم بنر درون‌صفحه‌ای.
+//         ۵) checkNotifications دیگر در صورت permission==='default' زود برنمی‌گردد —
+//            بنر درون‌صفحه‌ای هم بدون permission نمایش داده می‌شود.
+//         ۶) toggleNotifications بعد از grant، AudioContext را هم resume می‌کند.
+//         ۷) interval کوتاه‌تر (۱۰s) مخصوص بررسی درون‌صفحه‌ای، تا لاگ کمتر از ۶۰s نشود.
+//
+//   v202 - FIX: RECORDING STOPS WHEN LEAVING THE APP PAGE TEMPORARILY:
+//         کاربر گزارش داد: «ضبط صدا درهنگام ترک موقت صفحه برنامه یا رفتن به یک برنامه
+//         دیگر موبایل قطع میشود».
+//         🔍 ریشهٔ اصلی (در Chrome اندروید):
+//         ۰) وقتی صفحه hidden می‌شود (کاربر به برنامهٔ دیگر می‌رود یا صفحه را
+//            minimize می‌کند)، مرورگر SpeechRecognition را متوقف می‌کند.
+//         ۱) setTimeoutهای restart در onend یا اصلاً اجرا نمی‌شوند یا به‌شدت
+//            throttle می‌شوند (۱ اجرا در ثانیه در background).
+//         ۲) MediaSession قبلاً فعال بود اما بدون یک audio stream واقعی، اندروید
+//            آن را صرفاً metadata می‌بیند و برنامه را pause می‌کند.
+//         🔧 تغییرات v202:
+//         ۱) silent audio loop — یک AudioContext با اسیلاتور sine در 1Hz و gain=0
+//            که به‌طور مداوم در حال play است. این به Android می‌گوید برنامه در حال
+//            پخش media است و نباید آن را pause کند. این همان ترفندی است که برنامه‌های
+//            موسیقی استفاده می‌کنند.
+//         ۲) handleRecordingVisibilityChange — وقتی کاربر به برنامه برمی‌گردد،
+//            recognition را فوراً restart کن. این مهم‌ترین remediation است چون مشکل
+//            اصلی این بود که «ضبط قطع می‌شد و دیگر برنمی‌گشت». اکنون وقتی کاربر
+//            برمی‌گردد، ضبط فوراً از سر گرفته می‌شود و یک toast اطلاع می‌دهد.
+//         ۳) pagehide handler اضافی — پیام KEEPALIVE با recording=true به SW
+//            می‌فرستد تا SW زودتر بیدار شود.
+//         ۴) جلوگیری از restart بیش‌ازحد (debounce ۱ ثانیه).
+//         توجه: SpeechRecognition در حالت fully-background (صفحه کاملاً بسته)
+//         در Chrome اندروید هنوز هم کار نمی‌کند — این یک محدودیت سخت مرورگر است.
+//         اما با این تغییرات، وقتی کاربر به برنامه برمی‌گردد، ضبط فوراً از سر
+//         گرفته می‌شود و متن قبلی حفظ می‌شود. silent audio loop همچنین مدت زمان
+//         ماندن برنامه در حافظه را افزایش می‌دهد.
+//
+//   v203 - KEEP APP FULLY ACTIVE DURING TEMPORARY LEAVE (recording + notifications):
+//         کاربر درخواست کرد: «برنامه در ترک موقت در گوشی همچنان کاملا فعال باشد /
+//         ضبط صدا در ترک موقت برنامه کار کند و نوتیف ها هم همینطور».
+//         🔧 تغییرات v203:
+//         ۱) Worker restart loop (startRecordingWorker/stopRecordingWorker) —
+//            یک Web Worker که هر ۱ ثانیه tick می‌زند و به main thread پیام
+//            می‌فرستد. تایمرهای Worker کمتر throttle می‌شوند و پیام‌های
+//            postMessage در زمان واقعی تحویل داده می‌شوند. هر tick → restart
+//            recognition اگر در حال ضبط باشیم. این الگو ترفند معروف
+//            «worker-based timer» است.
+//         ۲) MediaRecorder background capture (startBackgroundAudioCapture /
+//            stopBackgroundAudioCapture / showBackgroundAudioNotice) — وقتی
+//            صفحه hidden شد و در حال ضبط بودیم، MediaRecorder (که در پس‌زمینه
+//            کار می‌کند) صدا را ثبت می‌کند. وقتی کاربر برمی‌گردد: مدت صدا +
+//            دکمهٔ پخش نمایش داده می‌شود («۸ ثانیه صدا در حین ترک ثبت شد ▶»).
+//            این بهترین راه‌حل با Web APIهاست — صدای حین ترک گم نمی‌شود.
+//         ۳) pagehide handler قوی‌تر — به‌جای یک KEEPALIVE، حالا یک مجموعهٔ
+//            کامل پیام‌های بیدارباش به SW: KEEPALIVE(recording) + CHECK_DEADLINES
+//            + SCHEDULE_TRIGGERS + registerDeadlineSync. یعنی در لحظهٔ ترک،
+//            SW همه‌چیز را بررسی و زمان‌بندی می‌کند تا در پس‌زمینه اعلان‌ها
+//            کار کنند.
+//         ۴) MediaRecorder در stopRecording هم پاک‌سازی می‌شود.
+//   v204 - BUGFIX RELEASE — FULL PROFESSIONAL AUDIT (test + crash fix):
+//         کاربر درخواست کرد: «دوباره در یک رویکرد به عنوان یک برنامه نویس حرفه ای
+//         کل برنامه را تست و رفع کرش و باگ کن و فایل BEHAVIOR-SPEC را بازنگری کن».
+//         🔍 ممیزی کامل انجام شد:
+//         - تحلیل استاتیک: ۳۴۰ تابع، ۴۲۵ getElementById، ۷۴ handler HTML —
+//           بدون تعریف تکراری، بدون ID مفقود
+//         - اجرای هر ۴ سوئیت تست قبلی (۳۹/۳۹ پاس)
+//         - ساخت سوئیت E2E جدید (test_e2e_v204.mjs — ۱۴ سناریوی واقعی کلیک)
+//         🔧 سه باگ کرش واقعی یافت و رفع شد:
+//         ۱) دکمه‌های «💾 ذخیره» و «📤 ارسال» در هدر صفحهٔ نتایج گزارش اشخاص
+//            توابع ناموجود saveContactReport()/shareContactReport() را صدا
+//            می‌زدند → ReferenceError هنگام کلیک. اکنون
+//            saveContactReportPrompt()/shareContactReportPrompt() (مودال فرمت).
+//         ۲) closeCalendar() بدون شرط navBack() می‌زد — اگر تقویم باز نبود
+//            (دابل‌تپ روی «بستن»، بستن دوباره)، history.back() به خارج از
+//            برنامه می‌رفت و کل صفحه unload می‌شد. اکنون idempotent است:
+//            فقط وقتی calendarOverlay فعال است بسته می‌شود.
+//         ۳) 💥 مهم‌ترین: handler popstate (دکمهٔ Back موبایل) از prevView
+//            قبل از تعریف const استفاده می‌کرد → خطای TDZ
+//            «Cannot access 'prevView' before initialization» در هر back که
+//            به مسیر Normal navigation می‌رسید — handler می‌مرد و fullRender
+//            اجرا نمی‌شد (UI کهنه می‌ماند: تسک بسته‌شده باز می‌ماند و برعکس).
+//            رفع: انتقال تعریف prevView/prevGroup به بالای بلوک.
+//         ۴) ترتیب نمایش در بازگشت از ترک موقت (v203): notice «🎙️ X ثانیه
+//            صدا در حین ترک ثبت شد ▶ پخش» اول می‌آمد و بلافاصله toast
+//            «ضبط از سر گرفته شد ▶» آن را روی‌نویسی می‌کرد — کاربر notice
+//            را هرگز نمی‌دید. رفع: اول restart، بعد notice (toast نهایی).
+//         📝 BEHAVIOR-SPEC.md کامل بازنویسی شد (نسخهٔ ۲ — قانون اساسی پروژه).
+//   v205 - FRESH AUDIT — RE-RUN OF USER'S PREVIOUS REQUEST (verify best fixes):
+//         کاربر: «خواسته قبلی خودم رو دوباره انجام بده ببینم بهترین اصلاحات
+//         را انجام دادی». کل برنامه از صفر دوباره ممیزی شد (پروتکل ۰.۲ اسپک):
+//         - چک ۳ نقطهٔ نسخه ✅ | سینتکس‌چک + ممیزی استاتیک ✅ (همهٔ فلگ‌ها
+//           مثبت کاذب تاییدشده: installApp/toggleNotifications = async fn)
+//         - هر ۵ سوئیت قبلی دوباره اجرا شد: ۵۳/۵۳ سبز
+//         - سوئیت ممیزی تازهٔ scripts/test_audit_v205.mjs (۱۰ تست F1-F10)
+//           برای نواحی که قبلاً پوشش نداشت: ورود بک‌آپ v7 با مهاجرت +
+//           یادداشت، پاک شدن notif_log با ویرایش سررسید (BA-043)، تعلیق
+//           تسک، تکرار با endDate محدود، باتری پارسر اعداد گفتاری (۵ عبارت
+//           🚨)، منوی تلفن (tel/sms/whatsapp) + بستن idempotent، تغییر نام
+//           گروه، پیام UPDATE_CACHE به SW + fetch version.txt، بنر overdue
+//           بنفش، صفر pageerror — ۱۰/۱۰ سبز.
+//         - 🔍 هر ۴ فیکس v204 بازبینی ساختاری شد و تأیید شد که بهترین
+//           فیکس بودند (correct + minimal + idempotent + covered by tests).
+//         - 🔧 تنها اصلاح لازم در کد: نویسهٔ چینی «函数» در کامنت sw.js
+//           (بخش ۳) → «توابع». هیچ تغییر رفتاری — به همین دلیل نسخه فقط
+//           برای ثبت ممیزی bump شد.
+//         - 📌 ثبت در اسپک: refreshFloatingContactBtn تابع no-op شناخته‌شده
+//           است (~۱۹ فراخواننده؛ دکمهٔ floatingContactBtn هرگز ساخته
+//           نمی‌شود؛ null-guard دارد و بی‌خطر است — حذف آن بازنویسی گسترده
+//           است و طبق قانون «رفع کمینه» ممنوع).
+//         نتیجه: ۶۳/۶۳ تست سبز، صفر pageerror.
+//   v206 - CRITICAL BUGFIX — WHITE SPACE ABOVE GROUP HEADER + APP FREEZE:
+//         کاربر: «در بعض مواقع وارد برنامه میشم ... هدر گروهی که داخلش بودم
+//         به اندازه فضای همه کارها و کارهای فوری بالایش فضای سفید است و
+//         برنامه گاها قفل است و وقتی رفرش میکنم دوباره درست میشود».
+//         ریشه‌یابی کامل (بازتولید با Playwright):
+//         باگ ۱ (کرش/قفل — اصلی): closeModalByType('taskForm') هیچ‌وقت
+//            unlockBodyScroll() را صدا نمی‌زد. startAdding فرم را با
+//            lockBodyScroll() باز می‌کند (body → position:fixed;
+//            overflow:hidden; top:-scrollY). مسیرهای انصراف/ذخیره صریحاً
+//            unlock می‌کنند، ولی مسیر دکمهٔ Back موبایل از popstate handler
+//            می‌گذرد که فقط closeModalByType را صدا می‌زند — نتیجه: body
+//            برای همیشه قفل می‌ماند (اسکرول نمی‌شود) و چون top:-scrollY
+//            است، محتوای بالای صفحه (تقریباً هم‌اندازهٔ نوارهای «همه
+//            کارها»+«کارهای فوری» که کاربر از آنجا آمده بود) به‌صورت فضای
+//            سفید بزرگ بالای هدر گروه دیده می‌شود. رفرش state در-حافظه را
+//            می‌شوید و «درست» می‌شود — دقیقاً همان گزارش کاربر.
+//            رفع: unlockBodyScroll() داخل closeModalByType برای type
+//            'taskForm' فراخوانی شد (ایزوله با guard داخلی — فراخوانی
+//            اضافی از cancelModal/saveItem بی‌اثر است).
+//         باگ ۲ (چیدمان): allDiv (نوار «همه کارها») کلاس group-all نداشت
+//            ولی syncHeaderHeight با سلکتور '.group-item-fixed.group-all'
+//            دنبالش می‌گشت → هیچ‌وقت پیدا نمی‌شد → بعد از resize/
+//            orientationchange، top نوار «کارهای فوری» اشتباه (h+6 به‌جای
+//            h+allHeight+6) محاسبه می‌شد و دو نوار روی هم می‌افتادند.
+//            رفع: کلاس group-all به allDiv اضافه شد.
+//         تست: سوئیت جدید test_bodyscroll_v206.mjs (۱۱ تست L1-L11 —
+//           بازتولید دقیق سناریوی کاربر: ورود به گروه، باز/بستن فرم با
+//           Back موبایل ×۳، اسکرول، فاصلهٔ هدر، syncHeaderHeight،
+//           صفر pageerror) — ۱۱/۱۱ سبز. رگرسیون E2E: ۱۴/۱۴ سبز.
+//   v207 - DEEP AUDIT — STALE GROUP VIEW FIX + BODY-LOCK SAFETY NET:
+//         کاربر: «یک بار دیگر به عنوان متخصص بی‌نظیر اشکالات موجود یا
+//         احتمالی را بررسی، پیدا و رفع کن که دیگر هیچ مشکلی پیدا نکنم».
+//         ممیزی حداکثری (بعد از تکمیل v206):
+//         باگ ۳ (ناوبری — stale view): بعد از حذف گروه (یا ورود بک‌آپ REPLACE
+//            که گروه فعلی را ندارد)، Back موبایل کاربر را به نمای تسک‌های
+//            گروهِ حذف‌شده می‌برد (popstate حالت قدیمی را بازیابی می‌کند) →
+//            هدر fallback «همه کارها» با لیست خالی/گیج‌کننده.
+//            رفع: تابع isStaleGroupId + validateCurrentViewAfterDataChange —
+//            در popstate handler (هر دو مسیر) و بعد از merge/replace بک‌آپ
+//            و بعد از cancelGroupDelete اعتبارسنجی و هدایت به لیست گروه‌ها.
+//         باگ ۴ (دفاعی — safety net): هر خطای پیش‌بینی‌نشده در میانهٔ saveItem
+//            می‌توانست body را قفل بگذارد (مثل باگ v206 اما از مسیر exception).
+//            رفع: safety net در interval ۵۰۰ms — «فرم بسته + body fixed» همیشه
+//            یعنی نشتی قفل → خودکار unlock (دیگر هیچ قفل دائمی ممکن نیست).
+//         تست: سوئیت جدید test_staleview_v207.mjs (۸ تست S1-S8 — حذف گروه +
+//           Back، بک‌آپ REPLACE، safety net، صفر pageerror) — ۸/۸ سبز.
+//         رگرسیون کامل: هر ۸ سوئیت — ۸۲/۸۲ سبز.
+//   v208 - DATA INTEGRITY — BLOCK DELETING A CONTACT REFERENCED BY TASKS:
+//         کاربر: «اگر یک شخص برایش تسک تعریف شده و یک یا تعدادی تسک که
+//         نام شخص در جزییات آن هست الان اجازه پاک کردن آن شخص داده نشود».
+//         (پاسخ صادقانه: این مورد در ممیزی‌های v205-v207 پوشش داده نشده
+//         بود — حفرهٔ یکپارچگی داده بود.)
+//         مشکل: deleteContact هیچ گاردی نداشت — شخصِ دارای ارجاع در
+//         تسک‌ها آزادانه حذف می‌شد؛ contactId روی تسک‌ها یتیم می‌شد و در
+//         جزئیات تسک «بدون شخص» ظاهر می‌شد (از دست رفتن پیوند داده).
+//         رفع: getContactTaskReferences(id) — یافتن همهٔ ارجاع‌ها:
+//           (الف) مستقیم: task.contactId === id — در همهٔ حالت‌ها
+//                 (انجام‌شده/لغوشده/معلق/والد تکرار/فرزند تکرار)
+//           (ب) غیرمستقیم: نام شخص (نرمال‌شده: ي→ی، ك→ک، أإآ→ا، حذف
+//                 اعراب/نیم‌فاصله/نویسه‌های کنترلی، فاصله‌های یک‌شده،
+//                 لاتین کوچک) در متن تسک — نامِ < ۲ نویسه بررسی
+//                 نمی‌شود (جلوگیری از تطابق نویزی)
+//         اگر هر ارجاعی بود → حذف مسدود (بدون باز شدن confirm) + toast
+//         با تعداد دقیق هر نوع ارجاع و راه رفع: «ابتدا شخص را از
+//         تسک‌ها بردارید یا تسک‌ها را حذف کنید». فقط با صفر ارجاع،
+//         confirm حذف نمایش داده می‌شود. یکپارچگی پس از حذف حفظ است:
+//         با صفر ارجاع هیچ تسکی contactId یتیم پیدا نمی‌کند.
+//         تست: سوئیت جدید test_contact_guard_v208.mjs (۱۰ تست C1-C10) —
+//           حذف آزادِ بدون ارجاع، مسدودسازی contactId، مسدودسازی نام در
+//           متن، نرمال‌سازی ي/ک عربی، پیام ترکیبی، تسک انجام‌شده هم
+//           مانع است، رفع موانع → حذف آزاد، صفر pageerror.
+//   v209 - NEW FEATURES: HAMBURGER MENU + FULL ACCOUNTING MODULE:
+//         درخواست کاربر (سه خواسته):
+//         ۱) منوی همبرگری ☰ کنار هدر — دکمه‌های 📤 بک‌آپ، 📥 بازیابی و
+//            🔔 زنگوله به داخل آن منتقل شدند تا هدر خلوت شود. دکمه‌های
+//            قبلی در DOM می‌مانند (display:none) تا ارجاع‌های JS سالم باشند.
+//            ناوبری: الگوی تقویم (navPush مودال + trackModalOpen + navBack
+//            + guard idempotent) — Back موبایل منو را می‌بندد.
+//         ۲) کلید 💼 حسابداری در هدر → بخش تمام‌صفحه.
+//         ۳) مکانیزم حسابداری بر پایهٔ معادلهٔ اصلی: دارایی = بدهی + سرمایه.
+//            ساختار: سند → سه باکس ثابت (دارایی/بدهی/سرمایه — فیکس زیر
+//            topbar مثل نوارهای «همه کارها»/«کارهای فوری»، تیترها و علامت‌های
+//            = و + خیلی کوچک) ← گروه ← زیرگروه ← رکورد {متن، تاریخ ایجاد
+//            شمسی، شخص از CRM، مبلغ ریال، بدهکار/بستانکار، انصراف/ذخیره/حذف}.
+//            زیر سه باکس: ردیف سناد (چیپ‌ها با ✏️/🗑) + «+ افزودن سند
+//            حسابداری جدید +». کلیک روی هر باکس → گروه‌های آن + افزودن؛
+//            کلیک گروه → زیرگروه‌ها + افزودن؛ کلیک زیرگروه → رکوردها +
+//            افزودن؛ کلیک رکورد → صفحهٔ جزئیات (همان فرم = ویرایش آزاد).
+//            جمع هر باکس از رکوردهای زیرمجموعه‌اش (خالص: دارایی Σ(بدهکار−
+//            بستانکار)؛ بدهی/سرمایه Σ(بستانکار−بدهکار)) زیر تیتر هر باکس
+//            + خط معادلهٔ ریز «۱۰۰ = ۵۰ + ۵۰ ریال». برقراری معادله → هر سه
+//            باکس سبز؛ وگرنه هر سه قرمز؛ بدون رکورد → خنثی. حذف گروه/زیرگروه
+//            دارای فرزند مسدود (هم‌خوان فلسفهٔ یکپارچگی v208).
+//            - توسعهٔ گارد v208: حذف شخصِ دارای رکورد حسابداری متصل
+//              (contactId یا نام در شرح) هم مسدود شد — پیام شمارش هر دو
+//              نوع ارجاع (تسک + حسابداری) را می‌دهد.
+//            - بک‌آپ: فیلد accounting به خروجی اضافه شد؛ ورود با مهاجرت
+//              (migrateAccounting) در حالت merge (فقط سناد جدید) و replace
+//              (جایگزینی کامل حتی اگر بک‌آپ قدیمی فیلد نداشت).
+//            - داده در localStorage کلید accounting_db_v1.
+//            - 🔧 فیکس چیدمان (بعد از visual check): overlay حسابداری طبق
+//              BA-001 از زیر هدر اصلی شروع می‌شود (openAccounting top هدر را
+//              می‌گذارد + syncHeaderHeight آن را مدیریت می‌کند — وگرنه topbar
+//              حسابداری زیر هدر main پنهان می‌شد)؛ کارت منوی همبرگری هم با
+//              padding داینامیک (ارتفاع هدر + ۶px) باز می‌شود.
+//         تست: سوئیت جدید test_accounting_v209.mjs (سناریوی دقیق کاربر:
+//           منو، سناریوی ۱۰۰=۵۰+۵۰ قرمز→سبز، ویرایش/حذف رکورد، سناد،
+//           گارد شخص، Back موبایل، صفر pageerror).
+const APP_VERSION = 'v209-2026-11-10-hamburger-accounting';
 console.log('[Page] APP_VERSION =', APP_VERSION);
+// 🔧 v193: نمایش نسخه در credit footer
+(function() {
+    var el = document.getElementById('creditVersion');
+    if (el) el.textContent = APP_VERSION;
+})();
 
 // ════════════════════════════════════════════════════════════════════
 // 🚨 بخش ۴: تبدیل تاریخ شمسی (جلالی) — حساس، دست نزنید
@@ -5706,6 +6770,36 @@ async function idbGetAllNotifLog() {
             req.onerror = () => reject(req.error);
         });
     } catch(e) { return []; }
+}
+
+// 🔧 v183: ذخیرهٔ تنظیمات اعلان در IndexedDB (STORE_BACKUP با کلید 'notif_settings')
+// تا سرویس‌ورکر (SW) بتواند تنظیمات کاربر را بخواند و فقط همان زمان‌هایی که
+// کاربر انتخاب کرده را در پس‌زمینه اعلان بفرستد — نه hardcoded 3h/15m/due.
+// قبلاً SW آستانه‌های ثابت ۳ ساعت و ۱۵ دقیقه داشت که بدون تنظیم کاربر زنگ می‌زد.
+async function idbPutNotifSettings(settings) {
+    if (!idbAvailable()) return;
+    try {
+        const db = await openIDB();
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction([STORE_BACKUP], 'readwrite');
+            tx.objectStore(STORE_BACKUP).put(settings, 'notif_settings');
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error);
+        });
+    } catch(e) { console.warn('IDB put notif settings failed', e); }
+}
+
+async function idbGetNotifSettings() {
+    if (!idbAvailable()) return null;
+    try {
+        const db = await openIDB();
+        return await new Promise((resolve, reject) => {
+            const tx = db.transaction([STORE_BACKUP], 'readonly');
+            const req = tx.objectStore(STORE_BACKUP).get('notif_settings');
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => reject(req.error);
+        });
+    } catch(e) { return null; }
 }
 
 function getDB() {
@@ -7364,6 +8458,30 @@ function initRecognition() {
 
     recognition.onerror = (event) => {
         console.error('Recognition error:', event.error, 'protocol:', location.protocol);
+        // 🔧 v200: خطاهای گذرا هنگام ضبط → ضبط را نمی‌رانیم؛ onend دوباره شروع می‌کند.
+        // در پس‌زمینه Chrome ضبط را با no-speech/aborted/network قطع می‌کند — اگر
+        // kick-out می‌کردیم «ادامهٔ ضبط پس از خروج» هرگز کار نمی‌کرد.
+        // kick-out فقط برای خطاهای فجیع (رد مجوز) انجام می‌شود.
+        var _fatal = (event.error === 'not-allowed' || event.error === 'service-not-allowed');
+        var _transient = ['no-speech', 'network', 'aborted', 'audio-capture'].indexOf(event.error) !== -1;
+        if (isRecording && _transient && !_fatal) {
+            // متن جلسهٔ فعلی حفظ شود
+            if (currentSessionText.trim()) {
+                allFinalText = (allFinalText + ' ' + currentSessionText).trim().replace(/\s+/g, ' ');
+                currentSessionText = '';
+            }
+            // اطلاع‌رسانی با محدودیت زمانی — نه اسپم در هر تلاش مجدد
+            if (event.error === 'network' || event.error === 'audio-capture') {
+                var _now = Date.now();
+                if (_now - (window._lastSpeechErrToast || 0) > 15000) {
+                    window._lastSpeechErrToast = _now;
+                    showToast(event.error === 'network'
+                        ? 'ارتباط سرور صوت قطع شد — تلاش مجدد خودکار...'
+                        : 'میکروفون در دسترس نیست — تلاش مجدد خودکار...');
+                }
+            }
+            return; // onend → restart خودکار
+        }
         const errMsg = getSpeechErrorMessage(event.error);
         if (errMsg) showToast(errMsg);
         if (isRecording) {
@@ -7414,15 +8532,27 @@ function initRecognition() {
 
         if (isRecording) {
             // Auto-restart with 300ms delay (same as working backup)
+            // 🔧 v203: اگر start با InvalidStateError شکست بخورد، یعنی recognition
+            // در واقع همین الان در حال اجراست (مثلاً Worker tick آن را شروع کرده).
+            // در این صورت ضبط را نباید کشت — فقط رد شو. این باگ باعث می‌شد
+            // در ترک موقت، race بین Worker tick و auto-restart، ضبط را kill کند.
             setTimeout(() => {
                 if (!isRecording) return;
                 try { recognition.start(); }
                 catch(e) {
+                    // 🔧 v203: already-running = خطا نیست، ضبط سالم است
+                    if (e && (e.name === 'InvalidStateError' || /already\s*started/i.test(e.message || ''))) {
+                        return; // recognition در حال اجراست — هیچ کاری نکن
+                    }
                     console.warn('Restart failed, retrying in 1s...', e);
                     setTimeout(() => {
                         if (!isRecording) return;
                         try { recognition.start(); }
                         catch(e2) {
+                            // 🔧 v203: همان‌جا هم — already-running یعنی سالم
+                            if (e2 && (e2.name === 'InvalidStateError' || /already\s*started/i.test(e2.message || ''))) {
+                                return;
+                            }
                             console.error('Restart failed twice', e2);
                             isRecording = false;
                             document.getElementById('addBtn')?.classList.remove('recording');
@@ -7443,6 +8573,349 @@ function initRecognition() {
     };
 
     return true;
+}
+
+// 🔧 v198: ابزارهای ماندگاری در پس‌زمینه
+// این توابع باعث می‌شوند که:
+//   ۱) صفحه هنگام ضبط خاموش نشود (WakeLock)
+//   ۲) اندروید برنامه را به‌عنوان media player نگه دارد (MediaSession)
+//   ۳) SW در حافظه بماند و اعلان‌ها کار کنند (keepalive)
+//   ۴) ضبط صوت پس از خروج از برنامه ادامه یابد
+
+// ─── WakeLock ───
+// از API پیشرفته wakeLock استفاده می‌کند — صفحه را روشن نگه می‌دارد
+// تا تشخیص صوت متوقف نشود.
+let _wakeLock = null;
+async function acquireRecordingWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    try {
+        _wakeLock = await navigator.wakeLock.request('screen');
+        console.log('[WakeLock] Acquired — screen stays on during recording');
+    } catch(e) {
+        console.warn('[WakeLock] Not available:', e.message);
+    }
+}
+function releaseRecordingWakeLock() {
+    if (_wakeLock) {
+        try { _wakeLock.release(); _wakeLock = null; console.log('[WakeLock] Released'); } catch(e) {}
+    }
+}
+// وقتی صفحه دوباره visible می‌شود، wakeLock را دوباره بگیر
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && isRecording && !_wakeLock) {
+        acquireRecordingWakeLock();
+    }
+    // 🔧 v202: همیشه handler ضبط را صدا بزن (چه hidden چه visible)
+    // اگر hidden شد — فقط log می‌زند؛ اگر visible شد و در حال ضبط بود،
+    // recognition را فوراً restart می‌کند.
+    try { handleRecordingVisibilityChange(); } catch(e) {}
+});
+// 🔧 v202: هنگام pagehide هم تلاش کن یک restart نهایی بزن تا وقتی کاربر
+// برمی‌گردد، ضبط زودتر به‌خاطر بیاید. این listener در init هم ثبت می‌شود
+// اما اینجا هم اضافه می‌کنیم تا اطمینان حاصل شود حتی اگر init هنوز اجرا
+// نشده باشد (defensive).
+// 🔧 v203: هنگام pagehide، یک مجموعه کامل پیام‌های بیدارباش به SW بفرست:
+//   ۱) KEEPALIVE با recording=true → SW را زنده نگه می‌دارد و بررسی سررسید
+//      می‌کند
+//   ۲) CHECK_DEADLINES → بررسی فوری اعلان‌ها در لحظهٔ ترک (مهم‌ترین لحظه —
+//      کاربر ممکن است دیر برگردد)
+//   ۳) SCHEDULE_TRIGGERS → تریگرهای دقیق سررسید (در صورت پشتیبانی مرورگر)
+//   ۴) registerDeadlineSync → پس از بازگشت اینترنت، SW دوباره بیدار می‌شود
+document.addEventListener('pagehide', function() {
+    try {
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+            var _c = navigator.serviceWorker.controller;
+            _c.postMessage({ type: 'KEEPALIVE', ts: Date.now(), recording: !!isRecording });
+            _c.postMessage({ type: 'CHECK_DEADLINES' });
+            _c.postMessage({ type: 'SCHEDULE_TRIGGERS' });
+        }
+        try { registerDeadlineSync(); } catch(e) {}
+    } catch(e) {}
+});
+
+// ─── MediaSession ───
+// اندروید برنامه‌های دارای MediaSession فعال را به‌عنوان media player
+// می‌شناسد و آن‌ها را از بین نمی‌برد. در نوار اعلان هم آیکون ضبط نشان می‌دهد.
+// 🔧 v201: playbackState فقط یکی از مقادیر 'none' | 'paused' | 'playing' را
+// می‌پذیرد — 'recording' معتبر نیست و مرورگر بی‌صدا رد می‌کرد. از 'playing'
+// استفاده می‌کنیم تا Android آن را به‌عنوان یک media player فعال ببیند.
+function setRecordingMediaSession() {
+    if (!('mediaSession' in navigator)) return;
+    try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: 'در حال ضبط صوت',
+            artist: 'یادآور صوتی',
+            album: 'ضبط صوت فعال'
+        });
+        navigator.mediaSession.playbackState = 'playing';
+        console.log('[MediaSession] Recording state set (playbackState=playing)');
+    } catch(e) {
+        console.warn('[MediaSession] Not available:', e.message);
+    }
+}
+function clearRecordingMediaSession() {
+    if (!('mediaSession' in navigator)) return;
+    try {
+        navigator.mediaSession.metadata = null;
+        navigator.mediaSession.playbackState = 'none';
+        console.log('[MediaSession] Recording state cleared');
+    } catch(e) {}
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v202: نگه‌داشتن ضبط در پس‌زمینه — silent audio loop
+// ════════════════════════════════════════════════════════════════════
+// ریشهٔ «ضبط هنگام ترک موقت قطع می‌شود» در Chrome اندروید:
+// وقتی صفحه hidden می‌شود، مرورگر SpeechRecognition را متوقف می‌کند و
+// setTimeoutهای restart را throttle می‌کند (۱ اجرا در ثانیه در حالت
+// background). auto-restart در onend یا اصلاً اجرا نمی‌شود یا دیر اجرا
+// می‌شود و recognition از حالت active خارج شده.
+//
+// راه‌حل: یک AudioContext با اسیلاتور بی‌صدا (gain=0) که به‌طور مداوم
+// در حال play است. این به Android می‌گوید برنامه در حال پخش media است
+// و نباید آن را pause کند (MediaSession + audio در حال play).
+// این همان ترفندی است که برنامه‌های موسیقی برای ماندن در پس‌زمینه استفاده
+// می‌کنند. MediaSession قبلاً فعال است؛ audio loop آن را real می‌کند.
+//
+// اسیلاتور sine با gain=0 در فرکانس ۱ هرتز — برای گوش انسان نامسموع اما
+// برای مرورگر یک «جریان audio فعال» محسوب می‌شود.
+let _silenceAudioCtx = null;
+let _silenceOsc = null;
+let _silenceGain = null;
+
+function startSilentAudioLoop() {
+    if (_silenceAudioCtx) return; // قبلاً اجرا می‌شود
+    try {
+        var Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        _silenceAudioCtx = new Ctx();
+        // اگر suspended، resume کن (در context ضبط ما قبلاً warm شده)
+        if (_silenceAudioCtx.state === 'suspended') {
+            _silenceAudioCtx.resume().catch(function(){});
+        }
+        _silenceOsc = _silenceAudioCtx.createOscillator();
+        _silenceGain = _silenceAudioCtx.createGain();
+        _silenceOsc.type = 'sine';
+        _silenceOsc.frequency.value = 1; // 1 Hz — نامسموع
+        _silenceGain.gain.value = 0;     // mute کامل
+        _silenceOsc.connect(_silenceGain);
+        _silenceGain.connect(_silenceAudioCtx.destination);
+        _silenceOsc.start();
+        console.log('[SilentLoop] Started — keeping app alive as media player');
+    } catch(e) {
+        console.warn('[SilentLoop] Failed to start:', e.message);
+        _silenceAudioCtx = null;
+    }
+}
+
+function stopSilentAudioLoop() {
+    try {
+        if (_silenceOsc) { _silenceOsc.stop(); _silenceOsc.disconnect(); _silenceOsc = null; }
+        if (_silenceGain) { _silenceGain.disconnect(); _silenceGain = null; }
+        if (_silenceAudioCtx) {
+            if (_silenceAudioCtx.state !== 'closed') _silenceAudioCtx.close();
+            _silenceAudioCtx = null;
+        }
+        console.log('[SilentLoop] Stopped');
+    } catch(e) { console.warn('[SilentLoop] Stop failed:', e.message); }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v203: Worker restart loop — تایمر با throttle کمتر در پس‌زمینه
+// ════════════════════════════════════════════════════════════════════
+// در Chrome اندروید، تایمرهای main thread هنگام hidden شدن صفحه throttle
+// می‌شوند (۱ اجرا در ثانیه) و بعد از ~۵ دقیقه کاملاً منجمد می‌شوند. اما
+// تایمرهای داخل Web Worker کمتر throttle می‌شوند و پیام‌های postMessage
+// بین Worker و main thread در زمان واقعی (بدون throttle) تحویل داده می‌شوند.
+//
+// این Worker هر ۱ ثانیه tick می‌زند و به main thread پیام می‌فرستد.
+// main thread با دریافت هر tick، اگر در حال ضبط بود، recognition را
+// restart می‌کند. این الگو همان ترفند معروف «worker-based timer» است.
+let _recordingWorker = null;
+function startRecordingWorker() {
+    if (_recordingWorker) return;
+    try {
+        var workerCode = '' +
+            'setInterval(function() {' +
+            '  postMessage({ tick: Date.now() });' +
+            '}, 1000);';
+        var blob = new Blob([workerCode], { type: 'application/javascript' });
+        _recordingWorker = new Worker(URL.createObjectURL(blob));
+        _recordingWorker.onmessage = function(e) {
+            // هر tick: اگر در حال ضبط بودیم، recognition را restart کن
+            try {
+                if (typeof isRecording !== 'undefined' && isRecording &&
+                    typeof recognition !== 'undefined' && recognition) {
+                    try { recognition.start(); } catch(err) { /* already running */ }
+                }
+            } catch(err) {}
+        };
+        console.log('[Worker] Recording restart worker started');
+    } catch(e) {
+        console.warn('[Worker] Failed to create recording worker:', e.message);
+        _recordingWorker = null;
+    }
+}
+function stopRecordingWorker() {
+    if (_recordingWorker) {
+        try { _recordingWorker.terminate(); } catch(e) {}
+        _recordingWorker = null;
+        console.log('[Worker] Recording restart worker stopped');
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v203: MediaRecorder background capture — صدای حین ترک را ثبت کن
+// ════════════════════════════════════════════════════════════════════
+// محدودیت سخت: SpeechRecognition در Chrome اندروید وقتی صفحه hidden است
+// موتور تشخیص صوت را pause می‌کند — یعنی متن کلمات گفته‌شده در حین ترک
+// از دست می‌رود و هیچ راه مستقیمی برای بازکردن آن وجود ندارد.
+//
+// راه‌حل v203: وقتی صفحه hidden شد و در حال ضبط بودیم، MediaRecorder
+// (که در پس‌زمینه هم کار می‌کند) صدا را ثبت می‌کند. وقتی کاربر برمی‌گردد:
+//   ۱) SpeechRecognition فوراً restart می‌شود (v202) — کلمات بعد از بازگشت
+//      به‌طور طبیعی transcribe می‌شوند.
+//   ۲) مدت صدا و یک لینک پخش نمایش داده می‌شود — کاربر می‌تواند صدای
+//      حین ترک را گوش کند (e.g. "۸ ثانیه در حین ترک ضبط شد ▶").
+//
+// این بهترین راه‌حل ممکن با Web APIهای موجود است — صدای حین ترک گم نمی‌شود.
+let _bgMediaRecorder = null;
+let _bgAudioChunks = [];
+let _bgAudioStartTime = null;
+let _bgAudioStream = null;
+
+async function startBackgroundAudioCapture() {
+    if (_bgMediaRecorder) return; // قبلاً اجرا می‌شود
+    try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            console.warn('[BgAudio] getUserMedia not available');
+            return;
+        }
+        _bgAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        _bgMediaRecorder = new MediaRecorder(_bgAudioStream);
+        _bgAudioChunks = [];
+        _bgMediaRecorder.ondataavailable = function(e) {
+            if (e.data && e.data.size > 0) _bgAudioChunks.push(e.data);
+        };
+        _bgMediaRecorder.start(2000); // هر ۲ ثانیه chunk جمع کن
+        _bgAudioStartTime = Date.now();
+        console.log('[BgAudio] Background audio capture started');
+    } catch(e) {
+        console.warn('[BgAudio] Failed to start:', e.message);
+        _bgMediaRecorder = null;
+        _bgAudioStream = null;
+    }
+}
+
+async function stopBackgroundAudioCapture() {
+    if (!_bgMediaRecorder) return null;
+    var duration = _bgAudioStartTime ? (Date.now() - _bgAudioStartTime) : 0;
+    var chunks = _bgAudioChunks.slice();
+    try {
+        _bgMediaRecorder.stop();
+    } catch(e) {}
+    try {
+        if (_bgAudioStream) _bgAudioStream.getTracks().forEach(function(t) { t.stop(); });
+    } catch(e) {}
+    _bgMediaRecorder = null;
+    _bgAudioChunks = [];
+    _bgAudioStartTime = null;
+    _bgAudioStream = null;
+    if (chunks.length > 0 && duration > 1000) {
+        try {
+            var blob = new Blob(chunks, { type: 'audio/webm' });
+            var url = URL.createObjectURL(blob);
+            console.log('[BgAudio] Captured', Math.round(duration / 1000), 's of background audio');
+            return { blob: blob, url: url, durationMs: duration };
+        } catch(e) {
+            console.warn('[BgAudio] Failed to create blob:', e.message);
+            return null;
+        }
+    }
+    return null;
+}
+
+// نمایش اعلان صدا ضبط‌شده در حین ترک — با دکمهٔ پخش
+function showBackgroundAudioNotice(captured) {
+    if (!captured || !captured.durationMs) return;
+    var secs = Math.round(captured.durationMs / 1000);
+    try {
+        showToast('🎙️ ' + toPersianDigits(secs) + ' ثانیه صدا در حین ترک ثبت شد');
+        // یک دکمهٔ پخش در بنر — ولی چون toast ماندگار نیست، از یک toast
+        // با مدت طولانی‌تر استفاده می‌کنیم
+        var toast = document.getElementById('toast');
+        if (toast) {
+            // اضافه کردن دکمهٔ پخش به toast
+            var playBtn = document.createElement('button');
+            playBtn.textContent = ' ▶ پخش';
+            playBtn.style.cssText = 'background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.4); border-radius:6px; padding:4px 10px; margin-inline-start:8px; font-size:12px; cursor:pointer; font-family:inherit;';
+            playBtn.onclick = function() {
+                try {
+                    var audio = new Audio(captured.url);
+                    audio.play().catch(function(e) { console.warn('[BgAudio] Play failed:', e); });
+                    showToast('در حال پخش صدای ثبت‌شده...');
+                } catch(e) { console.warn('[BgAudio] Play failed:', e); }
+            };
+            toast.appendChild(playBtn);
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(function() {
+                toast.classList.remove('show');
+                try { if (playBtn.parentNode) playBtn.remove(); } catch(e) {}
+                try { URL.revokeObjectURL(captured.url); } catch(e) {}
+            }, 10000); // ۱۰ ثانیه فرصت برای پخش
+        }
+    } catch(e) { console.warn('[BgAudio] Notice failed:', e.message); }
+}
+
+// 🔧 v202: visibilitychange handler مخصوص ضبط — وقتی کاربر به برنامه
+// برمی‌گردد، recognition را فوراً restart کن. این مهم‌ترین remediation
+// است چون مشکل اصلی این بود که «ضبط قطع می‌شد و دیگر برنمی‌گشت».
+// 🔧 v203: MediaRecorder background capture — وقتی صفحه hidden شد و در
+// حال ضبط بودیم، صدا را MediaRecorder ثبت می‌کند. وقتی کاربر برمی‌گردد،
+// مدت صدا و دکمهٔ پخش نمایش داده می‌شود.
+let _lastVisibilityRestart = 0;
+async function handleRecordingVisibilityChange() {
+    if (document.hidden) {
+        // صفحه hidden شد — SpeechRecognition متوقف می‌شود؛ MediaRecorder صدا را ثبت می‌کند
+        console.log('[Recording] Page hidden — recognition may pause; capturing audio via MediaRecorder');
+        try { startBackgroundAudioCapture(); } catch(e) {}
+        return;
+    }
+    // صفحه دوباره visible شد
+    if (!isRecording) {
+        // اگر در حال ضبط نبودیم، MediaRecorder را هم متوقف کن (در صورت روشن بودن)
+        try { stopBackgroundAudioCapture(); } catch(e) {}
+        return;
+    }
+    if (!recognition) return;
+    // 🔧 v204 (bugfix): ترتیب مهم است — اول restart (با toast خودش)،
+    // بعد notice صدا. قبلاً notice اول می‌آمد و بلافاصله toast
+    // «ضبط از سر گرفته شد ▶» آن را روی‌نویسی می‌کرد — یعنی کاربر
+    // اعلان «صدا در حین ترک ثبت شد» را هرگز نمی‌دید.
+    // جلوگیری از restart بیش‌ازحد (حداکثر هر ۱ ثانیه)
+    var now = Date.now();
+    if (now - _lastVisibilityRestart >= 1000) {
+        _lastVisibilityRestart = now;
+        // فوراً recognition را restart کن
+        try {
+            recognition.start();
+            console.log('[Recording] Restarted on visibility return');
+            showToast('ضبط از سر گرفته شد ▶');
+        } catch(e) {
+            // احتمالاً already running — یک restart با تأخیر کوتاه بزن
+            console.log('[Recording] restart on return deferred (already running):', e.message);
+            setTimeout(function() {
+                if (!isRecording || !recognition || document.hidden) return;
+                try { recognition.start(); } catch(e2) {}
+            }, 500);
+        }
+    }
+    // 🔧 v203: MediaRecorder را متوقف کن و صدا را بازیابی کن —
+    // notice (با دکمهٔ پخش) اکنون toast نهایی است و دیده می‌شود.
+    try {
+        var _captured = await stopBackgroundAudioCapture();
+        if (_captured) showBackgroundAudioNotice(_captured);
+    } catch(e) { console.warn('[Recording] stopBgAudio failed:', e); }
 }
 
 function startRecording() {
@@ -7487,6 +8960,25 @@ function startRecording() {
     // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
     const fab2 = document.getElementById('floatingAddBtn');
     if (fab2) fab2.classList.add('recording');
+    // 🔧 v198: ابزارهای ماندگاری — WakeLock + MediaSession
+    acquireRecordingWakeLock();
+    setRecordingMediaSession();
+    // 🔧 v202: silent audio loop — نگه‌داشتن Android به‌عنوان media player
+    // این مهم‌ترین remediation برای «ضبط هنگام ترک موقت قطع می‌شود» است
+    startSilentAudioLoop();
+    // 🔧 v203: Worker restart loop — تایمر با throttle کمتر در پس‌زمینه
+    startRecordingWorker();
+    // 🔧 v198: ضبط صوت در پس‌زمینه — keepalive قوی‌تر هنگام ضبط
+    // هر ۱۰ ثانیه به SW پیام بده تا حافظه بماند
+    _recordingKeepaliveInterval = setInterval(function() {
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({ type: 'KEEPALIVE', ts: Date.now(), recording: true });
+        }
+        // 🔧 v198: اگر recognition متوقف شده (مرورگر آن را kill کرده)، دوباره شروع کن
+        if (isRecording && recognition) {
+            try { recognition.start(); } catch(e) { /* already running */ }
+        }
+    }, 10000);
     try {
         recognition.start();
     } catch(e) {
@@ -7501,6 +8993,9 @@ function startRecording() {
     }
 }
 
+// 🔧 v198: keepalive interval برای ضبط
+let _recordingKeepaliveInterval = null;
+
 function stopRecording() {
     isRecording = false;
     document.getElementById('addBtn').classList.remove('recording');
@@ -7508,6 +9003,28 @@ function stopRecording() {
     const fabStop = document.getElementById('floatingAddBtn');
     if (fabStop) fabStop.classList.remove('recording');
     if (recognition) { try { recognition.stop(); } catch(e) {} }
+    // 🔧 v198: ابزارهای ماندگاری — آزادسازی
+    releaseRecordingWakeLock();
+    clearRecordingMediaSession();
+    // 🔧 v202: silent audio loop را هم متوقف کن
+    stopSilentAudioLoop();
+    // 🔧 v203: Worker restart loop را متوقف کن
+    stopRecordingWorker();
+    // 🔧 v203: اگر MediaRecorder در حال ضبط پس‌زمینه بود، متوقفش کن (بدون notice)
+    try {
+        if (_bgMediaRecorder) {
+            _bgMediaRecorder.stop();
+            if (_bgAudioStream) _bgAudioStream.getTracks().forEach(function(t) { t.stop(); });
+            _bgMediaRecorder = null;
+            _bgAudioStream = null;
+            _bgAudioChunks = [];
+            _bgAudioStartTime = null;
+        }
+    } catch(e) {}
+    if (_recordingKeepaliveInterval) {
+        clearInterval(_recordingKeepaliveInterval);
+        _recordingKeepaliveInterval = null;
+    }
     // Commit current session and apply number conversion on final text
     if (currentSessionText.trim()) {
         allFinalText = (allFinalText + ' ' + currentSessionText).trim().replace(/\s+/g, ' ');
@@ -8056,6 +9573,10 @@ function cancelGroupDelete() {
     navBack();
     _groupDeleteTargetId = null;
     _groupDeleteStep = 0;
+    // 🔧 v207: اگر فلوی حذف از داخل خود گروه شروع شده باشد، بعد از انصراف
+    // گروه همچنان وجود دارد — نیازی به اعتبارسنجی نیست؛ ولی برای اطمینان
+    // (مثلاً اگر گروه از مسیر دیگری حذف شده باشد) چک می‌کنیم.
+    try { validateCurrentViewAfterDataChange(); } catch(e) {}
 }
 
 // Internal: cleanup after a successful deletion (resets state).
@@ -8617,6 +10138,12 @@ function saveItem() {
             // Update the parent's text and deadline
             items[idx].text = newText;
             items[idx].deadline = newDeadline;
+            // 🔧 v200: اگر سررسید عوض شد، تاریخچهٔ اعلان‌های این تسک پاک شود
+            // وگرنه اعلان جدید هرگز نمی‌آید (کلید id_threshold به سررسید وابسته نیست)
+            if (oldDeadline !== newDeadline) {
+                clearNotifLogForItem(editTaskId);
+                requestSwDeadlineCheck();
+            }
             // 🔧 v134: به‌روزرسانی شخص مرتبط با تسک
             const formContactId = document.getElementById('taskContactId') ? document.getElementById('taskContactId').value : '';
             if (formContactId) {
@@ -8841,6 +10368,10 @@ function saveItem() {
     }
 
     setDB(items);
+    // 🔧 v199: بیدار کردن SW — تسک تازه ممکن است نزدیک سررسید باشد؛
+    // فوراً بررسی + زمان‌بندی اعلان دقیق + ثبت sync برای جبران پس‌زمینه
+    requestSwDeadlineCheck();
+    registerDeadlineSync();
     // Clear the pending-group context (it has been consumed by the new task).
     pendingTaskGroupId = null;
     pendingPrefilledDeadline = null;
@@ -9450,6 +10981,35 @@ function navBack() {
     try { history.back(); } catch(e) {}
 }
 
+// 🔧 v207 (bugfix): اعتبارسنجی نمای فعلی بعد از تغییر ساختار داده‌ها.
+// سناریو: کاربر داخل تسک‌های گروه X است، گروه X را حذف می‌کند (یا بک‌آپ
+// REPLACE را وارد می‌کند که گروه X را ندارد). حالا اگر Back موبایل بزند،
+// popstate حالت قدیمی tasks-X را بازیابی می‌کند → renderTasksView با
+// groupId یتیم → هدر fallback «همه کارها» با لیست خالی/گیج‌کننده.
+// این تابع اگر گروه فعلی دیگر وجود ندارد، نمای اصلی (گروه‌ها) را بازیابی
+// می‌کند و history entry فعلی را هم درست می‌کند.
+function validateCurrentViewAfterDataChange() {
+    if (currentView !== 'tasks' || !currentGroupId) return false;
+    if (currentGroupId === 'all' || currentGroupId === 'urgent') return false;
+    const exists = getGroups().some(g => g.id === currentGroupId);
+    if (exists) return false;
+    // گروه یتیم است — به لیست گروه‌ها برگرد
+    currentView = 'groups';
+    currentGroupId = null;
+    expandedId = null;
+    navReplace({ view: 'groups' });
+    fullRender();
+    return true;
+}
+
+// 🔧 v207 (bugfix): آیا groupId به گروه حذف‌شده‌ای اشاره می‌کند؟
+// در popstate handler استفاده می‌شود تا Back موبایل بعد از حذف گروه،
+// کاربر را به نمای یتیم نبرد.
+function isStaleGroupId(groupId) {
+    if (!groupId || groupId === 'all' || groupId === 'urgent') return false;
+    return !getGroups().some(g => g.id === groupId);
+}
+
 // Helper: returns true if ANY modal overlay is currently open.
 // Used by the popstate handler so the mobile back button closes an open
 // modal BEFORE navigating the underlying view.
@@ -9494,6 +11054,10 @@ function closeModalByType(type) {
         'contactReport': 'contactReportOverlay',
         'contactReportResults': 'contactReportResultsOverlay',
         'phoneAction': 'phoneActionOverlay',
+        // 🔧 v209: منوی همبرگری + بخش حسابداری + فرم رکورد حسابداری
+        'hamburger': 'hamburgerMenuOverlay',
+        'accounting': 'accountingOverlay',
+        'accRecordForm': 'accRecordFormOverlay',
     }[type];
     if (overlayId) {
         const el = document.getElementById(overlayId);
@@ -9523,6 +11087,16 @@ function closeModalByType(type) {
         // later + press from outside the calendar doesn't accidentally reuse it.
         pendingTaskGroupId = null;
         pendingPrefilledDeadline = null;
+        // 🔧 v206 (bugfix): قفل اسکرول body را باز کن.
+        // startAdding فرم را با lockBodyScroll باز می‌کند. cancelModal و saveItem
+        // صریحاً unlockBodyScroll را صدا می‌زنند، ولی مسیر دکمهٔ Back موبایل
+        // از popstate handler می‌گذرد و فقط همین تابع را صدا می‌زند — بدون
+        // این فراخوانی، body در حالت position:fixed; overflow:hidden می‌ماند
+        // و صفحهٔ زیر مودال کاملاً قفل می‌شود (کاربر می‌گفت: «برنامه گاها قفل
+        // است و وقتی رفرش میکنم دوباره درست میشود»). unlockBodyScroll خودش
+        // با guard (`body.style.position === 'fixed'`) ایزوله است، پس فراخوانی
+        // اضافی از cancelModal/saveItem بی‌اثر است.
+        try { unlockBodyScroll(); } catch(e) {}
     }
 }
 
@@ -9666,6 +11240,13 @@ window.addEventListener('popstate', (e) => {
     }
 
     // ===== Normal navigation =====
+    // 🔧 v204 (bugfix): prevView/prevGroup باید قبل از استفاده تعریف شوند.
+    // قبلاً «const prevView» بعد از taskFormJustClosed بود که خودش prevView
+    // را می‌خواند → خطای TDZ «Cannot access 'prevView' before initialization»
+    // در هر popstate که به اینجا می‌رسید (مثلاً back برای بستن جزئیات تسک) —
+    // handler وسط کار می‌مرد و fullRender اجرا نمی‌شد (UI کهنه می‌ماند).
+    const prevView = currentView;
+    const prevGroup = currentGroupId;
     // 🔧 اگر مودال فرم تسک باز است یا تازه بسته شده، هیچ اسکرول و fullRender انجام نده
     const taskFormJustClosed = (state.view === 'tasks' && _modalStack.length === 0 && prevView === 'tasks');
     if (state.view === 'modal') {
@@ -9683,11 +11264,17 @@ window.addEventListener('popstate', (e) => {
             currentView = 'tasks';
             currentGroupId = state.groupId || null;
             expandedId = state.expandedId || null;
+            // 🔧 v207: اگر گروه حذف شده، به لیست گروه‌ها برگرد (رندر لازم است)
+            if (isStaleGroupId(currentGroupId)) {
+                currentView = 'groups';
+                currentGroupId = null;
+                expandedId = null;
+                navReplace({ view: 'groups' });
+                fullRender();
+            }
         }
         return;
     }
-    const prevView = currentView;
-    const prevGroup = currentGroupId;
     if (state.view === 'groups') {
         currentView = 'groups';
         currentGroupId = null;
@@ -9696,6 +11283,14 @@ window.addEventListener('popstate', (e) => {
         currentView = 'tasks';
         currentGroupId = state.groupId || null;
         expandedId = state.expandedId || null;
+        // 🔧 v207: Back موبایل بعد از حذف گروه / ورود بک‌آپ REPLACE —
+        // گروه یتیم را به لیست گروه‌ها هدایت کن (نه نمای خالی fallback)
+        if (isStaleGroupId(currentGroupId)) {
+            currentView = 'groups';
+            currentGroupId = null;
+            expandedId = null;
+            navReplace({ view: 'groups' });
+        }
     }
     // 🔧 اسکرول به بالا فقط وقتی ویو اصلی تغییر کرده (groups ↔ tasks)
     const viewChanged = (prevView !== currentView);
@@ -9878,7 +11473,7 @@ function renderGroupsView() {
     const visibleGroupIdsForAll = new Set(groups.filter(g => g.showInAll !== false).map(g => g.id));
     const allVisibleItems = items.filter(i => visibleGroupIdsForAll.has(i.groupId || 'all'));
     const allDiv = document.createElement('div');
-    allDiv.className = 'group-item group-item-fixed';
+    allDiv.className = 'group-item group-item-fixed group-all';  // 🔧 v206: group-all برای syncHeaderHeight
     allDiv.dataset.groupId = 'all';
     allDiv.style.background = 'linear-gradient(135deg, #4CAF50, #2E7D32)';
     allDiv.innerHTML = `<div class="group-item-row"><div class="group-list-icon"><span>📋</span></div><span class="group-name">همه کارها</span>${buildGroupBadges(allVisibleItems, {}, 'all')}</div>`;
@@ -10357,6 +11952,8 @@ function toggleDone(id) {
         // prototype chain issues, or stale cached objects).
         try { delete item.completedAt; } catch(e) {}
         item.completedAt = null;
+        // 🔧 v200: تسک دوباره باز شد — اعلان‌های قبلی‌اش دوباره معتبر شوند
+        clearNotifLogForItem(id);
         // Also remove any legacy "completedAt" variants that might exist
         if ('completedAt' in item && item.completedAt) {
             // Force-clear if somehow still set
@@ -10616,6 +12213,8 @@ function saveBackupToLocal() {
     const items = getDB();
     const customGroups = getGroups().filter(g => g.id !== 'all' && g.id !== 'urgent');
     const contacts = getContacts();
+    // 🔧 v209: دادهٔ حسابداری هم در بک‌آپ ذخیره می‌شود
+    const accounting = getAccounting();
 
     // 🔧 جمع‌آوری تمام یادداشت‌ها از localStorage (یادداشت عمومی + هر گروه)
     const notes = {};
@@ -10627,6 +12226,8 @@ function saveBackupToLocal() {
     }
 
     // 🔧 نسخه v7: شامل یادداشت‌های هر گروه + تمام داده‌های قبلی
+    // 🔧 v209: + accounting (سندهای حسابداری) — فیلد اختیاری؛ بک‌آپ‌های
+    //    قدیمی‌تر بدون این فیلد همچنان قابل ورود هستند (BA-071)
     const dbContent = JSON.stringify({
         version: 7,
         appVersion: APP_VERSION,
@@ -10635,9 +12236,11 @@ function saveBackupToLocal() {
         count: items.length,
         groupsCount: customGroups.length,
         contactsCount: contacts.length,
+        accountingDocs: (accounting && Array.isArray(accounting.docs)) ? accounting.docs.length : 0,
         groups: customGroups,
         items: items,
         contacts: contacts,
+        accounting: accounting,  // 🔧 v209
         notes: notes,  // 🔧 v7: یادداشت‌های هر گروه
         settings: {
             appVersion: APP_VERSION,
@@ -10701,6 +12304,7 @@ function importDatabase() {
                 let importedItems = [];
                 let importedGroups = [];
                 let importedContacts = [];
+                let importedAccounting = null;  // 🔧 v209
                 let backupVersion = 1;  // پیش‌فرض: قدیمی‌ترین نسخه
 
                 // تشخیص نسخه بک‌آپ و استخراج داده‌ها
@@ -10717,6 +12321,10 @@ function importDatabase() {
                     // 🔧 v5+: استخراج contacts
                     if (Array.isArray(data.contacts)) {
                         importedContacts = data.contacts;
+                    }
+                    // 🔧 v209: استخراج حسابداری (بک‌آپ‌های جدیدتر)
+                    if (data.accounting && typeof data.accounting === 'object' && Array.isArray(data.accounting.docs)) {
+                        importedAccounting = migrateAccounting(data.accounting);
                     }
                     // 🔧 v7+: استخراج یادداشت‌ها و بازیابی در localStorage
                     if (data.notes && typeof data.notes === 'object') {
@@ -10742,7 +12350,7 @@ function importDatabase() {
                 // 🔧 مهاجرت contacts
                 const validImportedContacts = migrateContacts(importedContacts);
 
-                if (normalizedItems.length === 0 && validImportedContacts.length === 0) {
+                if (normalizedItems.length === 0 && validImportedContacts.length === 0 && !importedAccounting) {
                     showToast('هیچ داده معتبری در فایل یافت نشد');
                     return;
                 }
@@ -10759,12 +12367,15 @@ function importDatabase() {
                 const contactsLine = validImportedContacts.length > 0
                     ? `فایل شامل ${validImportedContacts.length} شخص است\n`
                     : '';
+                const accountingLine = importedAccounting && importedAccounting.docs.length > 0
+                    ? `فایل شامل ${importedAccounting.docs.length} سند حسابداری است\n`
+                    : '';
                 const versionLine = backupVersion < 5
                     ? `⚠️ بک‌آپ نسخه ${toPersianNumber(backupVersion)} است — به‌طور خودکار مهاجرت می‌شود\n`
                     : '';
                 const msg = versionLine +
                     `فایل دارای ${normalizedItems.length} یادآور است.\n` +
-                    groupsLine + contactsLine +
+                    groupsLine + contactsLine + accountingLine +
                     `دیتابیس فعلی: ${currentItems.length} مورد\n` +
                     (dupCount > 0 ? `${dupCount} مورد تکراری شناسایی شد\n` : '') +
                     `\nبرای «ادغام» = بله\n` +
@@ -10810,10 +12421,27 @@ function importDatabase() {
                         }
                     }
 
+                    // 5. 🔧 v209: ادغام سناد حسابداری (فقط سناد جدید اضافه می‌شوند)
+                    let newAccDocs = 0;
+                    if (importedAccounting) {
+                        const curAcc = getAccounting();
+                        const existingAccIds = new Set(curAcc.docs.map(d => d.id));
+                        newAccDocs = importedAccounting.docs.filter(d => !existingAccIds.has(d.id));
+                        if (newAccDocs.length > 0) {
+                            curAcc.docs = curAcc.docs.concat(newAccDocs);
+                            setAccounting(curAcc);
+                        }
+                    }
+
+                    // 🔧 v207: اگر کاربر داخل تسک‌های گروهی بود که در بک‌آپ نبود،
+                    // به لیست گروه‌ها برگرد (نمای یتیم نساز)
+                    try { validateCurrentViewAfterDataChange(); } catch(e) {}
+
                     fullRender();
                     const parts = [`${fixedItems.length} یادآور جدید`];
                     if (newGroupsToAdd.length > 0) parts.push(`${newGroupsToAdd.length} گروه جدید`);
                     if (validImportedContacts.length > 0) parts.push(`${validImportedContacts.length} شخص جدید`);
+                    if (newAccDocs > 0) parts.push(`${newAccDocs.length} سند حسابداری جدید`);
                     showToast(parts.join('، ') + ' ✓');
                 } else {
                     // ===== REPLACE MODE =====
@@ -10849,6 +12477,11 @@ function importDatabase() {
                         //    (برای شبیه‌سازی دقیق برنامهٔ صفر)
                         setContacts(validImportedContacts);
 
+                        // 3.۵ 🔧 v209: جایگزینی کامل حسابداری — حتی اگر بک‌آپ
+                        //    فیلد accounting نداشت (بک‌آپ قدیمی) → سند پیش‌فرض خالی
+                        //    (شبیه‌سازی برنامهٔ صفر، هم‌سو با contacts)
+                        setAccounting(importedAccounting || accDefaultDB());
+
                         // 4. 🔧 اگر بک‌آپ v6 است و settings دارد، notification permission
                         //    را درخواست کن (اگر قبلاً granted بوده)
                         if (data && data.settings && data.settings.notificationPermission === 'granted') {
@@ -10857,11 +12490,16 @@ function importDatabase() {
                             }
                         }
 
+                        // 🔧 v207: بعد از جایگزینی کامل گروه‌ها، اگر کاربر داخل تسک‌های
+                        // گروهی بود که در بک‌آپ نیست، به لیست گروه‌ها برگرد
+                        try { validateCurrentViewAfterDataChange(); } catch(e) {}
+
                         fullRender();
                         const parts = ['دیتابیس جایگزین شد'];
                         parts.push(`${fixedItems.length} یادآور`);
                         if (validImportedGroups.length > 0) parts.push(`${validImportedGroups.length} گروه`);
                         parts.push(`${validImportedContacts.length} شخص`);
+                        parts.push(`${(importedAccounting || accDefaultDB()).docs.length} سند حسابداری`);
                         showToast(parts.join('، ') + ' ✓');
                     }
                 }
@@ -10932,6 +12570,47 @@ function clearSentNotificationsFor(items) {
     // Note: IDB entries for deleted items will be cleaned up by SW's periodic cleanup
 }
 
+// 🔧 v200: حذف ردیف‌های notif_log یک تسک از IndexedDB (منبع سرویس‌ورکر)
+async function idbDeleteNotifLogByPrefix(itemId) {
+    if (!idbAvailable()) return;
+    try {
+        const db = await openIDB();
+        const prefix = itemId + '_';
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction([STORE_NOTIF_LOG], 'readwrite');
+            const store = tx.objectStore(STORE_NOTIF_LOG);
+            const req = store.openCursor();
+            req.onsuccess = (e) => {
+                const cur = e.target.result;
+                if (!cur) return;
+                if (String(cur.key).indexOf(prefix) === 0) {
+                    try { cur.delete(); } catch(e2) {}
+                }
+                cur.continue();
+            };
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error);
+        });
+    } catch(e) { console.warn('[Notif] idbDeleteNotifLogByPrefix failed', e); }
+}
+
+// 🔧 v200: پاک‌کردن تاریخچهٔ اعلان‌های یک تسک — هم از حافظهٔ صفحه و هم از IDB.
+// چرا؟ کلیدها به شکل id_threshold هستند و به سررسید وابسته نیستند؛ اگر این
+// تاریخچه پاک نشود، بعد از ویرایش سررسید یا بازکردن دوبارهٔ تسک، اعلان جدید
+// هرگز نمی‌آید («تنظیم میکنم عمل نمیکند» — حالت دوم این باگ).
+function clearNotifLogForItem(itemId) {
+    if (!itemId) return;
+    const prefix = itemId + '_';
+    // ۱) حذف از حافظهٔ صفحه
+    [...sentNotifications].forEach(k => {
+        if (k.indexOf(prefix) === 0) sentNotifications.delete(k);
+    });
+    saveSentNotifications();
+    // ۲) حذف از IDB تا SW هم دوباره اعلان بفرستد
+    idbDeleteNotifLogByPrefix(itemId);
+    console.log('[Notif] Cleared notif log for item', itemId);
+}
+
 // ════════════════════════════════════════════════════════════════════
 // 🔔 بخش ۱۴: اعلان‌ها — v148 (زنگوله toggle + تنظیمات قابل انتخاب)
 // ════════════════════════════════════════════════════════════════════
@@ -10946,17 +12625,15 @@ function clearSentNotificationsFor(items) {
 const NOTIF_SETTINGS_KEY = 'yadavar_notif_settings_v1';
 
 // گزینه‌های زمان یادآور قابل انتخاب
+// 🔧 v183: فقط ۳ گزینهٔ ثابت + یک گزینهٔ «سفارشی» با ورود دلخواه دقیقه.
+// کاربر درخواست کرد: «همه پیشنهادها را حذف بغیر از ۱ ساعت، ۵ دقیقه، و در لحظه
+// سررسید، و یک انتخاب متغیر با ورود دلخواه».
+// گزینهٔ 'custom' در UI یک input نشان می‌دهد تا کاربر دقیقه وارد کند.
 const NOTIF_TIME_OPTIONS = [
-    { minutes: 60 * 24, key: 'd1',  label: '۱ روز قبل' },
-    { minutes: 60 * 12, key: 'h12', label: '۱۲ ساعت قبل' },
-    { minutes: 60 * 6,  key: 'h6',  label: '۶ ساعت قبل' },
-    { minutes: 60 * 3,  key: 'h3',  label: '۳ ساعت قبل' },
     { minutes: 60,      key: 'h1',  label: '۱ ساعت قبل' },
-    { minutes: 30,      key: 'm30', label: '۳۰ دقیقه قبل' },
-    { minutes: 15,      key: 'm15', label: '۱۵ دقیقه قبل' },
-    { minutes: 10,      key: 'm10', label: '۱۰ دقیقه قبل' },
     { minutes: 5,       key: 'm5',  label: '۵ دقیقه قبل' },
     { minutes: 0,       key: 'due', label: 'در لحظهٔ سررسید' },
+    { minutes: -1,      key: 'custom', label: 'سفارشی (دقیقه)...' },
 ];
 
 // دریافت تنظیمات اعلان (یا پیش‌فرض)
@@ -10974,16 +12651,55 @@ function getNotifSettings() {
 }
 
 // ذخیره تنظیمات اعلان
+// 🔧 v183: هم در localStorage و هم در IndexedDB ذخیره می‌شود تا SW بتواند
+// در پس‌زمینه تنظیمات کاربر را بخواند و فقط همان زمان‌ها را اعلان بفرستد.
+// 🔧 v199: بعد از ذخیره، SW هم بیدار می‌شود (بررسی فوری + sync + زمان‌بندی تریگر)
 function saveNotifSettings(settings) {
     try { localStorage.setItem(NOTIF_SETTINGS_KEY, JSON.stringify(settings)); } catch(e) {}
+    // 🔧 v183: mirror to IndexedDB for service worker
+    idbPutNotifSettings(settings);
+    // 🔧 v183: به‌روزرسانی NOTIF_THRESHOLDS سراسری
+    NOTIF_THRESHOLDS = getNotifThresholds();
+    // 🔧 v199: بیدار کردن سرویس‌ورکر — تنظیمات عوض شده، SW باید فوراً بداند
+    requestSwDeadlineCheck();
+}
+
+// 🔧 v199: بیدار کردن SW برای بررسی سررسیدها + زمان‌بندی اعلان‌های دقیق
+// این تابع امن است — اگر SW یا پیام در دسترس نباشد، بی‌صدا رد می‌شود.
+function requestSwDeadlineCheck() {
+    try {
+        if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return;
+        navigator.serviceWorker.controller.postMessage({ type: 'CHECK_DEADLINES' });
+        navigator.serviceWorker.controller.postMessage({ type: 'SCHEDULE_TRIGGERS' });
+    } catch(e) {}
+}
+
+// 🔧 v199: ثبت Background Sync — وقتی اینترنت/اتصال دوباره برقرار شود،
+// مرورگر سرویس‌ورکر را بیدار می‌کند تا سررسیدهای از-قلم-افتاده بررسی شوند.
+// این مهم‌ترین مکانیزم بیدارباش SW بعد از بسته‌شدن صفحه در اندروید است.
+// ثبت تکراری با تگ یکسان خطا نمی‌دهد (جایگزین می‌شود) ولی try/catch گذاشتیم.
+async function registerDeadlineSync() {
+    try {
+        if (!('serviceWorker' in navigator)) return;
+        const reg = await navigator.serviceWorker.ready;
+        if (!reg || !('sync' in reg)) return;
+        await reg.sync.register('check-deadlines-on-reconnect');
+        console.log('[Page] Background sync registered (check-deadlines-on-reconnect)');
+    } catch(e) {
+        // بعضی مرورگرها (Safari/Firefox) Background Sync ندارند — نادیده بگیر
+        console.log('[Page] Background sync not available:', e.message);
+    }
 }
 
 // تولید NOTIF_THRESHOLDS از تنظیمات کاربر
+// 🔧 v181: ویژگی `repeat` حذف شد — فرایند تکرار ۳ ساعته و ۱۵ دقیقه‌ای (v140)
+// که به‌طور خاص برای h3 و m15 طراحی شده بود، کامل پاک شد. اکنون فقط
+// تنظیمات کاربر (v148) اعمال می‌شود: نوتیفیکیشن، انتخاب زنگ، ۳ مقطع زمانی اختیاری.
 function getNotifThresholds() {
     const settings = getNotifSettings();
     if (!settings.enabled || !settings.times || settings.times.length === 0) return [];
     return settings.times.map(function(t) {
-        return { minutes: t.minutes, key: t.key, label: t.label, repeat: false };
+        return { minutes: t.minutes, key: t.key, label: t.label };
     });
 }
 
@@ -11011,14 +12727,17 @@ async function toggleNotifications() {
         try {
             const permission = await Notification.requestPermission();
             if (permission !== 'granted') {
-                showToast('دسترسی به اعلان‌ها داده نشد');
-                return;
+                showToast('دسترسی به اعلان‌ها داده نشد. با این حال، بنر درون‌صفحه‌ای فعال است');
             }
+            // 🔧 v201: مهم — حتی اگر permission داده نشد، تنظیمات را فعال کن
+            // تا بنر درون‌صفحه‌ای کار کند. permission فقط برای system notif لازم است.
         } catch(e) {
-            showToast('خطا در درخواست اعلان: ' + e.message);
-            return;
+            showToast('خطا در درخواست اعلان: ' + e.message + ' — بنر درون‌صفحه‌ای همچنان فعال است');
         }
     }
+    // 🔧 v201: AudioContext را در همین gesture گرم کن — این مهم‌ترین نقطه‌است
+    // چون toggleNotifications از یک کلیک کاربر صدا زده می‌شود.
+    try { warmAudioContextOnUserGesture(); } catch(e) {}
     // فعال‌سازی + باز کردن منوی تنظیمات
     settings.enabled = true;
     saveNotifSettings(settings);
@@ -11092,7 +12811,9 @@ function showBellSettings() {
     timeTitle.textContent = '⏰ زمان‌های یادآور (حداکثر ۳ مورد)';
     timeSection.appendChild(timeTitle);
     // ساخت ۳ dropdown برای زمان‌ها
+    // 🔧 v183: هر dropdown یک input سفارشی هم دارد (وقتی 'custom' انتخاب شود)
     var timeSelects = [];
+    var timeCustomInputs = [];
     for (var i = 0; i < 3; i++) {
         const label = document.createElement('div');
         label.className = 'bell-time-label';
@@ -11103,13 +12824,74 @@ function showBellSettings() {
         // گزینهٔ «بدون یادآور»
         sel.innerHTML = '<option value="">— بدون یادآور —</option>';
         NOTIF_TIME_OPTIONS.forEach(function(opt) {
-            var selected = settings.times[i] && settings.times[i].key === opt.key;
+            // 🔧 v183: اگر تنظیمات ذخیره‌شده custom است، گزینهٔ 'custom' را selected کن
+            var isCustomMatch = (opt.key === 'custom' && settings.times[i] && settings.times[i].key.indexOf('custom_') === 0);
+            var selected = settings.times[i] && (settings.times[i].key === opt.key || isCustomMatch);
             sel.innerHTML += '<option value="' + opt.key + '" data-minutes="' + opt.minutes + '" data-label="' + opt.label + '"' + (selected ? ' selected' : '') + '>' + opt.label + '</option>';
         });
         timeSection.appendChild(sel);
+
+        // 🔧 v183: input سفارشی برای ورود دقیقه — فقط وقتی 'custom' انتخاب شود نمایش داده می‌شود
+        const customWrap = document.createElement('div');
+        customWrap.className = 'bell-time-custom-wrap';
+        customWrap.style.cssText = 'display:none; margin-top:6px; align-items:center; gap:6px;';
+        const customInput = document.createElement('input');
+        customInput.type = 'number';
+        customInput.min = '1';
+        customInput.max = '43200'; // تا ۳۰ روز
+        customInput.placeholder = 'تعداد دقیقه (مثلاً ۲۰)';
+        customInput.className = 'bell-time-custom-input';
+        customInput.style.cssText = 'flex:1; padding:8px 10px; border:2px solid #FFA000; border-radius:6px; font-size:14px; direction:ltr; text-align:right;';
+        // اگر تنظیمات قبلی custom بود، مقدار را پر کن
+        if (settings.times[i] && settings.times[i].key.indexOf('custom_') === 0) {
+            var prevMinutes = settings.times[i].minutes;
+            customInput.value = prevMinutes;
+        }
+        const customLabel = document.createElement('span');
+        customLabel.textContent = 'دقیقه قبل';
+        customLabel.style.cssText = 'font-size:12px; color:#666; white-space:nowrap;';
+        customWrap.appendChild(customInput);
+        customWrap.appendChild(customLabel);
+        timeSection.appendChild(customWrap);
+
+        // 🔧 v183: نمایش/پنهان کردن input سفارشی بر اساس انتخاب dropdown
+        sel.addEventListener('change', function() {
+            if (sel.value === 'custom') {
+                customWrap.style.display = 'flex';
+                customInput.focus();
+            } else {
+                customWrap.style.display = 'none';
+            }
+        });
+        // اگر در زمان بارگذاری، 'custom' selected بود، input را نشان بده
+        if (sel.value === 'custom') {
+            customWrap.style.display = 'flex';
+        }
+
         timeSelects.push(sel);
+        timeCustomInputs.push(customInput);
     }
     modal.appendChild(timeSection);
+    // 🔧 v201: بخش ۳ — دکمهٔ تست اعلان
+    const testSection = document.createElement('div');
+    testSection.className = 'bell-settings-section';
+    testSection.style.cssText = 'border-top: 1px dashed #ccc; padding-top: 10px; margin-top: 8px;';
+    const testBtn = document.createElement('button');
+    testBtn.type = 'button';
+    testBtn.className = 'btn btn-secondary';
+    testBtn.style.cssText = 'width:100%; padding:10px; font-size:14px; font-weight:600;';
+    testBtn.innerHTML = '🔔 تست اعلان الان';
+    testBtn.onclick = function() {
+        // هم AudioContext را گرم کن و هم تست بفرست
+        try { warmAudioContextOnUserGesture(); } catch(e) {}
+        sendTestNotification();
+    };
+    const testHint = document.createElement('div');
+    testHint.style.cssText = 'font-size:11px; color:#666; margin-top:6px; text-align:center;';
+    testHint.textContent = 'اگر این دکمه را بزنید و بنر قرمز + صدا را ببینید، زنجیرهٔ foreground کار می‌کند ✓';
+    testSection.appendChild(testBtn);
+    testSection.appendChild(testHint);
+    modal.appendChild(testSection);
     // دکمه‌ها
     const btnRow = document.createElement('div');
     btnRow.style.cssText = 'display:flex;gap:8px;margin-top:12px;';
@@ -11119,9 +12901,28 @@ function showBellSettings() {
     saveBtn.textContent = '✓ ذخیره';
     saveBtn.onclick = function() {
         // جمع‌آوری تنظیمات
+        // 🔧 v199: اگر مقدار سفارشی نامعتبر بود، کل ذخیره قطع شود
+        // (قبلاً فقط همان گزینه رد می‌شد و بقیه بی‌صدا ذخیره می‌شد!)
+        var customInvalid = false;
         var newTimes = [];
-        timeSelects.forEach(function(sel) {
-            if (sel.value) {
+        timeSelects.forEach(function(sel, idx) {
+            if (customInvalid) return; // خطای قبلی — رد شو
+            if (!sel.value) return; // بدون یادآور
+            if (sel.value === 'custom') {
+                // 🔧 v183: گزینهٔ سفارشی — دقیقه را از input بخوان
+                var customInput = timeCustomInputs[idx];
+                var mins = parseInt(customInput.value, 10);
+                if (!mins || mins < 1 || mins > 43200) {
+                    showToast('یادآور ' + toPersianNumber(idx + 1) + ': عدد دقیقه معتبر وارد کنید (۱ تا ۴۳۲۰۰)');
+                    customInvalid = true;
+                    return;
+                }
+                newTimes.push({
+                    key: 'custom_' + mins,
+                    minutes: mins,
+                    label: toPersianNumber(mins) + ' دقیقه قبل'
+                });
+            } else {
                 var opt = sel.options[sel.selectedIndex];
                 newTimes.push({
                     key: sel.value,
@@ -11130,6 +12931,7 @@ function showBellSettings() {
                 });
             }
         });
+        if (customInvalid) return; // 🔧 v199: ذخیره نکن — کاربر باید مقدار را اصلاح کند
         if (newTimes.length === 0) {
             showToast('حداقل یک زمان یادآور انتخاب کنید');
             return;
@@ -11186,96 +12988,316 @@ function playShortBeeps() {
 // آستانه‌های اعلان — از تنظیمات کاربر خوانده می‌شود
 var NOTIF_THRESHOLDS = getNotifThresholds();
 
-function checkNotifications() {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+async function checkNotifications() {
+    // 🔧 v201: دیگر زود برنمی‌گردیم اگر permission نبود — بنر درون‌صفحه‌ای
+    // هم بدون permission کار می‌کند. فقط system notification path skip می‌شود.
     const items = getDB();
     const now = Date.now();
 
-    items.forEach(item => {
-        if (item.done) return;
+    // 🔧 v200: تگ‌های اعلان‌های در حال نمایش — یک‌بار در ابتدا خوانده می‌شود
+    // (به‌جای یک fetch برای هر آیتم × آستانه). prefix-match درست انجام می‌شود
+    // چون تگ واقعی تریگرها پسوند ts دارد ('trig-...-ts') و match دقیقِ قبلی
+    // هرگز پیدا نمی‌شد.
+    let swNotifTags = [];
+    try {
+        if ('serviceWorker' in navigator) {
+            var _reg0 = await navigator.serviceWorker.getRegistration();
+            if (_reg0) {
+                const _shown0 = await _reg0.getNotifications();
+                swNotifTags = (_shown0 || []).map(n => n.tag || '');
+            }
+        }
+    } catch(e) {}
+
+    for (const item of items) {
+        if (item.done) continue;
         // 🔧 v140: تسک‌های لغوشده هم اعلان نمی‌گیرند
-        if (item.cancelled == true) return;
+        if (item.cancelled == true) continue;
         const deadlineMs = new Date(item.deadline).getTime();
-        if (isNaN(deadlineMs)) return;
+        if (isNaN(deadlineMs)) continue;
         const remaining = deadlineMs - now;
 
-        NOTIF_THRESHOLDS.forEach(t => {
+        for (const t of NOTIF_THRESHOLDS) {
             const triggerMs = t.minutes * 60 * 1000;
             const notifKey = `${item.id}_${t.key}`;
-            if (sentNotifications.has(notifKey)) return;
+            if (sentNotifications.has(notifKey)) continue;
 
-            // Send if remaining <= triggerMs AND not too far past (within 60 min window)
-            if (remaining <= triggerMs && remaining > triggerMs - 60 * 60 * 1000) {
-                sendNotification(item, t.label, remaining <= 0, t.repeat, item.id);
-                sentNotifications.add(notifKey);
-                saveSentNotifications();
-                // Also write to IndexedDB so SW doesn't duplicate in background
-                idbPutNotifLog(notifKey);
+            // 🔧 v199: پنجرهٔ زمانی به ۲۴ ساعت widened شد — هماهنگ با SW.
+            // قبلاً ۶۰ دقیقه بود؛ اگر کاربر دیرتر باز می‌کرد، اعلان هیچ‌وقت
+            // نشان داده نمی‌شد («تنظیم میکنم عمل نمیکند»). حالا اگر آستانه در
+            // ۲۴ ساعت گذشته رد شده باشد، هنگام باز شدن اعلان جبرانی می‌آید.
+            if (remaining <= triggerMs && remaining > triggerMs - 24 * 60 * 60 * 1000) {
+                // 🔧 v200: اگر اعلانِ تریگرِ زمان‌بندی‌شدهٔ SW همین الان نمایش داده شده،
+                // دوبار نفرست — کلید را ثبت کن و رد شو (prefix-match).
+                if (swNotifTags.some(tag => tag.indexOf('trig-' + notifKey) === 0)) {
+                    sentNotifications.add(notifKey);
+                    saveSentNotifications();
+                    idbPutNotifLog(notifKey);
+                    continue;
+                }
+                // 🔧 v200: کلید فقط بعد از نمایش موفق ثبت می‌شود — قبلاً حتی وقتی
+                // new Notification در اندروید خطا می‌داد (Illegal constructor)،
+                // کلید ثبت می‌شد و اعلان برای همیشه از دست می‌رفت.
+                var _shown = await sendNotification(item, t.label, remaining <= 0, item.id);
+                if (_shown) {
+                    sentNotifications.add(notifKey);
+                    saveSentNotifications();
+                    // Also write to IndexedDB so SW doesn't duplicate in background
+                    idbPutNotifLog(notifKey);
+                } else {
+                    console.warn('[Notif] show failed for', notifKey, '— retry on next check');
+                }
             }
-        });
-    });
+        }
+    }
 }
 
-function sendNotification(item, label, isOverdue, shouldRepeat, itemId) {
+// 🔧 v181: پارامتر shouldRepeat و کل بلوک تکرار حذف شد — فرایند تکرار
+// ۳ ساعته و ۱۵ دقیقه‌ای (v140) که ۱۵ ثانیه بعد اعلان را تکرار می‌کرد، کامل
+// پاک شد. اکنون هر اعلان فقط یک‌بار ارسال می‌شود.
+// 🔧 v200: نمایش اعلان — async و برگشت true/false (موفق/ناموفق)
+// ⚠️ ریشهٔ اصلی «نوتیف‌ها حتی داخل برنامه عمل نمی‌کنند»:
+//    در Chrome اندروید سازندهٔ new Notification مجاز نیست (Illegal constructor —
+//    فقط ServiceWorkerRegistration.showNotification کار می‌کند). نسخهٔ قبلی خطا
+//    را بی‌صدا می‌بلعید و کلید اعلان بدون نمایش ثبت می‌شد.
+//    اکنون: مسیر اول همیشه SW showNotification است (اندروید + دسکتاپ، حتی وقتی
+//    صفحه باز است) و فقط در نبود SW به سازندهٔ صفحه برمی‌گردیم (دسکتاپ).
+async function sendNotification(item, label, isOverdue, itemId) {
+    const text = item.text.length > 40 ? item.text.substring(0, 40) + '...' : item.text;
+    const title = isOverdue
+        ? `⚠️ سررسید گذشته: ${text}`
+        : `${label} تا سررسید: ${text}`;
+    const body = isOverdue
+        ? `زمان انجام این یادآور گذشته است`
+        : `یادآور شما نزدیک سررسید است`;
+    // 🔧 v201: بنر درون‌صفحه‌ای را همیشه در foreground نمایش بده — مستقل از
+    // موفقیت system notification. این remediation اصلی «حتی داخل برنامه،
+    // اعلان نمی‌آید» است: حتی اگر reg.showNotification بی‌صدا fail شود،
+    // کاربر بنر را می‌بیند و صدای زنگ را می‌شنود.
     try {
-        const text = item.text.length > 40 ? item.text.substring(0, 40) + '...' : item.text;
-        const title = isOverdue
-            ? `⚠️ سررسید گذشته: ${text}`
-            : `${label} تا سررسید: ${text}`;
-        const body = isOverdue
-            ? `زمان انجام این یادآور گذشته است`
-            : `یادآور شما نزدیک سررسید است`;
-        // 🔧 v140: تنظیمات اعلان — requireInteraction + vibrate طولانی + silent=false
-        const n = new Notification(title, {
+        showInpageNotifBanner({
+            title: title,
             body: body,
-            tag: item.id + '_' + label,
-            dir: 'rtl',
-            lang: 'fa-IR',
-            // 🔧 v140: requireInteraction برای همه (تا کلیک کاربر پنهان نشود)
-            requireInteraction: true,
-            // 🔧 v140: الگوی لرزش طولانی‌تر و قوی‌تر
-            vibrate: [300, 100, 300, 100, 300, 100, 300, 100, 300, 100, 300],
-            silent: false  // صدای پیش‌فرض اعلان مرورگر پخش شود
+            isOverdue: !!isOverdue,
+            itemId: itemId || item.id,
+            itemText: item.text
         });
+    } catch(e) { console.warn('[Notif] In-page banner failed:', e); }
+    // 🔧 v201: صدا را همیشه پخش کن (حتی اگر system notif ناموفق باشد).
+    // warmAudioContextOnUserGesture در init صدا را در حالت running نگه داشته.
+    try { _playNotifSoundBySetting(); } catch(e) {}
+    // 🔧 v201: اگر permission اصلاً grant نشده، فقط بنر کافی است — system notif نزن
+    // ⚠️ حواست باشد: typeof Notification === 'undefined' مهم است — فقط 'Notification' in window
+    // در صورتی که property با مقدار undefined وجود داشته باشد هم true برمی‌گرداند و بعد
+    // Notification.permission خطا می‌دهد.
+    var _notifOk = (typeof Notification !== 'undefined') && Notification && (Notification.permission === 'granted');
+    if (!_notifOk) {
+        console.log('[Notif] Permission not granted — only in-page banner shown');
+        return true; // بنر نمایش داده شد → کلید ثبت شود
+    }
+    const nId = itemId || item.id;
+    const nOpts = {
+        body: body,
+        tag: 'reminder-' + nId,
+        dir: 'rtl',
+        lang: 'fa-IR',
+        requireInteraction: true,
+        vibrate: [300, 100, 300, 100, 300, 100, 300, 100, 300, 100, 300],
+        silent: false,  // صدای پیش‌فرض اعلان مرورگر پخش شود
+        icon: 'icon-192.png',
+        badge: 'favicon-32.png',
+        data: { itemId: nId }
+    };
+    // مسیر ۱ — سرویس‌ورکر (تنها راه ممکن در اندروید؛ در دسکتاپ هم درست کار می‌کند)
+    try {
+        if ('serviceWorker' in navigator) {
+            const reg = await navigator.serviceWorker.getRegistration();
+            if (reg) {
+                await reg.showNotification(title, nOpts);
+                console.log('[Notif] Shown via SW:', title);
+                return true;
+            }
+        }
+    } catch(e) {
+        console.warn('[Notif] SW showNotification failed:', e);
+    }
+    // مسیر ۲ — سازندهٔ Notification (فقط دسکتاپ؛ در اندروید پشتیبانی نمی‌شود)
+    try {
+        const n = new Notification(title, nOpts);
         n.onclick = () => {
             window.focus();
             n.close();
-            expandedId = item.id;
+            expandedId = nId;
             render();
         };
-        // 🔧 v148: پخش صدا بر اساس تنظیمات کاربر (زنگ بلند یا ۵ بوق)
+        return true;
+    } catch(e) {
+        console.error('[Notif] Page Notification failed:', e);
+        // بنر درون‌صفحه‌ای همیشه نمایش داده شده → true برگردان تا کلید ثبت شود
+        return true;
+    }
+}
+
+// 🔧 v200: پخش صدای اعلان بر اساس تنظیمات کاربر (کمکی مشترک)
+function _playNotifSoundBySetting() {
+    try {
         var _notifSettings = getNotifSettings();
         if (_notifSettings.soundType === 'beeps') playShortBeeps();
         else playNotificationSound();
-        // 🔧 v140: تکرار اعلان (فقط برای h3 و m15 — ۱۵ ثانیه بعد)
-        if (shouldRepeat) {
-            setTimeout(function() {
-                try {
-                    const n2 = new Notification(title + ' (تکرار)', {
-                        body: body + ' — تکرار',
-                        tag: item.id + '_' + label + '_repeat',
+    } catch(e) { console.warn('[Notif] Sound failed:', e); }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v201: بنر درون‌صفحه‌ای اعلان + گرم کردن AudioContext + تست اعلان
+// ════════════════════════════════════════════════════════════════════
+// این بخش remediation اصلی «حتی داخل برنامه، اعلان نمی‌آید و زنگ نمی‌زند» است.
+// بنر مستقل از Notification API/SW است و همیشه کار می‌کند.
+
+let _inpageNotifBannerTimer = null;
+let _inpageNotifBannerCurrentItem = null;
+
+// نمایش بنر درون‌صفحه‌ای اعلان از بالای صفحه
+// opts: { title, body, isOverdue, itemId, itemText }
+function showInpageNotifBanner(opts) {
+    const banner = document.getElementById('inpageNotifBanner');
+    if (!banner) {
+        console.warn('[InpageNotif] banner element missing');
+        return;
+    }
+    const iconEl = document.getElementById('inbIcon');
+    const titleEl = document.getElementById('inbTitle');
+    const textEl = document.getElementById('inbText');
+    const doneBtn = document.getElementById('inbDoneBtn');
+    const closeBtn = document.getElementById('inbCloseBtn');
+    if (!titleEl || !textEl || !doneBtn || !closeBtn) return;
+    if (iconEl) iconEl.textContent = opts.isOverdue ? '⏰' : '🔔';
+    titleEl.textContent = opts.title || 'یادآور';
+    textEl.textContent = opts.body || '';
+    banner.classList.toggle('overdue', !!opts.isOverdue);
+    banner.classList.add('show');
+    _inpageNotifBannerCurrentItem = opts;
+    // دکمهٔ «انجام شد» → تسک را done کن و بنر را ببند
+    doneBtn.onclick = function() {
+        try {
+            if (opts.itemId) {
+                markItemDoneById(opts.itemId);
+            }
+        } catch(e) { console.warn('[InpageNotif] mark done failed', e); }
+        hideInpageNotifBanner();
+    };
+    closeBtn.onclick = function() { hideInpageNotifBanner(); };
+    // auto-hide بعد از ۳۰ ثانیه (اگر کاربر توجه نکرد)
+    if (_inpageNotifBannerTimer) clearTimeout(_inpageNotifBannerTimer);
+    _inpageNotifBannerTimer = setTimeout(function() { hideInpageNotifBanner(); }, 30000);
+    console.log('[InpageNotif] banner shown:', opts.title);
+}
+
+function hideInpageNotifBanner() {
+    const banner = document.getElementById('inpageNotifBanner');
+    if (banner) banner.classList.remove('show');
+    if (_inpageNotifBannerTimer) {
+        clearTimeout(_inpageNotifBannerTimer);
+        _inpageNotifBannerTimer = null;
+    }
+    _inpageNotifBannerCurrentItem = null;
+}
+
+// helper: علامت‌زدن تسک به‌عنوان done با itemId
+function markItemDoneById(itemId) {
+    try {
+        var db = getDB();
+        for (var i = 0; i < db.length; i++) {
+            if (db[i].id === itemId) {
+                db[i].done = true;
+                db[i].completedAt = new Date().toISOString();
+                setDB(db); // 🔧 v201: setDB نام درست است (saveDB وجود ندارد)
+                render();
+                showToast('✓ انجام شد');
+                return;
+            }
+        }
+    } catch(e) { console.warn('[InpageNotif] markItemDoneById failed', e); }
+}
+
+// 🔧 v201: گرم کردن AudioContext در اولین تعامل کاربر.
+// مرورگرهای جدید AudioContext را در حالت suspended می‌سازند تا از پخش
+// خودکار صدا بدون gesture کاربر جلوگیری کنند. ما در اولین touch/click/keydown
+// صفحه، ctx را resume می‌کنیم. از آن به بعد، ctx در حالت running می‌ماند
+// و interval-triggered sound (مثل checkNotifications) کار می‌کند.
+let _audioWarmed = false;
+function warmAudioContextOnUserGesture() {
+    if (_audioWarmed) return;
+    try {
+        var ctx = getNotifAudioContext();
+        if (!ctx) return;
+        if (ctx.state === 'suspended') {
+            var p = ctx.resume();
+            if (p && p.then) p.then(function() {
+                _audioWarmed = true;
+                console.log('[NotifSound] AudioContext warmed via user gesture — state:', ctx.state);
+            }).catch(function() {});
+        } else {
+            _audioWarmed = true;
+        }
+    } catch(e) { console.warn('[NotifSound] warmAudioContext failed', e); }
+}
+
+// 🔧 v201: تست دستی اعلان — کاربر می‌تواند زنجیرهٔ کامل را تست کند.
+// یک بنر درون‌صفحه‌ای + صدای زنگ + (در صورت permission) system notification می‌فرستد.
+async function sendTestNotification() {
+    console.log('[Notif] TEST notification triggered');
+    var settings = getNotifSettings();
+    // ۱) بنر درون‌صفحه‌ای + صدا (همیشه)
+    showInpageNotifBanner({
+        title: '🔔 تست اعلان',
+        body: 'این یک اعلان تستی است. اگر این را می‌بینید و صدا را می‌شنوید، زنجیرهٔ foreground کار می‌کند. (' + (settings.soundType === 'beeps' ? '۵ بوق' : 'زنگ بلند') + ')',
+        isOverdue: false,
+        itemId: null,
+        itemText: 'تست'
+    });
+    // ۲) صدا
+    try { _playNotifSoundBySetting(); } catch(e) {}
+    // ۳) system notification (در صورت permission)
+    try {
+        if ('Notification' in window && Notification.permission === 'granted') {
+            if ('serviceWorker' in navigator) {
+                var reg = await navigator.serviceWorker.getRegistration();
+                if (reg) {
+                    await reg.showNotification('🔔 تست اعلان — یادآور صوتی', {
+                        body: 'اگر این اعلان را دیدید، Notification API هم کار می‌کند ✓',
+                        icon: 'icon-192.png',
+                        badge: 'favicon-32.png',
                         dir: 'rtl',
                         lang: 'fa-IR',
-                        requireInteraction: true,
-                        vibrate: [300, 100, 300, 100, 300, 100, 300, 100, 300, 100, 300],
+                        tag: 'test-' + Date.now(),
+                        requireInteraction: false,
+                        vibrate: [200, 100, 200],
                         silent: false
                     });
-                    n2.onclick = () => {
-                        window.focus();
-                        n2.close();
-                        expandedId = item.id;
-                        render();
-                    };
-                    // پخش صدا برای تکرار هم
-                    playNotificationSound();
-                    console.log('[Notif] Repeat notification sent');
-                } catch(e) {
-                    console.warn('[Notif] Repeat failed:', e);
+                    console.log('[Notif] TEST shown via SW');
+                    showToast('اعلان تست ارسال شد ✓');
+                    return;
                 }
-            }, 15000);  // ۱۵ ثانیه بعد
+            }
+            // fallback به سازندهٔ صفحه
+            try {
+                var n = new Notification('🔔 تست اعلان — یادآور صوتی', {
+                    body: 'اگر این اعلان را دیدید، Notification API هم کار می‌کند ✓',
+                    dir: 'rtl',
+                    lang: 'fa-IR',
+                    tag: 'test-' + Date.now()
+                });
+                console.log('[Notif] TEST shown via page constructor');
+                showToast('اعلان تست ارسال شد ✓');
+                return;
+            } catch(e2) {
+                console.warn('[Notif] TEST page constructor failed:', e2);
+            }
         }
+        showToast('اعلان تست: بنر + صدا نمایش داده شد (system notif نیاز به permission دارد)');
     } catch(e) {
-        console.error('Notification error:', e);
+        console.warn('[Notif] TEST system notification failed:', e);
+        showToast('اعلان تست: بنر + صدا نمایش داده شد');
     }
 }
 
@@ -11795,7 +13817,8 @@ function syncHeaderHeight() {
     // 🔧 v161: تنظیم top همه overlayهای تمام‌صفحه + body
     var overlayIds = [
         'contactsOverlay', 'notesOverlay',
-        'contactSearchResultsOverlay', 'contactReportResultsOverlay', 'taskReportResultsOverlay'
+        'contactSearchResultsOverlay', 'contactReportResultsOverlay', 'taskReportResultsOverlay',
+        'accountingOverlay'  // 🔧 v209: زیر هدر اصلی شروع شود (BA-001)
     ];
     for (var i = 0; i < overlayIds.length; i++) {
         var el = document.getElementById(overlayIds[i]);
@@ -12542,7 +14565,111 @@ function editContact(id) {
     openContactForm(id);
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v208: حفاظت از یکپارچگی داده‌ها — شخصِ دارای ارجاع در تسک‌ها
+// ════════════════════════════════════════════════════════════════════
+// اگر شخصی در تسک‌ها استفاده شده باشد (مستقیم با contactId یا
+// غیرمستقیم با ذکر نامش در متن تسک)، حذف او مجاز نیست؛ وگرنه پیوند
+// تسک→شخص بی‌صدا قطع می‌شد و در جزئیات تسک «بدون شخص» ظاهر می‌شد
+// (از دست رفتن اطلاعات). درخواست کاربر v208.
+
+// نرمال‌سازی متن فارسی برای مقایسهٔ نام‌ها:
+// ي/ك عربی → ی/ک فارسی، أ/إ/آ → ا، حذف اعراب و کشیده،
+// نیم‌فاصله/نویسه‌های کنترلی → فاصله، فاصله‌های تکراری → یکی،
+// حروف لاتین → کوچک (برای نام‌های لاتین)
+function normalizeContactRefText(s) {
+    return String(s || '')
+        .toLowerCase()
+        .replace(/\u064A/g, '\u06CC')                 // ي → ی
+        .replace(/\u0643/g, '\u06A9')                 // ك → ک
+        .replace(/[\u0623\u0625\u0622]/g, '\u0627')   // أ إ آ → ا
+        .replace(/[\u064B-\u0652\u0670\u0640]/g, '')  // اعراب + کشیده
+        .replace(/[\u200B-\u200F\u202A-\u202E\uFEFF]/g, ' ') // نیم‌فاصله/کنترلی → فاصله
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+// یافتن همهٔ ارجاع‌های یک شخص در تسک‌ها + رکوردهای حسابداری (v209)
+// خروجی: { byLink: تسک‌های متصل با contactId،
+//          byName: تسک‌هایی که فقط نام او در متن دارند،
+//          accLinked: رکوردهای حسابداری متصل با contactId،
+//          accByName: رکوردهای حسابداری که فقط نام او در متن دارند }
+// هر دو گروه تسک همهٔ حالت‌ها را پوشش می‌دهند: انجام‌شده، لغوشده، معلق،
+// والد تکرار و فرزندان تکرار — چون جزئیات همهٔ آن‌ها شخص را نمایش می‌دهد.
+function getContactTaskReferences(contactId) {
+    const byLink = [];
+    const byName = [];
+    const c = getContactById(contactId);
+    if (!c) return { byLink: byLink, byName: byName, accLinked: 0, accByName: 0 };
+    const nameNorm = normalizeContactRefText(c.name);
+    // نام‌های خیلی کوتاه (کمتر از ۲ نویسه) برای جلوگیری از تطابق نویزی
+    // در متن بررسی نمی‌شوند (حذف آن‌ها گارد مستقیم contactId را ندارد)
+    const checkName = nameNorm.length >= 2;
+    const items = getDB();
+    for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        if (!it || !it.id) continue;
+        if (it.contactId === contactId) {
+            byLink.push(it);
+        } else if (checkName && normalizeContactRefText(it.text).indexOf(nameNorm) !== -1) {
+            byName.push(it);
+        }
+    }
+    // 🔧 v209: ارجاع‌های حسابداری — رکورد با contactId یا نام در متن شرح
+    let accLinked = 0;
+    let accByName = 0;
+    try {
+        const adb = getAccounting();
+        (adb.docs || []).forEach(function(d) {
+            ACC_SECTIONS.forEach(function(kind) {
+                (d.sections[kind] || []).forEach(function(g) {
+                    (g.subgroups || []).forEach(function(sg) {
+                        (sg.records || []).forEach(function(r) {
+                            if (r.contactId === contactId) {
+                                accLinked++;
+                            } else if (checkName && normalizeContactRefText(r.text).indexOf(nameNorm) !== -1) {
+                                accByName++;
+                            }
+                        });
+                    });
+                });
+            });
+        });
+    } catch(e) {}
+    return { byLink: byLink, byName: byName, accLinked: accLinked, accByName: accByName };
+}
+
 function deleteContact(id) {
+    const contact = getContactById(id);
+    if (!contact) {
+        showToast('شخص یافت نشد');
+        return;
+    }
+    // 🔧 v208/v209: گارد یکپارچگی داده — حذف فقط بدون هیچ ارجاعی مجاز است.
+    // قبل از confirm بررسی می‌شود تا در صورت وجود ارجاع، اصلاً پنجرهٔ
+    // حذف باز نشود و کاربر با پیام دقیق (تعداد + راه رفع) مواجه شود.
+    const refs = getContactTaskReferences(id);
+    const taskCount = refs.byLink.length + refs.byName.length;
+    const accCount = (refs.accLinked || 0) + (refs.accByName || 0);
+    if (taskCount > 0 || accCount > 0) {
+        const parts = [];
+        if (refs.byLink.length && refs.byName.length) {
+            parts.push(toPersianDigits(refs.byLink.length) + ' تسک به «' + contact.name + '» متصل است و در ' + toPersianDigits(refs.byName.length) + ' تسک دیگر نام او آمده است');
+        } else if (refs.byLink.length) {
+            parts.push(toPersianDigits(refs.byLink.length) + ' تسک به «' + contact.name + '» متصل است');
+        } else if (refs.byName.length) {
+            parts.push('نام «' + contact.name + '» در ' + toPersianDigits(refs.byName.length) + ' تسک آمده است');
+        }
+        if (refs.accLinked > 0 && refs.accByName > 0) {
+            parts.push(toPersianDigits(refs.accLinked) + ' رکورد حسابداری به او متصل است و در ' + toPersianDigits(refs.accByName) + ' رکورد دیگر نام او آمده است');
+        } else if (refs.accLinked > 0) {
+            parts.push(toPersianDigits(refs.accLinked) + ' رکورد حسابداری به او متصل است');
+        } else if (refs.accByName > 0) {
+            parts.push('نام او در ' + toPersianDigits(refs.accByName) + ' رکورد حسابداری آمده است');
+        }
+        showToast('حذف ممکن نیست — ' + parts.join(' و ') + '. ابتدا شخص را از تسک‌ها/رکوردها بردارید یا آن‌ها را حذف کنید.');
+        return;
+    }
     if (!confirm('این شخص حذف شود؟')) return;
     const contacts = getContacts().filter(c => c.id !== id);
     setContacts(contacts);
@@ -12927,6 +15054,849 @@ function showContactReportResults(results, criteria) {
 function closeContactReportResults() {
     document.getElementById('contactReportResultsOverlay').classList.remove('active');
     refreshFloatingContactBtn();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 💼 v209: بخش حسابداری — معادلهٔ اصلی حسابداری
+// ════════════════════════════════════════════════════════════════════
+//   دارایی = بدهی + سرمایه
+//
+// سلسله‌مراتب داده:
+//   سند (doc) → سه بخش ثابت (assets دارایی / liabilities بدهی / equity سرمایه)
+//   هر بخش → گروه‌ها (مثل «بانک») → هر گروه → زیرگروه‌ها (مثل «بانک ملت شعبهٔ
+//   آزادی») → هر زیرگروه → رکوردها {text, createdAt, contactId, amount, side}
+//   side: 'debit' (بدهکار) یا 'credit' (بستانکار)
+//
+// جمع هر بخش (خالص):
+//   دارایی:     Σ(بدهکار − بستانکار)
+//   بدهی/سرمایه: Σ(بستانکار − بدهکار)
+// معادله: دارایی === بدهی + سرمایه → هر سه باکس سبز؛ وگرنه هر سه قرمز.
+// اگر سند هنوز هیچ رکوردی ندارد → خنثی (خاکستری).
+//
+// ناوبری Back موبایل: دقیقاً الگوی تقویم (v204-safe):
+//   open → navPush({view:'modal',type:...}) + trackModalOpen(...)
+//   close (idempotent) → closeModalByType(...) + navBack()
+// به این ترتیب popstate موجود، بستن فقط بالاترین لایه را مدیریت می‌کند
+// (فرم رکورد روی بخش حسابداری، بخش حسابداری روی نمای اصلی).
+
+const ACC_KEY = 'accounting_db_v1';
+const ACC_SECTIONS = ['assets', 'liabilities', 'equity'];
+const ACC_SECTION_NAMES = { assets: 'دارایی', liabilities: 'بدهی', equity: 'سرمایه' };
+let accState = { section: null, groupId: null, subgroupId: null };
+let accFormCtx = null;   // هنگام باز بودن فرم رکورد: {section, groupId, subgroupId, recordId}
+let accFormSide = null;  // 'debit' | 'credit' | null
+
+function accGenId() {
+    return 'ac_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+}
+
+function accNewDocObj(name) {
+    return {
+        id: accGenId(),
+        name: name,
+        createdAt: new Date().toISOString(),
+        sections: { assets: [], liabilities: [], equity: [] }
+    };
+}
+
+function accDefaultDB() {
+    const doc = accNewDocObj('سند ۱');
+    return { docs: [doc], currentDocId: doc.id };
+}
+
+function getAccounting() {
+    try {
+        const db = JSON.parse(localStorage.getItem(ACC_KEY) || 'null');
+        if (!db || !Array.isArray(db.docs)) return accDefaultDB();
+        return db;
+    } catch(e) {
+        console.error('Accounting read error', e);
+        return accDefaultDB();
+    }
+}
+
+function setAccounting(db) {
+    try { localStorage.setItem(ACC_KEY, JSON.stringify(db)); }
+    catch(e) { console.error('Accounting write error', e); }
+}
+
+// اطمینان از وجود حداقل یک سند + معتبر بودن currentDocId
+function accEnsureDefaultDoc() {
+    const db = getAccounting();
+    if (!Array.isArray(db.docs) || db.docs.length === 0) {
+        const fresh = accDefaultDB();
+        setAccounting(fresh);
+        return fresh;
+    }
+    if (!db.currentDocId || !db.docs.some(d => d.id === db.currentDocId)) {
+        db.currentDocId = db.docs[0].id;
+        setAccounting(db);
+    }
+    return db;
+}
+
+function accGetCurrentDoc() {
+    const db = accEnsureDefaultDoc();
+    return db.docs.find(d => d.id === db.currentDocId) || db.docs[0];
+}
+
+// الگوی تغییر داده: خواندن → اعمال تابع → ذخیره → رندر
+function accMutateDoc(fn) {
+    const db = accEnsureDefaultDoc();
+    const doc = db.docs.find(d => d.id === db.currentDocId) || db.docs[0];
+    fn(doc, db);
+    setAccounting(db);
+    renderAccounting();
+}
+
+// ─── محاسبات معادله ───
+
+function accNetOf(rec, kind) {
+    const amt = Math.abs(Number(rec && rec.amount) || 0);
+    if (!isFinite(amt)) return 0;
+    if (kind === 'assets') return (rec.side === 'debit' ? amt : -amt);
+    return (rec.side === 'credit' ? amt : -amt);
+}
+
+function accSubgroupTotal(sg, kind) {
+    let sum = 0;
+    (sg.records || []).forEach(function(r) { sum += accNetOf(r, kind); });
+    return sum;
+}
+
+function accGroupTotal(g, kind) {
+    let sum = 0;
+    (g.subgroups || []).forEach(function(sg) { sum += accSubgroupTotal(sg, kind); });
+    return sum;
+}
+
+function accDocTotals(doc) {
+    let assets = 0, liabilities = 0, equity = 0, hasRecords = false;
+    (doc.sections.assets || []).forEach(function(g) {
+        assets += accGroupTotal(g, 'assets');
+        (g.subgroups || []).forEach(function(sg) { if ((sg.records || []).length) hasRecords = true; });
+    });
+    (doc.sections.liabilities || []).forEach(function(g) {
+        liabilities += accGroupTotal(g, 'liabilities');
+    });
+    (doc.sections.equity || []).forEach(function(g) {
+        equity += accGroupTotal(g, 'equity');
+    });
+    return {
+        assets: assets,
+        liabilities: liabilities,
+        equity: equity,
+        hasRecords: hasRecords,
+        balanced: (assets === liabilities + equity)
+    };
+}
+
+function accCountDocRecords(doc) {
+    let n = 0;
+    ACC_SECTIONS.forEach(function(k) {
+        (doc.sections[k] || []).forEach(function(g) {
+            (g.subgroups || []).forEach(function(sg) { n += (sg.records || []).length; });
+        });
+    });
+    return n;
+}
+
+// ─── باز و بستن بخش حسابداری ───
+
+function openAccounting() {
+    accEnsureDefaultDoc();
+    accState = { section: null, groupId: null, subgroupId: null };
+    renderAccounting();
+    const ov = document.getElementById('accountingOverlay');
+    // 🔧 v209: overlay از زیر هدر اصلی شروع شود (هم‌سو با BA-001 —
+    // وگرنه topbar حسابداری زیر هدر main پنهان می‌شد)
+    try {
+        const header = document.querySelector('.header');
+        if (header) ov.style.top = header.offsetHeight + 'px';
+    } catch(e) {}
+    ov.classList.add('active');
+    bringToFront(ov);
+    navPush({ view: 'modal', type: 'accounting' });
+    trackModalOpen('accounting');
+}
+
+function closeAccounting() {
+    const ov = document.getElementById('accountingOverlay');
+    if (!ov || !ov.classList.contains('active')) return; // idempotent (درس v204)
+    closeModalByType('accounting');
+    navBack();
+}
+
+// ─── رندر ───
+
+function renderAccounting() {
+    const doc = accGetCurrentDoc();
+    const t = accDocTotals(doc);
+    document.getElementById('accTotalAssets').textContent = toPersianNumberWithSep(t.assets) + ' ریال';
+    document.getElementById('accTotalLiabilities').textContent = toPersianNumberWithSep(t.liabilities) + ' ریال';
+    document.getElementById('accTotalEquity').textContent = toPersianNumberWithSep(t.equity) + ' ریال';
+    const cls = t.hasRecords ? (t.balanced ? 'ok' : 'bad') : 'neutral';
+    ACC_SECTIONS.forEach(function(secKey, i) {
+        const el = document.getElementById('accBox' + (i === 0 ? 'Assets' : i === 1 ? 'Liabilities' : 'Equity'));
+        el.className = 'acc-eq-box ' + cls + (accState.section === secKey ? ' selected' : '');
+    });
+    const eqLine = document.getElementById('accEqLine');
+    const eqStr = toPersianNumberWithSep(t.assets) + ' = ' + toPersianNumberWithSep(t.liabilities) + ' + ' + toPersianNumberWithSep(t.equity) + ' ریال';
+    if (!t.hasRecords) {
+        eqLine.textContent = eqStr + ' — هنوز رکوردی ثبت نشده';
+        eqLine.className = 'acc-eq-line';
+    } else if (t.balanced) {
+        eqLine.textContent = '✓ متعادل — ' + eqStr;
+        eqLine.className = 'acc-eq-line acc-eq-ok';
+    } else {
+        eqLine.textContent = '✗ نامتعادل — ' + eqStr;
+        eqLine.className = 'acc-eq-line acc-eq-bad';
+    }
+    document.getElementById('accDocName').textContent = doc.name;
+    renderAccDocsRow(doc);
+    renderAccContent(doc, t);
+}
+
+function renderAccDocsRow(currentDoc) {
+    const db = getAccounting();
+    const row = document.getElementById('accDocsRow');
+    row.innerHTML = '';
+    db.docs.forEach(function(d) {
+        const chip = document.createElement('div');
+        chip.className = 'acc-doc-chip' + (d.id === currentDoc.id ? ' current' : '');
+        chip.onclick = function() { accSwitchDoc(d.id); };
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = d.name;
+        chip.appendChild(nameSpan);
+        const ren = document.createElement('span');
+        ren.className = 'acc-chip-ico';
+        ren.textContent = '✏️';
+        ren.title = 'ویرایش نام سند';
+        ren.onclick = function(ev) { ev.stopPropagation(); accRenameDoc(d.id); };
+        chip.appendChild(ren);
+        if (db.docs.length > 1) {
+            const del = document.createElement('span');
+            del.className = 'acc-chip-ico';
+            del.textContent = '🗑';
+            del.title = 'حذف سند';
+            del.onclick = function(ev) { ev.stopPropagation(); accDeleteDoc(d.id); };
+            chip.appendChild(del);
+        }
+        row.appendChild(chip);
+    });
+}
+
+function buildAccRecordRow(kind, r) {
+    const row = document.createElement('div');
+    row.className = 'acc-record-row';
+    const main = document.createElement('div');
+    main.className = 'acc-record-main';
+    const tx = document.createElement('div');
+    tx.className = 'acc-record-text';
+    tx.textContent = (r.text && String(r.text).trim()) ? r.text : '—';
+    const meta = document.createElement('div');
+    meta.className = 'acc-record-meta';
+    let personName = '';
+    if (r.contactId) {
+        const pc = getContactById(r.contactId);
+        if (pc) personName = pc.name;
+    }
+    meta.textContent = '📅 ' + (r.createdAt ? toJalaliFull(r.createdAt) : '—') + (personName ? ' • 👤 ' + personName : '');
+    main.appendChild(tx);
+    main.appendChild(meta);
+    const amt = document.createElement('div');
+    amt.className = 'acc-record-amount';
+    amt.textContent = toPersianNumberWithSep(Math.abs(Number(r.amount) || 0)) + ' ریال';
+    const badge = document.createElement('div');
+    badge.className = 'acc-side-badge ' + (r.side === 'debit' ? 'debit' : 'credit');
+    badge.textContent = r.side === 'debit' ? 'بدهکار' : 'بستانکار';
+    row.appendChild(main);
+    row.appendChild(amt);
+    row.appendChild(badge);
+    row.onclick = function() {
+        accOpenRecordForm(kind, accState.groupId, accState.subgroupId, r.id);
+    };
+    return row;
+}
+
+function renderAccContent(doc, t) {
+    const c = document.getElementById('accContent');
+    c.innerHTML = '';
+    if (!accState.section) {
+        const hint = document.createElement('div');
+        hint.className = 'acc-hint';
+        hint.innerHTML = 'برای شروع، یکی از سه باکس بالای صفحه را لمس کنید:<br><b>دارایی — بدهی — سرمایه</b><br>' +
+            '<span style="font-size:11px">ساختار: باکس ← گروه ← زیرگروه ← رکورد<br>' +
+            'پس از هر ذخیره یا ویرایش، جمع هر باکس و رنگ معادله به‌روز می‌شود</span>';
+        c.appendChild(hint);
+        return;
+    }
+    const kind = accState.section;
+    const groups = doc.sections[kind] || [];
+    const bt = document.createElement('div');
+    bt.className = 'acc-block-title';
+    bt.innerHTML = '<span>گروه‌های ' + ACC_SECTION_NAMES[kind] + '</span><span class="acc-block-line"></span>';
+    c.appendChild(bt);
+    if (groups.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'acc-hint';
+        empty.style.padding = '12px';
+        empty.textContent = 'هنوز گروهی در این بخش نیست — با دکمهٔ زیر اضافه کنید';
+        c.appendChild(empty);
+    }
+    groups.forEach(function(g) {
+        const gTotal = accGroupTotal(g, kind);
+        const row = document.createElement('div');
+        row.className = 'acc-list-item' + (accState.groupId === g.id ? ' selected' : '');
+        row.onclick = function() { accToggleGroup(g.id); };
+        row.innerHTML = '<span class="acc-item-name">' + escapeHtml(g.name) + '</span>' +
+            '<span class="acc-item-total">' + toPersianNumberWithSep(gTotal) + ' ریال</span>' +
+            '<button class="acc-item-btn" title="ویرایش نام گروه">✏️</button>' +
+            '<button class="acc-item-btn" title="حذف گروه">🗑</button>';
+        row.querySelector('button[title="ویرایش نام گروه"]').onclick = function(ev) { ev.stopPropagation(); accRenameGroup(kind, g.id); };
+        row.querySelector('button[title="حذف گروه"]').onclick = function(ev) { ev.stopPropagation(); accDeleteGroup(kind, g.id); };
+        c.appendChild(row);
+        if (accState.groupId === g.id) {
+            const wrap = document.createElement('div');
+            wrap.className = 'acc-indent';
+            const bt2 = document.createElement('div');
+            bt2.className = 'acc-block-title';
+            bt2.innerHTML = '<span>زیرگروه‌های «' + escapeHtml(g.name) + '»</span><span class="acc-block-line"></span>';
+            wrap.appendChild(bt2);
+            if (!(g.subgroups || []).length) {
+                const empty2 = document.createElement('div');
+                empty2.className = 'acc-hint';
+                empty2.style.padding = '10px';
+                empty2.textContent = 'هنوز زیرگروهی نیست — با دکمهٔ زیر اضافه کنید';
+                wrap.appendChild(empty2);
+            }
+            (g.subgroups || []).forEach(function(sg) {
+                const sgTotal = accSubgroupTotal(sg, kind);
+                const srow = document.createElement('div');
+                srow.className = 'acc-list-item' + (accState.subgroupId === sg.id ? ' selected' : '');
+                srow.onclick = function() { accToggleSubgroup(sg.id); };
+                srow.innerHTML = '<span class="acc-item-name">' + escapeHtml(sg.name) + '</span>' +
+                    '<span class="acc-item-total">' + toPersianNumberWithSep(sgTotal) + ' ریال</span>' +
+                    '<button class="acc-item-btn" title="ویرایش نام زیرگروه">✏️</button>' +
+                    '<button class="acc-item-btn" title="حذف زیرگروه">🗑</button>';
+                srow.querySelector('button[title="ویرایش نام زیرگروه"]').onclick = function(ev) { ev.stopPropagation(); accRenameSubgroup(kind, g.id, sg.id); };
+                srow.querySelector('button[title="حذف زیرگروه"]').onclick = function(ev) { ev.stopPropagation(); accDeleteSubgroup(kind, g.id, sg.id); };
+                wrap.appendChild(srow);
+                if (accState.subgroupId === sg.id) {
+                    const wrap2 = document.createElement('div');
+                    wrap2.className = 'acc-indent';
+                    const bt3 = document.createElement('div');
+                    bt3.className = 'acc-block-title';
+                    bt3.innerHTML = '<span>رکوردهای «' + escapeHtml(sg.name) + '»</span><span class="acc-block-line"></span>';
+                    wrap2.appendChild(bt3);
+                    if (!(sg.records || []).length) {
+                        const empty3 = document.createElement('div');
+                        empty3.className = 'acc-hint';
+                        empty3.style.padding = '10px';
+                        empty3.textContent = 'هنوز رکوردی در این زیرگروه نیست — با دکمهٔ زیر اضافه کنید';
+                        wrap2.appendChild(empty3);
+                    }
+                    (sg.records || []).forEach(function(r) {
+                        wrap2.appendChild(buildAccRecordRow(kind, r));
+                    });
+                    const addRec = document.createElement('div');
+                    addRec.className = 'acc-add-item';
+                    addRec.textContent = '+ افزودن رکورد جدید +';
+                    addRec.onclick = function() { accOpenRecordForm(kind, g.id, sg.id, null); };
+                    wrap2.appendChild(addRec);
+                    wrap.appendChild(wrap2);
+                }
+            });
+            const addSg = document.createElement('div');
+            addSg.className = 'acc-add-item';
+            addSg.textContent = '+ افزودن زیرگروه جدید +';
+            addSg.onclick = function() { accAddSubgroup(kind, g.id); };
+            wrap.appendChild(addSg);
+            c.appendChild(wrap);
+        }
+    });
+    const addG = document.createElement('div');
+    addG.className = 'acc-add-item';
+    addG.textContent = '+ افزودن گروه جدید +';
+    addG.onclick = function() { accAddGroup(kind); };
+    c.appendChild(addG);
+}
+
+// ─── انتخاب‌گرها (toggle) ───
+
+function accToggleSection(key) {
+    accState = {
+        section: (accState.section === key ? null : key),
+        groupId: null,
+        subgroupId: null
+    };
+    renderAccounting();
+}
+
+function accToggleGroup(gid) {
+    if (accState.groupId === gid) {
+        accState.groupId = null;
+        accState.subgroupId = null;
+    } else {
+        accState.groupId = gid;
+        accState.subgroupId = null;
+    }
+    renderAccounting();
+}
+
+function accToggleSubgroup(sgid) {
+    accState.subgroupId = (accState.subgroupId === sgid ? null : sgid);
+    renderAccounting();
+}
+
+// ─── CRUD سندها ───
+
+function accSwitchDoc(docId) {
+    const db = accEnsureDefaultDoc();
+    if (!db.docs.some(d => d.id === docId)) return;
+    db.currentDocId = docId;
+    setAccounting(db);
+    accState = { section: null, groupId: null, subgroupId: null };
+    renderAccounting();
+}
+
+function accAddDoc() {
+    const db = accEnsureDefaultDoc();
+    const doc = accNewDocObj('سند ' + toPersianNumber(db.docs.length + 1));
+    db.docs.push(doc);
+    db.currentDocId = doc.id;
+    setAccounting(db);
+    accState = { section: null, groupId: null, subgroupId: null };
+    renderAccounting();
+    showToast('سند جدید ساخته شد: ' + doc.name + ' ✓');
+}
+
+function accRenameDoc(docId) {
+    const db = accEnsureDefaultDoc();
+    const d = db.docs.find(x => x.id === docId);
+    if (!d) return;
+    const name = prompt('نام سند:', d.name);
+    if (!name || !name.trim()) return;
+    d.name = name.trim();
+    setAccounting(db);
+    renderAccounting();
+}
+
+function accDeleteDoc(docId) {
+    const db = accEnsureDefaultDoc();
+    if (db.docs.length <= 1) {
+        showToast('آخرین سند قابل حذف نیست');
+        return;
+    }
+    const d = db.docs.find(x => x.id === docId);
+    if (!d) return;
+    const count = accCountDocRecords(d);
+    if (!confirm('سند «' + d.name + '» با ' + toPersianNumber(count) + ' رکورد حذف شود؟')) return;
+    db.docs = db.docs.filter(x => x.id !== docId);
+    if (db.currentDocId === docId) db.currentDocId = db.docs[0].id;
+    setAccounting(db);
+    accState = { section: null, groupId: null, subgroupId: null };
+    renderAccounting();
+    showToast('سند حذف شد');
+}
+
+// ─── CRUD گروه‌ها و زیرگروه‌ها ───
+// قانون یکپارچگی (هم‌خوان با v208): گروه/زیرگروهِ دارای فرزند حذف نمی‌شود.
+
+function accAddGroup(kind) {
+    const name = prompt('نام گروه جدید (مثلاً بانک):');
+    if (!name || !name.trim()) return;
+    accMutateDoc(function(doc) {
+        doc.sections[kind].push({
+            id: accGenId(),
+            name: name.trim(),
+            createdAt: new Date().toISOString(),
+            subgroups: []
+        });
+    });
+    showToast('گروه ایجاد شد ✓');
+}
+
+function accRenameGroup(kind, gid) {
+    const doc = accGetCurrentDoc();
+    const g = (doc.sections[kind] || []).find(x => x.id === gid);
+    if (!g) return;
+    const name = prompt('نام گروه:', g.name);
+    if (!name || !name.trim()) return;
+    accMutateDoc(function(d) {
+        const gg = (d.sections[kind] || []).find(x => x.id === gid);
+        if (gg) gg.name = name.trim();
+    });
+}
+
+function accDeleteGroup(kind, gid) {
+    const doc = accGetCurrentDoc();
+    const g = (doc.sections[kind] || []).find(x => x.id === gid);
+    if (!g) return;
+    if ((g.subgroups || []).length > 0) {
+        showToast('ابتدا زیرگروه‌های این گروه را حذف کنید');
+        return;
+    }
+    if (!confirm('گروه «' + g.name + '» حذف شود؟')) return;
+    accMutateDoc(function(d) {
+        d.sections[kind] = (d.sections[kind] || []).filter(x => x.id !== gid);
+        if (accState.groupId === gid) accState.groupId = null;
+    });
+    showToast('گروه حذف شد');
+}
+
+function accAddSubgroup(kind, gid) {
+    const name = prompt('نام زیرگروه جدید (مثلاً بانک ملت شعبه آزادی):');
+    if (!name || !name.trim()) return;
+    accMutateDoc(function(doc) {
+        const g = (doc.sections[kind] || []).find(x => x.id === gid);
+        if (!g) return;
+        g.subgroups = g.subgroups || [];
+        g.subgroups.push({
+            id: accGenId(),
+            name: name.trim(),
+            createdAt: new Date().toISOString(),
+            records: []
+        });
+    });
+    showToast('زیرگروه ایجاد شد ✓');
+}
+
+function accRenameSubgroup(kind, gid, sgid) {
+    const doc = accGetCurrentDoc();
+    const g = (doc.sections[kind] || []).find(x => x.id === gid);
+    const sg = g ? (g.subgroups || []).find(x => x.id === sgid) : null;
+    if (!sg) return;
+    const name = prompt('نام زیرگروه:', sg.name);
+    if (!name || !name.trim()) return;
+    accMutateDoc(function(d) {
+        const gg = (d.sections[kind] || []).find(x => x.id === gid);
+        const ss = gg ? (gg.subgroups || []).find(x => x.id === sgid) : null;
+        if (ss) ss.name = name.trim();
+    });
+}
+
+function accDeleteSubgroup(kind, gid, sgid) {
+    const doc = accGetCurrentDoc();
+    const g = (doc.sections[kind] || []).find(x => x.id === gid);
+    const sg = g ? (g.subgroups || []).find(x => x.id === sgid) : null;
+    if (!sg) return;
+    if ((sg.records || []).length > 0) {
+        showToast('ابتدا رکوردهای این زیرگروه را حذف کنید');
+        return;
+    }
+    if (!confirm('زیرگروه «' + sg.name + '» حذف شود؟')) return;
+    accMutateDoc(function(d) {
+        const gg = (d.sections[kind] || []).find(x => x.id === gid);
+        if (gg) gg.subgroups = (gg.subgroups || []).filter(x => x.id !== sgid);
+        if (accState.subgroupId === sgid) accState.subgroupId = null;
+    });
+    showToast('زیرگروه حذف شد');
+}
+
+// ─── فرم رکورد (جزئیات) ───
+// همهٔ فیلدها در همین فرم قابل ویرایش‌اند: متن، تاریخ ایجاد، شخص، مبلغ، نوع.
+
+function accSetSide(side) {
+    accFormSide = side;
+    accUpdateSideButtons();
+}
+
+function accUpdateSideButtons() {
+    document.getElementById('accSideDebit').classList.toggle('sel', accFormSide === 'debit');
+    document.getElementById('accSideCredit').classList.toggle('sel', accFormSide === 'credit');
+}
+
+function accOpenRecordForm(kind, groupId, subgroupId, recordId) {
+    const db = accEnsureDefaultDoc();
+    const doc = db.docs.find(d => d.id === db.currentDocId) || db.docs[0];
+    const g = (doc.sections[kind] || []).find(x => x.id === groupId);
+    const sg = g ? (g.subgroups || []).find(x => x.id === subgroupId) : null;
+    if (!sg) return;
+    accFormCtx = { section: kind, groupId: groupId, subgroupId: subgroupId, recordId: recordId || null };
+    const rec = recordId ? (sg.records || []).find(r => r.id === recordId) : null;
+
+    document.getElementById('accFormTitle').textContent = rec ? ('ویرایش رکورد — ' + sg.name) : ('رکورد جدید — ' + sg.name);
+    document.getElementById('accRecText').value = rec ? (rec.text || '') : '';
+    document.getElementById('accRecAmount').value = rec ? String(Math.abs(Number(rec.amount) || 0)) : '';
+
+    // شخص — از بانک اشخاص CRM
+    const sel = document.getElementById('accRecContact');
+    const contacts = getContacts();
+    sel.innerHTML = '<option value="">— بدون شخص —</option>';
+    contacts.forEach(function(cn) {
+        const opt = document.createElement('option');
+        opt.value = cn.id;
+        opt.textContent = (cn.name || '—') + (cn.company ? ' (' + cn.company + ')' : '');
+        sel.appendChild(opt);
+    });
+    sel.value = (rec && rec.contactId) ? rec.contactId : '';
+
+    accFormSide = rec ? (rec.side || null) : null;
+    accUpdateSideButtons();
+
+    document.getElementById('accDeleteBtn').style.display = rec ? '' : 'none';
+
+    accBuildDateRow(rec ? rec.createdAt : null);
+
+    const ov = document.getElementById('accRecordFormOverlay');
+    ov.classList.add('active');
+    bringToFront(ov);
+    navPush({ view: 'modal', type: 'accRecordForm' });
+    trackModalOpen('accRecordForm');
+}
+
+function accCloseRecordForm() {
+    const ov = document.getElementById('accRecordFormOverlay');
+    if (!ov || !ov.classList.contains('active')) return; // idempotent
+    accFormCtx = null;
+    accFormSide = null;
+    closeModalByType('accRecordForm');
+    navBack();
+}
+
+// تاریخ ایجاد — سه انتخاب‌گر شمسی (روز/ماه/سال) + دکمهٔ امروز
+function accBuildDateRow(iso) {
+    const row = document.getElementById('accRecDateRow');
+    row.innerHTML = '';
+    let jy = null, jm = null, jd = null;
+    if (iso) {
+        const d = new Date(iso);
+        if (!isNaN(d.getTime())) {
+            const p = toJalaliParts(d);
+            jy = p[0]; jm = p[1]; jd = p[2];
+        }
+    }
+    if (!jy) {
+        const p = toJalaliParts(new Date());
+        jy = p[0]; jm = p[1]; jd = p[2];
+    }
+    const daySel = document.createElement('select');
+    daySel.id = 'accDateDay';
+    const monSel = document.createElement('select');
+    monSel.id = 'accDateMonth';
+    const yrSel = document.createElement('select');
+    yrSel.id = 'accDateYear';
+    for (let d = 1; d <= 31; d++) {
+        const o = document.createElement('option');
+        o.value = String(d);
+        o.textContent = toPersianDigits(d);
+        daySel.appendChild(o);
+    }
+    jalaliMonths.forEach(function(mn, i) {
+        const o = document.createElement('option');
+        o.value = String(i + 1);
+        o.textContent = mn;
+        monSel.appendChild(o);
+    });
+    for (let y = 1380; y <= 1425; y++) {
+        const o = document.createElement('option');
+        o.value = String(y);
+        o.textContent = toPersianNumber(y);
+        yrSel.appendChild(o);
+    }
+    daySel.value = String(jd);
+    monSel.value = String(jm);
+    yrSel.value = String(jy);
+    monSel.onchange = accRebuildDays;
+    yrSel.onchange = accRebuildDays;
+    const todayBtn = document.createElement('button');
+    todayBtn.type = 'button';
+    todayBtn.className = 'acc-today-btn';
+    todayBtn.textContent = 'امروز';
+    todayBtn.onclick = function() {
+        const p = toJalaliParts(new Date());
+        document.getElementById('accDateDay').value = String(p[2]);
+        document.getElementById('accDateMonth').value = String(p[1]);
+        document.getElementById('accDateYear').value = String(p[0]);
+        accRebuildDays();
+    };
+    row.appendChild(daySel);
+    row.appendChild(monSel);
+    row.appendChild(yrSel);
+    row.appendChild(todayBtn);
+    accRebuildDays();
+}
+
+function accRebuildDays() {
+    const daySel = document.getElementById('accDateDay');
+    if (!daySel) return;
+    const jm = parseInt(document.getElementById('accDateMonth').value, 10);
+    const jy = parseInt(document.getElementById('accDateYear').value, 10);
+    const maxD = getDaysInJalaliMonth(jy, jm);
+    const cur = parseInt(daySel.value, 10) || 1;
+    daySel.innerHTML = '';
+    for (let d = 1; d <= maxD; d++) {
+        const o = document.createElement('option');
+        o.value = String(d);
+        o.textContent = toPersianDigits(d);
+        daySel.appendChild(o);
+    }
+    daySel.value = String(Math.min(cur, maxD));
+}
+
+function accGetFormDateISO() {
+    const jd = parseInt(document.getElementById('accDateDay').value, 10);
+    const jm = parseInt(document.getElementById('accDateMonth').value, 10);
+    const jy = parseInt(document.getElementById('accDateYear').value, 10);
+    const g = jalaliToGregorian(jy, jm, jd);
+    return new Date(Date.UTC(g.getUTCFullYear(), g.getUTCMonth(), g.getUTCDate(), 12, 0, 0)).toISOString();
+}
+
+function accSaveRecord() {
+    if (!accFormCtx) return;
+    const text = document.getElementById('accRecText').value.trim();
+    const amountRaw = document.getElementById('accRecAmount').value;
+    const amountNum = Number(amountRaw);
+    if (amountRaw === '' || !isFinite(amountNum) || amountNum < 0) {
+        showToast('مبلغ معتبر وارد کنید');
+        return;
+    }
+    const amount = Math.round(amountNum);
+    if (amount <= 0) {
+        showToast('مبلغ باید بیشتر از صفر باشد');
+        return;
+    }
+    if (!accFormSide) {
+        showToast('نوع رکورد را انتخاب کنید (بدهکار یا بستانکار)');
+        return;
+    }
+    const contactId = document.getElementById('accRecContact').value || null;
+    const createdAt = accGetFormDateISO();
+    const ctx = accFormCtx;
+    const side = accFormSide;
+    accMutateDoc(function(doc) {
+        const g = (doc.sections[ctx.section] || []).find(x => x.id === ctx.groupId);
+        if (!g) return;
+        const sg = (g.subgroups || []).find(x => x.id === ctx.subgroupId);
+        if (!sg) return;
+        sg.records = sg.records || [];
+        if (ctx.recordId) {
+            const rec = sg.records.find(r => r.id === ctx.recordId);
+            if (rec) {
+                rec.text = text;
+                rec.amount = amount;
+                rec.side = side;
+                rec.contactId = contactId;
+                rec.createdAt = createdAt;
+            }
+        } else {
+            sg.records.push({
+                id: accGenId(),
+                text: text,
+                createdAt: createdAt,
+                contactId: contactId,
+                amount: amount,
+                side: side
+            });
+        }
+    });
+    accCloseRecordForm();
+    showToast('رکورد ذخیره شد ✓');
+}
+
+function accDeleteRecord() {
+    if (!accFormCtx || !accFormCtx.recordId) return;
+    if (!confirm('این رکورد حذف شود؟')) return;
+    const ctx = accFormCtx;
+    accMutateDoc(function(doc) {
+        const g = (doc.sections[ctx.section] || []).find(x => x.id === ctx.groupId);
+        if (!g) return;
+        const sg = (g.subgroups || []).find(x => x.id === ctx.subgroupId);
+        if (!sg) return;
+        sg.records = (sg.records || []).filter(r => r.id !== ctx.recordId);
+    });
+    accCloseRecordForm();
+    showToast('رکورد حذف شد');
+}
+
+// ─── مهاجرت دادهٔ حسابداری (برای ورود بک‌آپ و لود دفاعی) ───
+
+function migrateAccounting(raw) {
+    const out = accDefaultDB();
+    try {
+        if (!raw || typeof raw !== 'object' || !Array.isArray(raw.docs)) return out;
+        const docs = [];
+        raw.docs.forEach(function(d) {
+            if (!d || typeof d !== 'object') return;
+            const doc = {
+                id: (typeof d.id === 'string' && d.id) ? d.id : accGenId(),
+                name: (typeof d.name === 'string' && d.name.trim()) ? d.name.trim() : 'سند',
+                createdAt: (typeof d.createdAt === 'string') ? d.createdAt : new Date().toISOString(),
+                sections: { assets: [], liabilities: [], equity: [] }
+            };
+            ACC_SECTIONS.forEach(function(kind) {
+                const arr = (d.sections && Array.isArray(d.sections[kind])) ? d.sections[kind] : [];
+                arr.forEach(function(g) {
+                    if (!g || typeof g !== 'object') return;
+                    const grp = {
+                        id: (typeof g.id === 'string' && g.id) ? g.id : accGenId(),
+                        name: (typeof g.name === 'string' && g.name.trim()) ? g.name.trim() : 'گروه',
+                        createdAt: (typeof g.createdAt === 'string') ? g.createdAt : new Date().toISOString(),
+                        subgroups: []
+                    };
+                    const sgs = Array.isArray(g.subgroups) ? g.subgroups : [];
+                    sgs.forEach(function(sg) {
+                        if (!sg || typeof sg !== 'object') return;
+                        const sub = {
+                            id: (typeof sg.id === 'string' && sg.id) ? sg.id : accGenId(),
+                            name: (typeof sg.name === 'string' && sg.name.trim()) ? sg.name.trim() : 'زیرگروه',
+                            createdAt: (typeof sg.createdAt === 'string') ? sg.createdAt : new Date().toISOString(),
+                            records: []
+                        };
+                        const recs = Array.isArray(sg.records) ? sg.records : [];
+                        recs.forEach(function(r) {
+                            if (!r || typeof r !== 'object') return;
+                            const amt = Math.round(Math.abs(Number(r.amount)));
+                            if (!isFinite(amt)) return;
+                            sub.records.push({
+                                id: (typeof r.id === 'string' && r.id) ? r.id : accGenId(),
+                                text: (typeof r.text === 'string') ? r.text : '',
+                                createdAt: (typeof r.createdAt === 'string') ? r.createdAt : new Date().toISOString(),
+                                contactId: (typeof r.contactId === 'string') ? r.contactId : null,
+                                amount: amt,
+                                side: (r.side === 'credit') ? 'credit' : 'debit'
+                            });
+                        });
+                        grp.subgroups.push(sub);
+                    });
+                    doc.sections[kind].push(grp);
+                });
+            });
+            docs.push(doc);
+        });
+        if (docs.length === 0) return out;
+        out.docs = docs;
+        out.currentDocId = ((typeof raw.currentDocId === 'string') && docs.some(d => d.id === raw.currentDocId))
+            ? raw.currentDocId : docs[0].id;
+        return out;
+    } catch(e) {
+        console.error('Accounting migrate error', e);
+        return accDefaultDB();
+    }
+}
+
+// ─── منوی همبرگری هدر (v209) ───
+
+function openHamburgerMenu() {
+    const ov = document.getElementById('hamburgerMenuOverlay');
+    if (!ov || ov.classList.contains('active')) return;
+    // 🔧 v209: کارت منو زیر هدر اصلی باز شود (padding داینامیک، نه عدد ثابت)
+    try {
+        const header = document.querySelector('.header');
+        if (header) ov.style.paddingTop = (header.offsetHeight + 6) + 'px';
+    } catch(e) {}
+    ov.classList.add('active');
+    bringToFront(ov);
+    navPush({ view: 'modal', type: 'hamburger' });
+    trackModalOpen('hamburger');
+}
+
+function closeHamburgerMenu() {
+    const ov = document.getElementById('hamburgerMenuOverlay');
+    if (!ov || !ov.classList.contains('active')) return; // idempotent
+    closeModalByType('hamburger');
+    navBack();
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -13738,73 +16708,152 @@ document.addEventListener('DOMContentLoaded', function() {
 let _notesAccumulatedText = '';  // 🔧 متن جمع‌آوری‌شده در طول ضبط
 let _notesAddedIndices = new Set();  // 🔧 ایندکس‌های پردازش‌شده برای جلوگیری از تکرار
 
+// 🔧 v180: ردیابی موقعیت کرسر برای درج متن در محل درست
+// وقتی کاربر در محتوای یادداشت کلیک می‌کند (مثلاً در وسط محتوا، روی یک خط گذشته)،
+// موقعیت کرسر ذخیره می‌شود. هنگام ضبط، اگر کرسر در وسط محتواست، متن در همان محل
+// درج می‌شود (نه در بالا با منطق تاریخ). ضبط‌های بعدی، زیر درج قبلی قرار می‌گیرند.
+let _notesSavedRange = null;        // 🔧 آخرین موقعیت کرسر در محتوا (به‌طور پیوسته به‌روز می‌شود)
+let _notesInsertionRange = null;    // 🔧 موقعیت کرسر در شروع ضبط (فریز شده — برای درج در پایان ضبط)
+
+// 🔧 تابع کمکی: آیا کرسر در انتهای محتواست؟
+// اگر کرسر در انتها باشد، از منطق تاریخ استفاده می‌کنیم (رفتار قبلی).
+// اگر کرسر در وسط باشد، متن را در محل کرسر درج می‌کنیم (رفتار جدید v180).
+function _isRangeAtContentEnd(range, content) {
+    try {
+        var tempRange = document.createRange();
+        tempRange.selectNodeContents(content);
+        tempRange.collapse(false); // collapse to end
+        return range.compareBoundaryPoints(Range.END_TO_END, tempRange) >= 0;
+    } catch(e) {
+        return true; // در صورت خطا، فرض کن در انتهاست (استفاده از منطق تاریخ)
+    }
+}
+
+// 🔧 تابع کمکی: درج متن در محل کرسر + <br> بعد از آن
+// بعد از درج، _notesSavedRange به بعد از <br> به‌روز می‌شود تا ضبط بعدی
+// زیر این درج قرار گیرد (ترتیب زیر هم).
+function _insertTextAtCursor(content, text, range) {
+    var processedText = addNumericAfterWords(text);
+    var textNode = document.createTextNode(processedText);
+    var br = document.createElement('br');
+
+    // درج متن در محل کرسر
+    range.insertNode(textNode);
+    // درج <br> بعد از متن (برای خط جدید بعدی)
+    if (textNode.nextSibling) {
+        textNode.parentNode.insertBefore(br, textNode.nextSibling);
+    } else {
+        textNode.parentNode.appendChild(br);
+    }
+
+    // به‌روزرسانی _notesSavedRange به بعد از <br>
+    // اینطوری ضبط بعدی، زیر این درج قرار می‌گیرد
+    _notesSavedRange = document.createRange();
+    _notesSavedRange.setStartAfter(br);
+    _notesSavedRange.collapse(true);
+}
+
+// 🔧 v180: ردیابی کرسر در محتوای یادداشت
+// هر بار که انتخاب (selection) در صفحه تغییر می‌کند، اگر کرسر داخل
+// #notesContent باشد، موقعیت آن ذخیره می‌شود. این کار حتی وقتی کاربر
+// میکروفون را لمس می‌کند (و فوکوس از محتوا خارج می‌شود) موقعیت قبلی را حفظ می‌کند.
+document.addEventListener('selectionchange', function() {
+    var sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    var content = document.getElementById('notesContent');
+    if (!content) return;
+    var range = sel.getRangeAt(0);
+    // بررسی: آیا کرسر داخل محتوای یادداشت است؟
+    if (content.contains(range.commonAncestorContainer)) {
+        _notesSavedRange = range.cloneRange();
+    }
+});
+
 function toggleNotesRecording() {
     if (_notesRecording) {
-        // 🔧 توقف ضبط — کل متن جمع‌آوری‌شده را به‌عنوان یک پاراگراف بنویس
+        // 🔧 توقف ضبط — کل متن جمع‌آوری‌شده را بنویس
         _notesRecording = false;
         document.getElementById('notesMicBtn').classList.remove('recording');
         if (_notesRecognition) {
             try { _notesRecognition.stop(); } catch(e) {}
         }
-        // 🔧 اگر متنی جمع‌آوری شده، آن را طبق قوانین جدید بنویس:
+        // 🔧 اگر متنی جمع‌آوری شده، آن را طبق قوانین زیر بنویس:
         //   - اولین ضبط هر روز: خط تاریخ (بدون ساعت) → خط بعد متن
         //   - ضبط‌های بعدی همان روز: فقط متن (خط به خط اضافه شود)
         //   - اعداد فارسی گفتاری به دیجیت تبدیل می‌شوند (مثل تسک‌ها)
         //   - جدیدترین روز همیشه در بالای صفحه، روزهای قبل به پایین شیفت می‌شوند
+        //   🔧 v180: اگر کرسر در وسط محتواست (کاربر روی یک خط گذشته کلیک کرده)،
+        //   متن در محل کرسر درج می‌شود (نه در بالا با منطق تاریخ). ضبط‌های بعدی،
+        //   زیر درج قبلی قرار می‌گیرند (ترتیب زیر هم).
         if (_notesAccumulatedText.trim()) {
             // 🔧 تبدیل اعداد فارسی گفتاری به دیجیت (مانند تسک‌ها)
-            // مثال: «دو میلیون تومان» → «۲٬۰۰۰٬۰۰۰ تومان»
-            //       «صفر نه یک پنج» → «۰۹۱۵»
             var text = addNumericAfterWords(_notesAccumulatedText.trim());
             var todayDate = toPersianDigits(toJalaliDateOnly(new Date()));
             var content = document.getElementById('notesContent');
-            
-            // بررسی: آیا اولین تاریخ موجود با امروز یکی است؟
-            var dateSpans = content.querySelectorAll('.notes-date');
-            var firstDateSpan = dateSpans.length > 0 ? dateSpans[0] : null;
-            var sameDay = firstDateSpan && firstDateSpan.textContent.trim() === todayDate;
-            
-            if (sameDay) {
-                // همان روز — متن را در خط جدید اضافه کن
-                var insertBefore = (dateSpans.length > 1) ? dateSpans[1] : null;
-                var textNode = document.createTextNode(text);
-                if (insertBefore) {
-                    // قبل از تاریخ روز بعدی: <br> + متن + <br> قبل از تاریخ درج کن
-                    // ترتیب: textNode قبل از <br>، تا متن روی خط خودش بیاید
-                    var br = document.createElement('br');
-                    content.insertBefore(br, insertBefore);
-                    content.insertBefore(textNode, br);
-                } else {
-                    // انتهای محتوا: اگر آخرین عنصر <br> نیست، یک <br> اضافه کن
-                    var lastChild = content.lastChild;
-                    if (!lastChild || lastChild.nodeName !== 'BR') {
-                        content.appendChild(document.createElement('br'));
+            var notesBody = document.querySelector('.notes-body');
+            // 🔧 v180: ذخیره اسکرول قبل از تغییر محتوا — برای بازگردانی بعد از درج
+            var savedScroll = notesBody ? notesBody.scrollTop : 0;
+
+            // 🔧 v180: اگر کرسر در وسط محتواست، متن را در محل کرسر درج کن (بدون منطق تاریخ)
+            var insertedAtCursor = false;
+            if (_notesInsertionRange &&
+                content.contains(_notesInsertionRange.commonAncestorContainer) &&
+                !_isRangeAtContentEnd(_notesInsertionRange, content)) {
+                _insertTextAtCursor(content, text, _notesInsertionRange);
+                insertedAtCursor = true;
+            }
+
+            if (!insertedAtCursor) {
+                // منطق تاریخ (رفتار قبلی) — وقتی کرسر در انتهاست یا محتوا خالی است
+                // بررسی: آیا اولین تاریخ موجود با امروز یکی است؟
+                var dateSpans = content.querySelectorAll('.notes-date');
+                var firstDateSpan = dateSpans.length > 0 ? dateSpans[0] : null;
+                var sameDay = firstDateSpan && firstDateSpan.textContent.trim() === todayDate;
+
+                if (sameDay) {
+                    // همان روز — متن را در خط جدید اضافه کن
+                    var insertBefore = (dateSpans.length > 1) ? dateSpans[1] : null;
+                    var textNode = document.createTextNode(text);
+                    if (insertBefore) {
+                        // قبل از تاریخ روز بعدی: <br> + متن + <br> قبل از تاریخ درج کن
+                        var br = document.createElement('br');
+                        content.insertBefore(br, insertBefore);
+                        content.insertBefore(textNode, br);
+                    } else {
+                        // انتهای محتوا: اگر آخرین عنصر <br> نیست، یک <br> اضافه کن
+                        var lastChild = content.lastChild;
+                        if (!lastChild || lastChild.nodeName !== 'BR') {
+                            content.appendChild(document.createElement('br'));
+                        }
+                        content.appendChild(textNode);
                     }
-                    content.appendChild(textNode);
-                }
-            } else {
-                // روز جدید — تاریخ در خط اول، متن در خط بعد
-                var dateSpan = document.createElement('span');
-                dateSpan.className = 'notes-date';
-                dateSpan.textContent = todayDate;
-                var br1 = document.createElement('br');
-                var textNode = document.createTextNode(text);
-                var br2 = document.createElement('br');
-                if (content.firstChild) {
-                    content.insertBefore(br2, content.firstChild);
-                    content.insertBefore(textNode, br2);
-                    content.insertBefore(br1, textNode);
-                    content.insertBefore(dateSpan, br1);
                 } else {
-                    content.appendChild(dateSpan);
-                    content.appendChild(br1);
-                    content.appendChild(textNode);
+                    // روز جدید — تاریخ در خط اول، متن در خط بعد
+                    var dateSpan = document.createElement('span');
+                    dateSpan.className = 'notes-date';
+                    dateSpan.textContent = todayDate;
+                    var br1 = document.createElement('br');
+                    var textNode = document.createTextNode(text);
+                    var br2 = document.createElement('br');
+                    if (content.firstChild) {
+                        content.insertBefore(br2, content.firstChild);
+                        content.insertBefore(textNode, br2);
+                        content.insertBefore(br1, textNode);
+                        content.insertBefore(dateSpan, br1);
+                    } else {
+                        content.appendChild(dateSpan);
+                        content.appendChild(br1);
+                        content.appendChild(textNode);
+                    }
                 }
             }
-            
+
             localStorage.setItem(getNotesKey(_notesTargetGroup), content.innerHTML);
             _notesAccumulatedText = '';
             showToast('یادداشت ثبت شد ✓');
+
+            // 🔧 v180: بازگردانی اسکرول به محل قبلی — صفحه نپرد، میکروفون همان‌جا بماند
+            if (notesBody) notesBody.scrollTop = savedScroll;
         }
         return;
     }
@@ -13818,6 +16867,12 @@ function toggleNotesRecording() {
         showToast('اینترنت در دسترس نیست. ضبط کار نمی‌کند.');
         return;
     }
+    // 🔧 v180: فریز کردن موقعیت کرسر برای درج در پایان ضبط
+    // اگر کرسر در محتواست، یک کپی از آن می‌گیریم تا در پایان ضبط استفاده کنیم.
+    // این حتی اگر کاربر در حین ضبط جای دیگری کلیک کند، موقعیت اصلی را حفظ می‌کند.
+    _notesInsertionRange = (_notesSavedRange && document.getElementById('notesContent').contains(_notesSavedRange.commonAncestorContainer))
+        ? _notesSavedRange.cloneRange()
+        : null;
     // 🔧 ریست متن جمع‌آوری‌شده و ایندکس‌ها
     _notesAccumulatedText = '';
     _notesAddedIndices = new Set();
@@ -14240,6 +17295,13 @@ function openCalendar() {
 }
 
 function closeCalendar() {
+    // 🔧 v204 (bugfix): اگر تقویم باز نیست، هیچ کاری نکن (idempotent).
+    // قبلاً بدون شرط navBack() می‌زد: اگر تقویم باز نبود (بستن دوباره،
+    // دابل‌تپ روی «بستن»، یا فراخوانی از مسیرهای دیگر)، history.back()
+    // به ورودی قبلی تاریخچه — یعنی خارج از برنامه — می‌رفت و کل صفحه
+    // unload می‌شد. اکنون فقط وقتی تقویم واقعاً فعال است بسته می‌شود.
+    const calEl = document.getElementById('calendarOverlay');
+    if (!calEl || !calEl.classList.contains('active')) return;
     // Visually close the calendar + remove from the modal stack.
     closeModalByType('calendar');
     // Pop the modal marker we pushed on openCalendar.
@@ -14780,35 +17842,35 @@ function checkPendingReload() {
 //   - GitHub itself being down
 //   - Intermittent connectivity
 
-let isReachable = true; // assume reachable initially (avoid unnecessary flashing on load)
-let lastReachabilityCheck = 0;
-let reachabilityCheckInProgress = false;
-// 🔧 v165: افزایش فاصله بررسی از ۲۵s به ۱۲۰s (۲ دقیقه) — چشمک بی‌جهت حذف شود
-const REACHABILITY_CHECK_INTERVAL = 120000; // 2 minutes
-const REACHABILITY_TIMEOUT = 5000; // 5 seconds timeout (بیشتر صبر کن)
-// 🔧 v165: فقط navigator.onLine بررسی شود — fetch نکن که باعث چشمک می‌شود
-// اگر navigator.onLine=true → آنلاین. اگر false → آفلاین.
-// دیگر فایل‌ها را fetch نمی‌کنیم چون باعث چشمک بی‌جهت می‌شد.
-const REACHABILITY_ENDPOINTS = [];
+// 🔧 v196: رفع حالت ۴ — navigator.onLine guard حذف شد
+// مشکل: وقتی اینترنت قطع است و وصل می‌شود، navigator.onLine ممکن است
+// روی false بماند → checkReachability زود retour می‌داد بدون fetch.
+// رفع: همیشه fetch کن — navigator.onLine را نادیده بگیر.
+let isReachable = true;
+let _reachabilityFetching = false;
 
-async function checkReachability(force = false) {
-    const now = Date.now();
-    if (!force && now - lastReachabilityCheck < REACHABILITY_CHECK_INTERVAL) {
-        return isReachable;
+async function checkReachability() {
+    if (_reachabilityFetching) return isReachable;
+    _reachabilityFetching = true;
+    var was = isReachable;
+    try {
+        var controller = new AbortController();
+        var tid = setTimeout(function() { controller.abort(); }, 4000);
+        var res = await fetch('./manifest.json?_rc=1', {
+            method: 'GET',
+            cache: 'no-store',
+            signal: controller.signal
+        });
+        clearTimeout(tid);
+        isReachable = res && res.ok;
+    } catch(e) {
+        isReachable = false;
     }
-    if (reachabilityCheckInProgress) {
-        return isReachable;
-    }
-    reachabilityCheckInProgress = true;
-    lastReachabilityCheck = now;
-
-    // 🔧 v165: فقط navigator.onLine — دیگر fetch نمی‌کنیم
-    const wasReachable = isReachable;
-    isReachable = navigator.onLine;
-    if (wasReachable !== isReachable) {
+    _reachabilityFetching = false;
+    if (was !== isReachable) {
         updateOnlineStatus();
+        if (isReachable) render();
     }
-    reachabilityCheckInProgress = false;
     return isReachable;
 }
 
@@ -15123,55 +18185,105 @@ document.addEventListener('DOMContentLoaded', async () => {
     // notifications. Fire-and-forget (not awaited) — doesn't block UI.
     try { idbBulkPutReminders(getDB()); } catch(e) {}
 
+    // 🔧 v199: آینهٔ تنظیمات اعلان به IndexedDB هنگام شروع — رفع باگ اصلی
+    // «نوتیف های زنگوله را که تنظیم میکنم عمل نمیکند». قبلاً تنظیمات فقط
+    // هنگام ذخیرهٔ مجدد در منوی زنگوله به IDB می‌رفت؛ تنظیمات کاربرانی که
+    // با نسخه‌های قدیمی‌تر (قبل از v183) ذخیره کرده بودند هرگز به SW
+    // نمی‌رسید و SW هیچ اعلان پس‌زمینه‌ای نمی‌فرستاد. اکنون در هر بارگذاری
+    // تنظیمات فعلی (localStorage — منبع حقیقت) به IDB آینه می‌شود.
+    try { idbPutNotifSettings(getNotifSettings()); } catch(e) {}
+
+    // 🔧 v199: ثبت Background Sync — وقتی اتصال دوباره وصل شود، SW بیدار
+    // می‌شود و سررسیدهای از-قلم-افتاده را بررسی می‌کند (حتی با صفحهٔ بسته)
+    registerDeadlineSync();
+
     // Initialize notifications (async, loads from IDB)
     loadSentNotifications().then(() => {
         updateNotifButton();
         cleanupOldNotifications();
         checkNotifications();
+        // 🔧 v199: بعد از اولین چک، زمان‌بندی اعلان‌های دقیق (TimestampTrigger)
+        // برای تسک‌های فعال — اگر مرورگر پشتیبانی کند
+        requestSwDeadlineCheck();
     });
     updateNotifButton();
 
     // Register service worker (must be after DOMContentLoaded)
     registerServiceWorker();
 
-    // ─────────────────────────────────────────────────────────────────────
-    // 🔧 v166: بررسی اینترنت — کاملا حذف شد
-    // فقط navigator.onLine کافی است (مرورگر خودش مدیریت می‌کند)
-    // هیچ fetch، هیچ checkReachability، هیچ چشمک
-    // ─────────────────────────────────────────────────────────────────────
-    // فقط online/offline events را گوش بده
-    window.addEventListener('online', () => {
-        isReachable = true;
-        updateOnlineStatus();
-        render();
+    // 🔧 v199: آخرین بررسی هنگام ترک/انجماد صفحه — قبل از این‌که مرورگر
+    // تایمرها را منجمد کند، یک‌بار دیگر SW را بیدار می‌کنیم تا اگر سررسیدی
+    // نزدیک است، SW خودش مسئولیت اعلان را بگیرد. همچنین sync را دوباره
+    // ثبت می‌کنیم تا در صورت قطع/وصل اینترنت، جبران انجام شود.
+    window.addEventListener('pagehide', function() {
+        try {
+            if (navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ type: 'CHECK_DEADLINES' });
+            }
+        } catch(e) {}
+        registerDeadlineSync();
     });
-    window.addEventListener('offline', () => {
-        isReachable = false;
-        updateOnlineStatus();
-        render();
-    });
-    // وضعیت اولیه
-    isReachable = navigator.onLine;
-    updateOnlineStatus();
+
+    // ─────────────────────────────────────────────────────────────────────
+    // 🔧 v196: فقط fetch — navigator.onLine حذف شد کامل
+    // online/offline events فقط checkReachability را تریگر می‌کنند
+    // ─────────────────────────────────────────────────────────────────────
+    window.addEventListener('online', () => { checkReachability(); });
+    window.addEventListener('offline', () => { checkReachability(); });
+    // چک اولیه بعد از ۱ ثانیه
+    setTimeout(function() { checkReachability(); }, 1000);
+    // هر ۳ ثانیه چک کن
+    setInterval(function() { checkReachability(); }, 3000);
 
     // Check when tab becomes visible (user came back from another tab/app)
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) {
-            try {
-                checkReachability(true).then(() => {
-                    updateOnlineStatus();
-                    render();
-                    checkNotifications();
-                    if (navigator.serviceWorker.controller) {
-                        navigator.serviceWorker.controller.postMessage({ type: 'CHECK_DEADLINES' });
-                    }
-                });
-            } catch(e) {}
+            // 🔧 v196: checkReachability اکنون sync در فراخوانی ولی async در اجرا
+            checkReachability().then(function() {
+                updateOnlineStatus();
+                render();
+                checkNotifications();
+                if (navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({ type: 'CHECK_DEADLINES' });
+                }
+            }).catch(function() {});
+            // 🔧 v199: دوباره sync ثبت کن (بعد از هر بازگشت، ثبت تازه می‌ماند)
+            registerDeadlineSync();
             // 🔧 v147: به‌روزرسانی دکمه‌های شناور وقتی برگشتیم
             _refreshFloatingAddBtn();
             refreshFloatingContactBtn();
+            // 🔧 v184: وقتی کاربر به برنامه برمی‌گردد، چک کن آیا نسخهٔ جدیدی
+            // از گیت‌هاب موجود است — SW در پس‌زمینه کش را به‌روزرسانی می‌کند.
+            if (navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ type: 'UPDATE_CACHE' });
+            }
         }
     });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // 🔧 v184: AUTO-UPDATE FROM GITHUB
+    // برنامه هنگام بارگذاری، هنگام بازگشت کاربر (visibilitychange)، و هر
+    // ۳۰ دقیقه به SW پیام UPDATE_CACHE می‌فرستد. SW در پس‌زمینه آخرین
+    // نسخهٔ HTML و APP_SHELL را از گیت‌هاب دانلود و در کش ذخیره می‌کند.
+    // اگر آفلاین باشد، نادیده گرفته می‌شود — برنامه از نسخهٔ کش‌شده
+    // (حافظهٔ داخلی موبایل/کامپیوتر) ادامه می‌دهد، حتی برای روزها و ماه‌ها.
+    // ─────────────────────────────────────────────────────────────────────
+    // هنگام بارگذاری اولیه — بعد از ۵ ثانیه (تا UI کامل بارگذاری شود)
+    setTimeout(function() {
+        if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({ type: 'UPDATE_CACHE' });
+        }
+    }, 5000);
+    // 🔧 v196: هر ۲ دقیقه چک کن — navigator.onLine حذف شد (گیر می‌کرد)
+    setInterval(function() {
+        if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({ type: 'UPDATE_CACHE' });
+            // 🔧 v200: ماندگاری حافظه — هر ۲ دقیقه SW سررسیدها را هم سمت خودش
+            // بررسی کند + تریگرها را به‌روز نگه دارد (وقتی tab باز است)
+            navigator.serviceWorker.controller.postMessage({ type: 'CHECK_DEADLINES' });
+            navigator.serviceWorker.controller.postMessage({ type: 'SCHEDULE_TRIGGERS' });
+        }
+    }, 2 * 60 * 1000);
 
     // ─────────────────────────────────────────────────────────────────────
     // PERIODIC UI REFRESH (every 30s) — re-render for time-based reordering
@@ -15188,6 +18300,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Run initial notification check after 3 seconds (delayed to not block load)
     setTimeout(checkNotifications, 3000);
+
+    // 🔧 v201: چک سریع‌تر برای بنر درون‌صفحه‌ای — هر ۱۰ ثانیه. این فقط برای
+    // foreground است و بنر را سریع‌تر نشان می‌دهد. چون checkNotifications
+    // idempotent است (کلید در sentNotifications ثبت می‌شود)، تکرار فراخوانی
+    // بی‌ضرر است.
+    setInterval(checkNotifications, 10000);
+
+    // 🔧 v201: گرم کردن AudioContext در اولین تعامل کاربر — مهم‌ترین remediation
+    // برای «زنگ نمی‌زند». AudioContext در حالت suspended شروع می‌شود و فقط در
+    // یک user gesture (touch/click/keydown) می‌تواند resume شود. وقتی کاربر
+    // هر جای صفحه را لمس کند، ctx در حالت running می‌ماند و interval-triggered
+    // sound (از checkNotifications) کار می‌کند.
+    try {
+        var _warmOnce = function() {
+            warmAudioContextOnUserGesture();
+            // فقط یک‌بار نیاز است — اما listener را نگه می‌داریم تا در صورت
+            // suspend شدن مجدد (مثلاً بعد از بازگشت از background)، دوباره resume شود.
+        };
+        window.addEventListener('touchstart', _warmOnce, { passive: true });
+        window.addEventListener('click', _warmOnce, { passive: true });
+        window.addEventListener('keydown', _warmOnce, { passive: true });
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                // صفحه دوباره visible شد — ctx را دوباره گرم کن (ممکن است suspended شده باشد)
+                _audioWarmed = false;
+                warmAudioContextOnUserGesture();
+            }
+        });
+    } catch(e) { console.warn('[NotifSound] warm listener setup failed', e); }
 
     // ─────────────────────────────────────────────────────────────────────
     // 🔧 v132 — SW KEEPALIVE: سرویس ورکر را در حافظه نگه می‌داریم
@@ -15226,6 +18367,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             _refreshFloatingAddBtn();
             refreshFloatingContactBtn();
+            // 🔧 v207 (safety net): اگر فرم تسک بسته شده ولی body هنوز قفل است
+            // (position:fixed)، آزادش کن. فقط lockBodyScroll (مسیر فرم تسک)
+            // body را fixed می‌کند؛ پس «فرم بسته + body fixed» همیشه یعنی نشتی
+            // قفل — هر مسیر آینده‌ای که فراموش کند unlock بزند، این تا ۵۰۰ms
+            // بعد خودکار جبران می‌کند (دیگر هیچ «قفل شدن دائمی» ممکن نیست).
+            var _mo = document.getElementById('modalOverlay');
+            if (document.body.style.position === 'fixed' && (!_mo || !_mo.classList.contains('active'))) {
+                try { unlockBodyScroll(); } catch(e) {}
+            }
         } catch(e) {}
     }, 500);
     console.log('[Floating] Auto-refresh interval active (500ms)');
@@ -15264,6 +18414,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Close datetime picker on overlay click
+    // 🔧 v199: رفع ReferenceError — متغیر pickerOverlay تعریف نشده بود و
+    // اجرای ادامهٔ init را قطع می‌کرد (کلید Escape و بقیه ثبت نمی‌شدند)
+    const pickerOverlay = document.getElementById('datetimePickerOverlay');
     if (pickerOverlay) {
         pickerOverlay.addEventListener('click', (e) => {
             if (e.target.id === 'datetimePickerOverlay') closeDatetimePicker();
