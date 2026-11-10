@@ -1300,10 +1300,12 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     border-radius: 10px;
     padding: 5px 3px 4px;
     text-align: center;
-    cursor: pointer;
+    cursor: default; /* 🔧 v209 بازنگری: نوار بالایی فقط نمایشی است */
     transition: border-color .15s, background .15s;
 }
-.acc-eq-box.selected { box-shadow: 0 0 0 2px #4E342E inset; }
+/* باکس‌های «سند» — لمس‌پذیر (شروع تعامل از اسناد است، نه نوار بالایی) */
+.acc-doc-line .acc-eq-box { cursor: pointer; }
+.acc-eq-box.open { box-shadow: 0 0 0 2.5px #4E342E inset; }
 .acc-eq-box .acc-box-title { font-size: 12px; font-weight: 700; color: #333; }
 .acc-eq-box .acc-box-total { font-size: 10px; color: #555; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .acc-eq-sign { display: flex; align-items: center; font-size: 11px; font-weight: 700; color: #444; flex-shrink: 0; }
@@ -1312,33 +1314,10 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .acc-eq-line { text-align: center; font-size: 10px; color: #666; padding: 3px 6px 6px; }
 .acc-eq-line.acc-eq-ok { color: #2e7d32; font-weight: 700; }
 .acc-eq-line.acc-eq-bad { color: #c62828; font-weight: 700; }
-/* ردیف سناد + دکمهٔ افزودن سند */
-.acc-docs-row {
-    flex-shrink: 0;
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    padding: 6px 8px 2px;
-    -webkit-overflow-scrolling: touch;
-}
-.acc-doc-chip {
-    background: #fff;
-    border: 2px solid #bbb;
-    border-radius: 16px;
-    padding: 4px 10px;
-    font-size: 11px;
-    color: #333;
-    white-space: nowrap;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.acc-doc-chip.current { border-color: #4E342E; background: #efebe9; font-weight: 700; }
-.acc-doc-chip .acc-chip-ico { font-size: 11px; opacity: .75; }
+/* دکمهٔ افزودن سند — فیکس زیر نوار معادله (الگوی «گروه جدید» صفحهٔ اصلی) */
 .acc-add-doc {
     flex-shrink: 0;
-    margin: 6px 8px 4px;
+    margin: 6px 8px;
     background: linear-gradient(135deg, #9E9E9E, #757575);
     color: #fff;
     border-radius: 10px;
@@ -1350,6 +1329,56 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     user-select: none;
 }
 .acc-add-doc:active { filter: brightness(0.92); }
+/* 🔧 v209 بازنگری: اسناد — هر سند یک کارت با خط سه‌باکسی شبیه نوار بالا؛
+   لیست عمودی اسکرول‌شونده */
+.acc-doc-card {
+    background: #fff;
+    border: 2px solid #cfd8dc;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+.acc-doc-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: #efebe9;
+    border-bottom: 1px solid #d7ccc8;
+}
+.acc-doc-head .acc-doc-name2 {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: #4E342E;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.acc-doc-head .acc-item-btn {
+    background: none;
+    border: none;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 2px 4px;
+    opacity: .6;
+    font-family: inherit;
+}
+.acc-doc-head .acc-item-btn:active { opacity: 1; }
+.acc-doc-line { padding: 7px 8px 5px; }
+.acc-doc-tree {
+    border-top: 1.5px dashed #d7ccc8;
+    background: #fafafa;
+    padding: 8px 8px 4px;
+}
+.acc-node-inner { margin-top: 4px; }
+/* کودکانِ هر گره در درخت — تورفتگی با خط عمودی (هر عمق) */
+.acc-node-children {
+    margin-right: 14px;
+    padding-right: 8px;
+    border-right: 2px solid #e8e2df;
+}
 /* محتوای قابل اسکرول */
 .acc-content {
     flex: 1;
@@ -4814,10 +4843,13 @@ body.locked .header-actions button {
     </div>
 </div>
 
-<!-- 🔧 v209: بخش حسابداری — تمام‌صفحه. معادلهٔ اصلی: دارایی = بدهی + سرمایه.
-     سه باکس بالایی همیشه فیکس‌اند (مثل نوارهای «همه کارها»/«کارهای فوری» صفحهٔ اصلی).
-     جمع هر باکس از رکوردهای زیرمجموعه‌اش محاسبه می‌شود؛ اگر معادله برقرار باشد
-     هر سه باکس سبز وگرنه هر سه قرمز می‌شوند. -->
+<!-- 🔧 v209 (بازنگری): بخش حسابداری — تمام‌صفحه. معادلهٔ اصلی: دارایی = بدهی + سرمایه.
+     سه باکس بالایی فیکس‌اند ولی «فقط نمایشی» — جمع کل همهٔ اسناد را نشان می‌دهند
+     و لمس ندارند. تعامل از باکس‌های «سندها» شروع می‌شود: هر سند یک خط سه‌باکسی
+     شبیه همین نوار (همان علامت‌های = و + خیلی کوچک) است و اسناد با زیاد شدن،
+     اسکرول می‌شوند. گروه‌ها/زیرگروه‌ها برای باکس اصلی تعریف می‌شوند و مشترک‌اند
+     (در همهٔ اسناد ظاهر و استفاده می‌شوند)؛ تعدادشان بی‌نهایت است؛ رکورد در
+     هر سطحی از درخت قابل افزودن است (حتی مستقیماً زیر گروه اول). -->
 <div class="accounting-overlay" id="accountingOverlay">
     <div class="acc-topbar">
         <button class="acc-back-btn" onclick="closeAccounting()">بازگشت ❯</button>
@@ -4826,25 +4858,26 @@ body.locked .header-actions button {
     </div>
     <div class="acc-eq-bar">
         <div class="acc-eq-row">
-            <div class="acc-eq-box neutral" id="accBoxAssets" onclick="accToggleSection('assets')">
+            <div class="acc-eq-box neutral" id="accBoxAssets">
                 <div class="acc-box-title">دارایی</div>
                 <div class="acc-box-total" id="accTotalAssets">۰</div>
             </div>
             <div class="acc-eq-sign">=</div>
-            <div class="acc-eq-box neutral" id="accBoxLiabilities" onclick="accToggleSection('liabilities')">
+            <div class="acc-eq-box neutral" id="accBoxLiabilities">
                 <div class="acc-box-title">بدهی</div>
                 <div class="acc-box-total" id="accTotalLiabilities">۰</div>
             </div>
             <div class="acc-eq-sign">+</div>
-            <div class="acc-eq-box neutral" id="accBoxEquity" onclick="accToggleSection('equity')">
+            <div class="acc-eq-box neutral" id="accBoxEquity">
                 <div class="acc-box-title">سرمایه</div>
                 <div class="acc-box-total" id="accTotalEquity">۰</div>
             </div>
         </div>
         <div class="acc-eq-line" id="accEqLine">—</div>
     </div>
-    <div class="acc-docs-row" id="accDocsRow"></div>
+    <!-- دکمهٔ افزودن سند — فیکس زیر نوار معادله (الگوی «گروه جدید» صفحهٔ اصلی) -->
     <div class="acc-add-doc" onclick="accAddDoc()">+ افزودن سند حسابداری جدید +</div>
+    <!-- لیست عمودی اسناد — هر سند یک خط سه‌باکسی قابل لمس؛ با زیاد شدن اسکرول می‌شود -->
     <div class="acc-content" id="accContent"></div>
 </div>
 
@@ -5943,8 +5976,9 @@ body.locked .header-actions button {
 //           حذف آزادِ بدون ارجاع، مسدودسازی contactId، مسدودسازی نام در
 //           متن، نرمال‌سازی ي/ک عربی، پیام ترکیبی، تسک انجام‌شده هم
 //           مانع است، رفع موانع → حذف آزاد، صفر pageerror.
-//   v209 - NEW FEATURES: HAMBURGER MENU + FULL ACCOUNTING MODULE:
-//         درخواست کاربر (سه خواسته):
+//   v209 - NEW FEATURES: HAMBURGER MENU + FULL ACCOUNTING MODULE (بازنگری‌شده):
+//         درخواست کاربر + اصلاحات تکمیلی همان درخواست (سه خواستهٔ اول + چهار
+//         اصلاح مهم که طراحی نسخهٔ اول حسابداری را عوض کرد):
 //         ۱) منوی همبرگری ☰ کنار هدر — دکمه‌های 📤 بک‌آپ، 📥 بازیابی و
 //            🔔 زنگوله به داخل آن منتقل شدند تا هدر خلوت شود. دکمه‌های
 //            قبلی در DOM می‌مانند (display:none) تا ارجاع‌های JS سالم باشند.
@@ -5952,34 +5986,55 @@ body.locked .header-actions button {
 //            + guard idempotent) — Back موبایل منو را می‌بندد.
 //         ۲) کلید 💼 حسابداری در هدر → بخش تمام‌صفحه.
 //         ۳) مکانیزم حسابداری بر پایهٔ معادلهٔ اصلی: دارایی = بدهی + سرمایه.
-//            ساختار: سند → سه باکس ثابت (دارایی/بدهی/سرمایه — فیکس زیر
-//            topbar مثل نوارهای «همه کارها»/«کارهای فوری»، تیترها و علامت‌های
-//            = و + خیلی کوچک) ← گروه ← زیرگروه ← رکورد {متن، تاریخ ایجاد
-//            شمسی، شخص از CRM، مبلغ ریال، بدهکار/بستانکار، انصراف/ذخیره/حذف}.
-//            زیر سه باکس: ردیف سناد (چیپ‌ها با ✏️/🗑) + «+ افزودن سند
-//            حسابداری جدید +». کلیک روی هر باکس → گروه‌های آن + افزودن؛
-//            کلیک گروه → زیرگروه‌ها + افزودن؛ کلیک زیرگروه → رکوردها +
-//            افزودن؛ کلیک رکورد → صفحهٔ جزئیات (همان فرم = ویرایش آزاد).
-//            جمع هر باکس از رکوردهای زیرمجموعه‌اش (خالص: دارایی Σ(بدهکار−
-//            بستانکار)؛ بدهی/سرمایه Σ(بستانکار−بدهکار)) زیر تیتر هر باکس
-//            + خط معادلهٔ ریز «۱۰۰ = ۵۰ + ۵۰ ریال». برقراری معادله → هر سه
-//            باکس سبز؛ وگرنه هر سه قرمز؛ بدون رکورد → خنثی. حذف گروه/زیرگروه
-//            دارای فرزند مسدود (هم‌خوان فلسفهٔ یکپارچگی v208).
+//            🔧 بازنگری بر اساس اصلاحات کاربر (نسخهٔ اول: سندِ جاری + چیپ
+//            سناد + باکس‌های فیکسِ کلیک‌پذیر بود — غلط بود):
+//            - سه باکس بالای بخش (دارایی = بدهی + سرمایه با علامت‌های خیلی
+//              کوچک) فیکس‌اند ولی «فقط نمایشی»: جمع کلِ همهٔ اسناد + رنگ
+//              معادلهٔ کل. «برای شروع باید باکس‌های سند لمس شوند نه باکس‌های
+//              اصلی زیر هدر».
+//            - هر «سند» = یک خطِ سه‌باکسی شبیه نوار بالا (همان = و + کوچک،
+//              جمعِ ریز زیر تیتر هر باکس) + سربرگ با ✏️ نام و 🗑 حذف؛ اسناد
+//              در لیست عمودیِ اسکرول‌شونده می‌آیند و با زیاد شدن اسکرول
+//              می‌شوند. لمس باکس سند → درخت گروه‌های همان بخش زیر همان کارت
+//              باز می‌شود.
+//            - گروه‌ها/زیرگروه‌ها برای «باکس اصلی» تعریف می‌شوند و مشترک‌اند:
+//              هر گروهی که برای یک سند ساخته شود در اسناد بعدی هم ظاهر و
+//              استفاده می‌شود (درخت مشترک per بخش دارایی/بدهی/سرمایه).
+//            - تعداد گروه‌ها و زیرگروه‌ها «بی‌نهایت» است (children بازگشتی
+//              با هر عمق + تورفتگی درختی).
+//            - افزودن رکورد لزوماً بعد از گروه+زیرگروه نیست — همان گروه اول
+//              هم می‌تواند مستقیماً رکورد داشته باشد (در هر سطحِ درخت).
+//            - مدل داده فرمت ۲: db = {v:2, groups:{assets/liabilities/equity:
+//              درخت مشترک}, docs:[], records:[تخت با docId+section+groupId]}.
+//              مهاجرت خودکار فرمت ۱ (migrateAccounting): گروه‌های هم‌نام ادغام.
+//            - رکورد {متن، تاریخ ایجاد شمسی (۳ انتخاب‌گر + امروز)، شخص از
+//              CRM، مبلغ ریال، بدهکار/بستانکار، انصراف/ذخیره/حذف} — صفحهٔ
+//              جزئیات همان فرم است؛ همهٔ فیلدها همان‌جا قابل ویرایش‌اند.
+//            - جمع هر باکس سند = فقط رکوردهای همان سند (خالص: دارایی
+//              Σ(بدهکار−بستانکار)؛ بدهی/سرمایه Σ(بستانکار−بدهکار)) زیر تیتر
+//              هر باکس + جمع گره در درخت + خط معادلهٔ ریز نوار بالا «جمع کل
+//              همهٔ اسناد: ۱۰۰ = ۵۰ + ۵۰ ریال». برقراری معادله در آن خط →
+//              هر سه باکس همان خط سبز؛ وگرنه هر سه قرمز (هیچ‌وقت ترکیبی)؛
+//              خط بدون رکورد → خنثی. همین قاعده برای نوار بالایی.
+//            - حذف گرهِ دارای زیرگروه یا رکورد (در هر سندی) مسدود (هم‌خوان
+//              فلسفهٔ یکپارچگی v208)؛ حذف سند با شمارش رکوردهایش در confirm.
 //            - توسعهٔ گارد v208: حذف شخصِ دارای رکورد حسابداری متصل
 //              (contactId یا نام در شرح) هم مسدود شد — پیام شمارش هر دو
 //              نوع ارجاع (تسک + حسابداری) را می‌دهد.
 //            - بک‌آپ: فیلد accounting به خروجی اضافه شد؛ ورود با مهاجرت
-//              (migrateAccounting) در حالت merge (فقط سناد جدید) و replace
-//              (جایگزینی کامل حتی اگر بک‌آپ قدیمی فیلد نداشت).
-//            - داده در localStorage کلید accounting_db_v1.
+//              (migrateAccounting) در حالت merge (سناد/رکورد/گرهٔ جدید با id)
+//              و replace (جایگزینی کامل حتی اگر بک‌آپ قدیمی فیلد نداشت).
+//            - داده در localStorage کلید accounting_db_v1 (فرمت ۲).
 //            - 🔧 فیکس چیدمان (بعد از visual check): overlay حسابداری طبق
 //              BA-001 از زیر هدر اصلی شروع می‌شود (openAccounting top هدر را
 //              می‌گذارد + syncHeaderHeight آن را مدیریت می‌کند — وگرنه topbar
 //              حسابداری زیر هدر main پنهان می‌شد)؛ کارت منوی همبرگری هم با
-//              padding داینامیک (ارتفاع هدر + ۶px) باز می‌شود.
-//         تست: سوئیت جدید test_accounting_v209.mjs (سناریوی دقیق کاربر:
-//           منو، سناریوی ۱۰۰=۵۰+۵۰ قرمز→سبز، ویرایش/حذف رکورد، سناد،
-//           گارد شخص، Back موبایل، صفر pageerror).
+//              padding داینامیک (ارتفاع هدر + ۶px) باز می‌شود؛ دکمهٔ
+//              «+ افزودن سند حسابداری جدید +» فیکس زیر نوار معادله است.
+//         تست: سوئیت جدید test_accounting_v209.mjs (سناریوی دقیق کاربر با
+//           اصلاحات: منو، لمس باکس‌های سند، رکورد مستقیم زیر گروه، درخت
+//           سه‌سطحی، گروه مشترک در سند دوم، سناریوی ۱۰۰=۵۰+۵۰ قرمز→سبز،
+//           ویرایش/حذف رکورد، حذف سند، گارد شخص، Back موبایل، صفر pageerror).
 const APP_VERSION = 'v209-2026-11-10-hamburger-accounting';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
@@ -12421,16 +12476,33 @@ function importDatabase() {
                         }
                     }
 
-                    // 5. 🔧 v209: ادغام سناد حسابداری (فقط سناد جدید اضافه می‌شوند)
+                    // 5. 🔧 v209: ادغام حسابداری — فقط موارد جدید اضافه می‌شوند
+                    //    (سنادها با id، رکوردها با id، گره‌های درخت مشترک با id)
                     let newAccDocs = 0;
+                    let newAccRecs = 0;
                     if (importedAccounting) {
                         const curAcc = getAccounting();
                         const existingAccIds = new Set(curAcc.docs.map(d => d.id));
-                        newAccDocs = importedAccounting.docs.filter(d => !existingAccIds.has(d.id));
-                        if (newAccDocs.length > 0) {
-                            curAcc.docs = curAcc.docs.concat(newAccDocs);
-                            setAccounting(curAcc);
-                        }
+                        const newAccDocsArr = importedAccounting.docs.filter(d => !existingAccIds.has(d.id));
+                        const existingRecIds = new Set(curAcc.records.map(r => r.id));
+                        const newAccRecsArr = importedAccounting.records.filter(r => !existingRecIds.has(r.id));
+                        ACC_SECTIONS.forEach(function(kind) {
+                            const existingNodeIds = new Set();
+                            (function collect(list) {
+                                (list || []).forEach(function(n) {
+                                    existingNodeIds.add(n.id);
+                                    collect(n.children);
+                                });
+                            })(curAcc.groups[kind]);
+                            (importedAccounting.groups[kind] || []).forEach(function(n) {
+                                if (!existingNodeIds.has(n.id)) curAcc.groups[kind].push(n);
+                            });
+                        });
+                        curAcc.docs = curAcc.docs.concat(newAccDocsArr);
+                        curAcc.records = curAcc.records.concat(newAccRecsArr);
+                        setAccounting(curAcc);
+                        newAccDocs = newAccDocsArr.length;
+                        newAccRecs = newAccRecsArr.length;
                     }
 
                     // 🔧 v207: اگر کاربر داخل تسک‌های گروهی بود که در بک‌آپ نبود،
@@ -12441,7 +12513,8 @@ function importDatabase() {
                     const parts = [`${fixedItems.length} یادآور جدید`];
                     if (newGroupsToAdd.length > 0) parts.push(`${newGroupsToAdd.length} گروه جدید`);
                     if (validImportedContacts.length > 0) parts.push(`${validImportedContacts.length} شخص جدید`);
-                    if (newAccDocs > 0) parts.push(`${newAccDocs.length} سند حسابداری جدید`);
+                    if (newAccDocs > 0) parts.push(`${toPersianNumber(newAccDocs)} سند حسابداری جدید`);
+                    if (newAccRecs > 0) parts.push(`${toPersianNumber(newAccRecs)} رکورد حسابداری جدید`);
                     showToast(parts.join('، ') + ' ✓');
                 } else {
                     // ===== REPLACE MODE =====
@@ -14616,24 +14689,18 @@ function getContactTaskReferences(contactId) {
         }
     }
     // 🔧 v209: ارجاع‌های حسابداری — رکورد با contactId یا نام در متن شرح
+    // (فرمت ۲: رکوردها تخت با contactId مستقیم)
     let accLinked = 0;
     let accByName = 0;
     try {
         const adb = getAccounting();
-        (adb.docs || []).forEach(function(d) {
-            ACC_SECTIONS.forEach(function(kind) {
-                (d.sections[kind] || []).forEach(function(g) {
-                    (g.subgroups || []).forEach(function(sg) {
-                        (sg.records || []).forEach(function(r) {
-                            if (r.contactId === contactId) {
-                                accLinked++;
-                            } else if (checkName && normalizeContactRefText(r.text).indexOf(nameNorm) !== -1) {
-                                accByName++;
-                            }
-                        });
-                    });
-                });
-            });
+        (adb.records || []).forEach(function(r) {
+            if (!r) return;
+            if (r.contactId === contactId) {
+                accLinked++;
+            } else if (checkName && normalizeContactRefText(r.text).indexOf(nameNorm) !== -1) {
+                accByName++;
+            }
         });
     } catch(e) {}
     return { byLink: byLink, byName: byName, accLinked: accLinked, accByName: accByName };
@@ -15061,17 +15128,38 @@ function closeContactReportResults() {
 // ════════════════════════════════════════════════════════════════════
 //   دارایی = بدهی + سرمایه
 //
-// سلسله‌مراتب داده:
-//   سند (doc) → سه بخش ثابت (assets دارایی / liabilities بدهی / equity سرمایه)
-//   هر بخش → گروه‌ها (مثل «بانک») → هر گروه → زیرگروه‌ها (مثل «بانک ملت شعبهٔ
-//   آزادی») → هر زیرگروه → رکوردها {text, createdAt, contactId, amount, side}
-//   side: 'debit' (بدهکار) یا 'credit' (بستانکار)
+// 🔧 v209 بازنگری (بر اساس اصلاحات کاربر بعد از نسخهٔ اول):
+//   ۱) هر سند = یک خطِ سه‌باکسی شبیه نوار بالای صفحه (همان علامت‌های = و +
+//      خیلی کوچک بین باکس‌ها) با جمعِ ریز زیر تیتر هر باکس. اسناد در لیست
+//      عمودیِ اسکرول‌شونده می‌آیند و «برای شروع باید باکس‌های سند لمس شوند،
+//      نه باکس‌های اصلی زیر هدر» — نوار بالایی فقط نمایشی است (جمع کلِ همهٔ
+//      اسناد + رنگ معادلهٔ کل) و هیچ لمسی ندارد.
+//   ۲) گروه‌ها/زیرگروه‌ها برای «باکس اصلی» تعریف می‌شوند و مشترک‌اند:
+//      هر گروهی که برای یک سند ساخته شود، در اسناد بعدی هم ظاهر و استفاده
+//      می‌شود (یک درخت مشترک برای هر بخش دارایی/بدهی/سرمایه).
+//   ۳) تعداد گروه‌ها و زیرگروه‌ها بی‌نهایت است (درخت بازگشتی با هر عمق).
+//   ۴) افزودن رکورد لزوماً بعد از ایجاد گروه و زیرگروه نیست — همان گروه
+//      اول هم می‌تواند مستقیماً رکورد داشته باشد (رکورد در هر سطحِ درخت).
 //
-// جمع هر بخش (خالص):
-//   دارایی:     Σ(بدهکار − بستانکار)
+// مدل داده (accounting_db_v1 — فرمت ۲):
+//   db = { v: 2,
+//          groups: { assets:[گره], liabilities:[گره], equity:[گره] }, ← درخت مشترک
+//          docs:   [ {id, name, createdAt} ],
+//          records:[ {id, docId, section, groupId, text, createdAt,
+//                     contactId, amount, side} ] }
+//   گره (گروه/زیرگروه) = { id, name, createdAt, children:[گره] }
+//   رکورد به «سند + بخش + گره» وصل است؛ جمع هر باکسِ سند فقط از رکوردهای
+//   همان سند حساب می‌شود.
+//
+// جمع‌ها (خالص):
+//   دارایی:      Σ(بدهکار − بستانکار)
 //   بدهی/سرمایه: Σ(بستانکار − بدهکار)
-// معادله: دارایی === بدهی + سرمایه → هر سه باکس سبز؛ وگرنه هر سه قرمز.
-// اگر سند هنوز هیچ رکوردی ندارد → خنثی (خاکستری).
+//   معادله برقرار → هر سه باکس آن خط سبز؛ وگرنه هر سه قرمز (هیچ‌وقت ترکیبی)؛
+//   اگر آن خط هنوز هیچ رکوردی ندارد → خنثی (خاکستری). همین قاعده برای نوار
+//   بالایی با رکوردهای «همهٔ» اسناد اعمال می‌شود.
+//
+// مهاجرت: فرمت قدیمی ۱ (سند→بخش→گروه→زیرگروه→رکورد) در migrateAccounting
+// به فرمت ۲ تبدیل می‌شود — گروه‌های هم‌نام در درخت مشترک ادغام می‌شوند.
 //
 // ناوبری Back موبایل: دقیقاً الگوی تقویم (v204-safe):
 //   open → navPush({view:'modal',type:...}) + trackModalOpen(...)
@@ -15082,32 +15170,52 @@ function closeContactReportResults() {
 const ACC_KEY = 'accounting_db_v1';
 const ACC_SECTIONS = ['assets', 'liabilities', 'equity'];
 const ACC_SECTION_NAMES = { assets: 'دارایی', liabilities: 'بدهی', equity: 'سرمایه' };
-let accState = { section: null, groupId: null, subgroupId: null };
-let accFormCtx = null;   // هنگام باز بودن فرم رکورد: {section, groupId, subgroupId, recordId}
+// وضعیت UI: یک بخش از یک سند باز است + کدام گره‌های درخت باز شده‌اند
+let accState = { openDocId: null, openSection: null, openNodes: {} };
+let accFormCtx = null;   // هنگام باز بودن فرم رکورد: {docId, section, groupId, recordId}
 let accFormSide = null;  // 'debit' | 'credit' | null
 
 function accGenId() {
     return 'ac_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
 }
 
+function accNewNode(name) {
+    return { id: accGenId(), name: name, createdAt: new Date().toISOString(), children: [] };
+}
+
 function accNewDocObj(name) {
-    return {
-        id: accGenId(),
-        name: name,
-        createdAt: new Date().toISOString(),
-        sections: { assets: [], liabilities: [], equity: [] }
-    };
+    return { id: accGenId(), name: name, createdAt: new Date().toISOString() };
 }
 
 function accDefaultDB() {
-    const doc = accNewDocObj('سند ۱');
-    return { docs: [doc], currentDocId: doc.id };
+    // اولین اجرا: یک سند آماده تا کاربر مستقیماً باکس‌های سند را لمس کند
+    return {
+        v: 2,
+        groups: { assets: [], liabilities: [], equity: [] },
+        docs: [accNewDocObj('سند ۱')],
+        records: []
+    };
 }
 
 function getAccounting() {
     try {
         const db = JSON.parse(localStorage.getItem(ACC_KEY) || 'null');
-        if (!db || !Array.isArray(db.docs)) return accDefaultDB();
+        if (!db || typeof db !== 'object' || !Array.isArray(db.docs)) {
+            const fresh = accDefaultDB();
+            setAccounting(fresh);
+            return fresh;
+        }
+        // 🔧 مهاجرت خودکار فرمت قدیمی ۱ (سند حاوی sections بود) به فرمت ۲
+        if (db.docs.length > 0 && db.docs[0] && db.docs[0].sections) {
+            const migrated = migrateAccounting(db);
+            setAccounting(migrated);
+            return migrated;
+        }
+        // دفاعی: تضمین ساختار فرمت ۲ (لیست خالی اسناد مجاز است — کاربر
+        // می‌تواند همهٔ اسناد را حذف کند؛ برنامه سند را دوباره نمی‌سازد)
+        if (!db.groups || typeof db.groups !== 'object') db.groups = { assets: [], liabilities: [], equity: [] };
+        ACC_SECTIONS.forEach(function(k) { if (!Array.isArray(db.groups[k])) db.groups[k] = []; });
+        if (!Array.isArray(db.records)) db.records = [];
         return db;
     } catch(e) {
         console.error('Accounting read error', e);
@@ -15120,67 +15228,67 @@ function setAccounting(db) {
     catch(e) { console.error('Accounting write error', e); }
 }
 
-// اطمینان از وجود حداقل یک سند + معتبر بودن currentDocId
-function accEnsureDefaultDoc() {
-    const db = getAccounting();
-    if (!Array.isArray(db.docs) || db.docs.length === 0) {
-        const fresh = accDefaultDB();
-        setAccounting(fresh);
-        return fresh;
-    }
-    if (!db.currentDocId || !db.docs.some(d => d.id === db.currentDocId)) {
-        db.currentDocId = db.docs[0].id;
-        setAccounting(db);
-    }
-    return db;
-}
-
-function accGetCurrentDoc() {
-    const db = accEnsureDefaultDoc();
-    return db.docs.find(d => d.id === db.currentDocId) || db.docs[0];
-}
-
 // الگوی تغییر داده: خواندن → اعمال تابع → ذخیره → رندر
-function accMutateDoc(fn) {
-    const db = accEnsureDefaultDoc();
-    const doc = db.docs.find(d => d.id === db.currentDocId) || db.docs[0];
-    fn(doc, db);
+function accMutate(fn) {
+    const db = getAccounting();
+    fn(db);
     setAccounting(db);
     renderAccounting();
 }
 
+// ─── پیمایش درخت مشترک ───
+
+function accFindNode(list, id) {
+    const arr = list || [];
+    for (let i = 0; i < arr.length; i++) {
+        if (arr[i].id === id) return arr[i];
+        const deep = accFindNode(arr[i].children, id);
+        if (deep) return deep;
+    }
+    return null;
+}
+
+function accFindParent(list, id) {
+    const arr = list || [];
+    for (let i = 0; i < arr.length; i++) {
+        if ((arr[i].children || []).some(function(c) { return c.id === id; })) return arr[i];
+        const deep = accFindParent(arr[i].children, id);
+        if (deep) return deep;
+    }
+    return null;
+}
+
+// خود گره + همهٔ نسل‌ها (برای جمع زیرشاخه)
+function accDescIds(node) {
+    const out = [node.id];
+    (node.children || []).forEach(function(c) {
+        accDescIds(c).forEach(function(x) { out.push(x); });
+    });
+    return out;
+}
+
 // ─── محاسبات معادله ───
 
-function accNetOf(rec, kind) {
+// خالص یک رکورد در بخش مربوطه:
+//   دارایی:      بدهکار + / بستانکار −
+//   بدهی/سرمایه: بستانکار + / بدهکار −
+function accNetOf(rec, section) {
     const amt = Math.abs(Number(rec && rec.amount) || 0);
     if (!isFinite(amt)) return 0;
-    if (kind === 'assets') return (rec.side === 'debit' ? amt : -amt);
+    if (section === 'assets') return (rec.side === 'debit' ? amt : -amt);
     return (rec.side === 'credit' ? amt : -amt);
 }
 
-function accSubgroupTotal(sg, kind) {
-    let sum = 0;
-    (sg.records || []).forEach(function(r) { sum += accNetOf(r, kind); });
-    return sum;
-}
-
-function accGroupTotal(g, kind) {
-    let sum = 0;
-    (g.subgroups || []).forEach(function(sg) { sum += accSubgroupTotal(sg, kind); });
-    return sum;
-}
-
-function accDocTotals(doc) {
+// جمع کل از روی هر لیست رکورد (یک سند یا همهٔ اسناد)
+function accTotalsOf(records) {
     let assets = 0, liabilities = 0, equity = 0, hasRecords = false;
-    (doc.sections.assets || []).forEach(function(g) {
-        assets += accGroupTotal(g, 'assets');
-        (g.subgroups || []).forEach(function(sg) { if ((sg.records || []).length) hasRecords = true; });
-    });
-    (doc.sections.liabilities || []).forEach(function(g) {
-        liabilities += accGroupTotal(g, 'liabilities');
-    });
-    (doc.sections.equity || []).forEach(function(g) {
-        equity += accGroupTotal(g, 'equity');
+    (records || []).forEach(function(r) {
+        if (!r) return;
+        const v = accNetOf(r, r.section);
+        if (r.section === 'assets') assets += v;
+        else if (r.section === 'liabilities') liabilities += v;
+        else equity += v;
+        hasRecords = true;
     });
     return {
         assets: assets,
@@ -15191,21 +15299,28 @@ function accDocTotals(doc) {
     };
 }
 
-function accCountDocRecords(doc) {
-    let n = 0;
-    ACC_SECTIONS.forEach(function(k) {
-        (doc.sections[k] || []).forEach(function(g) {
-            (g.subgroups || []).forEach(function(sg) { n += (sg.records || []).length; });
-        });
+// جمع سه باکسِ یک سند — فقط از رکوردهای همان سند
+function accDocTotals(docId, records) {
+    return accTotalsOf((records || []).filter(function(r) { return r.docId === docId; }));
+}
+
+// جمع یک گره (خودش + همهٔ نسل‌ها) برای «یک سند» خاص
+function accNodeDocTotal(node, docId, section, records) {
+    const ids = accDescIds(node);
+    let sum = 0, has = false;
+    (records || []).forEach(function(r) {
+        if (r && r.docId === docId && r.section === section && ids.indexOf(r.groupId) !== -1) {
+            sum += accNetOf(r, section);
+            has = true;
+        }
     });
-    return n;
+    return { sum: sum, has: has };
 }
 
 // ─── باز و بستن بخش حسابداری ───
 
 function openAccounting() {
-    accEnsureDefaultDoc();
-    accState = { section: null, groupId: null, subgroupId: null };
+    accState = { openDocId: null, openSection: null, openNodes: {} };
     renderAccounting();
     const ov = document.getElementById('accountingOverlay');
     // 🔧 v209: overlay از زیر هدر اصلی شروع شود (هم‌سو با BA-001 —
@@ -15229,66 +15344,210 @@ function closeAccounting() {
 
 // ─── رندر ───
 
+// نوار بالایی: فقط نمایشی — جمع کلِ «همهٔ» اسناد + رنگ معادلهٔ کل
 function renderAccounting() {
-    const doc = accGetCurrentDoc();
-    const t = accDocTotals(doc);
+    const db = getAccounting();
+    const t = accTotalsOf(db.records);
     document.getElementById('accTotalAssets').textContent = toPersianNumberWithSep(t.assets) + ' ریال';
     document.getElementById('accTotalLiabilities').textContent = toPersianNumberWithSep(t.liabilities) + ' ریال';
     document.getElementById('accTotalEquity').textContent = toPersianNumberWithSep(t.equity) + ' ریال';
     const cls = t.hasRecords ? (t.balanced ? 'ok' : 'bad') : 'neutral';
-    ACC_SECTIONS.forEach(function(secKey, i) {
-        const el = document.getElementById('accBox' + (i === 0 ? 'Assets' : i === 1 ? 'Liabilities' : 'Equity'));
-        el.className = 'acc-eq-box ' + cls + (accState.section === secKey ? ' selected' : '');
-    });
+    document.getElementById('accBoxAssets').className = 'acc-eq-box ' + cls;
+    document.getElementById('accBoxLiabilities').className = 'acc-eq-box ' + cls;
+    document.getElementById('accBoxEquity').className = 'acc-eq-box ' + cls;
     const eqLine = document.getElementById('accEqLine');
     const eqStr = toPersianNumberWithSep(t.assets) + ' = ' + toPersianNumberWithSep(t.liabilities) + ' + ' + toPersianNumberWithSep(t.equity) + ' ریال';
     if (!t.hasRecords) {
-        eqLine.textContent = eqStr + ' — هنوز رکوردی ثبت نشده';
+        eqLine.textContent = 'جمع کل همهٔ اسناد: ' + eqStr + ' — هنوز رکوردی ثبت نشده';
         eqLine.className = 'acc-eq-line';
     } else if (t.balanced) {
-        eqLine.textContent = '✓ متعادل — ' + eqStr;
+        eqLine.textContent = '✓ متعادل — جمع کل همهٔ اسناد: ' + eqStr;
         eqLine.className = 'acc-eq-line acc-eq-ok';
     } else {
-        eqLine.textContent = '✗ نامتعادل — ' + eqStr;
+        eqLine.textContent = '✗ نامتعادل — جمع کل همهٔ اسناد: ' + eqStr;
         eqLine.className = 'acc-eq-line acc-eq-bad';
     }
-    document.getElementById('accDocName').textContent = doc.name;
-    renderAccDocsRow(doc);
-    renderAccContent(doc, t);
+    document.getElementById('accDocName').textContent = toPersianNumber(db.docs.length) + ' سند • ' + toPersianNumber(db.records.length) + ' رکورد';
+    renderAccContent(db);
 }
 
-function renderAccDocsRow(currentDoc) {
-    const db = getAccounting();
-    const row = document.getElementById('accDocsRow');
-    row.innerHTML = '';
-    db.docs.forEach(function(d) {
-        const chip = document.createElement('div');
-        chip.className = 'acc-doc-chip' + (d.id === currentDoc.id ? ' current' : '');
-        chip.onclick = function() { accSwitchDoc(d.id); };
-        const nameSpan = document.createElement('span');
-        nameSpan.textContent = d.name;
-        chip.appendChild(nameSpan);
-        const ren = document.createElement('span');
-        ren.className = 'acc-chip-ico';
-        ren.textContent = '✏️';
-        ren.title = 'ویرایش نام سند';
-        ren.onclick = function(ev) { ev.stopPropagation(); accRenameDoc(d.id); };
-        chip.appendChild(ren);
-        if (db.docs.length > 1) {
-            const del = document.createElement('span');
-            del.className = 'acc-chip-ico';
-            del.textContent = '🗑';
-            del.title = 'حذف سند';
-            del.onclick = function(ev) { ev.stopPropagation(); accDeleteDoc(d.id); };
-            chip.appendChild(del);
-        }
-        row.appendChild(chip);
+// لیست عمودی اسناد — هر سند یک کارت با خط سه‌باکسی قابل لمس
+function renderAccContent(db) {
+    const c = document.getElementById('accContent');
+    c.innerHTML = '';
+    if (db.docs.length === 0) {
+        const hint = document.createElement('div');
+        hint.className = 'acc-hint';
+        hint.innerHTML = 'هنوز سندی نیست — با دکمهٔ «+ افزودن سند حسابداری جدید +» اولین سند را بسازید<br>' +
+            '<span style="font-size:11px">هر سند یک خط سه‌باکسی دارد: دارایی = بدهی + سرمایه.<br>' +
+            'برای شروع، باکس‌های همان سند را لمس کنید.</span>';
+        c.appendChild(hint);
+        return;
+    }
+    db.docs.forEach(function(doc) {
+        c.appendChild(accBuildDocCard(db, doc));
     });
 }
 
-function buildAccRecordRow(kind, r) {
+// کارت یک سند: سربرگ (نام + ویرایش + حذف) + خط سه‌باکسی + درخت بخش بازشده
+function accBuildDocCard(db, doc) {
+    const card = document.createElement('div');
+    card.className = 'acc-doc-card';
+    card.id = 'accDocCard_' + doc.id;
+    // سربرگ سند
+    const head = document.createElement('div');
+    head.className = 'acc-doc-head';
+    const nm = document.createElement('span');
+    nm.className = 'acc-doc-name2';
+    nm.textContent = doc.name;
+    head.appendChild(nm);
+    const ren = document.createElement('button');
+    ren.className = 'acc-item-btn';
+    ren.textContent = '✏️';
+    ren.title = 'ویرایش نام سند';
+    ren.onclick = function(ev) { ev.stopPropagation(); accRenameDoc(doc.id); };
+    head.appendChild(ren);
+    const del = document.createElement('button');
+    del.className = 'acc-item-btn';
+    del.textContent = '🗑';
+    del.title = 'حذف سند';
+    del.onclick = function(ev) { ev.stopPropagation(); accDeleteDoc(doc.id); };
+    head.appendChild(del);
+    card.appendChild(head);
+    // خط سه‌باکسی سند — «برای شروع باید باکس‌های سند لمس شوند»
+    const t = accDocTotals(doc.id, db.records);
+    const cls = t.hasRecords ? (t.balanced ? 'ok' : 'bad') : 'neutral';
+    const line = document.createElement('div');
+    line.className = 'acc-eq-row acc-doc-line';
+    ACC_SECTIONS.forEach(function(kind, i) {
+        if (i > 0) {
+            const sign = document.createElement('div');
+            sign.className = 'acc-eq-sign';
+            sign.textContent = (i === 1 ? '=' : '+');
+            line.appendChild(sign);
+        }
+        const box = document.createElement('div');
+        const isOpen = (accState.openDocId === doc.id && accState.openSection === kind);
+        box.className = 'acc-eq-box ' + cls + (isOpen ? ' open' : '');
+        box.id = 'accDocBox_' + doc.id + '_' + kind;
+        const ti = document.createElement('div');
+        ti.className = 'acc-box-title';
+        ti.textContent = ACC_SECTION_NAMES[kind];
+        const tot = document.createElement('div');
+        tot.className = 'acc-box-total';
+        tot.textContent = toPersianNumberWithSep(t[kind]) + ' ریال';
+        box.appendChild(ti);
+        box.appendChild(tot);
+        box.onclick = function() { accToggleDocSection(doc.id, kind); };
+        line.appendChild(box);
+    });
+    card.appendChild(line);
+    // درخت مشترک بخش بازشده — درون کارت همان سند
+    if (accState.openDocId === doc.id && accState.openSection) {
+        const kind = accState.openSection;
+        const tree = document.createElement('div');
+        tree.className = 'acc-doc-tree';
+        tree.id = 'accTree_' + doc.id + '_' + kind;
+        const bt = document.createElement('div');
+        bt.className = 'acc-block-title';
+        bt.innerHTML = '<span>گروه‌های ' + ACC_SECTION_NAMES[kind] + ' — مشترک در همهٔ اسناد</span><span class="acc-block-line"></span>';
+        tree.appendChild(bt);
+        const nodes = db.groups[kind] || [];
+        if (nodes.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'acc-hint';
+            empty.style.padding = '10px';
+            empty.textContent = 'هنوز گروهی در این بخش نیست — با دکمهٔ زیر اضافه کنید (گروه‌ها برای باکس اصلی تعریف می‌شوند و در همهٔ اسناد ظاهر می‌شوند)';
+            tree.appendChild(empty);
+        }
+        nodes.forEach(function(n) {
+            tree.appendChild(accBuildNodeBlock(db, doc, kind, n, 0));
+        });
+        const addG = document.createElement('div');
+        addG.className = 'acc-add-item';
+        addG.textContent = '+ افزودن گروه جدید +';
+        addG.onclick = function() { accAddGroup(kind); };
+        tree.appendChild(addG);
+        card.appendChild(tree);
+    }
+    return card;
+}
+
+// بلوک یک گره (گروه/زیرگروه — هر عمق) داخل درخت یک سند:
+//   ردیف گره (نام + جمع همین سند + ویرایش + حذف) و اگر باز باشد:
+//   رکوردهای خودش در این سند + «+ رکورد» + فرزندان (بازگشتی) + «+ زیرگروه»
+function accBuildNodeBlock(db, doc, kind, node, depth) {
+    const wrap = document.createElement('div');
+    if (depth > 0) wrap.className = 'acc-node-children';
+    wrap.id = 'accNodeBlock_' + node.id;
+    const total = accNodeDocTotal(node, doc.id, kind, db.records);
+    const row = document.createElement('div');
+    row.className = 'acc-list-item' + (accState.openNodes[node.id] ? ' selected' : '');
+    row.id = 'accNode_' + node.id;
+    const nm = document.createElement('span');
+    nm.className = 'acc-item-name';
+    nm.textContent = node.name;
+    const tot = document.createElement('span');
+    tot.className = 'acc-item-total';
+    tot.textContent = toPersianNumberWithSep(total.sum) + ' ریال';
+    const ren = document.createElement('button');
+    ren.className = 'acc-item-btn';
+    ren.textContent = '✏️';
+    ren.title = 'ویرایش نام';
+    ren.onclick = function(ev) { ev.stopPropagation(); accRenameNode(kind, node.id); };
+    const del = document.createElement('button');
+    del.className = 'acc-item-btn';
+    del.textContent = '🗑';
+    del.title = 'حذف';
+    del.onclick = function(ev) { ev.stopPropagation(); accDeleteNode(kind, node.id); };
+    row.appendChild(nm);
+    row.appendChild(tot);
+    row.appendChild(ren);
+    row.appendChild(del);
+    row.onclick = function() { accToggleNode(node.id); };
+    wrap.appendChild(row);
+    if (accState.openNodes[node.id]) {
+        const inner = document.createElement('div');
+        inner.className = 'acc-node-inner';
+        // رکوردهای «خودِ» این گره در این سند — افزودن رکورد در هر سطحی مجاز است
+        const own = db.records.filter(function(r) {
+            return r.docId === doc.id && r.section === kind && r.groupId === node.id;
+        });
+        const bt = document.createElement('div');
+        bt.className = 'acc-block-title';
+        bt.innerHTML = '<span>رکوردهای «' + escapeHtml(node.name) + '» در ' + escapeHtml(doc.name) + '</span><span class="acc-block-line"></span>';
+        inner.appendChild(bt);
+        if (own.length === 0) {
+            const e2 = document.createElement('div');
+            e2.className = 'acc-hint';
+            e2.style.padding = '8px';
+            e2.textContent = 'هنوز رکوردی در این ' + (depth === 0 ? 'گروه' : 'زیرگروه') + ' برای این سند نیست — حتی بدون زیرگروه هم می‌توانید مستقیماً رکورد اضافه کنید';
+            inner.appendChild(e2);
+        }
+        own.forEach(function(r) { inner.appendChild(buildAccRecordRow(r)); });
+        const addRec = document.createElement('div');
+        addRec.className = 'acc-add-item';
+        addRec.textContent = '+ افزودن رکورد جدید +';
+        addRec.onclick = function() { accOpenRecordForm(doc.id, kind, node.id, null); };
+        inner.appendChild(addRec);
+        // زیرگروه‌ها — بازگشتی، هر عمق (تعداد بی‌نهایت)
+        (node.children || []).forEach(function(ch) {
+            inner.appendChild(accBuildNodeBlock(db, doc, kind, ch, depth + 1));
+        });
+        const addSg = document.createElement('div');
+        addSg.className = 'acc-add-item';
+        addSg.textContent = '+ افزودن زیرگروه جدید +';
+        addSg.onclick = function() { accAddSubgroup(kind, node.id); };
+        inner.appendChild(addSg);
+        wrap.appendChild(inner);
+    }
+    return wrap;
+}
+
+function buildAccRecordRow(r) {
     const row = document.createElement('div');
     row.className = 'acc-record-row';
+    row.id = 'accRecRow_' + r.id;
     const main = document.createElement('div');
     main.className = 'acc-record-main';
     const tx = document.createElement('div');
@@ -15314,165 +15573,49 @@ function buildAccRecordRow(kind, r) {
     row.appendChild(amt);
     row.appendChild(badge);
     row.onclick = function() {
-        accOpenRecordForm(kind, accState.groupId, accState.subgroupId, r.id);
+        // صفحهٔ جزئیات همان رکورد — همهٔ فیلدها در همان صفحه قابل ویرایش‌اند
+        accOpenRecordForm(r.docId, r.section, r.groupId, r.id);
     };
     return row;
 }
 
-function renderAccContent(doc, t) {
-    const c = document.getElementById('accContent');
-    c.innerHTML = '';
-    if (!accState.section) {
-        const hint = document.createElement('div');
-        hint.className = 'acc-hint';
-        hint.innerHTML = 'برای شروع، یکی از سه باکس بالای صفحه را لمس کنید:<br><b>دارایی — بدهی — سرمایه</b><br>' +
-            '<span style="font-size:11px">ساختار: باکس ← گروه ← زیرگروه ← رکورد<br>' +
-            'پس از هر ذخیره یا ویرایش، جمع هر باکس و رنگ معادله به‌روز می‌شود</span>';
-        c.appendChild(hint);
-        return;
-    }
-    const kind = accState.section;
-    const groups = doc.sections[kind] || [];
-    const bt = document.createElement('div');
-    bt.className = 'acc-block-title';
-    bt.innerHTML = '<span>گروه‌های ' + ACC_SECTION_NAMES[kind] + '</span><span class="acc-block-line"></span>';
-    c.appendChild(bt);
-    if (groups.length === 0) {
-        const empty = document.createElement('div');
-        empty.className = 'acc-hint';
-        empty.style.padding = '12px';
-        empty.textContent = 'هنوز گروهی در این بخش نیست — با دکمهٔ زیر اضافه کنید';
-        c.appendChild(empty);
-    }
-    groups.forEach(function(g) {
-        const gTotal = accGroupTotal(g, kind);
-        const row = document.createElement('div');
-        row.className = 'acc-list-item' + (accState.groupId === g.id ? ' selected' : '');
-        row.onclick = function() { accToggleGroup(g.id); };
-        row.innerHTML = '<span class="acc-item-name">' + escapeHtml(g.name) + '</span>' +
-            '<span class="acc-item-total">' + toPersianNumberWithSep(gTotal) + ' ریال</span>' +
-            '<button class="acc-item-btn" title="ویرایش نام گروه">✏️</button>' +
-            '<button class="acc-item-btn" title="حذف گروه">🗑</button>';
-        row.querySelector('button[title="ویرایش نام گروه"]').onclick = function(ev) { ev.stopPropagation(); accRenameGroup(kind, g.id); };
-        row.querySelector('button[title="حذف گروه"]').onclick = function(ev) { ev.stopPropagation(); accDeleteGroup(kind, g.id); };
-        c.appendChild(row);
-        if (accState.groupId === g.id) {
-            const wrap = document.createElement('div');
-            wrap.className = 'acc-indent';
-            const bt2 = document.createElement('div');
-            bt2.className = 'acc-block-title';
-            bt2.innerHTML = '<span>زیرگروه‌های «' + escapeHtml(g.name) + '»</span><span class="acc-block-line"></span>';
-            wrap.appendChild(bt2);
-            if (!(g.subgroups || []).length) {
-                const empty2 = document.createElement('div');
-                empty2.className = 'acc-hint';
-                empty2.style.padding = '10px';
-                empty2.textContent = 'هنوز زیرگروهی نیست — با دکمهٔ زیر اضافه کنید';
-                wrap.appendChild(empty2);
-            }
-            (g.subgroups || []).forEach(function(sg) {
-                const sgTotal = accSubgroupTotal(sg, kind);
-                const srow = document.createElement('div');
-                srow.className = 'acc-list-item' + (accState.subgroupId === sg.id ? ' selected' : '');
-                srow.onclick = function() { accToggleSubgroup(sg.id); };
-                srow.innerHTML = '<span class="acc-item-name">' + escapeHtml(sg.name) + '</span>' +
-                    '<span class="acc-item-total">' + toPersianNumberWithSep(sgTotal) + ' ریال</span>' +
-                    '<button class="acc-item-btn" title="ویرایش نام زیرگروه">✏️</button>' +
-                    '<button class="acc-item-btn" title="حذف زیرگروه">🗑</button>';
-                srow.querySelector('button[title="ویرایش نام زیرگروه"]').onclick = function(ev) { ev.stopPropagation(); accRenameSubgroup(kind, g.id, sg.id); };
-                srow.querySelector('button[title="حذف زیرگروه"]').onclick = function(ev) { ev.stopPropagation(); accDeleteSubgroup(kind, g.id, sg.id); };
-                wrap.appendChild(srow);
-                if (accState.subgroupId === sg.id) {
-                    const wrap2 = document.createElement('div');
-                    wrap2.className = 'acc-indent';
-                    const bt3 = document.createElement('div');
-                    bt3.className = 'acc-block-title';
-                    bt3.innerHTML = '<span>رکوردهای «' + escapeHtml(sg.name) + '»</span><span class="acc-block-line"></span>';
-                    wrap2.appendChild(bt3);
-                    if (!(sg.records || []).length) {
-                        const empty3 = document.createElement('div');
-                        empty3.className = 'acc-hint';
-                        empty3.style.padding = '10px';
-                        empty3.textContent = 'هنوز رکوردی در این زیرگروه نیست — با دکمهٔ زیر اضافه کنید';
-                        wrap2.appendChild(empty3);
-                    }
-                    (sg.records || []).forEach(function(r) {
-                        wrap2.appendChild(buildAccRecordRow(kind, r));
-                    });
-                    const addRec = document.createElement('div');
-                    addRec.className = 'acc-add-item';
-                    addRec.textContent = '+ افزودن رکورد جدید +';
-                    addRec.onclick = function() { accOpenRecordForm(kind, g.id, sg.id, null); };
-                    wrap2.appendChild(addRec);
-                    wrap.appendChild(wrap2);
-                }
-            });
-            const addSg = document.createElement('div');
-            addSg.className = 'acc-add-item';
-            addSg.textContent = '+ افزودن زیرگروه جدید +';
-            addSg.onclick = function() { accAddSubgroup(kind, g.id); };
-            wrap.appendChild(addSg);
-            c.appendChild(wrap);
-        }
-    });
-    const addG = document.createElement('div');
-    addG.className = 'acc-add-item';
-    addG.textContent = '+ افزودن گروه جدید +';
-    addG.onclick = function() { accAddGroup(kind); };
-    c.appendChild(addG);
-}
-
 // ─── انتخاب‌گرها (toggle) ───
 
-function accToggleSection(key) {
-    accState = {
-        section: (accState.section === key ? null : key),
-        groupId: null,
-        subgroupId: null
-    };
-    renderAccounting();
-}
-
-function accToggleGroup(gid) {
-    if (accState.groupId === gid) {
-        accState.groupId = null;
-        accState.subgroupId = null;
+// لمس باکس یک سند: باز/بستن درخت مشترک آن بخش در همان کارت سند
+function accToggleDocSection(docId, kind) {
+    if (accState.openDocId === docId && accState.openSection === kind) {
+        accState = { openDocId: null, openSection: null, openNodes: {} };
     } else {
-        accState.groupId = gid;
-        accState.subgroupId = null;
+        accState = { openDocId: docId, openSection: kind, openNodes: {} };
     }
     renderAccounting();
 }
 
-function accToggleSubgroup(sgid) {
-    accState.subgroupId = (accState.subgroupId === sgid ? null : sgid);
+// لمس گره: باز/بستن زیرشاخه‌اش (چند گره می‌توانند هم‌زمان باز باشند)
+function accToggleNode(id) {
+    if (accState.openNodes[id]) {
+        delete accState.openNodes[id];
+    } else {
+        accState.openNodes[id] = true;
+    }
     renderAccounting();
 }
 
 // ─── CRUD سندها ───
-
-function accSwitchDoc(docId) {
-    const db = accEnsureDefaultDoc();
-    if (!db.docs.some(d => d.id === docId)) return;
-    db.currentDocId = docId;
-    setAccounting(db);
-    accState = { section: null, groupId: null, subgroupId: null };
-    renderAccounting();
-}
+// سند فقط یک خط سه‌باکسی است؛ رکوردهایش جداگانه با docId نگهداری می‌شوند
+// و با حذف سند، رکوردهایش هم حذف می‌شود.
 
 function accAddDoc() {
-    const db = accEnsureDefaultDoc();
+    const db = getAccounting();
     const doc = accNewDocObj('سند ' + toPersianNumber(db.docs.length + 1));
     db.docs.push(doc);
-    db.currentDocId = doc.id;
     setAccounting(db);
-    accState = { section: null, groupId: null, subgroupId: null };
     renderAccounting();
     showToast('سند جدید ساخته شد: ' + doc.name + ' ✓');
 }
 
 function accRenameDoc(docId) {
-    const db = accEnsureDefaultDoc();
+    const db = getAccounting();
     const d = db.docs.find(x => x.id === docId);
     if (!d) return;
     const name = prompt('نام سند:', d.name);
@@ -15483,115 +15626,94 @@ function accRenameDoc(docId) {
 }
 
 function accDeleteDoc(docId) {
-    const db = accEnsureDefaultDoc();
-    if (db.docs.length <= 1) {
-        showToast('آخرین سند قابل حذف نیست');
-        return;
-    }
+    const db = getAccounting();
     const d = db.docs.find(x => x.id === docId);
     if (!d) return;
-    const count = accCountDocRecords(d);
-    if (!confirm('سند «' + d.name + '» با ' + toPersianNumber(count) + ' رکورد حذف شود؟')) return;
+    const count = db.records.filter(r => r.docId === docId).length;
+    let msg = 'سند «' + d.name + '» حذف شود؟';
+    if (count > 0) {
+        msg = 'سند «' + d.name + '» با ' + toPersianNumber(count) + ' رکورد حذف شود؟ (رکوردهای همین سند هم حذف می‌شوند)';
+    }
+    if (!confirm(msg)) return;
     db.docs = db.docs.filter(x => x.id !== docId);
-    if (db.currentDocId === docId) db.currentDocId = db.docs[0].id;
+    db.records = db.records.filter(r => r.docId !== docId);
+    if (accState.openDocId === docId) {
+        accState = { openDocId: null, openSection: null, openNodes: {} };
+    }
     setAccounting(db);
-    accState = { section: null, groupId: null, subgroupId: null };
     renderAccounting();
     showToast('سند حذف شد');
 }
 
-// ─── CRUD گروه‌ها و زیرگروه‌ها ───
-// قانون یکپارچگی (هم‌خوان با v208): گروه/زیرگروهِ دارای فرزند حذف نمی‌شود.
+// ─── CRUD گروه‌ها و زیرگروه‌ها (درخت مشترک) ───
+// گروه‌ها برای «باکس اصلی» تعریف می‌شوند و در همهٔ اسناد ظاهر می‌شوند.
+// تعداد سطوح بی‌نهایت است (children بازگشتی).
+// قانون یکپارچگی (هم‌خوان با v208): گرهِ دارای زیرگروه یا رکورد حذف نمی‌شود.
 
 function accAddGroup(kind) {
+    const db = getAccounting();
     const name = prompt('نام گروه جدید (مثلاً بانک):');
     if (!name || !name.trim()) return;
-    accMutateDoc(function(doc) {
-        doc.sections[kind].push({
-            id: accGenId(),
-            name: name.trim(),
-            createdAt: new Date().toISOString(),
-            subgroups: []
-        });
-    });
-    showToast('گروه ایجاد شد ✓');
+    const node = accNewNode(name.trim());
+    db.groups[kind].push(node);
+    // گره تازه باز شود تا «+ رکورد جدید» مستقیماً زیرش دیده شود
+    accState.openNodes[node.id] = true;
+    setAccounting(db);
+    renderAccounting();
+    showToast('گروه ایجاد شد ✓ (در همهٔ اسناد در دسترس است)');
 }
 
-function accRenameGroup(kind, gid) {
-    const doc = accGetCurrentDoc();
-    const g = (doc.sections[kind] || []).find(x => x.id === gid);
-    if (!g) return;
-    const name = prompt('نام گروه:', g.name);
-    if (!name || !name.trim()) return;
-    accMutateDoc(function(d) {
-        const gg = (d.sections[kind] || []).find(x => x.id === gid);
-        if (gg) gg.name = name.trim();
-    });
-}
-
-function accDeleteGroup(kind, gid) {
-    const doc = accGetCurrentDoc();
-    const g = (doc.sections[kind] || []).find(x => x.id === gid);
-    if (!g) return;
-    if ((g.subgroups || []).length > 0) {
-        showToast('ابتدا زیرگروه‌های این گروه را حذف کنید');
-        return;
-    }
-    if (!confirm('گروه «' + g.name + '» حذف شود؟')) return;
-    accMutateDoc(function(d) {
-        d.sections[kind] = (d.sections[kind] || []).filter(x => x.id !== gid);
-        if (accState.groupId === gid) accState.groupId = null;
-    });
-    showToast('گروه حذف شد');
-}
-
-function accAddSubgroup(kind, gid) {
+function accAddSubgroup(kind, parentId) {
+    const db = getAccounting();
+    const p = accFindNode(db.groups[kind], parentId);
+    if (!p) return;
     const name = prompt('نام زیرگروه جدید (مثلاً بانک ملت شعبه آزادی):');
     if (!name || !name.trim()) return;
-    accMutateDoc(function(doc) {
-        const g = (doc.sections[kind] || []).find(x => x.id === gid);
-        if (!g) return;
-        g.subgroups = g.subgroups || [];
-        g.subgroups.push({
-            id: accGenId(),
-            name: name.trim(),
-            createdAt: new Date().toISOString(),
-            records: []
-        });
-    });
+    const node = accNewNode(name.trim());
+    p.children = p.children || [];
+    p.children.push(node);
+    accState.openNodes[parentId] = true;
+    accState.openNodes[node.id] = true;
+    setAccounting(db);
+    renderAccounting();
     showToast('زیرگروه ایجاد شد ✓');
 }
 
-function accRenameSubgroup(kind, gid, sgid) {
-    const doc = accGetCurrentDoc();
-    const g = (doc.sections[kind] || []).find(x => x.id === gid);
-    const sg = g ? (g.subgroups || []).find(x => x.id === sgid) : null;
-    if (!sg) return;
-    const name = prompt('نام زیرگروه:', sg.name);
+function accRenameNode(kind, id) {
+    const db = getAccounting();
+    const n = accFindNode(db.groups[kind], id);
+    if (!n) return;
+    const name = prompt('نام:', n.name);
     if (!name || !name.trim()) return;
-    accMutateDoc(function(d) {
-        const gg = (d.sections[kind] || []).find(x => x.id === gid);
-        const ss = gg ? (gg.subgroups || []).find(x => x.id === sgid) : null;
-        if (ss) ss.name = name.trim();
-    });
+    n.name = name.trim();
+    setAccounting(db);
+    renderAccounting();
 }
 
-function accDeleteSubgroup(kind, gid, sgid) {
-    const doc = accGetCurrentDoc();
-    const g = (doc.sections[kind] || []).find(x => x.id === gid);
-    const sg = g ? (g.subgroups || []).find(x => x.id === sgid) : null;
-    if (!sg) return;
-    if ((sg.records || []).length > 0) {
-        showToast('ابتدا رکوردهای این زیرگروه را حذف کنید');
+function accDeleteNode(kind, id) {
+    const db = getAccounting();
+    const n = accFindNode(db.groups[kind], id);
+    if (!n) return;
+    if ((n.children || []).length > 0) {
+        showToast('ابتدا زیرگروه‌های «' + n.name + '» را حذف کنید');
         return;
     }
-    if (!confirm('زیرگروه «' + sg.name + '» حذف شود؟')) return;
-    accMutateDoc(function(d) {
-        const gg = (d.sections[kind] || []).find(x => x.id === gid);
-        if (gg) gg.subgroups = (gg.subgroups || []).filter(x => x.id !== sgid);
-        if (accState.subgroupId === sgid) accState.subgroupId = null;
-    });
-    showToast('زیرگروه حذف شد');
+    const recCount = db.records.filter(r => r.groupId === id).length;
+    if (recCount > 0) {
+        showToast('حذف ممکن نیست — ' + toPersianNumber(recCount) + ' رکورد (در اسناد مختلف) به «' + n.name + '» متصل است؛ ابتدا آن‌ها را حذف کنید');
+        return;
+    }
+    if (!confirm('«' + n.name + '» حذف شود؟')) return;
+    const parent = accFindParent(db.groups[kind], id);
+    if (parent) {
+        parent.children = (parent.children || []).filter(x => x.id !== id);
+    } else {
+        db.groups[kind] = db.groups[kind].filter(x => x.id !== id);
+    }
+    delete accState.openNodes[id];
+    setAccounting(db);
+    renderAccounting();
+    showToast('حذف شد');
 }
 
 // ─── فرم رکورد (جزئیات) ───
@@ -15607,16 +15729,17 @@ function accUpdateSideButtons() {
     document.getElementById('accSideCredit').classList.toggle('sel', accFormSide === 'credit');
 }
 
-function accOpenRecordForm(kind, groupId, subgroupId, recordId) {
-    const db = accEnsureDefaultDoc();
-    const doc = db.docs.find(d => d.id === db.currentDocId) || db.docs[0];
-    const g = (doc.sections[kind] || []).find(x => x.id === groupId);
-    const sg = g ? (g.subgroups || []).find(x => x.id === subgroupId) : null;
-    if (!sg) return;
-    accFormCtx = { section: kind, groupId: groupId, subgroupId: subgroupId, recordId: recordId || null };
-    const rec = recordId ? (sg.records || []).find(r => r.id === recordId) : null;
+function accOpenRecordForm(docId, kind, groupId, recordId) {
+    const db = getAccounting();
+    const doc = db.docs.find(d => d.id === docId);
+    const node = accFindNode(db.groups[kind], groupId);
+    if (!doc || !node) return;
+    accFormCtx = { docId: docId, section: kind, groupId: groupId, recordId: recordId || null };
+    const rec = recordId ? db.records.find(r => r.id === recordId) : null;
 
-    document.getElementById('accFormTitle').textContent = rec ? ('ویرایش رکورد — ' + sg.name) : ('رکورد جدید — ' + sg.name);
+    document.getElementById('accFormTitle').textContent = rec
+        ? ('ویرایش رکورد — ' + node.name + ' (' + doc.name + ')')
+        : ('رکورد جدید — ' + node.name + ' (' + doc.name + ')');
     document.getElementById('accRecText').value = rec ? (rec.text || '') : '';
     document.getElementById('accRecAmount').value = rec ? String(Math.abs(Number(rec.amount) || 0)) : '';
 
@@ -15765,14 +15888,9 @@ function accSaveRecord() {
     const createdAt = accGetFormDateISO();
     const ctx = accFormCtx;
     const side = accFormSide;
-    accMutateDoc(function(doc) {
-        const g = (doc.sections[ctx.section] || []).find(x => x.id === ctx.groupId);
-        if (!g) return;
-        const sg = (g.subgroups || []).find(x => x.id === ctx.subgroupId);
-        if (!sg) return;
-        sg.records = sg.records || [];
+    accMutate(function(db) {
         if (ctx.recordId) {
-            const rec = sg.records.find(r => r.id === ctx.recordId);
+            const rec = db.records.find(r => r.id === ctx.recordId);
             if (rec) {
                 rec.text = text;
                 rec.amount = amount;
@@ -15781,8 +15899,11 @@ function accSaveRecord() {
                 rec.createdAt = createdAt;
             }
         } else {
-            sg.records.push({
+            db.records.push({
                 id: accGenId(),
+                docId: ctx.docId,
+                section: ctx.section,
+                groupId: ctx.groupId,
                 text: text,
                 createdAt: createdAt,
                 contactId: contactId,
@@ -15799,58 +15920,117 @@ function accDeleteRecord() {
     if (!accFormCtx || !accFormCtx.recordId) return;
     if (!confirm('این رکورد حذف شود؟')) return;
     const ctx = accFormCtx;
-    accMutateDoc(function(doc) {
-        const g = (doc.sections[ctx.section] || []).find(x => x.id === ctx.groupId);
-        if (!g) return;
-        const sg = (g.subgroups || []).find(x => x.id === ctx.subgroupId);
-        if (!sg) return;
-        sg.records = (sg.records || []).filter(r => r.id !== ctx.recordId);
+    accMutate(function(db) {
+        db.records = db.records.filter(r => r.id !== ctx.recordId);
     });
     accCloseRecordForm();
     showToast('رکورد حذف شد');
 }
 
 // ─── مهاجرت دادهٔ حسابداری (برای ورود بک‌آپ و لود دفاعی) ───
+// ورودی فرمت ۲ (groups + docs + records) → پاک‌سازی و برگشت.
+// ورودی فرمت ۱ قدیمی (docs[].sections → گروه → زیرگروه → رکورد) → تبدیل
+// به فرمت ۲: گروه‌های هم‌نام در «درخت مشترک» هر بخش ادغام می‌شوند تا در
+// همهٔ اسناد ظاهر و استفاده شوند (اصلاح کاربر در v209).
+
+function accSanitizeNode(g) {
+    const node = {
+        id: (typeof g.id === 'string' && g.id) ? g.id : accGenId(),
+        name: (typeof g.name === 'string' && g.name.trim()) ? g.name.trim() : 'گروه',
+        createdAt: (typeof g.createdAt === 'string') ? g.createdAt : new Date().toISOString(),
+        children: []
+    };
+    (Array.isArray(g.children) ? g.children : []).forEach(function(c) {
+        if (c && typeof c === 'object') node.children.push(accSanitizeNode(c));
+    });
+    return node;
+}
+
+function accSanitizeRecord(r, out) {
+    if (!r || typeof r !== 'object' || !r.id || !r.docId || !r.groupId) return false;
+    if (ACC_SECTIONS.indexOf(r.section) === -1) return false;
+    const amt = Math.round(Math.abs(Number(r.amount)));
+    if (!isFinite(amt) || amt <= 0) return false;
+    out.push({
+        id: r.id,
+        docId: r.docId,
+        section: r.section,
+        groupId: r.groupId,
+        text: (typeof r.text === 'string') ? r.text : '',
+        createdAt: (typeof r.createdAt === 'string') ? r.createdAt : new Date().toISOString(),
+        contactId: (typeof r.contactId === 'string') ? r.contactId : null,
+        amount: amt,
+        side: (r.side === 'credit') ? 'credit' : 'debit'
+    });
+    return true;
+}
 
 function migrateAccounting(raw) {
     const out = accDefaultDB();
+    out.docs = [];
+    out.records = [];
     try {
-        if (!raw || typeof raw !== 'object' || !Array.isArray(raw.docs)) return out;
-        const docs = [];
+        if (!raw || typeof raw !== 'object') return out;
+        // ─── فرمت ۲: درخت مشترک + رکوردهای تخت ───
+        if (raw.groups && typeof raw.groups === 'object' && Array.isArray(raw.records)) {
+            ACC_SECTIONS.forEach(function(kind) {
+                const arr = Array.isArray(raw.groups[kind]) ? raw.groups[kind] : [];
+                arr.forEach(function(g) {
+                    if (g && typeof g === 'object') out.groups[kind].push(accSanitizeNode(g));
+                });
+            });
+            (Array.isArray(raw.docs) ? raw.docs : []).forEach(function(d) {
+                if (!d || typeof d !== 'object' || !d.id) return;
+                out.docs.push({
+                    id: d.id,
+                    name: (typeof d.name === 'string' && d.name.trim()) ? d.name.trim() : 'سند',
+                    createdAt: (typeof d.createdAt === 'string') ? d.createdAt : new Date().toISOString()
+                });
+            });
+            raw.records.forEach(function(r) { accSanitizeRecord(r, out.records); });
+            if (out.docs.length === 0) out.docs = [accNewDocObj('سند ۱')];
+            return out;
+        }
+        // ─── فرمت ۱ قدیمی: سند → بخش → گروه → زیرگروه → رکورد ───
+        if (!Array.isArray(raw.docs)) return out;
         raw.docs.forEach(function(d) {
             if (!d || typeof d !== 'object') return;
             const doc = {
                 id: (typeof d.id === 'string' && d.id) ? d.id : accGenId(),
                 name: (typeof d.name === 'string' && d.name.trim()) ? d.name.trim() : 'سند',
-                createdAt: (typeof d.createdAt === 'string') ? d.createdAt : new Date().toISOString(),
-                sections: { assets: [], liabilities: [], equity: [] }
+                createdAt: (typeof d.createdAt === 'string') ? d.createdAt : new Date().toISOString()
             };
+            out.docs.push(doc);
             ACC_SECTIONS.forEach(function(kind) {
                 const arr = (d.sections && Array.isArray(d.sections[kind])) ? d.sections[kind] : [];
                 arr.forEach(function(g) {
                     if (!g || typeof g !== 'object') return;
-                    const grp = {
-                        id: (typeof g.id === 'string' && g.id) ? g.id : accGenId(),
-                        name: (typeof g.name === 'string' && g.name.trim()) ? g.name.trim() : 'گروه',
-                        createdAt: (typeof g.createdAt === 'string') ? g.createdAt : new Date().toISOString(),
-                        subgroups: []
-                    };
-                    const sgs = Array.isArray(g.subgroups) ? g.subgroups : [];
-                    sgs.forEach(function(sg) {
+                    const gName = (typeof g.name === 'string' && g.name.trim()) ? g.name.trim() : 'گروه';
+                    // ادغام با نام — گروه برای باکس اصلی تعریف می‌شود، نه برای سند
+                    let top = out.groups[kind].find(function(x) { return x.name === gName; });
+                    if (!top) {
+                        top = accNewNode(gName);
+                        if (typeof g.id === 'string' && g.id) top.id = g.id;
+                        out.groups[kind].push(top);
+                    }
+                    (Array.isArray(g.subgroups) ? g.subgroups : []).forEach(function(sg) {
                         if (!sg || typeof sg !== 'object') return;
-                        const sub = {
-                            id: (typeof sg.id === 'string' && sg.id) ? sg.id : accGenId(),
-                            name: (typeof sg.name === 'string' && sg.name.trim()) ? sg.name.trim() : 'زیرگروه',
-                            createdAt: (typeof sg.createdAt === 'string') ? sg.createdAt : new Date().toISOString(),
-                            records: []
-                        };
-                        const recs = Array.isArray(sg.records) ? sg.records : [];
-                        recs.forEach(function(r) {
+                        const sgName = (typeof sg.name === 'string' && sg.name.trim()) ? sg.name.trim() : 'زیرگروه';
+                        let child = top.children.find(function(x) { return x.name === sgName; });
+                        if (!child) {
+                            child = accNewNode(sgName);
+                            if (typeof sg.id === 'string' && sg.id) child.id = sg.id;
+                            top.children.push(child);
+                        }
+                        (Array.isArray(sg.records) ? sg.records : []).forEach(function(r) {
                             if (!r || typeof r !== 'object') return;
                             const amt = Math.round(Math.abs(Number(r.amount)));
-                            if (!isFinite(amt)) return;
-                            sub.records.push({
+                            if (!isFinite(amt) || amt <= 0) return;
+                            out.records.push({
                                 id: (typeof r.id === 'string' && r.id) ? r.id : accGenId(),
+                                docId: doc.id,
+                                section: kind,
+                                groupId: child.id,
                                 text: (typeof r.text === 'string') ? r.text : '',
                                 createdAt: (typeof r.createdAt === 'string') ? r.createdAt : new Date().toISOString(),
                                 contactId: (typeof r.contactId === 'string') ? r.contactId : null,
@@ -15858,17 +16038,11 @@ function migrateAccounting(raw) {
                                 side: (r.side === 'credit') ? 'credit' : 'debit'
                             });
                         });
-                        grp.subgroups.push(sub);
                     });
-                    doc.sections[kind].push(grp);
                 });
             });
-            docs.push(doc);
         });
-        if (docs.length === 0) return out;
-        out.docs = docs;
-        out.currentDocId = ((typeof raw.currentDocId === 'string') && docs.some(d => d.id === raw.currentDocId))
-            ? raw.currentDocId : docs[0].id;
+        if (out.docs.length === 0) out.docs = [accNewDocObj('سند ۱')];
         return out;
     } catch(e) {
         console.error('Accounting migrate error', e);
