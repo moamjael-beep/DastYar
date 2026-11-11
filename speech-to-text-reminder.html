@@ -6790,7 +6790,23 @@ body.locked .header-actions button {
 //               زیر همان سمت باز شود. تاپبار و هدر زیر منو قابل لمس
 //               می‌مانند (toggle ☰ و بازگشت سالم‌اند).
 //            تست: test_accounting_v214.mjs (۵ تست P1-P5) — ۵/۵ سبز، صفر pageerror.
-const APP_VERSION = 'v214-2026-11-11-acc-top-anchor-hamburger';
+//
+//         🔧 v215 (۱۴۰۵ آبان ۲۱) — دو الزام جدید کاربر (ستون‌های گزارش):
+//            ۱) مبالغ «جمع کل» دقیقاً «زیر ستون‌های خودشان» — جدول رکورد-سطح
+//               ۹ ستون دارد (ردیف+تاریخ+شرح+سند+حساب = ۵ ستون قبل از بدهکار)
+//               پس colspan فوتر از ۶ به ۵ اصلاح شد؛ قبلاً بدهکار کل زیر ستون
+//               بستانکار و وضعیت کلاً بیرون می‌افتاد.
+//            ۲) «مانده» در هر گزارش = برآیند تمام مبالغ قبلی و خط فعلی
+//               (ماندهٔ رونده) برای همان شخص/گروه/زیرگروه انتخابی کاربر —
+//               ماندهٔ هر ردیف = Σ(بدهکار−بستانکار) همهٔ ردیف‌های بالایی +
+//               خودش؛ وضعیت هر ردیف هم جهت همین ماندهٔ رونده است و ماندهٔ
+//               نهایی = آخرین ردیف. ردیف‌های سطح رکورد به ترتیب زمانی
+//               صعودی (قدیمی‌ترین → جدیدترین) مرتب می‌شوند تا برآیند از
+//               قدیم به جدید معنا داشته باشد. در سطح بخش/گروه/زیرگروه هم
+//               ماندهٔ رونده روی ردیف‌های تجمیعی همان ترتیب نمایش اعمال
+//               می‌شود. خروجی HTML/JSON هم همان ماندهٔ رونده را می‌برند.
+//            تست: test_accounting_v215.mjs (۸ تست V1-V8) — صفر pageerror.
+const APP_VERSION = 'v215-2026-11-11-acc-report-totals-running-balance';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -18597,6 +18613,14 @@ function accShowReportResults(records, criteria, level) {
     const [jy, jm, jd] = toJalaliParts(now);
     const dateStr = toPersianNumber(jy) + '/' + toPersianDigits(pad2(jm)) + '/' + toPersianDigits(pad2(jd));
 
+    // 🔧 v215 (الزام کاربر): ترتیب زمانی صعودی (قدیمی‌ترین → جدیدترین) برای
+    // ردیف‌های سطح رکورد تا «ماندهٔ رونده» معنا داشته باشد — برآیند مبالغ
+    // قبلی + خط فعلی از قدیم به جدید و ماندهٔ نهایی = آخرین ردیف.
+    // (سورت پایدار است — رکوردهای هم‌زمان به ترتیب ثبت می‌مانند. در سطوح
+    // تجمیعی ترتیب بی‌اثر است چون فقط فیلتر/جمع می‌شوند.)
+    records = records.slice().sort(function(a, b) {
+        return (a.createdAt > b.createdAt) ? 1 : ((a.createdAt < b.createdAt) ? -1 : 0);
+    });
     // اگر شخص انتخاب شده، گزارش در سطح رکورد است (مجموعه-person-summary)
     // اگر شخص انتخاب نشده و level = section/group/subgroup، تجمیع می‌شود.
     let rows = [];
@@ -18644,6 +18668,19 @@ function accShowReportResults(records, criteria, level) {
             }
         });
     }
+
+    // 🔧 v215 (الزام کاربر): «مانده» در هر گزارش = برآیند تمام مبالغ قبلی
+    // و خط فعلی (ماندهٔ رونده) برای همان انتخاب کاربر (شخص/گروه/زیرگروه).
+    // ماندهٔ هر ردیف = Σ(بدهکار − بستانکار) همهٔ ردیف‌های بالایی + خودش؛
+    // وضعیت هر ردیف هم جهت همین ماندهٔ رونده است و ماندهٔ نهایی = آخرین ردیف.
+    // در سطح بخش/گروه/زیرگروه هم روی ردیف‌های تجمیعیِ همان ترتیب نمایش
+    // اعمال می‌شود.
+    let _accRunning = 0;
+    rows.forEach(function(rw) {
+        _accRunning += (Number(rw.debit) || 0) - (Number(rw.credit) || 0);
+        rw.balance = _accRunning;
+        rw.status = (_accRunning > 0) ? 'debit' : ((_accRunning < 0) ? 'credit' : 'zero');
+    });
 
     // عنوان و خلاصهٔ آماری
     let titleParts = [];
@@ -18736,9 +18773,13 @@ function accShowReportResults(records, criteria, level) {
             tbody.appendChild(tr);
         });
         table.appendChild(tbody);
-        // footer جمع کل
+        // footer جمع کل — 🔧 v215 (الزام کاربر): مبالغ جمع کل «زیر ستون‌های
+        // خودشان». جدول رکورد-سطح ۹ ستون دارد (ردیف+تاریخ+شرح+سند+حساب = ۵
+        // ستون قبل از بدهکار) پس colspan=۵ تا بدهکار کل دقیقاً زیر ستون
+        // بدهکار بیفتد — قبلاً ۶ بود و یک ستون جابه‌جا می‌افتد. جدول
+        // بخش/گروه/زیرگروه ۳ ستون قبل از بدهکار دارد (ردیف+عنوان+تعداد).
         const tfoot = document.createElement('tfoot');
-        let fHtml = '<tr><td colspan="' + (recordTable ? 6 : 3) + '">جمع کل</td>';
+        let fHtml = '<tr><td colspan="' + (recordTable ? 5 : 3) + '">جمع کل</td>';
         fHtml += '<td class="col-num">' + toPersianNumberWithSep(totals.debit) + '</td>';
         fHtml += '<td class="col-num">' + toPersianNumberWithSep(totals.credit) + '</td>';
         fHtml += '<td class="col-num">' + toPersianNumberWithSep(Math.abs(totals.balance)) + '</td>';
@@ -18765,7 +18806,9 @@ function accShowReportResults(records, criteria, level) {
     trackModalOpen('accReportResults');
 }
 
-// ساخت ردیف گزارش در سطح رکورد
+// ساخت ردیف گزارش در سطح رکورد — 🔧 v215: مانده/وضعیتِ تک‌رکوردِ این تابع
+// بعداً در accShowReportResults با «ماندهٔ رونده» (برآیند مبالغ قبلی + خط
+// فعلی) جایگزین می‌شود؛ اینجا فقط بدهکار/بستانکارِ خود رکورد ست می‌شود.
 function accReportRowFromRecord(r, db) {
     const doc = (db.docs || []).find(function(d) { return d.id === r.docId; });
     const node = (ACC_SECTIONS.indexOf(r.section) !== -1) ? accFindNode(db.groups[r.section], r.groupId) : null;
