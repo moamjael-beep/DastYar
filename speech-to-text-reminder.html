@@ -6806,7 +6806,51 @@ body.locked .header-actions button {
 //               ماندهٔ رونده روی ردیف‌های تجمیعی همان ترتیب نمایش اعمال
 //               می‌شود. خروجی HTML/JSON هم همان ماندهٔ رونده را می‌برند.
 //            تست: test_accounting_v215.mjs (۸ تست V1-V8) — صفر pageerror.
-const APP_VERSION = 'v215-2026-11-11-acc-report-totals-running-balance';
+//
+//         🔧 v216 (۱۴۰۵ آبان ۲۱) — ممیزی کامل ناوبری برگشت (الزام کاربر):
+//            «تمام برگشت‌ها از هر جایی — با کلید بک موبایل یا بک صفحه/منو/
+//             جستجو/ویرایش — به صفحهٔ قبل خودش باشد نه صفحهٔ اصلی برنامه»
+//            علت ریشه‌ای: چند overlay هیچ ورودی تاریخی نداشتند و خانوادهٔ
+//            اشpersons با pushState خام + بستن بی‌پاپ، ورودی مرده می‌ساخت —
+//            Back از گزارش کارها/مودال فرمت/تنظیمات گروه/نتایج جستجو، کل
+//            خانواده را می‌بست و به صفحهٔ اصلی می‌رفت.
+//            ۱) همهٔ overlayهای جاافتاده به الگوی مودال tracked تبدیل شدند
+//               (navPush + trackModalOpen در باز کردن؛ closeModalByType +
+//               navBack در بستن؛ navReplace در انتقال فرم→نتایج):
+//               taskReport، taskReportResults، reportFormat (۳ مسیر باز شدن:
+//               tasks/acc-save/acc-share)، groupSettings، notes،
+//               phoneAction، contactPicker، contactActionMenu،
+//               bellSettings، groupPickerForContact + کل خانوادهٔ اشpersons
+//               (contacts/contactForm/contactSearch/contactSearchResults/
+//               contactReport/contactReportResults).
+//            ۲) فلگ _silentNavClose + _popstateClose: بستن‌های مسیر popstate
+//               بی‌صدا هستند (پاپ انجام شده — navBack دوباره نمی‌زنند)؛
+//               بستن با دکمهٔ خود صفحه ورودی تاریخچه را پاپ می‌کند (Back
+//               مرده بعد از بستن دستی حذف شد).
+//            ۳) زنجیرهٔ popstate: منوهای داینامیک (bellSettings/
+//               contactPicker/contactActionMenu) بالاترین لایه و اول بسته
+//               می‌شوند + همة بستن‌های زنجیره بی‌صدا.
+//            ۴) رفع race: هر جا بستن بلافاصله push داشت (executeContactSearch/
+//               executeContactReport/executeTaskReport/editContactFromSearch/
+//               آیتم‌های منوی عملیات شخص/تماس-پیامک/addTaskForContact/
+//               انتخاب گروه در picker) → بستن بی‌صدا + navReplace.
+//            ۵) جریان «ایجاد تسک برای شخص»: Back بعد از ذخیرهٔ تسک، خودِ
+//               contacts را برمی‌گرداند (restore display:none در دو شاخهٔ
+//               popstate) — قبلاً یک Back مرده بود.
+//            🔑 قانون طلایی همیشگی «اتاق‌های قصر» (الزام کاربر — اعتبار ابدی،
+//               در BEHAVIOR-SPEC.md بخش ۴.۱ کد BA-004G و منطقهٔ قرمز ۱۸ ثبت
+//               شد): هر صفحه و منویی که توسط یک صفحه یا منوی دیگر باز می‌شود
+//               هنگام بستن به همان صفحهٔ قبلیِ خودش برمی‌گردد — اتاق به اتاق —
+//               نه به صفحهٔ اصلی. به قول کاربر: «مثل اتاق‌های یک قصر که یکی
+//               بعد از دیگری از یک درب وارد و از درب مقابل وارد اتاق بعدی
+//               می‌شویم؛ پس موقع برگشت از آخرین درب به بیرون قصر نمی‌پریم
+//               بلکه اتاق به اتاق به عقب برمی‌گردیم تا به حیاط قصر برسیم».
+//               الگوهای فقط-مجاز: open=navPush+trackModalOpen؛
+//               close=closeModalByType+navBack (بی‌صدا اگر بلافاصله push
+//               دیگر یا از مسیر popstate با _popstateClose)؛ فرم→نتایج=
+//               navReplace. هر overlay آینده بدون این سه الگو ممنوع است.
+//            تست: test_backnav_v216.mjs (۲۰ سناریو B1-B20) — صفر pageerror.
+const APP_VERSION = 'v216-2026-11-11-back-nav-audit';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -9008,6 +9052,9 @@ function openGroupSettings(groupId) {
 
     // نمایش مودال
     document.getElementById('groupSettingsOverlay').classList.add('active');
+    // 🔧 v216: marker مودال + track — Back موبایل تنظیمات گروه را می‌بندد
+    navPush({ view: 'modal', type: 'groupSettings' });
+    trackModalOpen('groupSettings');
     // 🔧 v159: پنهان کردن + شناور — از _refreshFloatingAddBtn استفاده کن
     _refreshFloatingAddBtn();
 }
@@ -9192,6 +9239,9 @@ function saveGroupSettings() {
 // بستن مودال تنظیمات گروه
 function closeGroupSettings() {
     document.getElementById('groupSettingsOverlay').classList.remove('active');
+    // 🔧 v216: ورودی تاریخچهٔ تنظیمات گروه هم پاپ شود (مگر در مسیر popstate)
+    closeModalByType('groupSettings');
+    if (!_silentNavClose) navBack();
     _groupSettingsTargetId = null;
     // 🔧 ریست متغیر موقت عکس
     _tempHeaderImage = null;
@@ -11863,6 +11913,15 @@ function trackModalClose(type) {
     if (idx >= 0) _modalStack.splice(idx, 1);
 }
 
+// 🔧 v216 (الزام کاربر): فلگ بستنِ بی‌صدا از مسیر popstate — وقتی خودِ
+// popstate overlay را می‌بندد (پاپ تاریخچه انجام شده)، close نباید دوباره
+// navBack بزند (وگرنه یک ورودی اضافه پاپ می‌شود و به صفحهٔ قبلِ قبل می‌رود).
+let _silentNavClose = false;
+function _popstateClose(fn) {
+    _silentNavClose = true;
+    try { fn(); } finally { _silentNavClose = false; }
+}
+
 // Visually close a single modal by its type marker ('calendar' | 'taskForm'
 // | 'datetimePicker' | 'groupPicker' | 'groupDeleteConfirm'). Also performs
 // side-effects specific to that modal (stop recording, reset edit-task flag).
@@ -11898,10 +11957,32 @@ function closeModalByType(type) {
         'accDatePicker': 'accDatePickerOverlay',
         'accGroupPicker': 'accGroupPickerOverlay',
         'accSubgroupPicker': 'accSubgroupPickerOverlay',
+        // 🔧 v216 (الزام کاربر): overlayهای بدون مدیریت تاریخچه — بازگشت به
+        // «صفحهٔ قبل» با Back موبایل و دکمهٔ بازگشت خود صفحه
+        'taskReport': 'taskReportOverlay',
+        'taskReportResults': 'taskReportResultsOverlay',
+        'reportFormat': 'reportFormatOverlay',
+        'groupSettings': 'groupSettingsOverlay',
+        'notes': 'notesOverlay',
+        'contactPicker': 'contactPickerOverlay',
+        'contactActionMenu': 'contactActionMenuOverlay',
+        'bellSettings': 'bellSettingsOverlay',
     }[type];
     if (overlayId) {
         const el = document.getElementById(overlayId);
-        if (el) el.classList.remove('active');
+        if (el) {
+            // 🔧 v216: منوهای داینامیک (contactPicker/contactActionMenu/
+            // bellSettings + نسخهٔ داینامیک groupPicker) با createElement
+            // ساخته می‌شوند و کلاس 'active' ندارند — باید با remove() بسته
+            // شوند وگرنه با Back موبایل روی صفحه باقی می‌مانند. بقیهٔ
+            // overlayهای استاتیک با حذف کلاس 'active' بسته می‌شوند.
+            if (type === 'contactPicker' || type === 'contactActionMenu' || type === 'bellSettings' ||
+                (type === 'groupPicker' && !el.classList.contains('modal-overlay'))) {
+                el.remove();
+            } else {
+                el.classList.remove('active');
+            }
+        }
     }
     trackModalClose(type);
     if (type === 'accDocForm') {
@@ -12024,6 +12105,17 @@ window.addEventListener('popstate', (e) => {
         // — we just popped back to the parent marker. The parent modal
         // should stay open. Do NOT close anything.
         if (state.view === 'modal' && state.type === topType) {
+            // 🔧 v216: اگر contacts در جریان «ایجاد تسک برای شخص» پنهان شده
+            // بود (display:none)، Back باید خودِ contacts را برگرداند نه اینکه
+            // بی‌اثر بماند.
+            if (topType === 'contacts') {
+                const coH = document.getElementById('contactsOverlay');
+                if (coH && coH.style.display === 'none') {
+                    coH.style.display = '';
+                    bringToFront(coH);
+                    refreshFloatingContactBtn();
+                }
+            }
             return;
         }
 
@@ -12051,44 +12143,58 @@ window.addEventListener('popstate', (e) => {
     // 🔧 بررسی صفحات اشخاص — اگر باز هستند، یکی را ببند
     // صفحات اشخاص از navPush استفاده نمی‌کنند، پس باید جداگانه مدیریت شوند
     // ترتیب بستن: از بالا به پایین (نتایج → جستجو/گزارش → فرم → لیست)
+    // 🔧 v216: منوهای داینامیک (بالاترین لایه) اول بسته شوند + همهٔ بستن‌ها
+    // بی‌صدا (popstate خودش پاپ کرده — نباید navBack دوباره بزنیم)
+    if (document.getElementById('bellSettingsOverlay')) {
+        _popstateClose(closeBellSettings);
+        return;
+    }
+    if (document.getElementById('contactPickerOverlay')) {
+        _popstateClose(closeContactPickerForTask);
+        return;
+    }
+    if (document.getElementById('contactActionMenuOverlay')) {
+        _popstateClose(closeContactActionMenu);
+        return;
+    }
     if (document.getElementById('contactReportResultsOverlay') &&
         document.getElementById('contactReportResultsOverlay').classList.contains('active')) {
-        closeContactReportResults();
+        _popstateClose(closeContactReportResults);
         return;
     }
     if (document.getElementById('contactSearchResultsOverlay') &&
         document.getElementById('contactSearchResultsOverlay').classList.contains('active')) {
-        closeContactSearchResults();
+        _popstateClose(closeContactSearchResults);
         return;
     }
     if (document.getElementById('contactReportOverlay') &&
         document.getElementById('contactReportOverlay').classList.contains('active')) {
-        closeContactReport();
+        _popstateClose(closeContactReport);
         return;
     }
     if (document.getElementById('contactSearchOverlay') &&
         document.getElementById('contactSearchOverlay').classList.contains('active')) {
-        closeContactSearch();
+        _popstateClose(closeContactSearch);
         return;
     }
     if (document.getElementById('contactFormOverlay') &&
         document.getElementById('contactFormOverlay').classList.contains('active')) {
-        closeContactForm();
+        _popstateClose(closeContactForm);
         return;
     }
     if (document.getElementById('phoneActionOverlay') &&
         document.getElementById('phoneActionOverlay').classList.contains('active')) {
-        closePhoneActionMenu();
+        _popstateClose(closePhoneActionMenu);
         return;
     }
     if (document.getElementById('notesOverlay') &&
         document.getElementById('notesOverlay').classList.contains('active')) {
-        closeNotes();
+        _popstateClose(closeNotes);
         return;
     }
     if (document.getElementById('contactsOverlay') &&
         document.getElementById('contactsOverlay').classList.contains('active')) {
-        closeContacts();
+        _popstateClose(closeContacts);
         return;
     }
 
@@ -12103,6 +12209,17 @@ window.addEventListener('popstate', (e) => {
     // 🔧 اگر مودال فرم تسک باز است یا تازه بسته شده، هیچ اسکرول و fullRender انجام نده
     const taskFormJustClosed = (state.view === 'tasks' && _modalStack.length === 0 && prevView === 'tasks');
     if (state.view === 'modal') {
+        // 🔧 v216: marker مربوط به contacts ولی صفحه پنهان (جریان «ایجاد تسک
+        // برای شخص» — display:none) → Back باید contacts را برگرداند.
+        if (state.type === 'contacts') {
+            const coH2 = document.getElementById('contactsOverlay');
+            if (coH2 && coH2.style.display === 'none') {
+                coH2.style.display = '';
+                coH2.classList.add('active');
+                bringToFront(coH2);
+                refreshFloatingContactBtn();
+            }
+        }
         // مودال باز است — هیچ کار نکن
         return;
     }
@@ -13834,11 +13951,18 @@ function showBellSettings() {
     overlay.appendChild(modal);
     overlay.onclick = function(e) { if (e.target === overlay) closeBellSettings(); };
     document.body.appendChild(overlay);
+    // 🔧 v216: marker مودال + track — Back موبایل تنظیمات زنگوله را می‌بندد
+    navPush({ view: 'modal', type: 'bellSettings' });
+    trackModalOpen('bellSettings');
 }
 
 function closeBellSettings() {
     const overlay = document.getElementById('bellSettingsOverlay');
-    if (overlay) overlay.remove();
+    if (!overlay) return; // 🔧 v216: idempotent
+    overlay.remove();
+    // 🔧 v216: ورودی تاریخچهٔ منو هم پاپ شود (مگر در مسیر popstate)
+    closeModalByType('bellSettings');
+    if (!_silentNavClose) navBack();
 }
 
 // 🔧 v148: پخش ۵ بوق کوتاه
@@ -14377,7 +14501,8 @@ function addTaskForContact(contactId) {
     }
     // 🔧 v145: طبق قانون overlay stack — صفحه اشpersons بسته نمی‌شود
     // فقط منوی عملیات شخص را می‌بندیم (اگر باز است)
-    closeContactActionMenu();
+    // 🔧 v216: بستن بی‌صدا — بلافاصله picker گروه push می‌کند (navBack = race)
+    closeModalByType('contactActionMenu');
     // 🔧 v135: منوی زیبای انتخاب گروه (به‌جای prompt عدد)
     const groups = getGroups().filter(g => g.id !== 'urgent');
     if (groups.length === 0) {
@@ -14393,7 +14518,10 @@ function addTaskForContact(contactId) {
         currentView = 'tasks';
         currentGroupId = selectedGroup.id;
         expandedId = null;
-        navPush({ view: 'tasks', groupId: selectedGroup.id, fromContacts: true });
+        // 🔧 v216: navReplace — ورودی فعلیِ تاریخچه همان انتخاب‌گر گروه است؛
+        // جایگزینی آن با نمای تسک باعث می‌شود Back بعد از ذخیرهٔ تسک مستقیم
+        // به contacts برگردد (بدون ورودی مردهٔ انتخاب‌گر)
+        navReplace({ view: 'tasks', groupId: selectedGroup.id, fromContacts: true });
         fullRender();
         window.scrollTo({ top: 0, behavior: 'auto' });
         // باز کردن فرم ایجاد تسک
@@ -14474,7 +14602,8 @@ function showGroupPickerForContact(contact, groups, callback) {
         }
         // کلیک → انتخاب گروه
         item.onclick = function() {
-            closeGroupPicker();
+            // 🔧 v216: بستن بی‌صدا — callback بلافاصله push می‌کند (navBack = race)
+            closeModalByType('groupPicker');
             callback(g);
         };
         list.appendChild(item);
@@ -14494,12 +14623,19 @@ function showGroupPickerForContact(contact, groups, callback) {
         if (e.target === overlay) closeGroupPicker();
     };
     document.body.appendChild(overlay);
+    // 🔧 v216: marker مودال + track — Back موبایل انتخاب گروه را می‌بندد
+    navPush({ view: 'modal', type: 'groupPicker' });
+    trackModalOpen('groupPicker');
 }
 
 // بستن منوی انتخاب گروه
 function closeGroupPicker() {
     const overlay = document.getElementById('groupPickerOverlay');
-    if (overlay) overlay.remove();
+    if (!overlay) return; // 🔧 v216: idempotent
+    overlay.remove();
+    // 🔧 v216: ورودی تاریخچهٔ منو هم پاپ شود (مگر در مسیر popstate)
+    closeModalByType('groupPicker');
+    if (!_silentNavClose) navBack();
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -14660,13 +14796,20 @@ function showContactPickerForTask(callback) {
         if (e.target === overlay) closeContactPickerForTask();
     };
     document.body.appendChild(overlay);
+    // 🔧 v216: marker مودال + track — Back موبایل فقط منوی انتخاب شخص را می‌بندد
+    navPush({ view: 'modal', type: 'contactPicker' });
+    trackModalOpen('contactPicker');
     // فوکوس روی فیلد جستجو
     setTimeout(function() { searchInput.focus(); }, 100);
 }
 
 function closeContactPickerForTask() {
     const overlay = document.getElementById('contactPickerOverlay');
-    if (overlay) overlay.remove();
+    if (!overlay) return; // 🔧 v216: idempotent
+    overlay.remove();
+    // 🔧 v216: ورودی تاریخچهٔ منو هم پاپ شود (مگر در مسیر popstate)
+    closeModalByType('contactPicker');
+    if (!_silentNavClose) navBack();
 }
 
 // تبدیل اعداد فارسی به انگلیسی (برای parseInt صحیح)
@@ -14730,7 +14873,9 @@ function openContacts() {
     overlay.classList.add('active');
     bringToFront(overlay);
     refreshFloatingContactBtn();
-    history.pushState({ view: 'contacts' }, '');
+    // 🔧 v216: marker مودال + track — Back موبایل صفحهٔ اشخاص را می‌بندد
+    navPush({ view: 'modal', type: 'contacts' });
+    trackModalOpen('contacts');
 }
 
 // 🔧 v170: تابع هوشمند برای دکمهٔ + هدر اصلی
@@ -14776,6 +14921,9 @@ function handleAddButtonClick() {
 }
 
 function closeContacts() {
+    // 🔧 v216: idempotent — اگر contacts باز نیست، هیچ پاپی نزن (Back مرده/خروج از برنامه)
+    var coG = document.getElementById('contactsOverlay');
+    if (!coG || !coG.classList.contains('active')) return;
     document.getElementById('contactFormOverlay').classList.remove('active');
     document.getElementById('contactSearchOverlay').classList.remove('active');
     document.getElementById('contactSearchResultsOverlay').classList.remove('active');
@@ -14785,6 +14933,9 @@ function closeContacts() {
     co.classList.remove('active');
     co.style.display = '';
     _editingContactId = null;
+    // 🔧 v216: ورودی تاریخچهٔ contacts هم پاپ شود (مگر در مسیر popstate)
+    closeModalByType('contacts');
+    if (!_silentNavClose) navBack();
     refreshFloatingContactBtn();
     _refreshFloatingAddBtn();
 }
@@ -14978,9 +15129,9 @@ function showContactActionMenu(contactId) {
 
     // گزینه‌های اصلی
     const items = [
-        { icon: '➕', label: 'ایجاد تسک برای این شخص', color: '#4CAF50', action: "closeContactActionMenu(); addTaskForContact('" + contactId + "')" },
-        { icon: '✏️', label: 'ویرایش شخص', color: '#1976D2', action: "closeContactActionMenu(); editContact('" + contactId + "')" },
-        { icon: '🗑', label: 'حذف شخص', color: '#f44336', action: "closeContactActionMenu(); deleteContact('" + contactId + "')" },
+        { icon: '➕', label: 'ایجاد تسک برای این شخص', color: '#4CAF50', action: "closeModalByType('contactActionMenu'); addTaskForContact('" + contactId + "')" },
+        { icon: '✏️', label: 'ویرایش شخص', color: '#1976D2', action: "closeModalByType('contactActionMenu'); editContact('" + contactId + "')" },
+        { icon: '🗑', label: 'حذف شخص', color: '#f44336', action: "closeModalByType('contactActionMenu'); deleteContact('" + contactId + "')" },
     ];
     items.forEach(function(item) {
         const div = document.createElement('div');
@@ -15014,13 +15165,13 @@ function showContactActionMenu(contactId) {
             const callBtn = document.createElement('button');
             callBtn.className = 'contact-action-phone-btn call';
             callBtn.innerHTML = '📞 تماس';
-            callBtn.setAttribute('onclick', "closeContactActionMenu(); window.location.href='tel:" + safePhone + "'");
+            callBtn.setAttribute('onclick', "closeModalByType('contactActionMenu'); window.location.href='tel:" + safePhone + "'");
             row.appendChild(callBtn);
 
             const smsBtn = document.createElement('button');
             smsBtn.className = 'contact-action-phone-btn sms';
             smsBtn.innerHTML = '💬 پیامک';
-            smsBtn.setAttribute('onclick', "closeContactActionMenu(); window.location.href='sms:" + safePhone + "'");
+            smsBtn.setAttribute('onclick', "closeModalByType('contactActionMenu'); window.location.href='sms:" + safePhone + "'");
             row.appendChild(smsBtn);
 
             itemsContainer.appendChild(row);
@@ -15063,11 +15214,18 @@ function showContactActionMenu(contactId) {
     menu.appendChild(closeBtn);
     overlay.appendChild(menu);
     document.body.appendChild(overlay);
+    // 🔧 v216: marker مودال + track — Back موبایل فقط منوی عملیات را می‌بندد
+    navPush({ view: 'modal', type: 'contactActionMenu' });
+    trackModalOpen('contactActionMenu');
 }
 
 function closeContactActionMenu() {
     const overlay = document.getElementById('contactActionMenuOverlay');
-    if (overlay) overlay.remove();
+    if (!overlay) return; // 🔧 v216: idempotent
+    overlay.remove();
+    // 🔧 v216: ورودی تاریخچهٔ منو هم پاپ شود (مگر در مسیر popstate)
+    closeModalByType('contactActionMenu');
+    if (!_silentNavClose) navBack();
 }
 
 // ─── فرم تعریف/ویرایش شخص ───
@@ -15110,13 +15268,20 @@ function openContactForm(id) {
     var cfOverlay = document.getElementById('contactFormOverlay');
     cfOverlay.classList.add('active');
     bringToFront(cfOverlay);  // 🔧 v158
-    history.pushState({ view: 'contactForm' }, '');
+    navPush({ view: 'modal', type: 'contactForm' });
+    trackModalOpen('contactForm');
     refreshFloatingContactBtn();
 }
 
 function closeContactForm() {
-    document.getElementById('contactFormOverlay').classList.remove('active');
+    // 🔧 v216: idempotent
+    const cfOv = document.getElementById('contactFormOverlay');
+    if (!cfOv || !cfOv.classList.contains('active')) return;
+    cfOv.classList.remove('active');
     _editingContactId = null;
+    // 🔧 v216: ورودی تاریخچهٔ فرم هم پاپ شود (مگر در مسیر popstate)
+    closeModalByType('contactForm');
+    if (!_silentNavClose) navBack();
     refreshFloatingContactBtn();
     // 🔧 اگر reload در انتظار است، حالا که فرم بسته شد اجرا کن
     setTimeout(checkPendingReload, 500);
@@ -15586,12 +15751,19 @@ function openContactSearch() {
     var overlay = document.getElementById('contactSearchOverlay');
     overlay.classList.add('active');
     bringToFront(overlay);  // 🔧 v158: روی اشpersons قرار بگیرد
-    history.pushState({ view: 'contactSearch' }, '');
+    navPush({ view: 'modal', type: 'contactSearch' });
+    trackModalOpen('contactSearch');
     refreshFloatingContactBtn();
 }
 
 function closeContactSearch() {
-    document.getElementById('contactSearchOverlay').classList.remove('active');
+    // 🔧 v216: idempotent
+    const csOv = document.getElementById('contactSearchOverlay');
+    if (!csOv || !csOv.classList.contains('active')) return;
+    csOv.classList.remove('active');
+    // 🔧 v216: ورودی تاریخچهٔ فرم جستجو هم پاپ شود (مگر در مسیر popstate)
+    closeModalByType('contactSearch');
+    if (!_silentNavClose) navBack();
     refreshFloatingContactBtn();
 }
 
@@ -15609,7 +15781,9 @@ function executeContactSearch() {
     };
 
     const results = filterContacts(criteria);
-    closeContactSearch();
+    // 🔧 v216: بستن بی‌صدا — ورودی فرم با navReplace در showContactSearchResults
+    // جایگزین می‌شود (navBack + push هم‌زمان = race popstate)
+    closeModalByType('contactSearch');
     showContactSearchResults(results);
 }
 
@@ -15798,19 +15972,30 @@ function showContactSearchResults(results) {
     var resOverlay = document.getElementById('contactSearchResultsOverlay');
     resOverlay.classList.add('active');
     bringToFront(resOverlay);  // 🔧 v158: روی همه قرار بگیرد
-    history.pushState({ view: 'contactSearchResults' }, '');
+    // 🔧 v216: جایگزینی ورودی «جستجو» با «نتایج» (الگوی accSearch) —
+    // Back از نتایج مستقیم به contacts برمی‌گردد (بدون ورودی مرده)
+    navReplace({ view: 'modal', type: 'contactSearchResults' });
+    trackModalOpen('contactSearchResults');
     refreshFloatingContactBtn();
 }
 
 function closeContactSearchResults() {
-    document.getElementById('contactSearchResultsOverlay').classList.remove('active');
+    // 🔧 v216: idempotent
+    const csrOv = document.getElementById('contactSearchResultsOverlay');
+    if (!csrOv || !csrOv.classList.contains('active')) return;
+    csrOv.classList.remove('active');
+    // 🔧 v216: ورودی تاریخچهٔ نتایج هم پاپ شود (مگر در مسیر popstate)
+    closeModalByType('contactSearchResults');
+    if (!_silentNavClose) navBack();
     refreshFloatingContactBtn();
 }
 
 // 🔧 ویرایش شخص از صفحه نتایج جستجو
 // ابتدا صفحه نتایج را می‌بندد، سپس فرم ویرایش را باز می‌کند
 function editContactFromSearch(id) {
-    document.getElementById('contactSearchResultsOverlay').classList.remove('active');
+    // 🔧 v216: بستن بی‌صدا (فرم بلافاصله push می‌کند — navBack باعث race می‌شد
+    // و فرم تازه‌بازشده را می‌بست؛ ورودی قدیمی نتایج خودش self-heal می‌شود)
+    closeModalByType('contactSearchResults');
     openContactForm(id);
 }
 
@@ -15830,12 +16015,19 @@ function openContactReport() {
     var repOverlay = document.getElementById('contactReportOverlay');
     repOverlay.classList.add('active');
     bringToFront(repOverlay);  // 🔧 v158
-    history.pushState({ view: 'contactReport' }, '');
+    navPush({ view: 'modal', type: 'contactReport' });
+    trackModalOpen('contactReport');
     refreshFloatingContactBtn();
 }
 
 function closeContactReport() {
-    document.getElementById('contactReportOverlay').classList.remove('active');
+    // 🔧 v216: idempotent
+    const crOv = document.getElementById('contactReportOverlay');
+    if (!crOv || !crOv.classList.contains('active')) return;
+    crOv.classList.remove('active');
+    // 🔧 v216: ورودی تاریخچهٔ فرم گزارش هم پاپ شود (مگر در مسیر popstate)
+    closeModalByType('contactReport');
+    if (!_silentNavClose) navBack();
     refreshFloatingContactBtn();
 }
 
@@ -15853,7 +16045,9 @@ function executeContactReport() {
     };
 
     const results = filterContacts(criteria);
-    closeContactReport();
+    // 🔧 v216: بستن بی‌صدا — ورودی فرم با navReplace در showContactReportResults
+    // جایگزین می‌شود (navBack + push هم‌زمان = race popstate)
+    closeModalByType('contactReport');
     showContactReportResults(results, criteria);
 }
 
@@ -15943,10 +16137,20 @@ function showContactReportResults(results, criteria) {
     var rrOverlay = document.getElementById('contactReportResultsOverlay');
     rrOverlay.classList.add('active');
     bringToFront(rrOverlay);  // 🔧 v158
+    // 🔧 v216: جایگزینی ورودی «گزارش» با «نتایج» (الگوی accReport) —
+    // Back از نتایج مستقیم به contacts برمی‌گردد (بدون ورودی مرده)
+    navReplace({ view: 'modal', type: 'contactReportResults' });
+    trackModalOpen('contactReportResults');
 }
 
 function closeContactReportResults() {
-    document.getElementById('contactReportResultsOverlay').classList.remove('active');
+    // 🔧 v216: idempotent
+    const crrOv = document.getElementById('contactReportResultsOverlay');
+    if (!crrOv || !crrOv.classList.contains('active')) return;
+    crrOv.classList.remove('active');
+    // 🔧 v216: ورودی تاریخچهٔ نتایج هم پاپ شود (مگر در مسیر popstate)
+    closeModalByType('contactReportResults');
+    if (!_silentNavClose) navBack();
     refreshFloatingContactBtn();
 }
 
@@ -18939,6 +19143,9 @@ function saveAccReportPrompt() {
     document.querySelectorAll('.report-format-option').forEach(function(el) { el.classList.remove('selected'); });
     document.getElementById('reportFormatConfirmBtn').disabled = true;
     document.getElementById('reportFormatOverlay').classList.add('active');
+    // 🔧 v216: marker مودال + track (الگوی مشترک هر دو مسیر tasks/acc)
+    navPush({ view: 'modal', type: 'reportFormat' });
+    trackModalOpen('reportFormat');
     // Override confirm handler temporarily — با یک فلگ
     _accFormatPending = 'save';
 }
@@ -18951,6 +19158,9 @@ function shareAccReportPrompt() {
     document.querySelectorAll('.report-format-option').forEach(function(el) { el.classList.remove('selected'); });
     document.getElementById('reportFormatConfirmBtn').disabled = true;
     document.getElementById('reportFormatOverlay').classList.add('active');
+    // 🔧 v216: marker مودال + track
+    navPush({ view: 'modal', type: 'reportFormat' });
+    trackModalOpen('reportFormat');
     _accFormatPending = 'share';
 }
 
@@ -18962,6 +19172,9 @@ function _accConfirmReportFormatHook() {
         const format = _reportFormatSelected;
         const mode = _accFormatPending;
         document.getElementById('reportFormatOverlay').classList.remove('active');
+        // 🔧 v216: پاپ ورودی تاریخچهٔ مودال فرمت
+        closeModalByType('reportFormat');
+        navBack();
         _accFormatPending = null;
         _reportFormatSelected = null;
         _reportFormatMode = null;
@@ -19094,6 +19307,10 @@ function openTaskReport() {
     var trOverlay = document.getElementById('taskReportOverlay');
     trOverlay.classList.add('active');
     bringToFront(trOverlay);  // 🔧 v158
+    // 🔧 v216 (الزام کاربر): گزارش کارها هم marker مودال + track — Back موبایل
+    // به صفحهٔ قبل (اشpersons) برگردد نه صفحهٔ اصلی برنامه
+    navPush({ view: 'modal', type: 'taskReport' });
+    trackModalOpen('taskReport');
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -19189,12 +19406,20 @@ function selectReportDropdown(fieldId, value) {
 }
 
 function closeTaskReport() {
-    document.getElementById('taskReportOverlay').classList.remove('active');
+    // 🔧 v216: idempotent + پاپ ورودی تاریخچه (مگر در مسیر popstate)
+    const trOv = document.getElementById('taskReportOverlay');
+    if (!trOv || !trOv.classList.contains('active')) return;
+    trOv.classList.remove('active');
+    closeModalByType('taskReport');
+    if (!_silentNavClose) navBack();
     refreshFloatingContactBtn();
 }
 
 function closeTaskReportResults() {
     document.getElementById('taskReportResultsOverlay').classList.remove('active');
+    // 🔧 v216: ورودی تاریخچهٔ نتایج هم پاپ شود (مگر در مسیر popstate)
+    closeModalByType('taskReportResults');
+    if (!_silentNavClose) navBack();
     refreshFloatingContactBtn();
 }
 
@@ -19340,7 +19565,9 @@ function executeTaskReport() {
     // sort بر اساس سررسید
     items.sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
 
-    closeTaskReport();
+    // 🔧 v216: بستن بی‌صدا — ورودی فرم با navReplace در showTaskReportResults
+    // جایگزین می‌شود (navBack + push هم‌زمان = race popstate)
+    closeModalByType('taskReport');
     showTaskReportResults(items, {
         text, company, contactName, position, groupName, commissionMode, commissionValue,
         hasContact, stateActive, stateDone, stateCancelled, stateSuspended,
@@ -19458,6 +19685,10 @@ function showTaskReportResults(results, criteria) {
     var trrOverlay = document.getElementById('taskReportResultsOverlay');
     trrOverlay.classList.add('active');
     bringToFront(trrOverlay);  // 🔧 v158
+    // 🔧 v216: جایگزینی ورودی «فرم گزارش» با «نتایج» (الگوی accReport) —
+    // Back از نتایج مستقیم به صفحهٔ قبل (اشpersons) برمی‌گردد
+    navReplace({ view: 'modal', type: 'taskReportResults' });
+    trackModalOpen('taskReportResults');
 }
 
 // باز/بسته کردن جزئیات یک تسک در گزارش (درون‌خطی)
@@ -19660,6 +19891,9 @@ function showReportFormatModal(mode) {
     document.getElementById('reportFormatConfirmBtn').disabled = true;
     // نمایش مودال
     document.getElementById('reportFormatOverlay').classList.add('active');
+    // 🔧 v216: marker مودال + track — Back موبایل فقط مودال فرمت را می‌بندد
+    navPush({ view: 'modal', type: 'reportFormat' });
+    trackModalOpen('reportFormat');
 }
 
 // 🔧 انتخاب یک فرمت — هایلایت می‌کند
@@ -19684,6 +19918,9 @@ function confirmReportFormat() {
         const format = _reportFormatSelected;
         const mode = _accFormatPending;
         document.getElementById('reportFormatOverlay').classList.remove('active');
+        // 🔧 v216: پاپ ورودی تاریخچهٔ مودال فرمت
+        closeModalByType('reportFormat');
+        navBack();
         _accFormatPending = null;
         _reportFormatSelected = null;
         _reportFormatMode = null;
@@ -19700,6 +19937,9 @@ function confirmReportFormat() {
     const mode = _reportFormatMode;
     // بستن مودال
     document.getElementById('reportFormatOverlay').classList.remove('active');
+    // 🔧 v216: پاپ ورودی تاریخچهٔ مودال فرمت
+    closeModalByType('reportFormat');
+    navBack();
     _reportFormatSelected = null;
     _reportFormatMode = null;
     // اجرای عملیات
@@ -19715,6 +19955,9 @@ function confirmReportFormat() {
 // 🔧 انصراف از مودال
 function cancelReportFormat() {
     document.getElementById('reportFormatOverlay').classList.remove('active');
+    // 🔧 v216: پاپ ورودی تاریخچهٔ مودال فرمت
+    closeModalByType('reportFormat');
+    navBack();
     _reportFormatSelected = null;
     _reportFormatMode = null;
     // 🔧 v211: ریست فلگ حسابداری هم (در صورت لغو توسط کاربر)
@@ -19831,7 +20074,9 @@ function openNotes(groupId, customTitle) {
     var notesOverlay = document.getElementById('notesOverlay');
     notesOverlay.classList.add('active');
     bringToFront(notesOverlay);  // 🔧 v156: روی همه overlayها قرار بگیرد
-    history.pushState({ view: 'notes' }, '');
+    // 🔧 v216: marker مودال + track — Back موبایل یادداشت را می‌بندد
+    navPush({ view: 'modal', type: 'notes' });
+    trackModalOpen('notes');
     // اسکرول به بالا
     setTimeout(() => {
         const body = document.querySelector('.notes-body');
@@ -19843,6 +20088,9 @@ function openNotes(groupId, customTitle) {
 
 // بستن صفحه یادداشت
 function closeNotes() {
+    // 🔧 v216: idempotent — اگر یادداشت باز نیست، پاپ نزن
+    const ntOv = document.getElementById('notesOverlay');
+    if (!ntOv || !ntOv.classList.contains('active')) return;
     // ذخیره یادداشت‌ها برای گروه فعلی
     const content = document.getElementById('notesContent');
     const key = getNotesKey(_notesTargetGroup);
@@ -19852,6 +20100,9 @@ function closeNotes() {
         toggleNotesRecording();
     }
     document.getElementById('notesOverlay').classList.remove('active');
+    // 🔧 v216: ورودی تاریخچهٔ یادداشت هم پاپ شود (مگر در مسیر popstate)
+    closeModalByType('notes');
+    if (!_silentNavClose) navBack();
 }
 
 // پاک کردن همه یادداشت‌ها
@@ -20311,13 +20562,21 @@ function openPhoneActionMenu(phone) {
 
     // نمایش منو
     document.getElementById('phoneActionOverlay').classList.add('active');
-    history.pushState({ view: 'phoneAction' }, '');
+    // 🔧 v216: marker مودال + track — Back موبایل منوی تلفن را می‌بندد
+    navPush({ view: 'modal', type: 'phoneAction' });
+    trackModalOpen('phoneAction');
     refreshFloatingContactBtn();
 }
 
 // بستن منوی انتخاب عملیات تلفن
 function closePhoneActionMenu() {
-    document.getElementById('phoneActionOverlay').classList.remove('active');
+    // 🔧 v216: idempotent
+    const paOv = document.getElementById('phoneActionOverlay');
+    if (!paOv || !paOv.classList.contains('active')) return;
+    paOv.classList.remove('active');
+    // 🔧 v216: ورودی تاریخچهٔ منوی تلفن هم پاپ شود (مگر در مسیر popstate)
+    closeModalByType('phoneAction');
+    if (!_silentNavClose) navBack();
     refreshFloatingContactBtn();
 }
 
