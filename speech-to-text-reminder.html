@@ -1664,6 +1664,40 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 }
 .acc-date-field:active { background: #fff; }
 .acc-date-field.has-value { border-color: #4E342E; background: #fff; font-weight: 600; }
+/* 🔧 v213 (الزام کاربر): فیلد تاریخ فرم رکورد — تیتر حذف شد؛ فقط عنوان تاریخ
+   می‌ماند و با لمس آن تقویم جمع‌شده باز می‌شود (کلیدهای پایین بدون اسکرول) */
+.acc-date-display-tap {
+    cursor: pointer; user-select: none;
+    display: flex; align-items: center; gap: 8px; min-height: 40px; box-sizing: border-box;
+}
+.acc-date-display-tap:active { background: #fff; border-color: #4E342E; }
+.acc-date-display-tap::after {
+    content: '• لمس برای تغییر تاریخ';
+    margin-right: auto; color: #999; font-size: 10.5px; font-weight: 400;
+}
+/* 🔧 v213: هایلایت رکورد هدف پس از ناوبری از نتایج جستجو */
+@keyframes accNavFlash {
+    0%   { background: #fff3c4; box-shadow: 0 0 0 2px #FFB300 inset; }
+    60%  { background: #fff8e1; box-shadow: 0 0 0 2px #FFB300 inset; }
+    100% { background: transparent; box-shadow: none; }
+}
+.acc-record-row.nav-flash {
+    animation: accNavFlash 2.6s ease-out 1;
+    border-radius: 10px;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   🔧 v214 (الزام کاربر):
+   ۱) فرم‌های تمام‌صفحهٔ حسابداری (ایجاد/ویرایش رکورد + پارامترهای جستجو/
+      گزارش) — بالایشان زیر «هدر اصلی» تراز و فیکس شود (نه وسط صفحه)؛
+      محتوا درون کارت اسکرول می‌شود (top با syncHeaderHeight/open ست می‌شود).
+   ۲) منوی همبرگری حسابداری دقیقاً زیر آیکون ☰ تاپبار حسابداری باز شود —
+      top از accOpenHamburger با getBoundingClientRect تاپبار ست می‌شود و
+      کلاس menu-left جهت افقی را زیر خود آیکون تعیین می‌کند.
+   ════════════════════════════════════════════════════════════════════ */
+.acc-form-overlay.top-anchored { align-items: flex-start; }
+.acc-form-overlay.top-anchored .acc-form-card { max-height: 100%; }
+.acc-hamburger-overlay.menu-left .acc-hamburger-card { align-self: flex-end; }
 /* ردیف دکمه‌های تقویم (پاک کردن + بستن) */
 .acc-picker-btn-row { display: flex; gap: 8px; margin-top: 10px; }
 .acc-picker-btn-row button { flex: 1; width: auto; margin-top: 0; }
@@ -1687,7 +1721,13 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .acc-search-result-row:active { background: #f5f5f5; }
 .acc-search-result-row .acc-search-result-head { display: flex; align-items: center; gap: 8px; }
 .acc-search-result-row .acc-search-result-head .acc-search-result-text { flex: 1; }
-.acc-search-result-row .acc-search-result-edit-hint { flex-shrink: 0; color: #999; font-size: 14px; }
+.acc-search-result-row .acc-search-result-edit-hint {
+    flex-shrink: 0; color: #999; font-size: 14px;
+    cursor: pointer; user-select: none;
+    border: 1px solid #e0e0e0; border-radius: 8px; padding: 2px 8px;
+    background: #fafafa;
+}
+.acc-search-result-row .acc-search-result-edit-hint:active { background: #efebe9; border-color: #4E342E; }
 /* یادداشت راهنمای نتایج */
 .acc-search-results-note {
     font-size: 10.5px; color: #888; text-align: center;
@@ -1751,9 +1791,11 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     padding: 10px 12px; margin-top: 8px;
 }
 .acc-scope-q-text { font-size: 12px; color: #5d4037; line-height: 1.7; margin-bottom: 8px; }
-.acc-scope-q-opts { display: flex; gap: 8px; }
+/* 🔧 v213: دکمه‌های داینامیک دامنه (کل رکوردها + هر بخش یافت‌شده) */
+.acc-scope-q-opts { display: flex; gap: 8px; flex-wrap: wrap; }
 .acc-scope-btn {
-    flex: 1; border: 2px solid #d7ccc8; background: #fff; color: #5d4037;
+    flex: 1 1 150px; min-width: 0; box-sizing: border-box;
+    border: 2px solid #d7ccc8; background: #fff; color: #5d4037;
     border-radius: 10px; padding: 9px; font-size: 12.5px; font-weight: 600;
     cursor: pointer; font-family: inherit;
 }
@@ -5183,7 +5225,7 @@ body.locked .header-actions button {
 
 <!-- 🔧 v209: فرم رکورد حسابداری — زیرصفحهٔ بخش حسابداری (جزئیات رکورد).
      همهٔ فیلدها در همین صفحه قابل ویرایش‌اند: متن، تاریخ ایجاد، شخص، مبلغ، بدهکار/بستانکار. -->
-<div class="acc-form-overlay" id="accRecordFormOverlay">
+<div class="acc-form-overlay top-anchored" id="accRecordFormOverlay">
     <div class="acc-form-card">
         <h3 id="accFormTitle">رکورد جدید</h3>
         <!-- 🔧 v212 (الزام کاربر): ضبط صوتی متن رکورد با قوانین استاندارد برنامه
@@ -5193,10 +5235,11 @@ body.locked .header-actions button {
             <textarea id="accRecText" placeholder="شرح رکورد را بنویسید یا با 🎤 ضبط کنید..."></textarea>
             <button type="button" class="acc-mic-btn" id="accRecMicBtn" onclick="accRecToggleMic()" title="ضبط صوتی متن رکورد">🎤</button>
         </div>
-        <!-- 🔧 v210 (الزام کاربر): تاریخ با تقویم شمسی انتخاب می‌شود -->
-        <label>تاریخ ایجاد (با تقویم)</label>
-        <div class="acc-date-display" id="accRecDateDisplay">—</div>
-        <div class="acc-cal" id="accRecCalendar"></div>
+        <!-- 🔧 v213 (الزام کاربر): تیتر «تاریخ ایجاد (با تقویم)» حذف شد و تقویم
+             به‌صورت جمع‌شده باز می‌شود تا کلیدهای پایین صفحه بدون اسکرول دیده شوند؛
+             با لمس فیلد تاریخ، تقویم باز/بسته می‌شود (فقط «عنوان» تاریخ می‌ماند) -->
+        <div class="acc-date-display acc-date-display-tap" id="accRecDateDisplay" onclick="accToggleRecCalendar()" title="لمس: باز/بستن تقویم">—</div>
+        <div class="acc-cal" id="accRecCalendar" style="display:none;"></div>
         <!-- 🔧 v210 (الزام کاربر): شخص با منوی زیبا انتخاب می‌شود؛ select فقط
              نگهدارندهٔ مقدار است (مخفی) تا همهٔ ارجاع‌های قبلی سالم بمانند -->
         <label>شخص (از بانک اشخاص)</label>
@@ -5282,7 +5325,7 @@ body.locked .header-actions button {
      وقتی شخص انتخاب می‌شود و در بیش از یک بخش/گروه رکورد دارد،
      سؤال «همهٔ رکوردها یا فقط بخش انتخابی» پرسیده می‌شود.
      ════════════════════════════════════════════════════════════════════ -->
-<div class="acc-form-overlay" id="accSearchOverlay">
+<div class="acc-form-overlay top-anchored" id="accSearchOverlay">
     <div class="acc-form-card acc-form-card-wide">
         <h3 id="accSearchTitle">🔍 جستجو در رکوردهای حسابداری</h3>
         <div class="acc-search-form">
@@ -5302,14 +5345,13 @@ body.locked .header-actions button {
             <label>👤 شخص</label>
             <div class="acc-person-field" id="accSearchPersonField" onclick="accOpenSearchPersonPicker()">— بدون شخص —</div>
             <select id="accSearchContact" style="display:none;"></select>
-            <!-- 🔧 v211: سؤال «کل رکوردهای شخص یا فقط بخش انتخابی»
-                 پس از انتخاب شخص، اگر در بیش از یک بخش رکورد دارد نمایش داده می‌شود -->
+            <!-- 🔧 v213 (الزام کاربر): بعد از انتخاب شخص، برنامه خودش بخش‌هایی را
+                 که رکوردهای شخص در آن‌ها یافت شده تشخیص می‌دهد و می‌پرسد:
+                 «کل رکوردهای شخص یا فقط رکوردهای بخش فلان و فلان؟»
+                 دکمه‌ها به‌صورت داینامیک ساخته می‌شوند (accMaybeAskScope) -->
             <div class="acc-scope-question" id="accSearchScopeQuestion" style="display:none;">
                 <div class="acc-scope-q-text" id="accSearchScopeText"></div>
-                <div class="acc-scope-q-opts">
-                    <button type="button" class="acc-scope-btn sel" data-scope="all" onclick="accSetSearchScope('all')">کل رکوردهای شخص</button>
-                    <button type="button" class="acc-scope-btn" data-scope="section" onclick="accSetSearchScope('section')">فقط بخش انتخابی</button>
-                </div>
+                <div class="acc-scope-q-opts" id="accSearchScopeOpts"></div>
             </div>
 
             <label>💰 مبلغ (ریال)</label>
@@ -5363,7 +5405,7 @@ body.locked .header-actions button {
      اگر شخص انتخاب نشود، گزارش در سطح «بخش / گروه / زیرگروه» تهیه می‌شود
      و هر ردیف همان ۴ ستون را دارد.
      ════════════════════════════════════════════════════════════════════ -->
-<div class="acc-form-overlay" id="accReportOverlay">
+<div class="acc-form-overlay top-anchored" id="accReportOverlay">
     <div class="acc-form-card acc-form-card-wide">
         <h3 id="accReportTitle">📊 گزارش‌گیری حسابداری</h3>
         <div class="acc-search-form">
@@ -5382,12 +5424,10 @@ body.locked .header-actions button {
             <label>👤 شخص</label>
             <div class="acc-person-field" id="accReportPersonField" onclick="accOpenReportPersonPicker()">— بدون شخص —</div>
             <select id="accReportContact" style="display:none;"></select>
+            <!-- 🔧 v213 (الزام کاربر): سؤال داینامیک دامنه — بخش‌های یافت‌شدهٔ شخص -->
             <div class="acc-scope-question" id="accReportScopeQuestion" style="display:none;">
                 <div class="acc-scope-q-text" id="accReportScopeText"></div>
-                <div class="acc-scope-q-opts">
-                    <button type="button" class="acc-scope-btn sel" data-scope="all" onclick="accSetReportScope('all')">کل رکوردهای شخص</button>
-                    <button type="button" class="acc-scope-btn" data-scope="section" onclick="accSetReportScope('section')">فقط بخش انتخابی</button>
-                </div>
+                <div class="acc-scope-q-opts" id="accReportScopeOpts"></div>
             </div>
 
             <label>💰 مبلغ (ریال)</label>
@@ -6707,11 +6747,50 @@ body.locked .header-actions button {
 //               با جستجو + بج بخش + تورفتگی درختی) و زیرگروه
 //               (accSubgroupPickerOverlay). اگر بخش «همه» باشد، با انتخاب
 //               حساب، بخش خودکار تنظیم می‌شود. select مخفی نگهدارندهٔ مقدار.
-//            ۴) با لمس هر رکورد در نتایج جستجو، فرم ویرایش همان رکورد روی
-//               نتایج باز می‌شود (row.onclick → accOpenRecordForm)؛ بعد از
-//               ذخیره/حذف، نتایج با accRerenderSearchResultsIfOpen تازه‌سازی
-//               می‌شود (بدون دست‌زدن به تاریخچه).
-const APP_VERSION = 'v213-2026-11-11-acc-report-cal-edit';
+//
+//         🔧 v213b (۱۴۰۵ آبان ۲۱) — چهار الزام جدید کاربر:
+//            ۱) لمس رکورد در نتایج جستجو → ناوبری به محل رکورد در صفحهٔ
+//               اصلی حسابداری (accNavigateToRecord): بستن نتایج با همان
+//               الگوی امن (closeModalByType + navBack)، باز شدن سند + بخش +
+//               کل زنجیرهٔ والد گروه/زیرگروه (accState.openNodes)، رندر و
+//               اسکرول نرم به ردیف رکورد + هایلایت زرد (accNavFlash). فرم
+//               رکورد باز «نمی‌شود» — کاربر خودش با لمس رکورد ویرایش را باز
+//               می‌کند. ویرایش مستقیم فقط با کلیک روی مداد ✏️ (editHint با
+//               stopPropagation → accOpenRecordForm).
+//            ۲) فرم جزئیات رکورد: تیتر «تاریخ ایجاد (با تقویم)» حذف شد و
+//               تقویم جمع‌شده باز می‌شود (accToggleRecCalendar — با لمس فیلد
+//               تاریخ باز/بسته می‌شود) تا کلیدهای پایین صفحه بدون اسکرول
+//               دیده شوند.
+//            ۳) سؤال هوشمند دامنه بعد از انتخاب شخص در جستجو/گزارش: برنامه
+//               خودش بخش‌های دارای رکورد شخص را تشخیص می‌دهد
+//               (accPersonSectionStats) و می‌پرسد «کل رکوردهای شخص یا فقط
+//               رکوردهای بخش فلان و فلان؟» — دکمه‌های داینامیک
+//               (accPickScopeOption): «کل رکوردهای شخص (n)» + یک دکمهٔ
+//               «فقط <بخش> (n)» برای هر بخش یافت‌شده؛ با لمس هر بخش، select
+//               بخش خودکار تنظیم و گروه‌هایش بارگذاری می‌شود.
+//            ۴) bugfix گزارش: هدر جدول سطح رکورد وقتی شخص انتخاب نشده ولی
+//               level='record' است، حالا هم تاریخ/شرح/سند/حساب است
+//               (recordTable flag) — قبلاً هدر شرح/تعداد می‌گرفت ولی ردیف‌ها
+//               رکورد-سطح رندر می‌شدند.
+//            تست: test_accounting_v213.mjs (۹ تست) — ۹/۹ سبز، صفر pageerror.
+//
+//         🔧 v214 (۱۴۰۵ آبان ۲۱) — دو الزام جدید کاربر:
+//            ۱) فرم‌های تمام‌صفحهٔ حسابداری — ایجاد/ویرایش رکورد +
+//               پارامترهای جستجو + پارامترهای گزارش — بالایشان «زیر هدر
+//               اصلی» تراز و فیکس شود (قبلاً وسط صفحه شناور بودند):
+//               کلاس top-anchored (align-items:flex-start + max-height:100%
+//               کارت با اسکرول داخلی) + top overlay از syncHeaderHeight و
+//               توابع باز کردن (همان الگوی openAccounting — BA-001).
+//            ۲) منوی همبرگری حسابداری دقیقاً «زیر همان آیکون ☰ تاپبار
+//               حسابداری» باز شود (قبلاً زیر منوی همبرگری هدر اصلی):
+//               accOpenHamburger حالا top overlay را با
+//               acc-topbar.getBoundingClientRect().bottom ست می‌کند (نه فقط
+//               ارتفاع تاپبار — هدر اصلی هم لحاظ می‌شود) و کلاس menu-left
+//               را بر اساس موقعیت افقی خود آیکون ☰ می‌گذارد تا کارت منو
+//               زیر همان سمت باز شود. تاپبار و هدر زیر منو قابل لمس
+//               می‌مانند (toggle ☰ و بازگشت سالم‌اند).
+//            تست: test_accounting_v214.mjs (۵ تست P1-P5) — ۵/۵ سبز، صفر pageerror.
+const APP_VERSION = 'v214-2026-11-11-acc-top-anchor-hamburger';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -14605,7 +14684,10 @@ function syncHeaderHeight() {
     var overlayIds = [
         'contactsOverlay', 'notesOverlay',
         'contactSearchResultsOverlay', 'contactReportResultsOverlay', 'taskReportResultsOverlay',
-        'accountingOverlay'  // 🔧 v209: زیر هدر اصلی شروع شود (BA-001)
+        'accountingOverlay',  // 🔧 v209: زیر هدر اصلی شروع شود (BA-001)
+        // 🔧 v214 (الزام کاربر): فرم‌های رکورد/جستجو/گزارش هم زیر هدر اصلی
+        // تراز و فیکس شوند (top-anchored — کارت بالای صفحه، اسکرول داخلی)
+        'accRecordFormOverlay', 'accSearchOverlay', 'accReportOverlay'
     ];
     for (var i = 0; i < overlayIds.length; i++) {
         var el = document.getElementById(overlayIds[i]);
@@ -16903,9 +16985,18 @@ function accOpenRecordForm(docId, kind, groupId, recordId) {
     const pCal = (rec && rec.createdAt) ? toJalaliParts(new Date(rec.createdAt)) : toJalaliParts(new Date());
     accRecCal = { jy: pCal[0], jm: pCal[1], jd: pCal[2] };
     accCalRender('accRecCalendar', accRecCal, 'accRecDateDisplay');
+    // 🔧 v213 (الزام کاربر): تقویم همیشه جمع‌شده باز شود تا کلیدهای پایین
+    // فرم بدون اسکرول دیده شوند — با لمس فیلد تاریخ باز/بسته می‌شود
+    const recCalEl = document.getElementById('accRecCalendar');
+    if (recCalEl) recCalEl.style.display = 'none';
     accUpdatePersonField();
 
     const ov = document.getElementById('accRecordFormOverlay');
+    // 🔧 v214 (الزام کاربر): بالای فرم زیر هدر اصلی تراز و فیکس شود
+    try {
+        const header = document.querySelector('.header');
+        if (header) ov.style.top = header.offsetHeight + 'px';
+    } catch(e) {}
     ov.classList.add('active');
     bringToFront(ov);
     navPush({ view: 'modal', type: 'accRecordForm' });
@@ -17110,6 +17201,15 @@ function accCalRender(containerId, cal, displayId) {
         const disp = document.getElementById(displayId);
         if (disp) disp.textContent = '📅 ' + accDateStr(accCalISO(cal));
     }
+}
+
+// 🔧 v213 (الزام کاربر): تقویم فرم رکورد جمع‌شده است — با لمس فیلد تاریخ
+// باز/بسته می‌شود تا کلیدهای پایین فرم بدون اسکرول دیده شوند.
+function accToggleRecCalendar() {
+    const cal = document.getElementById('accRecCalendar');
+    if (!cal) return;
+    const isHidden = (cal.style.display === 'none' || !cal.style.display);
+    cal.style.display = isHidden ? 'block' : 'none';
 }
 
 function accGetFormDateISO() {
@@ -17403,11 +17503,24 @@ function accToggleHamburger() {
 function accOpenHamburger() {
     const ov = document.getElementById('accHamburgerOverlay');
     if (!ov || ov.classList.contains('active')) return;
-    // کارت منو زیر topbar حسابداری باز شود
+    // 🔧 v214 (الزام کاربر): منو دقیقاً «زیر همان آیکون ☰ تاپبار حسابداری»
+    // باز شود — نه زیر هدر اصلی. top overlay = لبهٔ پایینی تاپبار در
+    // مختصات viewport (تاپبار خودش زیر هدر اصلی است)؛ پس پس‌زمینهٔ تیرهٔ
+    // منو هم فقط زیر تاپبار است و تاپبار/هدر قابل لمس می‌مانند (toggle ☰).
+    // جهت افقی هم از موقعیت خود آیکون گرفته می‌شود (menu-left وقتی ☰ در
+    // نیمهٔ چپ صفحه است — چیدمان RTL).
     try {
-        const topbar = ov.previousElementSibling; // لمسی نیست، فقط display
         const accTopbar = document.querySelector('#accountingOverlay .acc-topbar');
-        if (accTopbar) ov.style.paddingTop = (accTopbar.offsetHeight + 6) + 'px';
+        const btn = document.getElementById('accHamburgerBtn');
+        if (accTopbar) {
+            const tb = accTopbar.getBoundingClientRect();
+            ov.style.top = Math.max(0, tb.bottom) + 'px';
+        }
+        if (btn) {
+            const r = btn.getBoundingClientRect();
+            const vw = window.innerWidth || document.documentElement.clientWidth;
+            ov.classList.toggle('menu-left', ((r.left + r.width / 2) < vw / 2));
+        }
     } catch(e) {}
     ov.classList.add('active');
     bringToFront(ov);
@@ -17469,6 +17582,11 @@ function openAccSearch() {
     };
     document.getElementById('accSearchGroup').onchange = function() { accLoadSubgroupsForGroup('accSearchSection', 'accSearchGroup', 'accSearchSubgroup'); };
     const ov = document.getElementById('accSearchOverlay');
+    // 🔧 v214 (الزام کاربر): بالای فرم زیر هدر اصلی تراز و فیکس شود
+    try {
+        const header = document.querySelector('.header');
+        if (header) ov.style.top = header.offsetHeight + 'px';
+    } catch(e) {}
     ov.classList.add('active');
     bringToFront(ov);
     // 🔧 v212 (bugfix): اگر از منوی همبرگری باز می‌شود (ورودی فعلی تاریخچه
@@ -17522,6 +17640,11 @@ function openAccReport() {
     };
     document.getElementById('accReportGroup').onchange = function() { accLoadSubgroupsForGroup('accReportSection', 'accReportGroup', 'accReportSubgroup'); };
     const ov = document.getElementById('accReportOverlay');
+    // 🔧 v214 (الزام کاربر): بالای فرم زیر هدر اصلی تراز و فیکس شود
+    try {
+        const header = document.querySelector('.header');
+        if (header) ov.style.top = header.offsetHeight + 'px';
+    } catch(e) {}
     ov.classList.add('active');
     bringToFront(ov);
     // 🔧 v212 (bugfix): همانند openAccSearch — اگر از منوی همبرگری باز
@@ -18055,8 +18178,14 @@ function accUpdateSharedPersonField(fieldId, id) {
     };
 }
 
-// ─── سؤال «کل رکوردهای شخص یا فقط بخش انتخابی» ───
-// اگر شخص در بیش از یک بخش رکورد دارد و کاربر بخشی هم انتخاب کرده، پرسیده می‌شود.
+// ─── سؤال هوشمند دامنه (v213 — الزام کاربر) ───
+// بعد از انتخاب شخص در جستجو/گزارش، برنامه «خودش» بخش‌هایی را که
+// رکوردهای آن شخص در آن‌ها یافت شده تشخیص می‌دهد و می‌پرسد:
+//   «کل رکوردهای شخص یا فقط رکوردهای بخش فلان و فلان؟»
+// دکمه‌ها به‌صورت داینامیک ساخته می‌شوند: یکی «کل رکوردهای شخص» و
+// برای هر بخشِ یافت‌شده یک دکمهٔ «فقط <بخش> (تعداد)». با لمس دکمهٔ
+// هر بخش، مقدار select بخش هم به‌طور خودکار تنظیم می‌شود تا فیلتر
+// (accReadFormCriteria/accFilterRecords) بدون تغییر باقی بماند.
 
 function accPersonSectionStats(contactId) {
     const db = getAccounting();
@@ -18074,55 +18203,81 @@ function accPersonSectionStats(contactId) {
 }
 
 function accMaybeAskScope(ctx, contactId) {
-    const stats = accPersonSectionStats(contactId);
     const qId = (ctx === 'report') ? 'accReportScopeQuestion' : 'accSearchScopeQuestion';
     const txtId = (ctx === 'report') ? 'accReportScopeText' : 'accSearchScopeText';
+    const optsId = (ctx === 'report') ? 'accReportScopeOpts' : 'accSearchScopeOpts';
     const sectionSelId = (ctx === 'report') ? 'accReportSection' : 'accSearchSection';
-    const sectionVal = document.getElementById(sectionSelId).value;
-    if (stats.total === 0) {
-        document.getElementById(qId).style.display = 'none';
-        return;
+    const qEl = document.getElementById(qId);
+    if (!qEl) return;
+    qEl.style.display = 'none';
+    if (!contactId) return;
+    const stats = accPersonSectionStats(contactId);
+    // فقط وقتی شخص در «بیش از یک بخش» رکورد دارد سؤال معنا دارد؛
+    // اگر فقط یک بخش دارد یا اصلاً رکورد ندارد، نیازی به پرسش نیست.
+    if (stats.total === 0 || stats.sections.length <= 1) return;
+    const cn = getContactById(contactId);
+    const name = cn ? (cn.name || '—') : '—';
+    const secTxt = stats.sections.map(function(k) {
+        return '«' + ACC_SECTION_NAMES[k] + '» (' + toPersianNumber(stats.bySection[k]) + ' رکورد)';
+    }).join(' و ');
+    document.getElementById(txtId).textContent =
+        '👤 «' + name + '» در بخش‌های ' + secTxt + ' یافت شد. کدام رکوردها را می‌خواهید؟';
+    // دکمه‌های داینامیک — مقدار فعلی برای هایلایت اولیه
+    const sectionSel = document.getElementById(sectionSelId);
+    const sectionVal = sectionSel ? sectionSel.value : 'all';
+    const curScope = (ctx === 'report') ? _accReportScope : _accSearchScope;
+    const opts = document.getElementById(optsId);
+    opts.innerHTML = '';
+    // دکمهٔ «کل رکوردهای شخص»
+    const allBtn = document.createElement('button');
+    allBtn.type = 'button';
+    allBtn.className = 'acc-scope-btn' + (curScope === 'all' ? ' sel' : '');
+    allBtn.setAttribute('data-scope', 'all');
+    allBtn.textContent = 'کل رکوردهای شخص (' + toPersianNumber(stats.total) + ')';
+    allBtn.onclick = function() { accPickScopeOption(ctx, 'all', null); };
+    opts.appendChild(allBtn);
+    // برای هر بخش یافت‌شده یک دکمهٔ «فقط <بخش>»
+    stats.sections.forEach(function(k) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'acc-scope-btn' + (curScope === 'section' && sectionVal === k ? ' sel' : '');
+        b.setAttribute('data-scope', 'section');
+        b.setAttribute('data-section', k);
+        b.textContent = 'فقط ' + ACC_SECTION_NAMES[k] + ' (' + toPersianNumber(stats.bySection[k]) + ')';
+        b.onclick = function() { accPickScopeOption(ctx, 'section', k); };
+        opts.appendChild(b);
+    });
+    qEl.style.display = 'block';
+}
+
+// لمس یک دکمهٔ دامنه: scope ذخیره، select بخش تنظیم، گروه/زیرگروه همان
+// بخش بارگذاری و فیلدهای نمایشی حساب ریست می‌شوند؛ هایلایت به‌روز می‌شود.
+function accPickScopeOption(ctx, scope, section) {
+    const qId = (ctx === 'report') ? 'accReportScopeQuestion' : 'accSearchScopeQuestion';
+    const sectionSelId = (ctx === 'report') ? 'accReportSection' : 'accSearchSection';
+    if (ctx === 'report') _accReportScope = scope; else _accSearchScope = scope;
+    const sectionSel = document.getElementById(sectionSelId);
+    if (sectionSel) sectionSel.value = (scope === 'section') ? section : 'all';
+    // هایلایت دکمهٔ انتخاب‌شده
+    document.querySelectorAll('#' + qId + ' .acc-scope-btn').forEach(function(b) {
+        const bScope = b.getAttribute('data-scope');
+        const bSec = b.getAttribute('data-section');
+        b.classList.toggle('sel', bScope === scope && (scope !== 'section' || bSec === section));
+    });
+    // بخش عوض شد → گروه‌های همان بخش در select بارگذاری + فیلدهای نمایشی ریست
+    if (ctx === 'report') {
+        accLoadGroupsForSection('accReportSection', 'accReportGroup', 'accReportSubgroup', null);
+        accResetNodeFields('report');
+    } else {
+        accLoadGroupsForSection('accSearchSection', 'accSearchGroup', 'accSearchSubgroup', null);
+        accResetNodeFields('search');
     }
-    // اگر شخص فقط در یک بخش رکورد دارد یا کاربر بخشی انتخاب نکرده، نیازی به سؤال نیست
-    if (stats.sections.length <= 1 || !sectionVal || sectionVal === 'all') {
-        document.getElementById(qId).style.display = 'none';
-        // اما اگر چند بخش دارد و کاربر «همه» را انتخاب کرده، یک یادآوری کوتاه
-        if (stats.sections.length > 1) {
-            const txt = 'این شخص در ' + toPersianNumber(stats.sections.length) + ' بخش (' +
-                stats.sections.map(function(k) { return ACC_SECTION_NAMES[k]; }).join('، ') +
-                ') و در مجموع ' + toPersianNumber(stats.total) + ' رکورد دارد.';
-            document.getElementById(txtId).textContent = txt;
-            document.getElementById(qId).style.display = 'block';
-        }
-        return;
-    }
-    // شخص در چند بخش رکورد دارد و کاربر یک بخش مشخص هم انتخاب کرده — سؤال کامل
-    const inSelected = stats.bySection[sectionVal] || 0;
-    const otherSections = stats.sections.filter(function(k) { return k !== sectionVal; });
-    const txt = 'این شخص در بخش انتخابی شما («' + ACC_SECTION_NAMES[sectionVal] + '») ' +
-        toPersianNumber(inSelected) + ' رکورد دارد، و در بخش‌های دیگر (' +
-        otherSections.map(function(k) { return ACC_SECTION_NAMES[k]; }).join('، ') +
-        ') ' + toPersianNumber(stats.total - inSelected) + ' رکورد دیگر. کل رکوردهای شخص را می‌خواهید یا فقط همان بخش انتخابی؟';
-    document.getElementById(txtId).textContent = txt;
-    document.getElementById(qId).style.display = 'block';
 }
 
 function accHideScopeQuestion(ctx) {
     const qId = (ctx === 'report') ? 'accReportScopeQuestion' : 'accSearchScopeQuestion';
-    document.getElementById(qId).style.display = 'none';
-}
-
-function accSetSearchScope(s) {
-    _accSearchScope = s;
-    document.querySelectorAll('#accSearchScopeQuestion .acc-scope-btn').forEach(function(b) {
-        b.classList.toggle('sel', b.getAttribute('data-scope') === s);
-    });
-}
-function accSetReportScope(s) {
-    _accReportScope = s;
-    document.querySelectorAll('#accReportScopeQuestion .acc-scope-btn').forEach(function(b) {
-        b.classList.toggle('sel', b.getAttribute('data-scope') === s);
-    });
+    const qEl = document.getElementById(qId);
+    if (qEl) qEl.style.display = 'none';
 }
 
 // ─── فیلتر مشترک رکوردها ───
@@ -18226,7 +18381,8 @@ function accFillSearchResults(records) {
     body.innerHTML = '';
     const note = document.createElement('div');
     note.className = 'acc-search-results-note';
-    note.textContent = '👆 برای ویرایش هر رکورد، روی آن لمس کنید';
+    // 🔧 v213 (الزام کاربر): لمس رکورد = ناوبری به محل رکورد؛ ویرایش فقط با ✏️
+    note.textContent = '👆 لمس رکورد = نمایش محل آن در حسابداری • ✏️ = ویرایش مستقیم';
     body.appendChild(note);
     const db = getAccounting();
     if (records.length === 0) {
@@ -18279,7 +18435,8 @@ function accBuildSearchResultRow(r, db) {
         guard++;
     }
     const contact = r.contactId ? getContactById(r.contactId) : null;
-    // 🔧 v213 (الزام کاربر): با لمس هر رکورد، فرم ویرایش همان رکورد باز شود
+    // 🔧 v213 (الزام کاربر): ویرایش فقط با کلیک روی «مداد» ✏️ باز می‌شود؛
+    // لمس خود رکورد، کاربر را به محل رکورد در صفحهٔ اصلی حسابداری می‌برد
     const head = document.createElement('div');
     head.className = 'acc-search-result-head';
     const txt = document.createElement('div');
@@ -18290,6 +18447,10 @@ function accBuildSearchResultRow(r, db) {
     editHint.className = 'acc-search-result-edit-hint';
     editHint.textContent = '✏️';
     editHint.title = 'ویرایش رکورد';
+    editHint.onclick = function(ev) {
+        ev.stopPropagation();
+        accOpenRecordForm(r.docId, r.section, r.groupId, r.id);
+    };
     head.appendChild(editHint);
     row.appendChild(head);
     const meta = document.createElement('div');
@@ -18317,9 +18478,11 @@ function accBuildSearchResultRow(r, db) {
     sideTag.textContent = (r.side === 'debit') ? 'بدهکار' : 'بستانکار';
     tags.appendChild(sideTag);
     row.appendChild(tags);
-    // 🔧 v213: لمس ردیف → فرم ویرایش رکورد (روی نتایج جستجو باز می‌شود)
+    // 🔧 v213 (الزام کاربر): لمس ردیف → رفتن به محل رکورد در صفحهٔ اصلی
+    // حسابداری (باز شدن سند + زنجیرهٔ گروه/زیرگروه + اسکرول به رکورد)؛
+    // فرم رکورد باز نمی‌شود تا کاربر خودش با لمس رکورد ویرایش را باز کند.
     row.onclick = function() {
-        accOpenRecordForm(r.docId, r.section, r.groupId, r.id);
+        accNavigateToRecord(r);
     };
     return row;
 }
@@ -18329,6 +18492,61 @@ function closeAccSearchResults() {
     if (!ov || !ov.classList.contains('active')) return;
     closeModalByType('accSearchResults');
     navBack();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v213 (الزام کاربر): ناوبری از نتایج جستجو به محل رکورد در حسابداری
+//   ۱) نتایج جستجو بسته می‌شود (closeAccSearchResults — همان الگوی امن
+//      closeModalByType + navBack؛ popstate روی state.type='accounting'
+//      با topType='accounting' مطابقت می‌کند و صفحهٔ حسابداری باز می‌ماند)
+//   ۲) سندِ رکورد + بخش آن باز و زنجیرهٔ والد گروه/زیرگروه (از ریشه تا
+//      گروه خودِ رکورد) پیش می‌رود (accState.openNodes)
+//   ۳) renderAccounting و سپس اسکرول نرم به ردیف رکورد + هایلایت زرد
+//      کوتاه. فرم رکورد باز «نمی‌شود» — کاربر خودش با لمس رکورد ویرایش
+//      را باز می‌کند (ویرایش مستقیم فقط با ✏️ در نتایج جستجو).
+// ════════════════════════════════════════════════════════════════════
+function accNavigateToRecord(r) {
+    if (!r || !r.docId || !r.section || !r.groupId) return;
+    // ۱) بستن نتایج جستجو (اگر باز است)
+    const resOv = document.getElementById('accSearchResultsOverlay');
+    if (resOv && resOv.classList.contains('active')) {
+        closeAccSearchResults();
+    }
+    // ۲) زنجیرهٔ والد — از ریشه تا گروه خود رکورد (همه باز شوند)
+    const db = getAccounting();
+    const chain = [];
+    let cur = accFindNode(db.groups[r.section], r.groupId);
+    let guard = 0;
+    while (cur && guard < 100) {
+        chain.unshift(cur.id);
+        cur = accFindParent(db.groups[r.section], cur.id);
+        guard++;
+    }
+    accState = {
+        openDocId: r.docId,
+        openSection: r.section,
+        openNodes: {},
+        openSummary: null,
+        summaryOpenNodes: {},
+        sortDir: accState.sortDir
+    };
+    chain.forEach(function(id) { accState.openNodes[id] = true; });
+    // اطمینان: overlay حسابداری در جلو دیده شود (نتایج روی آن بود)
+    const accOv = document.getElementById('accountingOverlay');
+    if (accOv) bringToFront(accOv);
+    renderAccounting();
+    // ۳) اسکرول به ردیف رکورد + هایلایت (بعد از یک تیک رندر/چیدمان)
+    setTimeout(function() {
+        const row = document.getElementById('accRecRow_' + r.id);
+        if (row) {
+            try { row.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e) {
+                try { row.scrollIntoView(); } catch(e2) {}
+            }
+            row.classList.add('nav-flash');
+            setTimeout(function() { row.classList.remove('nav-flash'); }, 2700);
+        }
+        showToast('📍 محل رکورد در حسابداری — برای ویرایش، روی خود رکورد لمس کنید');
+    }, 150);
 }
 
 // ─── اجرای گزارش ───
@@ -18480,10 +18698,14 @@ function accShowReportResults(records, criteria, level) {
         // سرستون‌ها
         // 🔧 v213 (الزام کاربر): ترتیب و نام دقیق ستون‌ها:
         //   ردیف / تاریخ / شرح / سند / حساب / بدهکار / بستانکار / مانده / وضعیت
+        // 🔧 v213 (bugfix): تشخیص «جدول رکورد-سطح» بر اساس kind ردیف‌ها نه فقط
+        //   contactId — قبلاً level='record' بدون شخص هدر شرح/تعداد می‌گرفت ولی
+        //   ردیف‌ها به‌صورت تاریخ/شرح/سند/حساب رندر می‌شدند (ناهماهنگی هدر/ردیف).
+        const recordTable = (criteria.contactId || level === 'record');
         const thead = document.createElement('thead');
         let headHtml = '<tr>';
         headHtml += '<th>ردیف</th>';
-        if (criteria.contactId) {
+        if (recordTable) {
             headHtml += '<th>تاریخ</th><th>شرح</th><th>سند</th><th>حساب</th>';
         } else {
             headHtml += '<th>' + (level === 'section' ? 'بخش' : (level === 'subgroup' ? 'زیرگروه' : (level === 'group' ? 'گروه' : 'شرح'))) + '</th>';
@@ -18516,7 +18738,7 @@ function accShowReportResults(records, criteria, level) {
         table.appendChild(tbody);
         // footer جمع کل
         const tfoot = document.createElement('tfoot');
-        let fHtml = '<tr><td colspan="' + (criteria.contactId ? 6 : 3) + '">جمع کل</td>';
+        let fHtml = '<tr><td colspan="' + (recordTable ? 6 : 3) + '">جمع کل</td>';
         fHtml += '<td class="col-num">' + toPersianNumberWithSep(totals.debit) + '</td>';
         fHtml += '<td class="col-num">' + toPersianNumberWithSep(totals.credit) + '</td>';
         fHtml += '<td class="col-num">' + toPersianNumberWithSep(Math.abs(totals.balance)) + '</td>';

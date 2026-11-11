@@ -721,7 +721,36 @@
 #   (نسخه‌های مفصل از v204 به بعد؛ قدیمی‌ها خلاصه. changelog کامل
 #    تفصیلی در سرآیند HTML موجود است.)
 #
-### v213 (۱۴۰۵ آبان ۲۰) — سه الزام کاربر: تیتر جدول + تقویم + منوی حساب + ویرایش از نتایج
+### v214 (۱۴۰۵ آبان ۲۱) — دو الزام کاربر: تراز بالای فرم‌ها با هدر + جای منوی همبرگری
+#   کاربر (۲ مورد):
+#   ۱) «صفحات نمایش ریز اطلاعات یک رکورد در ایجاد و ویرایش و صفحات گرفتن
+#      پارامترهای جستجو برای جستجو و گزارش بالایشان با زیر هدر برنامه
+#      تراز و فیکس شود» → سه overlay فرم (accRecordFormOverlay/
+#      accSearchOverlay/accReportOverlay) کلاس top-anchored گرفتند:
+#      CSS `.acc-form-overlay.top-anchored { align-items: flex-start }` +
+#      `.top-anchored .acc-form-card { max-height: 100% }` (کارت از بالای
+#      صفحه شروع می‌شود، نه وسط؛ محتوا درون کارت اسکرول می‌شود). top
+#      overlay = ارتفاع هدر اصلی — هم در syncHeaderHeight (آرایهٔ
+#      overlayIds) و هم صریحاً در accOpenRecordForm/openAccSearch/
+#      openAccReport (الگوی openAccounting BA-001).
+#   ۲) «منوی همبرگری زیر همان آیکون همبرگری حسابداری باز شود الان زیر
+#      منوی همبرگری هدر اصلی برنامه باز میشود» → accOpenHamburger بازنویسی
+#      شد: قبلاً فقط paddingTop = ارتفاع تاپبار می‌گرفت (هدر اصلی لحاظ
+#      نمی‌شد → منو زیر هدر اصلی می‌افتاد). حالا top overlay =
+#      acc-topbar.getBoundingClientRect().bottom (لبهٔ پایینی واقعی تاپبار
+#      در مختصات viewport — هدر اصلی خودبه‌خود لحاظ می‌شود)؛ پس پس‌زمینهٔ
+#      تیرهٔ منو فقط زیر تاپبار است و تاپبار/هدر پوشیده و قفل نمی‌شوند
+#      (toggle ☰ و بازگشت سالم). جهت افقی: کلاس menu-left وقتی مرکز آیکون
+#      ☰ در نیمهٔ چپ viewport است (چیدمان RTL — ☰ آخرین آیتم ردیف تاپبار
+#      است و به لبهٔ چپ می‌رود) → `.acc-hamburger-overlay.menu-left
+#      .acc-hamburger-card { align-self: flex-end }`؛ وگرنه flex-start
+#      (راست). کارت منو با لبهٔ افقی خود آیکون هم‌تراز می‌شود.
+#   - سوئیت جدید: test_accounting_v214.mjs (۵ تست P1-P5: تراز فرم رکورد/
+#     جستجو/گزارش + جای منو/toggle/پوشیده‌نبودن ☰ + pageerror) — ۵/۵ سبز.
+#     رگرسیون: v213 10/10 + v212 5/5 + v211 14/14 + v209 18/18 + v208 —
+#     همه سبز، صفر pageerror.
+#
+### v213 (۱۴۰۵ آبان ۲۰) — سه الزام کاربر: تیتر جدول + تقویم + منوی حساب
 #   ۱) «در گزارش نهایی حسابداری تیترهای جدول … اصلاح شود» → ترتیب دقیق:
 #      ردیف / تاریخ / شرح / سند / حساب / بدهکار / بستانکار / مانده / وضعیت
 #      («شرح رکورد»→«شرح»؛ «گروه/زیرگروه»→«حساب»).
@@ -737,18 +766,56 @@
 #      «همه» باشد و حسابی انتخاب شود، بخش خودکار تنظیم می‌شود.
 #      bugfix: بعد از انتخاب حساب، accLoadSubgroupsForGroup صریح صدا زده
 #      می‌شود (برنامه‌ای set کردن select، onchange را نمی‌سازد — درس v211).
-#   ۴) «بعد از جستجو با لمس هر رکورد آن رکورد جهت ویرایش باز شود» →
-#      row.onclick → accOpenRecordForm(docId, section, groupId, id)؛ فرم
-#      روی نتایج باز می‌شود (navPush/trackModalOpen استاندارد). بعد از
-#      ذخیره/حذف/انصراف، accCloseRecordForm → accRerenderSearchResultsIfOpen
-#      (refactor: accFillSearchResults جدا شد؛ _lastAccSearchCriteria).
 #   - closeModalByType + isAnyOverlayOpen + handleAddButtonClick: ۳ overlay
 #     جدید (accDatePicker/accGroupPicker/accSubgroupPicker).
 #   - CSS جدید: .acc-date-field (+has-value)، .acc-picker-btn-row/
 #     .acc-picker-clear-btn، .acc-node-badge (+b-assets/liabilities/equity)،
 #     .acc-search-result-row (cursor/:active) + .acc-search-result-head/
 #     .acc-search-result-edit-hint، .acc-search-results-note.
-#   - سوئیت جدید: test_accounting_v213.mjs (۸ تست D1-D5) — ۸/۸ سبز.
+#
+### v213b (۱۴۰۵ آبان ۲۱) — چهار الزام جدید کاربر: ناوبری لمس رکورد + فرم بدون تیتر + سؤال هوشمند دامنه + bugfix هدر گزارش
+#   کاربر (۴ مورد):
+#   ۱) «برای ویرایش با کلیک بر روی مداد ویرایش باز شود ولی بعد لمس یک رکورد
+#      پیدا شده در نتایج جستجو به صفحه اصلی حسابداری برویم و اسکرول کنیم به
+#      آن سند … و گروه و زیر گروه ها تا رسیدن به آن رکورد را پیش برویم و
+#      بازش نکنیم تا کاربر خودش اگر خواست با لمسش ویرایش آن را باز کند» →
+#      accNavigateToRecord(r): بستن نتایج با الگوی امن (closeAccSearchResults
+#      = closeModalByType + navBack؛ popstate با state.type='accounting' و
+#      topType='accounting' مطابقت می‌کند و حسابداری باز می‌ماند) + باز کردن
+#      سند/بخش (accState.openDocId/openSection) + کل زنجیرهٔ والد
+#      (accFindNode→accFindParent تا ریشه در accState.openNodes) +
+#      renderAccounting + scrollIntoView ردیف accRecRow_<id> + هایلایت
+#      زرد accNavFlash (۲.۶s). فرم رکورد باز «نمی‌شود». ویرایش مستقیم فقط
+#      با کلیک روی مداد ✏️ (editHint.onclick با stopPropagation →
+#      accOpenRecordForm). متن راهنمای نتایج به‌روز شد.
+#   ۲) «در صفحه جزئیات یک رکورد تیتر تاریخ ایجاد (یا تقویم) حذف شود فقط
+#      عنوان آن تا کلیدهای پایین صفحه دیده شوند بدون اسکرول» → label حذف
+#      شد؛ accRecDateDisplay با کلاس acc-date-display-tap (hint «لمس برای
+#      تغییر تاریخ») و تقویم accRecCalendar با display:none جمع‌شده باز
+#      می‌شود؛ accOpenRecordForm در هر باز شدن تقویم را جمع می‌کند؛
+#      accToggleRecCalendar باز/بسته می‌کند. تست N1: cardNoScroll=true.
+#   ۳) «در قسمت انتخاب شخص … برنامه خودش بپرسد تمام رکوردهای یک شخص یا
+#      رکوردهای بخش فلان و فلان که برنامه میفهمد در آن بخشها اسم همان شخص
+#      آمده» → accMaybeAskScope بازنویسی شد: بعد از انتخاب شخص (و هر تغییر
+#      بخش)، با accPersonSectionStats بخش‌های دارای رکورد شخص تشخیص داده
+#      می‌شود؛ اگر ≥۲ بخش باشد سؤال با متن «👤 «نام» در بخش‌های «دارایی»
+#      (n رکورد) و «بدهی» (n رکورد) یافت شد. کدام رکوردها را می‌خواهید؟»
+#      + دکمه‌های داینامیک (accSearchScopeOpts/accReportScopeOpts):
+#      «کل رکوردهای شخص (n)» + «فقط <بخش> (n)» برای هر بخش. لمس دکمهٔ
+#      هر بخش → accPickScopeOption: scope ذخیره، select بخش خودکار تنظیم،
+#      accLoadGroupsForSection + accResetNodeFields، هایلایت. اگر شخص فقط
+#      ۱ بخش دارد یا رکوردی ندارد، سؤال پنهان (بدون پرسش بی‌معنا).
+#      توابع قدیمی accSetSearchScope/accSetReportScope حذف شدند.
+#      CSS: .acc-scope-q-opts flex-wrap + .acc-scope-btn flex:1 1 150px.
+#   ۴) bugfix گزارش: هدر جدول سطح رکورد بر اساس recordTable flag
+#      (criteria.contactId || level==='record') نه فقط contactId — قبلاً
+#      level='record' بدون شخص هدر «شرح/تعداد رکورد» می‌گرفت ولی ردیف‌ها
+#      رکورد-سطح (تاریخ/شرح/سند/حساب) رندر می‌شدند. colspan footer هم با
+#      همان فلگ (۶ یا ۳).
+#   - سوئیت جدید: test_accounting_v213.mjs (۱۰ تست N1-N10: فرم بدون تیتر +
+#     تقویم بازه + سؤال دامنه جستجو + فیلتر بخش/کل + ناوبری لمس + مداد +
+#     سؤال دامنه گزارش + تیترهای دقیق + bugfix هدر + pageerror) — ۱۰/۱۰ سبز.
+#     تست v211 (S4/S5) با API جدید دکمه‌های داینامیک به‌روز شد.
 #     رگرسیون: v211 14/14 + v212 5/5 + v209 18/18 + v208 11/11 — همه سبز.
 #
 ### v212 (۱۴۰۵ آبان ۲۰) — سه اصلاح کاربر: میکروفون رکورد + حذف نقطهٔ زنگوله + bugfix منوی همبرگری
