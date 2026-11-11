@@ -11,10 +11,10 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v211 — ۱۴۰۵ آبان ۲۰
-#  نسخهٔ فعلی کد:  APP_VERSION = v211-2026-11-11-accounting-search-report
-#                  CACHE_NAME  = yadavar-cache-v211
-#                  version.txt = v211-2026-11-11-accounting-search-report
+#  آخرین به‌روزرسانی: v212 — ۱۴۰۵ آبان ۲۰
+#  نسخهٔ فعلی کد:  APP_VERSION = v212-2026-11-11-accounting-mic-hamburger-bell
+#                  CACHE_NAME  = yadavar-cache-v212
+#                  version.txt = v212-2026-11-11-accounting-mic-hamburger-bell
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -720,6 +720,35 @@
 #
 #   (نسخه‌های مفصل از v204 به بعد؛ قدیمی‌ها خلاصه. changelog کامل
 #    تفصیلی در سرآیند HTML موجود است.)
+#
+### v212 (۱۴۰۵ آبان ۲۰) — سه اصلاح کاربر: میکروفون رکورد + حذف نقطهٔ زنگوله + bugfix منوی همبرگری
+#   کاربر (۳ مورد):
+#   ۱) «در ایجاد یا ویرایش رکورد بتوان با میکروفون متن رکورد حسابداری
+#      را با قوانین ضبط برنامه ضبط کرد» → 🎤 در فرم رکورد حسابداری
+#      (accRecMicBtn) — همان قوانین استاندارد (تشخیص اعداد/موبایل با
+#      addNumericAfterWords). شروع/پایان با لمس دوبارهٔ 🎤. تضمین توقف
+#      هنگام بستن فرم (closeModalByType برای 'accRecordForm' در hooked).
+#      توابع: accRecToggleMic/accRecStartRec/accRecStopRec (الگوی accDoc).
+#   ۲) «زنگوله در منوی وقتی فعال است نقطه روی آن که نشان میداد فعال
+#      است حذف شده» → عنصر <span class="notif-badge"> از notifBtn حذف شد؛
+#      CSS هم `display:none !important` می‌کند تا حتی اگر عنصر مانده باشد
+#      (از بک‌آپ قدیمی) نمایش داده نشود.
+#   ۳) «جستجو گزارشات در منوی همبرگری حسابداری کلیک میکنم صفحاتشان
+#      باز نمیشود» → bugfix بحرانی: accCloseHamburger با navBack باعث
+#      می‌شد popstate از بستن منو، overlay تازه‌بازشده را (به دلیل تفاوت
+#      state.type='accounting' و topType='accSearch') ببندد. رفع:
+#      accCloseHamburgerSilent (closeModalByType بدون navBack) برای آیتم‌های
+#      منو + navReplace شرطی در openAccSearch/openAccReport:
+#        - اگر ورودی فعلی تاریخچه accHamburger است → navReplace (جایگزینی)
+#        - در غیر این صورت → navPush عادی (روی والد)
+#      انتقال اتمیک بدون ساخت popstate → overlay باز می‌ماند.
+#   - closeModalByType: hook جدید برای 'accRecordForm' → accRecStopRec
+#     (الگوی accDocForm v210).
+#   - accOpenRecordForm: اگر ضبط قبلی فعال است، ابتدا متوقف کند (تا دو
+#     SpeechRecognition هم‌زمان نباشند).
+#   - سوئیت جدید: test_accounting_v212.mjs (۵ تست: M1 میکروفون + M2 حذف
+#     نقطه + M3 باز شدن جستجو/گزارش از منو + M3b Back موبایل + M5 pageerror)
+#     — ۵/۵ سبز. رگرسیون: v211 14/14 + v209 18/18 + v208 11/11 — همه سبز.
 #
 ### v211 (۱۴۰۵ آبان ۲۰) — ACCOUNTING SEARCH + REPORTS
 #   کاربر: «فرض کن یک شخص هم در بدهکاران استفاده شده چون مشتری ماست خرید

@@ -212,7 +212,10 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     0%, 100% { box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
     50% { box-shadow: 0 2px 12px rgba(76, 175, 80, 0.6); }
 }
+/* 🔧 v212 (الزام کاربر): نقطهٔ فعال‌ساز زنگوله حذف شد — حتی اگر عنصر
+   .notif-badge در DOM باشد (مانده از بک‌آپ قدیمی)، نمایش داده نمی‌شود. */
 .notif-badge {
+    display: none !important;
     position: absolute;
     top: -2px;
     left: -2px;
@@ -223,7 +226,7 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     border-radius: 50%;
     display: none;
 }
-.icon-btn.share-btn.active .notif-badge { display: block; }
+.icon-btn.share-btn.active .notif-badge { display: none !important; }
 .header-actions { gap: 6px; }
 .add-btn.recording {
     background: var(--red);
@@ -4391,8 +4394,10 @@ body.locked .header-actions button {
         <!-- 🔧 v209: این سه دکمه به منوی همبرگری منتقل شدند؛ در DOM می‌مانند
              (display:none) تا همهٔ ارجاع‌های JS و تست‌ها سالم باشند — کلیک
              برنامه‌ای از طریق منو انجام می‌شود. -->
+        <!-- 🔧 v212 (الزام کاربر): نقطهٔ فعال‌ساز زنگوله حذف شد — notif-badge
+             دیگر ساخته نمی‌شود. -->
         <button class="icon-btn share-btn" id="importBtn" onclick="importDatabase()" title="وارد کردن دیتابیس از فایل JSON" style="display:none;">📥</button>
-        <button class="icon-btn share-btn" id="notifBtn" onclick="toggleNotifications()" title="فعال‌سازی اعلان‌ها" style="display:none;">🔔<span class="notif-badge"></span></button>
+        <button class="icon-btn share-btn" id="notifBtn" onclick="toggleNotifications()" title="فعال‌سازی اعلان‌ها" style="display:none;">🔔</button>
         <button class="icon-btn share-btn" id="shareBtn" onclick="confirmBackup()" title="ذخیره بک‌آپ در فضای ذخیره‌سازی" style="display:none;">📤</button>
         <button class="icon-btn add-btn" id="addBtn" onclick="handleAddButtonClick()" title="افزودن یادآور / شخص">+</button>
     </div>
@@ -5139,8 +5144,13 @@ body.locked .header-actions button {
 <div class="acc-form-overlay" id="accRecordFormOverlay">
     <div class="acc-form-card">
         <h3 id="accFormTitle">رکورد جدید</h3>
-        <label>متن</label>
-        <textarea id="accRecText" placeholder="شرح رکورد..."></textarea>
+        <!-- 🔧 v212 (الزام کاربر): ضبط صوتی متن رکورد با قوانین استاندارد برنامه
+             (تشخیص اعداد و شماره موبایل با addNumericAfterWords) -->
+        <label>متن (🎤 = ضبط صوتی با تشخیص اعداد و شماره موبایل)</label>
+        <div class="acc-desc-row">
+            <textarea id="accRecText" placeholder="شرح رکورد را بنویسید یا با 🎤 ضبط کنید..."></textarea>
+            <button type="button" class="acc-mic-btn" id="accRecMicBtn" onclick="accRecToggleMic()" title="ضبط صوتی متن رکورد">🎤</button>
+        </div>
         <!-- 🔧 v210 (الزام کاربر): تاریخ با تقویم شمسی انتخاب می‌شود -->
         <label>تاریخ ایجاد (با تقویم)</label>
         <div class="acc-date-display" id="accRecDateDisplay">—</div>
@@ -5207,10 +5217,13 @@ body.locked .header-actions button {
      ════════════════════════════════════════════════════════════════════ -->
 <div class="acc-hamburger-overlay" id="accHamburgerOverlay" onclick="accCloseHamburger()">
     <div class="acc-hamburger-card" onclick="event.stopPropagation()">
-        <div class="acc-hamburger-item" onclick="accCloseHamburger(); openAccSearch();">
+        <!-- 🔧 v212 (bugfix): از accCloseHamburgerSilent استفاده می‌کند (بدون navBack)
+             تا popstate ناشی از بستن منو، صفحات تازه‌بازشده را نبندد.
+             openAccSearch/openAccReport با navReplace ورودی تاریخچه را جایگزین می‌کنند. -->
+        <div class="acc-hamburger-item" onclick="accCloseHamburgerSilent(); openAccSearch();">
             <span class="acc-h-ico">🔍</span><span>جستجو در رکوردها</span>
         </div>
-        <div class="acc-hamburger-item" onclick="accCloseHamburger(); openAccReport();">
+        <div class="acc-hamburger-item" onclick="accCloseHamburgerSilent(); openAccReport();">
             <span class="acc-h-ico">📊</span><span>گزارش‌گیری حسابداری</span>
         </div>
     </div>
@@ -6577,7 +6590,22 @@ body.locked .header-actions button {
 //              <option> از getContacts() پر می‌شوند تا .value='c_xxx' در
 //              Chromium بماند (accPopulateContactSelect — الگوی v210).
 //         تست: test_accounting_v211.mjs (۱۴ تست) — ۱۴/۱۴ سبز، صفر pageerror.
-const APP_VERSION = 'v211-2026-11-11-accounting-search-report';
+//
+//         🔧 v212 (۱۴۰۵ آبان ۲۰) — سه اصلاح کاربر:
+//            ۱) ضبط صوتی متن رکورد حسابداری با 🎤 (accRecMicBtn) — همان
+//               قوانین استاندارد برنامه (تشخیص اعداد/موبایل با
+//               addNumericAfterWords). شروع/پایان با لمس دوبارهٔ 🎤. تضمین
+//               توقف هنگام بستن فرم (closeModalByType برای 'accRecordForm').
+//            ۲) نقطهٔ فعال‌ساز زنگوله حذف شد — notif-badge دیگر ساخته نمی‌شود
+//               و CSS هم `display:none !important` می‌کند تا حتی اگر عنصر
+//               مانده باشد، نمایش داده نشود.
+//            ۳) bugfix بحرانی: «جستجو/گزارشات در منوی همبرگری حسابداری باز
+//               نمی‌شدند» — علت: accCloseHamburger با navBack باعث می‌شد
+//               popstate از بستن منو، overlay تازه‌بازشده را (به دلیل تفاوت
+//               state.type و topType) ببندد. رفع: accCloseHamburgerSilent
+//               (closeModalByType بدون navBack) + navReplace در openAccSearch/
+//               openAccReport — انتقال اتمیک بدون ساخت popstate.
+const APP_VERSION = 'v212-2026-11-11-accounting-mic-hamburger-bell';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -11677,6 +11705,13 @@ function closeModalByType(type) {
             try { accDocStopRec(); } catch(e) {}
         }
     }
+    if (type === 'accRecordForm') {
+        // 🔧 v212: ضبط صوتی متن رکورد هم حتماً متوقف شود (حتی با Back موبایل
+        // یا بستن با انصراف/ذخیره/حذف) — الگوی accDocForm.
+        if (typeof accRecStopRec === 'function') {
+            try { accRecStopRec(); } catch(e) {}
+        }
+    }
     if (type === 'taskForm') {
         // Stop recording if it was active
         if (typeof isRecording !== 'undefined' && isRecording) {
@@ -16514,6 +16549,85 @@ function accDocStopRec() {
     }
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v212 (الزام کاربر): ضبط صوتی متن رکورد حسابداری
+// همان قوانین استاندارد برنامه (تشخیص اعداد و شماره موبایل با
+// addNumericAfterWords). شروع/پایان با لمس دوبارهٔ 🎤. تضمین توقف
+// هنگام بستن فرم (closeModalByType برای 'accRecordForm' در زیر).
+// الگوی accDoc (v210) عیناً کپی شده، فقط هدف textarea و btn متفاوت است.
+// ════════════════════════════════════════════════════════════════════
+let accRecRecActive = false;
+let accRecRecAccum = '';
+let accRecRecIndices = null;
+let accRecRecObj = null;
+
+function accRecToggleMic() {
+    if (accRecRecActive) accRecStopRec();
+    else accRecStartRec();
+}
+
+function accRecStartRec() {
+    if (!isSpeechSupported()) {
+        showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. لطفاً از Chrome یا Edge استفاده کنید.');
+        return;
+    }
+    if (!navigator.onLine) {
+        showToast('اینترنت در دسترس نیست — متن رکورد را تایپ کنید');
+        return;
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    accRecRecAccum = document.getElementById('accRecText').value || '';
+    if (accRecRecAccum && !accRecRecAccum.endsWith(' ')) accRecRecAccum += ' ';
+    accRecRecIndices = new Set();
+    accRecRecObj = new SR();
+    accRecRecObj.lang = 'fa-IR';
+    accRecRecObj.continuous = true;
+    accRecRecObj.interimResults = false;
+    accRecRecObj.onresult = function(ev) {
+        for (let i = 0; i < ev.results.length; i++) {
+            if (ev.results[i].isFinal && accRecRecIndices && !accRecRecIndices.has(i)) {
+                accRecRecAccum += ev.results[i][0].transcript + ' ';
+                accRecRecIndices.add(i);
+                const el = document.getElementById('accRecText');
+                if (el) el.value = addNumericAfterWords(accRecRecAccum).trim();
+            }
+        }
+    };
+    accRecRecObj.onerror = function(ev) {
+        console.error('[AccRecMic] error:', ev.error);
+        if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+            accRecStopRec();
+            showToast('دسترسی به میکروفون رد شد. در تنظیمات مرورگر اجازه دهید.');
+        }
+    };
+    accRecRecObj.onend = function() {
+        if (accRecRecActive && accRecRecObj) {
+            setTimeout(function() {
+                if (accRecRecActive && accRecRecObj) {
+                    try { accRecRecObj.start(); } catch(e) {}
+                }
+            }, 200);
+        }
+    };
+    accRecRecActive = true;
+    const btn = document.getElementById('accRecMicBtn');
+    if (btn) btn.classList.add('recording');
+    showToast('ضبط متن رکورد شروع شد — صحبت کنید (دوباره 🎤 را بزنید تا پایان)');
+    try { accRecRecObj.start(); } catch(e) {
+        console.error('[AccRecMic] start failed', e);
+    }
+}
+
+function accRecStopRec() {
+    accRecRecActive = false;
+    const btn = document.getElementById('accRecMicBtn');
+    if (btn) btn.classList.remove('recording');
+    if (accRecRecObj) {
+        try { accRecRecObj.stop(); } catch(e) {}
+        accRecRecObj = null;
+    }
+}
+
 function accDeleteDoc(docId) {
     const db = getAccounting();
     const d = db.docs.find(x => x.id === docId);
@@ -16636,6 +16750,11 @@ function accOpenRecordForm(docId, kind, groupId, recordId) {
     const doc = db.docs.find(d => d.id === docId);
     const node = accFindNode(db.groups[kind], groupId);
     if (!doc || !node) return;
+    // 🔧 v212: اگر ضبط صوتی قبلی هنوز فعال است، قطع شود تا متن رکورد جدید
+    // با متن کهنه ضبط نشود (هم‌زمان دو SR نخواهیم داشت).
+    if (typeof accRecStopRec === 'function') {
+        try { accRecStopRec(); } catch(e) {}
+    }
     accFormCtx = { docId: docId, section: kind, groupId: groupId, recordId: recordId || null };
     const rec = recordId ? db.records.find(r => r.id === recordId) : null;
 
@@ -17180,6 +17299,20 @@ function accCloseHamburger() {
     navBack();
 }
 
+// 🔧 v212 (bugfix): نسخهٔ silent — فقط closeModalByType بدون navBack.
+// وقتی از یک آیتم منو (جستجو/گزارشات) صدا زده می‌شود تا بلافاصله overlay
+// جدیدی باز شود. navBack در accCloseHamburger باعث می‌شد popstate از بستن
+// منو، overlay تازه‌بازشده را (به دلیل تفاوت state.type و topType) ببندد.
+// با silent + navReplace در openAccSearch/openAccReport، انتقال اتمیک می‌شود:
+// [groups, accounting, accHamburger] → closeModalByType (بدون pop) →
+// navReplace → [groups, accounting, accSearch]؛ popstate‌ای ساخته نمی‌شود.
+function accCloseHamburgerSilent() {
+    const ov = document.getElementById('accHamburgerOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    closeModalByType('accHamburger');
+    // No navBack — caller will navReplace to swap the history entry.
+}
+
 // ─── باز/بستن overlay جستجو ───
 
 function openAccSearch() {
@@ -17212,7 +17345,17 @@ function openAccSearch() {
     const ov = document.getElementById('accSearchOverlay');
     ov.classList.add('active');
     bringToFront(ov);
-    navPush({ view: 'modal', type: 'accSearch' });
+    // 🔧 v212 (bugfix): اگر از منوی همبرگری باز می‌شود (ورودی فعلی تاریخچه
+    // accHamburger است)، آن ورودی را با accSearch جایگزین می‌کنیم (navReplace)
+    // تا ورودی stale ساخته نشود و popstate‌ای که_overlay تازه‌بازشده را
+    // ببندد نسازیم. در غیر این صورت (فراخوانی مستقیم از روی حسابداری)،
+    // navPush عادی روی ورودی 'accounting' اضافه می‌کنیم.
+    const curState = history.state;
+    if (curState && curState.view === 'modal' && curState.type === 'accHamburger') {
+        navReplace({ view: 'modal', type: 'accSearch' });
+    } else {
+        navPush({ view: 'modal', type: 'accSearch' });
+    }
     trackModalOpen('accSearch');
 }
 
@@ -17252,7 +17395,14 @@ function openAccReport() {
     const ov = document.getElementById('accReportOverlay');
     ov.classList.add('active');
     bringToFront(ov);
-    navPush({ view: 'modal', type: 'accReport' });
+    // 🔧 v212 (bugfix): همانند openAccSearch — اگر از منوی همبرگری باز
+    // می‌شود، navReplace (جایگزینی accHamburger با accReport)؛ وگرنه navPush.
+    const curState = history.state;
+    if (curState && curState.view === 'modal' && curState.type === 'accHamburger') {
+        navReplace({ view: 'modal', type: 'accReport' });
+    } else {
+        navPush({ view: 'modal', type: 'accReport' });
+    }
     trackModalOpen('accReport');
 }
 
