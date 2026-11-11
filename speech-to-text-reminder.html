@@ -1528,6 +1528,256 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .acc-form-buttons .acc-btn-delete { background: var(--red); color: #fff; }
 .acc-form-buttons .acc-btn-save   { background: #2e7d32; color: #fff; }
 
+/* ══════════════════════════════════════════════════════════════════
+   🔧 v210 (الزامات جدید کاربر برای بخش حسابداری)
+   ══════════════════════════════════════════════════════════════════ */
+/* باکس‌های فیکس بالای صفحه لمس‌پذیر شدند — با لمس، پنل ماندهٔ گروه‌ها/زیرگروه‌ها */
+.acc-eq-box.tappable { cursor: pointer; }
+.acc-eq-box.tappable:active { filter: brightness(0.96); }
+/* نوار مرتب‌سازی اسناد بر اساس تاریخ (دو فیلد جدا: تاریخ + شرح) */
+.acc-sort-bar { display: flex; justify-content: flex-start; margin-bottom: 8px; }
+.acc-sort-btn {
+    background: #fff; border: 1.5px solid #cfd8dc; color: #4E342E;
+    border-radius: 10px; padding: 6px 12px; font-size: 11.5px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+}
+/* رنگ‌بندی یک‌درمیان آبی/سبز — پس‌زمینهٔ «کل بلوک» گروه تا آخرین رکورد و
+   زیرگروه داخلش؛ هدرِ گره رنگ زیر صفحه (f0f2f5) و پس‌زمینهٔ کلیدها دست‌نخورده */
+.acc-node-block { border-radius: 10px; padding: 6px; margin-bottom: 6px; }
+.acc-node-block.alt-blue  { background: #e2eefc; }
+.acc-node-block.alt-green { background: #e2f6e8; }
+.acc-node-block .acc-list-item { background: #f0f2f5; }
+.acc-node-block .acc-list-item.selected { background: #e8e2df; }
+.acc-node-block .acc-record-row { background: transparent; border-color: rgba(0,0,0,0.10); }
+.acc-node-block .acc-record-row:active { background: rgba(0,0,0,0.04); }
+.acc-node-block .acc-block-title { color: #37474f; }
+.acc-node-block .acc-block-title .acc-block-line { background: rgba(0,0,0,0.14); }
+/* پنل خلاصهٔ «۳ باکس فیکس بالا» — ماندهٔ کل همهٔ اسناد */
+.acc-summary {
+    margin-bottom: 10px; background: #fff;
+    border: 2px solid #cfd8dc; border-radius: 12px; padding: 8px;
+}
+.acc-summary-note { font-size: 10px; color: #888; text-align: center; padding: 2px 4px 6px; line-height: 1.8; }
+/* تیتر سند = تاریخ + شرح — دو فیلد جدا، هر دو با لمس باز و ویرایش می‌شوند */
+.acc-doc-date {
+    flex-shrink: 0;
+    font-size: 10px; color: #33691e; background: #fff;
+    border: 1px solid #d7ccc8; border-radius: 8px; padding: 2px 6px;
+    cursor: pointer; white-space: nowrap;
+}
+.acc-doc-head .acc-doc-name2 { cursor: pointer; }
+/* میکروفون شرح سند — استاندارد برنامه (اعداد/موبایل) */
+.acc-desc-row { display: flex; gap: 6px; align-items: stretch; }
+.acc-desc-row textarea { flex: 1; }
+.acc-mic-btn {
+    flex-shrink: 0; width: 44px; border: 1.5px solid #ccc; border-radius: 8px;
+    background: #fafafa; font-size: 18px; cursor: pointer; font-family: inherit;
+    color: #4E342E;
+}
+.acc-mic-btn.recording {
+    background: #ffebee; border-color: #c62828; color: #c62828;
+    animation: accMicPulse 1.2s infinite;
+}
+@keyframes accMicPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(198,40,40,0.35); }
+    50%      { box-shadow: 0 0 0 7px rgba(198,40,40,0); }
+}
+/* تقویم شمسی فشرده (تاریخ سند + تاریخ ایجاد رکورد) */
+.acc-date-display {
+    background: #fafafa; border: 1.5px solid #ccc; border-radius: 8px;
+    padding: 9px 10px; font-size: 13px; color: #333; margin-bottom: 6px;
+}
+.acc-cal { border: 1.5px solid #e0e0e0; border-radius: 10px; padding: 6px; background: #fff; }
+.acc-cal-head { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+.acc-cal-head button {
+    background: #efebe9; border: 1px solid #d7ccc8; border-radius: 8px;
+    padding: 5px 9px; font-size: 12px; cursor: pointer; font-family: inherit; color: #4E342E;
+}
+.acc-cal-title { flex: 1; text-align: center; font-size: 12.5px; font-weight: 700; color: #4E342E; }
+.acc-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.acc-cal-wd { text-align: center; font-size: 9.5px; color: #888; padding: 3px 0; }
+.acc-cal-day {
+    background: none; border: none; border-radius: 7px; padding: 6px 0;
+    font-size: 11.5px; cursor: pointer; font-family: inherit; color: #333;
+}
+.acc-cal-day.empty { cursor: default; }
+.acc-cal-day.today { background: #fff3e0; color: #e65100; font-weight: 700; }
+.acc-cal-day.sel { background: #4E342E; color: #fff; font-weight: 700; }
+/* فیلد شخص + منوی زیبای انتخاب شخص (بوتام‌شیت با جستجو) */
+.acc-person-field {
+    background: #fafafa; border: 1.5px solid #ccc; border-radius: 8px;
+    padding: 7px 10px; font-size: 13px; color: #333; cursor: pointer;
+    display: flex; align-items: center; gap: 8px; min-height: 40px; box-sizing: border-box;
+}
+.acc-person-none { color: #999; }
+.acc-person-avatar {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, #8d6e63, #4E342E); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+}
+.acc-person-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acc-person-name small { color: #888; font-size: 10.5px; }
+.acc-person-x { color: #999; font-size: 13px; padding: 2px 6px; }
+.acc-picker-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 10500;
+    display: none; align-items: flex-end; justify-content: center; direction: rtl;
+}
+.acc-picker-overlay.active { display: flex; }
+.acc-picker-card {
+    background: #fff; border-radius: 18px 18px 0 0; width: 100%; max-width: 430px;
+    max-height: 78vh; display: flex; flex-direction: column;
+    padding: 14px 14px 12px; box-sizing: border-box;
+}
+.acc-picker-title { font-size: 14px; font-weight: 700; color: #4E342E; text-align: center; margin-bottom: 10px; }
+.acc-picker-card input {
+    width: 100%; box-sizing: border-box; border: 1.5px solid #ccc; border-radius: 8px;
+    padding: 9px 10px; font-size: 13px; font-family: inherit; background: #fafafa; margin-bottom: 8px;
+}
+.acc-picker-list { flex: 1; overflow-y: auto; min-height: 120px; -webkit-overflow-scrolling: touch; }
+.acc-person-row {
+    display: flex; align-items: center; gap: 10px; padding: 9px 8px;
+    border-bottom: 1px solid #f0f0f0; cursor: pointer; border-radius: 8px;
+}
+.acc-person-row:active { background: #f5f5f5; }
+.acc-person-row .p-name { font-size: 13px; font-weight: 600; color: #333; }
+.acc-person-row .p-company { font-size: 10.5px; color: #888; }
+.acc-person-row .p-check { color: #2e7d32; font-weight: 700; margin-right: auto; }
+.acc-picker-close {
+    margin-top: 10px; border: none; border-radius: 10px; padding: 11px; width: 100%;
+    background: #e0e0e0; color: #333; font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   🔧 v211 — جستجو و گزارشات حسابداری
+   ════════════════════════════════════════════════════════════════════ */
+/* دکمهٔ ☰ هدر حسابداری */
+.acc-hamburger-btn {
+    background: rgba(255,255,255,0.18);
+    color: #fff; border: none; border-radius: 8px;
+    padding: 6px 10px; font-size: 16px; cursor: pointer;
+    font-family: inherit; flex-shrink: 0;
+}
+.acc-hamburger-btn:active { filter: brightness(0.92); }
+/* منوی همبرگری حسابداری — کارت زیر topbar */
+.acc-hamburger-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.30); z-index: 10400;
+    display: none; flex-direction: column; align-items: stretch;
+    direction: rtl;
+}
+.acc-hamburger-overlay.active { display: flex; }
+.acc-hamburger-card {
+    background: #fff; border-radius: 0 0 14px 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.20);
+    margin: 0 8px; padding: 8px 8px 12px;
+    max-width: 360px; align-self: flex-start;
+}
+.acc-hamburger-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 12px; border-radius: 10px; cursor: pointer;
+    font-size: 14px; color: #333; user-select: none;
+}
+.acc-hamburger-item:active { background: #f5f5f5; }
+.acc-hamburger-item .acc-h-ico { font-size: 18px; flex-shrink: 0; }
+/* فرم جستجو/گزارش — کارت پهن‌تر */
+.acc-form-card-wide { max-width: 560px; }
+.acc-search-form { display: flex; flex-direction: column; }
+.acc-search-date-row, .acc-search-amount-row, .acc-search-node-row {
+    display: flex; gap: 6px;
+}
+.acc-search-date-row input, .acc-search-amount-row input,
+.acc-search-amount-row select, .acc-search-node-row select {
+    flex: 1; min-width: 0;
+}
+.acc-search-form input, .acc-search-form select {
+    width: 100%; box-sizing: border-box;
+    border: 1.5px solid #ccc; border-radius: 8px;
+    padding: 9px 10px; font-size: 13px; font-family: inherit;
+    background: #fafafa;
+}
+.acc-search-form input:focus, .acc-search-form select:focus {
+    outline: none; border-color: #4E342E; background: #fff;
+}
+.acc-search-node-hint { font-size: 10.5px; color: #888; margin-top: 4px; }
+/* سؤال «کل رکوردهای شخص یا فقط بخش انتخابی» */
+.acc-scope-question {
+    background: #fff8e1; border: 1.5px solid #ffca28; border-radius: 10px;
+    padding: 10px 12px; margin-top: 8px;
+}
+.acc-scope-q-text { font-size: 12px; color: #5d4037; line-height: 1.7; margin-bottom: 8px; }
+.acc-scope-q-opts { display: flex; gap: 8px; }
+.acc-scope-btn {
+    flex: 1; border: 2px solid #d7ccc8; background: #fff; color: #5d4037;
+    border-radius: 10px; padding: 9px; font-size: 12.5px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+}
+.acc-scope-btn.sel { border-color: #4E342E; background: #efebe9; color: #4E342E; }
+/* نوار عملیات گزارش — ذخیره/چاپ/ارسال */
+.acc-report-actions-bar {
+    flex-shrink: 0;
+    display: flex; gap: 6px;
+    padding: 8px 10px; background: #fff;
+    border-bottom: 2px solid #e0e0e0;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.acc-report-action {
+    flex: 1; border: 1.5px solid #cfd8dc; background: #fff; color: #4E342E;
+    border-radius: 10px; padding: 9px 4px; font-size: 12px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+}
+.acc-report-action:active { filter: brightness(0.95); }
+/* ردیف نتیجهٔ جستجو */
+.acc-search-result-row {
+    background: #fff; border: 2px solid #cfd8dc; border-radius: 10px;
+    padding: 10px 12px; margin-bottom: 8px;
+}
+.acc-search-result-text { font-size: 13px; font-weight: 600; color: #333; line-height: 1.6; }
+.acc-search-result-meta { font-size: 10.5px; color: #888; margin-top: 5px; line-height: 1.8; }
+.acc-search-result-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.acc-search-tag {
+    font-size: 10px; font-weight: 700; padding: 2px 8px;
+    border-radius: 10px; white-space: nowrap;
+}
+.acc-search-tag.tag-section-assets      { color: #1565c0; background: #e3f2fd; }
+.acc-search-tag.tag-section-liabilities { color: #c62828; background: #ffebee; }
+.acc-search-tag.tag-section-equity      { color: #2e7d32; background: #e8f5e9; }
+.acc-search-tag.tag-group    { color: #4E342E; background: #efebe9; }
+.acc-search-tag.tag-subgroup { color: #6d4c41; background: #f5f0ec; }
+.acc-search-tag.tag-side-debit  { color: #e65100; background: #fff3e0; }
+.acc-search-tag.tag-side-credit { color: #00695c; background: #e0f2f1; }
+.acc-search-empty { text-align: center; color: #888; font-size: 13px; padding: 40px 16px; line-height: 2; }
+/* جدول گزارش */
+.acc-report-table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+    background: #fff; border-radius: 10px; overflow: hidden;
+}
+.acc-report-table thead th {
+    background: #4E342E; color: #fff; padding: 9px 6px;
+    text-align: right; border-left: 1px solid rgba(255,255,255,0.18);
+    font-weight: 700; font-size: 11.5px; white-space: nowrap;
+}
+.acc-report-table tbody td {
+    padding: 8px 6px; border-bottom: 1px solid #eee;
+    border-left: 1px solid #f0f0f0; vertical-align: top;
+}
+.acc-report-table tbody tr:nth-child(even) { background: #fafafa; }
+.acc-report-table .col-num { text-align: left; white-space: nowrap; font-weight: 600; }
+.acc-report-table .col-status-debit  { color: #e65100; font-weight: 700; }
+.acc-report-table .col-status-credit { color: #00695c; font-weight: 700; }
+.acc-report-table .col-status-zero   { color: #888; }
+.acc-report-table tfoot td {
+    background: #efebe9; font-weight: 700; padding: 10px 6px;
+    border-top: 2px solid #d7ccc8; border-left: 1px solid #e0e0e0;
+}
+.acc-report-summary {
+    background: #fff; border: 2px solid #cfd8dc; border-radius: 10px;
+    padding: 10px 12px; margin-bottom: 10px;
+}
+.acc-report-summary-title { font-size: 12px; font-weight: 700; color: #4E342E; margin-bottom: 6px; }
+.acc-report-summary-grid { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; }
+.acc-report-summary-grid b { color: #333; }
+
 /* Toast */
 .toast {
     position: fixed;
@@ -4127,8 +4377,9 @@ body.locked .header-actions button {
         <div class="header-date" id="headerDate"></div>
     </div>
     <div class="header-actions">
-        <!-- 🔧 v209: منوی همبرگری — بک‌آپ/بازیابی/زنگوله به داخل آن منتقل شد تا هدر خلوت شود -->
-        <button class="icon-btn share-btn" id="menuBtn" onclick="openHamburgerMenu()" title="منو">☰</button>
+        <!-- 🔧 v209: منوی همبرگری — بک‌آپ/بازیابی/زنگوله به داخل آن منتقل شد تا هدر خلوت شود
+             🔧 v210 (الزام کاربر): لمس دوبارهٔ ☰ منوی باز را می‌بندد (toggle) -->
+        <button class="icon-btn share-btn" id="menuBtn" onclick="toggleHamburgerMenu()" title="منو">☰</button>
         <button class="icon-btn share-btn install-btn" id="installBtn" onclick="installApp()" title="نصب به عنوان اپلیکیشن" style="display:none;">⬇</button>
         <button class="icon-btn share-btn" id="calBtn" onclick="openCalendar()" title="تقویم شمسی">📅</button>
         <button class="icon-btn share-btn" id="contactsBtn" onclick="openContacts()" title="بانک اطلاعاتی اشخاص"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></button>
@@ -4855,6 +5106,8 @@ body.locked .header-actions button {
         <button class="acc-back-btn" onclick="closeAccounting()">بازگشت ❯</button>
         <div class="acc-title">💼 حسابداری</div>
         <div class="acc-doc-name" id="accDocName">—</div>
+        <!-- 🔧 v211 (الزام کاربر): منوی همبرگری هدر حسابداری — جستجو + گزارشات -->
+        <button class="acc-hamburger-btn" id="accHamburgerBtn" onclick="accToggleHamburger()" title="منوی حسابداری">☰</button>
     </div>
     <div class="acc-eq-bar">
         <div class="acc-eq-row">
@@ -4888,12 +5141,18 @@ body.locked .header-actions button {
         <h3 id="accFormTitle">رکورد جدید</h3>
         <label>متن</label>
         <textarea id="accRecText" placeholder="شرح رکورد..."></textarea>
-        <label>تاریخ ایجاد</label>
-        <div class="acc-date-row" id="accRecDateRow"></div>
-        <label>شخص</label>
-        <select id="accRecContact"></select>
+        <!-- 🔧 v210 (الزام کاربر): تاریخ با تقویم شمسی انتخاب می‌شود -->
+        <label>تاریخ ایجاد (با تقویم)</label>
+        <div class="acc-date-display" id="accRecDateDisplay">—</div>
+        <div class="acc-cal" id="accRecCalendar"></div>
+        <!-- 🔧 v210 (الزام کاربر): شخص با منوی زیبا انتخاب می‌شود؛ select فقط
+             نگهدارندهٔ مقدار است (مخفی) تا همهٔ ارجاع‌های قبلی سالم بمانند -->
+        <label>شخص (از بانک اشخاص)</label>
+        <div class="acc-person-field" id="accRecPersonField" onclick="accOpenPersonPicker()">— بدون شخص —</div>
+        <select id="accRecContact" style="display:none;"></select>
         <label>مبلغ (ریال)</label>
-        <input type="number" id="accRecAmount" min="0" step="1" inputmode="numeric" placeholder="مثلاً 100">
+        <!-- 🔧 v210 (الزام کاربر): هنگام تایپ، جداکنندهٔ سه‌رقمی همزمان زده می‌شود -->
+        <input type="text" id="accRecAmount" inputmode="numeric" placeholder="مثلاً ۱۰۰٬۰۰۰" oninput="accOnAmountInput(this)">
         <label>نوع رکورد (یکی را انتخاب کنید)</label>
         <div class="acc-side-toggle">
             <button type="button" id="accSideDebit" class="acc-side-debit" onclick="accSetSide('debit')">بدهکار</button>
@@ -4904,6 +5163,234 @@ body.locked .header-actions button {
             <button type="button" class="acc-btn-delete" id="accDeleteBtn" onclick="accDeleteRecord()" style="display:none;">حذف</button>
             <button type="button" class="acc-btn-save" onclick="accSaveRecord()">ذخیره</button>
         </div>
+    </div>
+</div>
+
+<!-- 🔧 v210 (الزام کاربر): فرم ویرایش سند — «شرح سند» (با ضبط صوت استاندارد
+     برنامه: تشخیص اعداد و شماره موبایل) + «تاریخ سند» (با تقویم). دو فیلد
+     کاملاً جدا هستند تا مرتب‌سازی اسناد بر اساس تاریخ ممکن باشد. -->
+<div class="acc-form-overlay" id="accDocFormOverlay">
+    <div class="acc-form-card">
+        <h3 id="accDocFormTitle">ویرایش سند</h3>
+        <label>شرح سند (🎤 = ضبط صوتی با تشخیص اعداد و شماره موبایل)</label>
+        <div class="acc-desc-row">
+            <textarea id="accDocDesc" placeholder="شرح سند را بنویسید یا با 🎤 ضبط کنید..."></textarea>
+            <button type="button" class="acc-mic-btn" id="accDocMicBtn" onclick="accDocToggleMic()" title="ضبط صوتی شرح سند">🎤</button>
+        </div>
+        <label>تاریخ سند (با تقویم — مبنای مرتب‌سازی اسناد)</label>
+        <div class="acc-date-display" id="accDocDateDisplay">—</div>
+        <div class="acc-cal" id="accDocCalendar"></div>
+        <div class="acc-form-buttons">
+            <button type="button" class="acc-btn-cancel" onclick="closeAccDocForm()">انصراف</button>
+            <button type="button" class="acc-btn-save" onclick="accSaveDocForm()">ذخیره</button>
+        </div>
+    </div>
+</div>
+
+<!-- 🔧 v210 (الزام کاربر): منوی زیبای انتخاب شخص برای رکورد حسابداری —
+     بوتام‌شیت با جستجو، آواتار حرف اول و تیک انتخاب -->
+<div class="acc-picker-overlay" id="accPersonPickerOverlay">
+    <div class="acc-picker-card">
+        <div class="acc-picker-title">انتخاب شخص از بانک اشخاص</div>
+        <input id="accPersonSearch" placeholder="جستجوی نام یا شرکت..." oninput="accRenderPersonList()">
+        <div class="acc-picker-list" id="accPersonList"></div>
+        <button type="button" class="acc-picker-close" onclick="accClosePersonPicker()">بستن</button>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     🔧 v211 (الزام کاربر): منوی همبرگری هدر حسابداری — دو گزینه فعلاً:
+       ۱) 🔍 جستجو — پارامترهای رکورد را می‌پرسد، رکوردهای منطبق با تگ
+          گروه/زیرگروهشان نشان می‌دهد.
+       ۲) 📊 گزارشات — همان فرم جستجو، ولی خروجی جدولی با ۴ ستون
+          (بدهکار/بستانکار/مانده/وضعیت) + ذخیره/چاپ/ارسال.
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="acc-hamburger-overlay" id="accHamburgerOverlay" onclick="accCloseHamburger()">
+    <div class="acc-hamburger-card" onclick="event.stopPropagation()">
+        <div class="acc-hamburger-item" onclick="accCloseHamburger(); openAccSearch();">
+            <span class="acc-h-ico">🔍</span><span>جستجو در رکوردها</span>
+        </div>
+        <div class="acc-hamburger-item" onclick="accCloseHamburger(); openAccReport();">
+            <span class="acc-h-ico">📊</span><span>گزارش‌گیری حسابداری</span>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     🔧 v211: فرم جستجوی حسابداری — پارامترها:
+       - متن رکورد
+       - بازهٔ تاریخ ایجاد (تقویم شمسی)
+       - شخص (با منوی زیبا)
+       - مبلغ (دقیق یا حداقل/حداکثر)
+       - بخش (دارایی/بدهی/سرمایه — همه یا یکی)
+       - گروه/زیرگروه (dropdown قابل جستجو از درخت مشترک همان بخش)
+     وقتی شخص انتخاب می‌شود و در بیش از یک بخش/گروه رکورد دارد،
+     سؤال «همهٔ رکوردها یا فقط بخش انتخابی» پرسیده می‌شود.
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="acc-form-overlay" id="accSearchOverlay">
+    <div class="acc-form-card acc-form-card-wide">
+        <h3 id="accSearchTitle">🔍 جستجو در رکوردهای حسابداری</h3>
+        <div class="acc-search-form">
+            <label>📝 متن رکورد</label>
+            <input type="text" id="accSearchText" placeholder="بخشی از شرح رکورد...">
+
+            <label>📅 بازهٔ تاریخ ایجاد</label>
+            <div class="acc-search-date-row">
+                <input type="text" id="accSearchDateFrom" placeholder="از (۱۴۰۴/۰۱/۰۱)">
+                <input type="text" id="accSearchDateTo" placeholder="تا (۱۴۰۴/۱۲/۲۹)">
+            </div>
+
+            <label>👤 شخص</label>
+            <div class="acc-person-field" id="accSearchPersonField" onclick="accOpenSearchPersonPicker()">— بدون شخص —</div>
+            <select id="accSearchContact" style="display:none;"></select>
+            <!-- 🔧 v211: سؤال «کل رکوردهای شخص یا فقط بخش انتخابی»
+                 پس از انتخاب شخص، اگر در بیش از یک بخش رکورد دارد نمایش داده می‌شود -->
+            <div class="acc-scope-question" id="accSearchScopeQuestion" style="display:none;">
+                <div class="acc-scope-q-text" id="accSearchScopeText"></div>
+                <div class="acc-scope-q-opts">
+                    <button type="button" class="acc-scope-btn sel" data-scope="all" onclick="accSetSearchScope('all')">کل رکوردهای شخص</button>
+                    <button type="button" class="acc-scope-btn" data-scope="section" onclick="accSetSearchScope('section')">فقط بخش انتخابی</button>
+                </div>
+            </div>
+
+            <label>💰 مبلغ (ریال)</label>
+            <div class="acc-search-amount-row">
+                <select id="accSearchAmountMode">
+                    <option value="all">همه (بدون فیلتر)</option>
+                    <option value="exact">دقیقاً برابر با</option>
+                    <option value="min">حداقل</option>
+                    <option value="max">حداکثر</option>
+                </select>
+                <input type="text" id="accSearchAmount" inputmode="numeric" placeholder="مثلاً ۱۰۰٬۰۰۰" oninput="accOnAmountInput(this)">
+            </div>
+
+            <label>📦 بخش حسابداری</label>
+            <select id="accSearchSection">
+                <option value="all">همهٔ بخش‌ها</option>
+                <option value="assets">دارایی</option>
+                <option value="liabilities">بدهی</option>
+                <option value="equity">سرمایه</option>
+            </select>
+
+            <label>📁 گروه / زیرگروه</label>
+            <div class="acc-search-node-row">
+                <select id="accSearchGroup"><option value="">— همهٔ گروه‌ها —</option></select>
+                <select id="accSearchSubgroup"><option value="">— همهٔ زیرگروه‌ها —</option></select>
+            </div>
+            <div class="acc-search-node-hint" id="accSearchNodeHint">ابتدا یک بخش انتخاب کنید تا گروه‌هایش بارگذاری شود.</div>
+        </div>
+        <div class="acc-form-buttons">
+            <button type="button" class="acc-btn-cancel" onclick="closeAccSearch()">انصراف</button>
+            <button type="button" class="acc-btn-save" onclick="executeAccSearch()">🔍 جستجو</button>
+        </div>
+    </div>
+</div>
+
+<!-- 🔧 v211: نتایج جستجو — لیست رکوردهای منطبق با تگ گروه/زیرگروه -->
+<div class="accounting-overlay" id="accSearchResultsOverlay">
+    <div class="acc-topbar">
+        <button class="acc-back-btn" onclick="closeAccSearchResults()">بازگشت ❯</button>
+        <div class="acc-title">🔍 نتایج جستجو</div>
+        <div class="acc-doc-name" id="accSearchResultsCount">۰</div>
+    </div>
+    <div class="acc-content" id="accSearchResultsBody"></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     🔧 v211: فرم گزارش‌گیری حسابداری — همان فیلترهای جستجو، ولی خروجی
+     جدولی با ۴ ستون: بدهکار / بستانکار / مانده / وضعیت.
+     قابل ذخیره (HTML/PDF/JSON)، چاپ و ارسال (مثل گزارش اشخاص).
+     اگر شخص انتخاب نشود، گزارش در سطح «بخش / گروه / زیرگروه» تهیه می‌شود
+     و هر ردیف همان ۴ ستون را دارد.
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="acc-form-overlay" id="accReportOverlay">
+    <div class="acc-form-card acc-form-card-wide">
+        <h3 id="accReportTitle">📊 گزارش‌گیری حسابداری</h3>
+        <div class="acc-search-form">
+            <label>📝 متن رکورد</label>
+            <input type="text" id="accReportText" placeholder="بخشی از شرح رکورد...">
+
+            <label>📅 بازهٔ تاریخ ایجاد</label>
+            <div class="acc-search-date-row">
+                <input type="text" id="accReportDateFrom" placeholder="از (۱۴۰۴/۰۱/۰۱)">
+                <input type="text" id="accReportDateTo" placeholder="تا (۱۴۰۴/۱۲/۲۹)">
+            </div>
+
+            <label>👤 شخص</label>
+            <div class="acc-person-field" id="accReportPersonField" onclick="accOpenReportPersonPicker()">— بدون شخص —</div>
+            <select id="accReportContact" style="display:none;"></select>
+            <div class="acc-scope-question" id="accReportScopeQuestion" style="display:none;">
+                <div class="acc-scope-q-text" id="accReportScopeText"></div>
+                <div class="acc-scope-q-opts">
+                    <button type="button" class="acc-scope-btn sel" data-scope="all" onclick="accSetReportScope('all')">کل رکوردهای شخص</button>
+                    <button type="button" class="acc-scope-btn" data-scope="section" onclick="accSetReportScope('section')">فقط بخش انتخابی</button>
+                </div>
+            </div>
+
+            <label>💰 مبلغ (ریال)</label>
+            <div class="acc-search-amount-row">
+                <select id="accReportAmountMode">
+                    <option value="all">همه (بدون فیلتر)</option>
+                    <option value="exact">دقیقاً برابر با</option>
+                    <option value="min">حداقل</option>
+                    <option value="max">حداکثر</option>
+                </select>
+                <input type="text" id="accReportAmount" inputmode="numeric" placeholder="مثلاً ۱۰۰٬۰۰۰" oninput="accOnAmountInput(this)">
+            </div>
+
+            <label>📦 بخش حسابداری</label>
+            <select id="accReportSection">
+                <option value="all">همهٔ بخش‌ها</option>
+                <option value="assets">دارایی</option>
+                <option value="liabilities">بدهی</option>
+                <option value="equity">سرمایه</option>
+            </select>
+
+            <label>📁 گروه / زیرگروه</label>
+            <div class="acc-search-node-row">
+                <select id="accReportGroup"><option value="">— همهٔ گروه‌ها —</option></select>
+                <select id="accReportSubgroup"><option value="">— همهٔ زیرگروه‌ها —</option></select>
+            </div>
+            <div class="acc-search-node-hint" id="accReportNodeHint">ابتدا یک بخش انتخاب کنید تا گروه‌هایش بارگذاری شود.</div>
+
+            <label>🗂️ سطح گزارش (وقتی شخص انتخاب نشده)</label>
+            <select id="accReportLevel">
+                <option value="record">هر رکورد یک ردیف</option>
+                <option value="section">سطح بخش (دارایی/بدهی/سرمایه)</option>
+                <option value="group">سطح گروه</option>
+                <option value="subgroup">سطح زیرگروه</option>
+            </select>
+        </div>
+        <div class="acc-form-buttons">
+            <button type="button" class="acc-btn-cancel" onclick="closeAccReport()">انصراف</button>
+            <button type="button" class="acc-btn-save" onclick="executeAccReport()">📊 تولید گزارش</button>
+        </div>
+    </div>
+</div>
+
+<!-- 🔧 v211: نتایج گزارش — جدول با ۴ ستون + دکمه‌های ذخیره/چاپ/ارسال -->
+<div class="accounting-overlay" id="accReportResultsOverlay">
+    <div class="acc-topbar">
+        <button class="acc-back-btn" onclick="closeAccReportResults()">بازگشت ❯</button>
+        <div class="acc-title">📊 گزارش حسابداری</div>
+        <div class="acc-doc-name" id="accReportResultsMeta">۰</div>
+    </div>
+    <div class="acc-report-actions-bar">
+        <button class="acc-report-action" onclick="saveAccReportPrompt()">💾 ذخیره</button>
+        <button class="acc-report-action" onclick="shareAccReportPrompt()">📤 ارسال</button>
+        <button class="acc-report-action" onclick="printAccReport()">🖨️ چاپ</button>
+    </div>
+    <div class="acc-content" id="accReportResultsBody"></div>
+</div>
+
+<!-- 🔧 v211: منوی انتخاب شخص مشترک بین جستجو و گزارش —
+     context-id مشخص می‌کند مقدار در کدام select نوشته شود -->
+<div class="acc-picker-overlay" id="accSearchPersonPickerOverlay">
+    <div class="acc-picker-card">
+        <div class="acc-picker-title">انتخاب شخص برای جستجو/گزارش</div>
+        <input id="accSearchPersonSearchInput" placeholder="جستجوی نام یا شرکت..." oninput="accRenderSearchPersonList()">
+        <div class="acc-picker-list" id="accSearchPersonList"></div>
+        <button type="button" class="acc-picker-close" onclick="accCloseSearchPersonPicker()">بستن</button>
     </div>
 </div>
 
@@ -5976,6 +6463,35 @@ body.locked .header-actions button {
 //           حذف آزادِ بدون ارجاع، مسدودسازی contactId، مسدودسازی نام در
 //           متن، نرمال‌سازی ي/ک عربی، پیام ترکیبی، تسک انجام‌شده هم
 //           مانع است، رفع موانع → حذف آزاد، صفر pageerror.
+//   v210 - ACCOUNTING UX: ۱۲ الزام جدید کاربر روی بخش حسابداری + منو:
+//         ۱) toggle ☰ — لمس دوبارهٔ منوی همبرگری باز، آن را می‌بندد.
+//         ۲) سند جدید «بالای بالا» (unshift) و سورت اسناد بر اساس
+//            «تاریخ سند» (فیلد جدا از شرح) با دکمهٔ جدیدترین/قدیمی‌ترین.
+//         ۳) کلید + هدر در حالت حسابداری = ایجاد ۱ سند جدید (BA-003).
+//         ۴) لمس باکس‌های فیکس بالا → پنل گروه‌ها/زیرگروه‌ها با «ماندهٔ
+//            کل همهٔ اسناد» (accNodeAllTotal — فقط نمایش).
+//         ۵) تیتر سند = 📅 تاریخ + شرح (دو فیلد جدا، قابل ویرایش) —
+//            فرم سند (accDocForm) با ذخیره/انصراف.
+//         ۶) پس‌زمینهٔ «کل بلوک» گروه یک‌درمیان آبی (#e2eefc) / سبز
+//            (#e2f6e8) نسبت به بالا و پایین (فرمول depth+sibling % 2)؛
+//            هدر گره رنگ صفحه (#f0f2f5)؛ پس‌زمینهٔ کلیدها دست‌نخورده.
+//         ۷) قید طبیعت حساب‌ها — ماندهٔ «برآیند کل برنامه» گروه‌های
+//            دارایی نمی‌تواند بستانکار و بدهی نمی‌تواند بدهکار شود؛
+//            هنگام ذخیره فقط هشدار (accNatureWarningText) و ذخیره انجام
+//            می‌شود (خواست صریح کاربر: «فعلاً فقط هشدار بده»).
+//         ۸) شرح سند با 🎤 استاندارد برنامه — SR اختصاصی + پردازش
+//            addNumericAfterWords (اعداد و موبایل)؛ توقف تضمینی با بستن فرم.
+//         ۹) تاریخ رکورد و سند با «تقویم شمسی فشرده» (accCalRender —
+//            ۷ ستونه ش→ج + ماه قبل/بعد + امروز) جایگزین ۳ select.
+//         ۱۰) شخص با «منوی زیبا» (بوتام‌شیت جستجودار با آواتار و تیک —
+//             accPersonPicker) جایگزین select؛ مقدار در select مخفی می‌ماند.
+//         ۱۱) مبلغ با جداکنندهٔ سه‌رقمی همزمان با تایپ (accOnAmountInput
+//             → ۲٬۵۰۰٬۰۰۰) + پارس accParseAmountValue.
+//         ۱۲) حذف گروه/زیرگروه = ۴ بار تایید پیاپی؛ لغو در هر مرحله.
+//         + لایه‌های Back جدید: accDocForm (توقف میکروفون) + accPersonPicker.
+//         تست: test_accounting_v210.mjs (۱۴ تست N1..N13) ۱۴/۱۴ سبز +
+//           test_accounting_v209.mjs به‌روز (۱۸ تست) ۱۸/۱۸ + رگرسیون کامل
+//           ۱۲۵/۱۲۵ (۱۱ سوئیت) — صفر pageerror + ۱۰ اسکرین‌شات بصری.
 //   v209 - NEW FEATURES: HAMBURGER MENU + FULL ACCOUNTING MODULE (بازنگری‌شده):
 //         درخواست کاربر + اصلاحات تکمیلی همان درخواست (سه خواستهٔ اول + چهار
 //         اصلاح مهم که طراحی نسخهٔ اول حسابداری را عوض کرد):
@@ -6035,7 +6551,33 @@ body.locked .header-actions button {
 //           اصلاحات: منو، لمس باکس‌های سند، رکورد مستقیم زیر گروه، درخت
 //           سه‌سطحی، گروه مشترک در سند دوم، سناریوی ۱۰۰=۵۰+۵۰ قرمز→سبز،
 //           ویرایش/حذف رکورد، حذف سند، گارد شخص، Back موبایل، صفر pageerror).
-const APP_VERSION = 'v209-2026-11-10-hamburger-accounting';
+//
+//         🔧 v211 (۱۴۰۵ آبان ۲۰) — ACCOUNTING SEARCH + REPORTS:
+//            کاربر: «فرض کن یک شخص هم در بدهکاران استفاده شده چون مشتری ماست
+//            خرید میکند و بعدا تسویه میکند و هم در بستانکاران وجود دارد از
+//            این شخص قرض گرفتیم و طی اقساطی پس میدهیم … یک منوی همبرگری در
+//            هدر حسابداری بساز با فعلا دو گزینه جستجو و گزارشات …».
+//            - منوی ☰ هدر حسابداری (accToggleHamburger) + ۲ گزینه (جستجو/
+//              گزارشات) — toggle + لمس بیرون.
+//            - فرم جستجو: متن، بازهٔ تاریخی (شمسی)، شخص (با منوی زیبا)،
+//              مبلغ (دقیق/حداقل/حداکثر)، بخش، گروه/زیرگروه (درخت همان بخش).
+//            - نتایج جستجو: رکوردهای منطبق با تگ‌های بخش/گروه/زیرگروه/نوع.
+//            - سؤال «کل رکوردهای شخص یا فقط بخش انتخابی» (accMaybeAskScope)
+//              وقتی شخص در >۱ بخش رکورد دارد + بخش انتخاب شده.
+//            - گزارش: جدول با ۴ ستون بدهکار/بستانکار/مانده/وضعیت
+//              (accCompute4Cols: debit=Σdebit, credit=Σcredit, balance=debit−credit,
+//               status: debit/credit/zero) + footer جمع کل.
+//            - گزارش در سطح بخش/گروه/زیرگروه (بدون شخص) — همان ۴ ستون.
+//            - دکمه‌های ذخیره (HTML/PDF/JSON) / چاپ / ارسال (الگوی v146).
+//            - Back موبایل: ۶ overlay جدید در closeModalByType + isAnyOverlayOpen.
+//            - bugfix کلیدی: انتقال form→results از navReplace (نه navPush +
+//              navBack) تا popstate ناشی از بستن فرم، نتایج تازه‌بازشده را
+//              نبندد.
+//            - bugfix: <select id="accSearchContact">/accReportContact با
+//              <option> از getContacts() پر می‌شوند تا .value='c_xxx' در
+//              Chromium بماند (accPopulateContactSelect — الگوی v210).
+//         تست: test_accounting_v211.mjs (۱۴ تست) — ۱۴/۱۴ سبز، صفر pageerror.
+const APP_VERSION = 'v211-2026-11-11-accounting-search-report';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -11113,12 +11655,28 @@ function closeModalByType(type) {
         'hamburger': 'hamburgerMenuOverlay',
         'accounting': 'accountingOverlay',
         'accRecordForm': 'accRecordFormOverlay',
+        // 🔧 v210: فرم شرح/تاریخ سند + منوی انتخاب شخص
+        'accDocForm': 'accDocFormOverlay',
+        'accPersonPicker': 'accPersonPickerOverlay',
+        // 🔧 v211: منوی همبرگری حسابداری + جستجو + گزارشات
+        'accHamburger': 'accHamburgerOverlay',
+        'accSearch': 'accSearchOverlay',
+        'accSearchResults': 'accSearchResultsOverlay',
+        'accReport': 'accReportOverlay',
+        'accReportResults': 'accReportResultsOverlay',
+        'accSearchPersonPicker': 'accSearchPersonPickerOverlay',
     }[type];
     if (overlayId) {
         const el = document.getElementById(overlayId);
         if (el) el.classList.remove('active');
     }
     trackModalClose(type);
+    if (type === 'accDocForm') {
+        // 🔧 v210: ضبط صوتی شرح سند حتماً متوقف شود (حتی با Back موبایل)
+        if (typeof accDocStopRec === 'function') {
+            try { accDocStopRec(); } catch(e) {}
+        }
+    }
     if (type === 'taskForm') {
         // Stop recording if it was active
         if (typeof isRecording !== 'undefined' && isRecording) {
@@ -11401,6 +11959,13 @@ function isAnyOverlayOpen() {
         'taskReportOverlay',         // گزارش کارها
         'taskReportResultsOverlay',  // نتایج گزارش کارها
         'phoneActionOverlay',        // منوی تلفن
+        // 🔧 v211: overlay های جدید حسابداری
+        'accHamburgerOverlay',
+        'accSearchOverlay',
+        'accSearchResultsOverlay',
+        'accReportOverlay',
+        'accReportResultsOverlay',
+        'accSearchPersonPickerOverlay',
     ];
     for (var i = 0; i < staticOverlays.length; i++) {
         var el = document.getElementById(staticOverlays[i]);
@@ -13926,6 +14491,20 @@ function openContacts() {
 // دکمهٔ + یک «شخص جدید» اضافه می‌کند (openContactForm). در غیر این صورت،
 // یک یادآور جدید اضافه می‌کند (startAdding) — همان رفتار قبلی.
 function handleAddButtonClick() {
+    // 🔧 v210 (الزام کاربر): در بخش حسابداری، کلید + هدر اصلی = ایجاد ۱ سند جدید
+    // (سند جدید بالای لیست قرار می‌گیرد). اگر فرم رکورد/سند یا انتخاب شخص باز
+    // است، + کاری نکند — کاربر در میان یک فرم است.
+    // 🔧 v211: overlay های جستجو/گزارش هم همین‌طور — در میان آن‌ها + کاری نکند.
+    var accOverlay = document.getElementById('accountingOverlay');
+    if (accOverlay && accOverlay.classList.contains('active')) {
+        if (_isVisible('accRecordFormOverlay') || _isVisible('accDocFormOverlay') ||
+            _isVisible('accPersonPickerOverlay') || _isVisible('accHamburgerOverlay') ||
+            _isVisible('accSearchOverlay') || _isVisible('accSearchResultsOverlay') ||
+            _isVisible('accReportOverlay') || _isVisible('accReportResultsOverlay') ||
+            _isVisible('accSearchPersonPickerOverlay')) return;
+        accAddDoc();
+        return;
+    }
     var contactsOverlay = document.getElementById('contactsOverlay');
     var contactsPageOpen = contactsOverlay &&
         contactsOverlay.classList.contains('active') &&
@@ -15124,7 +15703,7 @@ function closeContactReportResults() {
 }
 
 // ════════════════════════════════════════════════════════════════════
-// 💼 v209: بخش حسابداری — معادلهٔ اصلی حسابداری
+// 💼 v209/v210: بخش حسابداری — معادلهٔ اصلی حسابداری
 // ════════════════════════════════════════════════════════════════════
 //   دارایی = بدهی + سرمایه
 //
@@ -15132,8 +15711,7 @@ function closeContactReportResults() {
 //   ۱) هر سند = یک خطِ سه‌باکسی شبیه نوار بالای صفحه (همان علامت‌های = و +
 //      خیلی کوچک بین باکس‌ها) با جمعِ ریز زیر تیتر هر باکس. اسناد در لیست
 //      عمودیِ اسکرول‌شونده می‌آیند و «برای شروع باید باکس‌های سند لمس شوند،
-//      نه باکس‌های اصلی زیر هدر» — نوار بالایی فقط نمایشی است (جمع کلِ همهٔ
-//      اسناد + رنگ معادلهٔ کل) و هیچ لمسی ندارد.
+//      نه باکس‌های اصلی زیر هدر» — جمع کل و رنگ معادلهٔ کل روی نوار بالایی است.
 //   ۲) گروه‌ها/زیرگروه‌ها برای «باکس اصلی» تعریف می‌شوند و مشترک‌اند:
 //      هر گروهی که برای یک سند ساخته شود، در اسناد بعدی هم ظاهر و استفاده
 //      می‌شود (یک درخت مشترک برای هر بخش دارایی/بدهی/سرمایه).
@@ -15141,10 +15719,33 @@ function closeContactReportResults() {
 //   ۴) افزودن رکورد لزوماً بعد از ایجاد گروه و زیرگروه نیست — همان گروه
 //      اول هم می‌تواند مستقیماً رکورد داشته باشد (رکورد در هر سطحِ درخت).
 //
+// 🔧 v210 (الزامات جدید کاربر — ۱۲ مورد):
+//   ۱) لمس دوبارهٔ ☰ هدر، منوی همبرگری باز را می‌بندد (toggleHamburgerMenu).
+//   ۲) سند جدید «بالای بالا» — بقیه اسناد یکی به پایین می‌روند (unshift + سورت تاریخ).
+//   ۳) کلید + هدر اصلی در حالت باز حسابداری = ایجاد ۱ سند جدید (handleAddButtonClick).
+//   ۴) لمس باکس‌های فیکس بالا → پنل گروه‌ها/زیرگروه‌ها با «ماندهٔ کل همهٔ اسناد»
+//      (accToggleSummary + accBuildSummaryPanel — فقط نمایش؛ ثبت از داخل اسناد).
+//   ۵) تیتر هر سند = «تاریخ + شرح» دو فیلد جدا و قابل ویرایش (فرم سند) →
+//      مرتب‌سازی اسناد بر اساس تاریخ با دکمهٔ سورت (جدیدترین/قدیمی‌ترین).
+//   ۶) پس‌زمینهٔ «کل بلوک» هر گروه تا آخرین رکورد/زیرگروه داخلش یک‌درمیان
+//      آبی/سبز نسبت به بالا و پایین خودش؛ هدرِ گره رنگ زیر صفحه (f0f2f5)؛
+//      پس‌زمینهٔ کلیدها دست‌نخورده (acc-node-block alt-blue/alt-green).
+//   ۷) قید طبیعت حساب‌ها: ماندهٔ «برآیند کل برنامه» گروه‌های دارایی نمی‌تواند
+//      بستانکار و گروه‌های بدهی نمی‌تواند بدهکار شود — هنگام ذخیرهٔ رکوردی که
+//      باعث آن شود فعلاً «فقط هشدار» داده می‌شود و ذخیره انجام می‌گیرد
+//      (accNatureWarningText).
+//   ۸) شرح سند با ضبط صوت استاندارد برنامه (تشخیص اعداد و موبایل با
+//      addNumericAfterWords) — accDocToggleMic در فرم سند.
+//   ۹) تاریخ رکورد و سند با تقویم شمسی فشرده انتخاب می‌شود (accCalRender).
+//  ۱۰) شخص با «منوی زیبا» (بوتام‌شیت جستجودار با آواتار) انتخاب می‌شود
+//      (accOpenPersonPicker) — مقدار در select مخفی نگهداری می‌شود.
+//  ۱۱) مبلغ هنگام تایپ جداکنندهٔ سه‌رقمی می‌گیرد (accOnAmountInput → ۱٬۰۰۰٬۰۰۰).
+//  ۱۲) حذف گروه/زیرگروه با ۴ بار تایید پشت‌سرهم انجام می‌شود (accDeleteNode).
+//
 // مدل داده (accounting_db_v1 — فرمت ۲):
 //   db = { v: 2,
 //          groups: { assets:[گره], liabilities:[گره], equity:[گره] }, ← درخت مشترک
-//          docs:   [ {id, name, createdAt} ],
+//          docs:   [ {id, name(شرح), date(تاریخ سند), createdAt} ],
 //          records:[ {id, docId, section, groupId, text, createdAt,
 //                     contactId, amount, side} ] }
 //   گره (گروه/زیرگروه) = { id, name, createdAt, children:[گره] }
@@ -15171,7 +15772,8 @@ const ACC_KEY = 'accounting_db_v1';
 const ACC_SECTIONS = ['assets', 'liabilities', 'equity'];
 const ACC_SECTION_NAMES = { assets: 'دارایی', liabilities: 'بدهی', equity: 'سرمایه' };
 // وضعیت UI: یک بخش از یک سند باز است + کدام گره‌های درخت باز شده‌اند
-let accState = { openDocId: null, openSection: null, openNodes: {} };
+// 🔧 v210: + پنل خلاصهٔ باکس‌های فیکس (openSummary) + جهت سورت اسناد (sortDir)
+let accState = { openDocId: null, openSection: null, openNodes: {}, openSummary: null, summaryOpenNodes: {}, sortDir: 'desc' };
 let accFormCtx = null;   // هنگام باز بودن فرم رکورد: {docId, section, groupId, recordId}
 let accFormSide = null;  // 'debit' | 'credit' | null
 
@@ -15184,15 +15786,49 @@ function accNewNode(name) {
 }
 
 function accNewDocObj(name) {
-    return { id: accGenId(), name: name, createdAt: new Date().toISOString() };
+    // 🔧 v210 (الزام کاربر): سند دو فیلد جدا دارد — «شرح» (name) و «تاریخ» (date)
+    // تا مرتب‌سازی بر اساس تاریخ ممکن باشد. سند جدید بالای لیست قرار می‌گیرد.
+    return { id: accGenId(), name: name || '', date: accTodayISO(), createdAt: new Date().toISOString() };
+}
+
+function accTodayISO() {
+    const now = new Date();
+    return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0)).toISOString();
+}
+
+// عنوان نمایشی سند — اگر شرح خالی باشد
+function accDocTitle(doc) {
+    return (doc && doc.name && String(doc.name).trim()) ? doc.name : 'بی‌شرح';
+}
+
+// نمایش تاریخ شمسی بدون ساعت — برای تیتر سند و نمایشگر تقویم
+function accDateStr(iso) {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    const p = toJalaliParts(d);
+    return jalaliWeekdays[d.getDay()] + ' ' + toPersianNumber(p[2]) + ' ' + jalaliMonths[p[1] - 1] + ' ' + toPersianNumber(p[0]);
+}
+
+// مرتب‌سازی اسناد بر اساس «تاریخ سند» (فیلد جدا از شرح) — پیش‌فرض جدیدترین اول
+function accSortedDocs(db) {
+    const dir = (accState.sortDir === 'asc') ? 1 : -1;
+    return (db.docs || []).slice().sort(function(a, b) {
+        const da = a.date || a.createdAt || '';
+        const dbv = b.date || b.createdAt || '';
+        if (da !== dbv) return (da < dbv ? -1 : 1) * dir;
+        const ca = a.createdAt || '', cb = b.createdAt || '';
+        if (ca !== cb) return (ca < cb ? -1 : 1) * dir;
+        return 0;
+    });
 }
 
 function accDefaultDB() {
     // اولین اجرا: یک سند آماده تا کاربر مستقیماً باکس‌های سند را لمس کند
+    // (شرح سند خالی است — کاربر خودش می‌نویسد/ضبط می‌کند)
     return {
         v: 2,
         groups: { assets: [], liabilities: [], equity: [] },
-        docs: [accNewDocObj('سند ۱')],
+        docs: [accNewDocObj('')],
         records: []
     };
 }
@@ -15320,7 +15956,7 @@ function accNodeDocTotal(node, docId, section, records) {
 // ─── باز و بستن بخش حسابداری ───
 
 function openAccounting() {
-    accState = { openDocId: null, openSection: null, openNodes: {} };
+    accState = { openDocId: null, openSection: null, openNodes: {}, openSummary: null, summaryOpenNodes: {}, sortDir: 'desc' };
     renderAccounting();
     const ov = document.getElementById('accountingOverlay');
     // 🔧 v209: overlay از زیر هدر اصلی شروع شود (هم‌سو با BA-001 —
@@ -15352,9 +15988,15 @@ function renderAccounting() {
     document.getElementById('accTotalLiabilities').textContent = toPersianNumberWithSep(t.liabilities) + ' ریال';
     document.getElementById('accTotalEquity').textContent = toPersianNumberWithSep(t.equity) + ' ریال';
     const cls = t.hasRecords ? (t.balanced ? 'ok' : 'bad') : 'neutral';
-    document.getElementById('accBoxAssets').className = 'acc-eq-box ' + cls;
-    document.getElementById('accBoxLiabilities').className = 'acc-eq-box ' + cls;
-    document.getElementById('accBoxEquity').className = 'acc-eq-box ' + cls;
+    // 🔧 v210 (الزام کاربر): باکس‌های فیکس بالا لمس‌پذیر شدند — با لمس هر باکس،
+    // گروه‌ها و زیرگروه‌های همان دسته با «ماندهٔ کل همهٔ اسناد» نمایش داده می‌شوند
+    const ACC_BOX_IDS = { assets: 'accBoxAssets', liabilities: 'accBoxLiabilities', equity: 'accBoxEquity' };
+    ACC_SECTIONS.forEach(function(kind) {
+        const boxEl = document.getElementById(ACC_BOX_IDS[kind]);
+        if (!boxEl) return;
+        boxEl.className = 'acc-eq-box ' + cls + ' tappable' + (accState.openSummary === kind ? ' open' : '');
+        boxEl.onclick = function() { accToggleSummary(kind); };
+    });
     const eqLine = document.getElementById('accEqLine');
     const eqStr = toPersianNumberWithSep(t.assets) + ' = ' + toPersianNumberWithSep(t.liabilities) + ' + ' + toPersianNumberWithSep(t.equity) + ' ریال';
     if (!t.hasRecords) {
@@ -15372,9 +16014,24 @@ function renderAccounting() {
 }
 
 // لیست عمودی اسناد — هر سند یک کارت با خط سه‌باکسی قابل لمس
+// 🔧 v210: پنل خلاصه (با لمس باکس فیکس) + نوار سورت بر اساس تاریخ در بالای لیست
 function renderAccContent(db) {
     const c = document.getElementById('accContent');
     c.innerHTML = '';
+    if (accState.openSummary) {
+        c.appendChild(accBuildSummaryPanel(db, accState.openSummary));
+    }
+    const sortBar = document.createElement('div');
+    sortBar.className = 'acc-sort-bar';
+    const sortBtn = document.createElement('button');
+    sortBtn.className = 'acc-sort-btn';
+    sortBtn.id = 'accSortBtn';
+    sortBtn.textContent = (accState.sortDir === 'desc')
+        ? 'مرتب‌سازی بر اساس تاریخ: جدیدترین اول ▼'
+        : 'مرتب‌سازی بر اساس تاریخ: قدیمی‌ترین اول ▲';
+    sortBtn.onclick = function() { accToggleSort(); };
+    sortBar.appendChild(sortBtn);
+    c.appendChild(sortBar);
     if (db.docs.length === 0) {
         const hint = document.createElement('div');
         hint.className = 'acc-hint';
@@ -15384,9 +16041,15 @@ function renderAccContent(db) {
         c.appendChild(hint);
         return;
     }
-    db.docs.forEach(function(doc) {
+    // 🔧 v210: اسناد بر اساس «تاریخ سند» مرتب می‌شوند (سند جدید = بالای بالا)
+    accSortedDocs(db).forEach(function(doc) {
         c.appendChild(accBuildDocCard(db, doc));
     });
+}
+
+function accToggleSort() {
+    accState.sortDir = (accState.sortDir === 'desc') ? 'asc' : 'desc';
+    renderAccounting();
 }
 
 // کارت یک سند: سربرگ (نام + ویرایش + حذف) + خط سه‌باکسی + درخت بخش بازشده
@@ -15394,18 +16057,27 @@ function accBuildDocCard(db, doc) {
     const card = document.createElement('div');
     card.className = 'acc-doc-card';
     card.id = 'accDocCard_' + doc.id;
-    // سربرگ سند
+    // سربرگ سند — 🔧 v210 (الزام کاربر): تیتر = تاریخ + شرح، دو فیلد جدا؛
+    // لمس هرکدام (یا ✏️) فرم ویرایش سند را باز می‌کند
     const head = document.createElement('div');
     head.className = 'acc-doc-head';
+    const dt = document.createElement('span');
+    dt.className = 'acc-doc-date';
+    dt.textContent = '📅 ' + accDateStr(doc.date || doc.createdAt);
+    dt.title = 'تاریخ سند (قابل ویرایش — مبنای مرتب‌سازی)';
+    dt.onclick = function(ev) { ev.stopPropagation(); openAccDocForm(doc.id); };
+    head.appendChild(dt);
     const nm = document.createElement('span');
     nm.className = 'acc-doc-name2';
-    nm.textContent = doc.name;
+    nm.textContent = accDocTitle(doc);
+    nm.title = 'شرح سند (قابل ویرایش)';
+    nm.onclick = function(ev) { ev.stopPropagation(); openAccDocForm(doc.id); };
     head.appendChild(nm);
     const ren = document.createElement('button');
     ren.className = 'acc-item-btn';
     ren.textContent = '✏️';
-    ren.title = 'ویرایش نام سند';
-    ren.onclick = function(ev) { ev.stopPropagation(); accRenameDoc(doc.id); };
+    ren.title = 'ویرایش شرح و تاریخ سند';
+    ren.onclick = function(ev) { ev.stopPropagation(); openAccDocForm(doc.id); };
     head.appendChild(ren);
     const del = document.createElement('button');
     del.className = 'acc-item-btn';
@@ -15460,8 +16132,8 @@ function accBuildDocCard(db, doc) {
             empty.textContent = 'هنوز گروهی در این بخش نیست — با دکمهٔ زیر اضافه کنید (گروه‌ها برای باکس اصلی تعریف می‌شوند و در همهٔ اسناد ظاهر می‌شوند)';
             tree.appendChild(empty);
         }
-        nodes.forEach(function(n) {
-            tree.appendChild(accBuildNodeBlock(db, doc, kind, n, 0));
+        nodes.forEach(function(n, i) {
+            tree.appendChild(accBuildNodeBlock(db, doc, kind, n, 0, i));
         });
         const addG = document.createElement('div');
         addG.className = 'acc-add-item';
@@ -15476,9 +16148,13 @@ function accBuildDocCard(db, doc) {
 // بلوک یک گره (گروه/زیرگروه — هر عمق) داخل درخت یک سند:
 //   ردیف گره (نام + جمع همین سند + ویرایش + حذف) و اگر باز باشد:
 //   رکوردهای خودش در این سند + «+ رکورد» + فرزندان (بازگشتی) + «+ زیرگروه»
-function accBuildNodeBlock(db, doc, kind, node, depth) {
+// 🔧 v210 (الزام کاربر): پس‌زمینهٔ «کل بلوک» یک‌درمیان آبی/سبز — نسبت به گروه
+//   بالا و پایین خودش (هم‌سطح‌ها یکی در میان + فرزند برعکس والد). هدرِ گره
+//   رنگ زیر صفحه می‌شود و پس‌زمینهٔ کلیدها دست‌نخورده می‌ماند.
+function accBuildNodeBlock(db, doc, kind, node, depth, sibIdx) {
     const wrap = document.createElement('div');
-    if (depth > 0) wrap.className = 'acc-node-children';
+    const colorCls = (((depth + (sibIdx || 0)) % 2) === 0) ? 'alt-blue' : 'alt-green';
+    wrap.className = 'acc-node-block ' + colorCls + (depth > 0 ? ' acc-node-children' : '');
     wrap.id = 'accNodeBlock_' + node.id;
     const total = accNodeDocTotal(node, doc.id, kind, db.records);
     const row = document.createElement('div');
@@ -15515,7 +16191,7 @@ function accBuildNodeBlock(db, doc, kind, node, depth) {
         });
         const bt = document.createElement('div');
         bt.className = 'acc-block-title';
-        bt.innerHTML = '<span>رکوردهای «' + escapeHtml(node.name) + '» در ' + escapeHtml(doc.name) + '</span><span class="acc-block-line"></span>';
+        bt.innerHTML = '<span>رکوردهای «' + escapeHtml(node.name) + '» در ' + escapeHtml(accDocTitle(doc)) + '</span><span class="acc-block-line"></span>';
         inner.appendChild(bt);
         if (own.length === 0) {
             const e2 = document.createElement('div');
@@ -15531,8 +16207,8 @@ function accBuildNodeBlock(db, doc, kind, node, depth) {
         addRec.onclick = function() { accOpenRecordForm(doc.id, kind, node.id, null); };
         inner.appendChild(addRec);
         // زیرگروه‌ها — بازگشتی، هر عمق (تعداد بی‌نهایت)
-        (node.children || []).forEach(function(ch) {
-            inner.appendChild(accBuildNodeBlock(db, doc, kind, ch, depth + 1));
+        (node.children || []).forEach(function(ch, j) {
+            inner.appendChild(accBuildNodeBlock(db, doc, kind, ch, depth + 1, j));
         });
         const addSg = document.createElement('div');
         addSg.className = 'acc-add-item';
@@ -15601,28 +16277,241 @@ function accToggleNode(id) {
     renderAccounting();
 }
 
+// ─── پنل خلاصهٔ «۳ باکس فیکس بالا» (الزام کاربر v210) ───
+// با لمس هر باکس از نوار بالایی، گروه‌ها و زیرگروه‌های همان دسته با
+// «ماندهٔ کلیشون» (جمع کل همهٔ اسناد) نمایش داده می‌شود.
+// فقط نمایش است — ثبت رکورد از داخل باکس‌های اسناد انجام می‌شود.
+
+function accToggleSummary(kind) {
+    accState.openSummary = (accState.openSummary === kind) ? null : kind;
+    accState.summaryOpenNodes = {};
+    renderAccounting();
+    try {
+        const c = document.getElementById('accContent');
+        if (c) c.scrollTop = 0;
+    } catch(e) {}
+}
+
+function accToggleSummaryNode(id) {
+    if (accState.summaryOpenNodes[id]) delete accState.summaryOpenNodes[id];
+    else accState.summaryOpenNodes[id] = true;
+    renderAccounting();
+}
+
+// ماندهٔ کل یک گره در «همهٔ اسناد» (برآیند کل برنامه)
+function accNodeAllTotal(node, section, records) {
+    const ids = accDescIds(node);
+    let sum = 0, has = false;
+    (records || []).forEach(function(r) {
+        if (r && r.section === section && ids.indexOf(r.groupId) !== -1) {
+            sum += accNetOf(r, section);
+            has = true;
+        }
+    });
+    return { sum: sum, has: has };
+}
+
+function accBuildSummaryPanel(db, kind) {
+    const panel = document.createElement('div');
+    panel.className = 'acc-summary';
+    panel.id = 'accSummary_' + kind;
+    const bt = document.createElement('div');
+    bt.className = 'acc-block-title';
+    bt.innerHTML = '<span>گروه‌های ' + ACC_SECTION_NAMES[kind] + ' — ماندهٔ کل همهٔ اسناد</span><span class="acc-block-line"></span>';
+    panel.appendChild(bt);
+    const note = document.createElement('div');
+    note.className = 'acc-summary-note';
+    note.textContent = 'فقط نمایش مانده‌هاست — برای ثبت، باکس همان دسته را در یک سند لمس کنید (بستن پنل: دوباره باکس بالا را لمس کنید)';
+    panel.appendChild(note);
+    const nodes = db.groups[kind] || [];
+    if (nodes.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'acc-hint';
+        empty.style.padding = '10px';
+        empty.textContent = 'هنوز گروهی در این بخش نیست — از داخل یک سند (باکس همان دسته در کارت سند) گروه اضافه کنید';
+        panel.appendChild(empty);
+        return panel;
+    }
+    nodes.forEach(function(n, i) {
+        panel.appendChild(accBuildSummaryNode(db, kind, n, i, 0));
+    });
+    return panel;
+}
+
+function accBuildSummaryNode(db, kind, node, sibIdx, depth) {
+    const wrap = document.createElement('div');
+    const colorCls = (((depth + (sibIdx || 0)) % 2) === 0) ? 'alt-blue' : 'alt-green';
+    wrap.className = 'acc-node-block ' + colorCls + (depth > 0 ? ' acc-node-children' : '');
+    wrap.id = 'accSumBlock_' + node.id;
+    const total = accNodeAllTotal(node, kind, db.records);
+    const row = document.createElement('div');
+    row.className = 'acc-list-item' + (accState.summaryOpenNodes[node.id] ? ' selected' : '');
+    row.id = 'accSumNode_' + node.id;
+    const nm = document.createElement('span');
+    nm.className = 'acc-item-name';
+    nm.textContent = node.name;
+    const tot = document.createElement('span');
+    tot.className = 'acc-item-total';
+    tot.textContent = toPersianNumberWithSep(total.sum) + ' ریال';
+    row.appendChild(nm);
+    row.appendChild(tot);
+    row.onclick = function() { accToggleSummaryNode(node.id); };
+    wrap.appendChild(row);
+    if (accState.summaryOpenNodes[node.id]) {
+        const inner = document.createElement('div');
+        inner.className = 'acc-node-inner';
+        if ((node.children || []).length === 0) {
+            const e2 = document.createElement('div');
+            e2.className = 'acc-hint';
+            e2.style.padding = '6px';
+            e2.textContent = 'زیرگروهی ندارد';
+            inner.appendChild(e2);
+        }
+        (node.children || []).forEach(function(ch, j) {
+            inner.appendChild(accBuildSummaryNode(db, kind, ch, j, depth + 1));
+        });
+        wrap.appendChild(inner);
+    }
+    return wrap;
+}
+
 // ─── CRUD سندها ───
 // سند فقط یک خط سه‌باکسی است؛ رکوردهایش جداگانه با docId نگهداری می‌شوند
 // و با حذف سند، رکوردهایش هم حذف می‌شود.
 
 function accAddDoc() {
     const db = getAccounting();
-    const doc = accNewDocObj('سند ' + toPersianNumber(db.docs.length + 1));
-    db.docs.push(doc);
+    // 🔧 v210 (الزام کاربر): سند جدید «بالای بالا» — بقیه اسناد یکی به پایین می‌روند
+    const doc = accNewDocObj('');
+    db.docs.unshift(doc);
     setAccounting(db);
     renderAccounting();
-    showToast('سند جدید ساخته شد: ' + doc.name + ' ✓');
+    try {
+        const c = document.getElementById('accContent');
+        if (c) c.scrollTop = 0;
+    } catch(e) {}
+    showToast('سند جدید ساخته شد و بالای لیست قرار گرفت ✓ — شرح و تاریخ آن را با ✏️ وارد کنید');
 }
 
-function accRenameDoc(docId) {
+// ─── فرم ویرایش سند (الزام کاربر v210) ───
+// تیتر سند دو فیلد جدا دارد: «شرح» (با ضبط صوت) + «تاریخ» (با تقویم) —
+// تا بعداً مرتب‌سازی بر اساس تاریخ ممکن باشد.
+let accDocFormCtx = null;   // docId در حال ویرایش
+let accDocCal = { jy: null, jm: null, jd: null };  // تاریخ سند در فرم
+
+function openAccDocForm(docId) {
     const db = getAccounting();
     const d = db.docs.find(x => x.id === docId);
     if (!d) return;
-    const name = prompt('نام سند:', d.name);
-    if (!name || !name.trim()) return;
-    d.name = name.trim();
-    setAccounting(db);
-    renderAccounting();
+    accDocFormCtx = docId;
+    document.getElementById('accDocFormTitle').textContent = 'ویرایش سند';
+    document.getElementById('accDocDesc').value = d.name || '';
+    const p = toJalaliParts(new Date(d.date || d.createdAt));
+    accDocCal = { jy: p[0], jm: p[1], jd: p[2] };
+    accDocStopRec();
+    accCalRender('accDocCalendar', accDocCal, 'accDocDateDisplay');
+    const ov = document.getElementById('accDocFormOverlay');
+    ov.classList.add('active');
+    bringToFront(ov);
+    navPush({ view: 'modal', type: 'accDocForm' });
+    trackModalOpen('accDocForm');
+}
+
+function accSaveDocForm() {
+    if (!accDocFormCtx) return;
+    const desc = document.getElementById('accDocDesc').value.trim();
+    const iso = accCalISO(accDocCal);
+    const ctxId = accDocFormCtx;
+    accMutate(function(db) {
+        const d = db.docs.find(x => x.id === ctxId);
+        if (d) { d.name = desc; d.date = iso; }
+    });
+    closeAccDocForm();
+    showToast('سند ذخیره شد ✓ (ترتیب اسناد بر اساس تاریخ به‌روز شد)');
+}
+
+function closeAccDocForm() {
+    const ov = document.getElementById('accDocFormOverlay');
+    if (!ov || !ov.classList.contains('active')) return; // idempotent (درس v204)
+    accDocStopRec();
+    accDocFormCtx = null;
+    closeModalByType('accDocForm');
+    navBack();
+}
+
+// ─── ضبط صوتی شرح سند (الزام کاربر v210) ───
+// دقیقاً استاندارد برنامه: همان موتور فرم یادآور — تبدیل اعداد و شماره
+// موبایل با addNumericAfterWords («دو میلیون تومان» → ۲٬۰۰۰٬۰۰۰،
+// «صفر نه یک پنج...» → ۰۹۱۵...). شروع/پایان با لمس دوبارهٔ 🎤.
+let accDocRecActive = false;
+let accDocRecAccum = '';
+let accDocRecIndices = null;
+let accDocRecObj = null;
+
+function accDocToggleMic() {
+    if (accDocRecActive) accDocStopRec();
+    else accDocStartRec();
+}
+
+function accDocStartRec() {
+    if (!isSpeechSupported()) {
+        showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. لطفاً از Chrome یا Edge استفاده کنید.');
+        return;
+    }
+    if (!navigator.onLine) {
+        showToast('اینترنت در دسترس نیست — شرح سند را تایپ کنید');
+        return;
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    accDocRecAccum = '';
+    accDocRecIndices = new Set();
+    accDocRecObj = new SR();
+    accDocRecObj.lang = 'fa-IR';
+    accDocRecObj.continuous = true;
+    accDocRecObj.interimResults = false;
+    accDocRecObj.onresult = function(ev) {
+        for (let i = 0; i < ev.results.length; i++) {
+            if (ev.results[i].isFinal && accDocRecIndices && !accDocRecIndices.has(i)) {
+                accDocRecAccum += ev.results[i][0].transcript + ' ';
+                accDocRecIndices.add(i);
+                const el = document.getElementById('accDocDesc');
+                if (el) el.value = addNumericAfterWords(accDocRecAccum).trim();
+            }
+        }
+    };
+    accDocRecObj.onerror = function(ev) {
+        console.error('[AccDocMic] error:', ev.error);
+        if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+            accDocStopRec();
+            showToast('دسترسی به میکروفون رد شد. در تنظیمات مرورگر اجازه دهید.');
+        }
+        // خطاهای گذرا (no-speech و امثال آن) — سیکل بعدی ادامه می‌دهد
+    };
+    accDocRecObj.onend = function() {
+        if (accDocRecActive && accDocRecObj) {
+            setTimeout(function() {
+                if (accDocRecActive && accDocRecObj) {
+                    try { accDocRecObj.start(); } catch(e) {}
+                }
+            }, 200);
+        }
+    };
+    accDocRecActive = true;
+    document.getElementById('accDocMicBtn').classList.add('recording');
+    showToast('ضبط شرح سند شروع شد — صحبت کنید (دوباره 🎤 را بزنید تا پایان)');
+    try { accDocRecObj.start(); } catch(e) {
+        console.error('[AccDocMic] start failed', e);
+    }
+}
+
+function accDocStopRec() {
+    accDocRecActive = false;
+    const btn = document.getElementById('accDocMicBtn');
+    if (btn) btn.classList.remove('recording');
+    if (accDocRecObj) {
+        try { accDocRecObj.stop(); } catch(e) {}
+        accDocRecObj = null;
+    }
 }
 
 function accDeleteDoc(docId) {
@@ -15703,7 +16592,20 @@ function accDeleteNode(kind, id) {
         showToast('حذف ممکن نیست — ' + toPersianNumber(recCount) + ' رکورد (در اسناد مختلف) به «' + n.name + '» متصل است؛ ابتدا آن‌ها را حذف کنید');
         return;
     }
-    if (!confirm('«' + n.name + '» حذف شود؟')) return;
+    // 🔧 v210 (الزام کاربر): حذف گروه/زیرگروه به‌سادگی انجام نمی‌شود —
+    // ۴ بار تایید پشت‌سرهم گرفته می‌شود؛ انصراف در هر مرحله = لغو کل عملیات.
+    const q4 = [
+        'حذف «' + n.name + '» — تایید ۱ از ۴. مطمئنید؟',
+        'تایید ۲ از ۴: حذف گروه/زیرگروه برگشت‌پذیر نیست. ادامه می‌دهید؟',
+        'تایید ۳ از ۴: «' + n.name + '» از همهٔ اسناد حذف می‌شود. هنوز مطمئنید؟',
+        'تایید ۴ از ۴ — آخرین تایید: «' + n.name + '» برای همیشه حذف شود؟'
+    ];
+    for (let qi = 0; qi < q4.length; qi++) {
+        if (!confirm(q4[qi])) {
+            showToast('حذف لغو شد (مرحلهٔ ' + toPersianNumber(qi + 1) + ' از ۴)');
+            return;
+        }
+    }
     const parent = accFindParent(db.groups[kind], id);
     if (parent) {
         parent.children = (parent.children || []).filter(x => x.id !== id);
@@ -15738,10 +16640,13 @@ function accOpenRecordForm(docId, kind, groupId, recordId) {
     const rec = recordId ? db.records.find(r => r.id === recordId) : null;
 
     document.getElementById('accFormTitle').textContent = rec
-        ? ('ویرایش رکورد — ' + node.name + ' (' + doc.name + ')')
-        : ('رکورد جدید — ' + node.name + ' (' + doc.name + ')');
+        ? ('ویرایش رکورد — ' + node.name + ' (' + accDocTitle(doc) + ')')
+        : ('رکورد جدید — ' + node.name + ' (' + accDocTitle(doc) + ')');
     document.getElementById('accRecText').value = rec ? (rec.text || '') : '';
-    document.getElementById('accRecAmount').value = rec ? String(Math.abs(Number(rec.amount) || 0)) : '';
+    // 🔧 v210: مبلغ با جداکنندهٔ سه‌رقمی فارسی نمایش داده می‌شود
+    document.getElementById('accRecAmount').value = rec
+        ? toPersianNumberWithSep(Math.abs(Number(rec.amount) || 0))
+        : '';
 
     // شخص — از بانک اشخاص CRM
     const sel = document.getElementById('accRecContact');
@@ -15760,7 +16665,11 @@ function accOpenRecordForm(docId, kind, groupId, recordId) {
 
     document.getElementById('accDeleteBtn').style.display = rec ? '' : 'none';
 
-    accBuildDateRow(rec ? rec.createdAt : null);
+    // 🔧 v210 (الزام کاربر): تاریخ با تقویم شمسی + فیلد شخصِ زیبا به‌روز شود
+    const pCal = (rec && rec.createdAt) ? toJalaliParts(new Date(rec.createdAt)) : toJalaliParts(new Date());
+    accRecCal = { jy: pCal[0], jm: pCal[1], jd: pCal[2] };
+    accCalRender('accRecCalendar', accRecCal, 'accRecDateDisplay');
+    accUpdatePersonField();
 
     const ov = document.getElementById('accRecordFormOverlay');
     ov.classList.add('active');
@@ -15778,108 +16687,266 @@ function accCloseRecordForm() {
     navBack();
 }
 
-// تاریخ ایجاد — سه انتخاب‌گر شمسی (روز/ماه/سال) + دکمهٔ امروز
-function accBuildDateRow(iso) {
-    const row = document.getElementById('accRecDateRow');
-    row.innerHTML = '';
-    let jy = null, jm = null, jd = null;
-    if (iso) {
-        const d = new Date(iso);
-        if (!isNaN(d.getTime())) {
-            const p = toJalaliParts(d);
-            jy = p[0]; jm = p[1]; jd = p[2];
-        }
-    }
-    if (!jy) {
-        const p = toJalaliParts(new Date());
-        jy = p[0]; jm = p[1]; jd = p[2];
-    }
-    const daySel = document.createElement('select');
-    daySel.id = 'accDateDay';
-    const monSel = document.createElement('select');
-    monSel.id = 'accDateMonth';
-    const yrSel = document.createElement('select');
-    yrSel.id = 'accDateYear';
-    for (let d = 1; d <= 31; d++) {
-        const o = document.createElement('option');
-        o.value = String(d);
-        o.textContent = toPersianDigits(d);
-        daySel.appendChild(o);
-    }
-    jalaliMonths.forEach(function(mn, i) {
-        const o = document.createElement('option');
-        o.value = String(i + 1);
-        o.textContent = mn;
-        monSel.appendChild(o);
-    });
-    for (let y = 1380; y <= 1425; y++) {
-        const o = document.createElement('option');
-        o.value = String(y);
-        o.textContent = toPersianNumber(y);
-        yrSel.appendChild(o);
-    }
-    daySel.value = String(jd);
-    monSel.value = String(jm);
-    yrSel.value = String(jy);
-    monSel.onchange = accRebuildDays;
-    yrSel.onchange = accRebuildDays;
-    const todayBtn = document.createElement('button');
-    todayBtn.type = 'button';
-    todayBtn.className = 'acc-today-btn';
-    todayBtn.textContent = 'امروز';
-    todayBtn.onclick = function() {
-        const p = toJalaliParts(new Date());
-        document.getElementById('accDateDay').value = String(p[2]);
-        document.getElementById('accDateMonth').value = String(p[1]);
-        document.getElementById('accDateYear').value = String(p[0]);
-        accRebuildDays();
-    };
-    row.appendChild(daySel);
-    row.appendChild(monSel);
-    row.appendChild(yrSel);
-    row.appendChild(todayBtn);
-    accRebuildDays();
+// ─── منوی زیبای انتخاب شخص (الزام کاربر v210) ───
+// بوتام‌شیت با جستجو، آواتار حرف اول و تیک — جایگزین select ساده.
+// مقدار انتخاب در select مخفی (accRecContact) نگهداری می‌شود تا همهٔ
+// ارجاع‌های قبلی (ذخیرهٔ رکورد، گارد v208) سالم بمانند.
+
+function accOpenPersonPicker() {
+    document.getElementById('accPersonSearch').value = '';
+    accRenderPersonList();
+    const ov = document.getElementById('accPersonPickerOverlay');
+    ov.classList.add('active');
+    bringToFront(ov);
+    navPush({ view: 'modal', type: 'accPersonPicker' });
+    trackModalOpen('accPersonPicker');
 }
 
-function accRebuildDays() {
-    const daySel = document.getElementById('accDateDay');
-    if (!daySel) return;
-    const jm = parseInt(document.getElementById('accDateMonth').value, 10);
-    const jy = parseInt(document.getElementById('accDateYear').value, 10);
-    const maxD = getDaysInJalaliMonth(jy, jm);
-    const cur = parseInt(daySel.value, 10) || 1;
-    daySel.innerHTML = '';
-    for (let d = 1; d <= maxD; d++) {
-        const o = document.createElement('option');
-        o.value = String(d);
-        o.textContent = toPersianDigits(d);
-        daySel.appendChild(o);
+function accClosePersonPicker() {
+    const ov = document.getElementById('accPersonPickerOverlay');
+    if (!ov || !ov.classList.contains('active')) return; // idempotent
+    closeModalByType('accPersonPicker');
+    navBack();
+}
+
+function accRenderPersonList() {
+    const list = document.getElementById('accPersonList');
+    if (!list) return;
+    const qRaw = document.getElementById('accPersonSearch').value || '';
+    const q = normalizeContactRefText(qRaw);
+    const selId = document.getElementById('accRecContact').value;
+    list.innerHTML = '';
+    // گزینهٔ «بدون شخص» — همیشه اول
+    const noneRow = document.createElement('div');
+    noneRow.className = 'acc-person-row';
+    noneRow.innerHTML = '<span class="acc-person-avatar" style="background:#bbb;">—</span>' +
+        '<span><div class="p-name">بدون شخص</div></span>' +
+        (selId ? '' : '<span class="p-check">✓</span>');
+    noneRow.onclick = function() { accPickPerson(''); };
+    list.appendChild(noneRow);
+    const contacts = getContacts().filter(function(cn) {
+        if (!q) return true;
+        return normalizeContactRefText(cn.name || '').indexOf(q) !== -1 ||
+               normalizeContactRefText(cn.company || '').indexOf(q) !== -1;
+    });
+    if (contacts.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'acc-hint';
+        empty.style.padding = '14px';
+        empty.textContent = 'شخصی پیدا نشد';
+        list.appendChild(empty);
+        return;
     }
-    daySel.value = String(Math.min(cur, maxD));
+    contacts.forEach(function(cn) {
+        const row = document.createElement('div');
+        row.className = 'acc-person-row';
+        const initial = ((cn.name || '؟').trim().charAt(0)) || '؟';
+        row.innerHTML = '<span class="acc-person-avatar">' + escapeHtml(initial) + '</span>' +
+            '<span><div class="p-name">' + escapeHtml(cn.name || '—') + '</div>' +
+            (cn.company ? '<div class="p-company">' + escapeHtml(cn.company) + '</div>' : '') + '</span>' +
+            (selId === cn.id ? '<span class="p-check">✓</span>' : '');
+        row.onclick = function() { accPickPerson(cn.id); };
+        list.appendChild(row);
+    });
+}
+
+function accPickPerson(id) {
+    document.getElementById('accRecContact').value = id || '';
+    accUpdatePersonField();
+    accClosePersonPicker();
+}
+
+function accUpdatePersonField() {
+    const field = document.getElementById('accRecPersonField');
+    if (!field) return;
+    const id = document.getElementById('accRecContact').value;
+    const cn = id ? getContactById(id) : null;
+    if (!cn) {
+        field.innerHTML = '<span class="acc-person-none">— بدون شخص —</span>';
+        return;
+    }
+    const initial = ((cn.name || '؟').trim().charAt(0)) || '؟';
+    field.innerHTML = '<span class="acc-person-avatar">' + escapeHtml(initial) + '</span>' +
+        '<span class="acc-person-name">' + escapeHtml(cn.name || '—') +
+        (cn.company ? ' <small>(' + escapeHtml(cn.company) + ')</small>' : '') + '</span>' +
+        '<span class="acc-person-x" title="برداشتن شخص">✕</span>';
+    field.querySelector('.acc-person-x').onclick = function(ev) {
+        ev.stopPropagation();
+        accPickPerson('');
+    };
+}
+
+// ─── تقویم شمسی فشرده (الزام کاربر v210: «تاریخ بتواند با تقویم انتخاب شود») ───
+// هم در فرم رکورد (تاریخ ایجاد) و هم در فرم سند (تاریخ سند) استفاده می‌شود.
+let accRecCal = { jy: null, jm: null, jd: null };
+
+function accCalISO(cal) {
+    const g = jalaliToGregorian(cal.jy, cal.jm, cal.jd);
+    return new Date(Date.UTC(g.getUTCFullYear(), g.getUTCMonth(), g.getUTCDate(), 12, 0, 0)).toISOString();
+}
+
+function accCalShiftMonth(cal, delta, containerId, displayId) {
+    let jm = cal.jm + delta;
+    let jy = cal.jy;
+    if (jm > 12) { jm = 1; jy++; }
+    if (jm < 1) { jm = 12; jy--; }
+    cal.jm = jm;
+    cal.jy = jy;
+    const maxD = getDaysInJalaliMonth(jy, jm);
+    if (cal.jd > maxD) cal.jd = maxD;
+    accCalRender(containerId, cal, displayId);
+}
+
+function accCalRender(containerId, cal, displayId) {
+    const cont = document.getElementById(containerId);
+    if (!cont) return;
+    cont.innerHTML = '';
+    // سربرگ: ماه قبل | عنوان ماه | ماه بعد | امروز
+    const hd = document.createElement('div');
+    hd.className = 'acc-cal-head';
+    const prev = document.createElement('button');
+    prev.type = 'button';
+    prev.textContent = '◄';
+    prev.title = 'ماه قبل';
+    prev.onclick = function() { accCalShiftMonth(cal, -1, containerId, displayId); };
+    const title = document.createElement('div');
+    title.className = 'acc-cal-title';
+    title.textContent = jalaliMonths[cal.jm - 1] + ' ' + toPersianNumber(cal.jy);
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.textContent = '►';
+    next.title = 'ماه بعد';
+    next.onclick = function() { accCalShiftMonth(cal, 1, containerId, displayId); };
+    const today = document.createElement('button');
+    today.type = 'button';
+    today.textContent = 'امروز';
+    today.onclick = function() {
+        const p = toJalaliParts(new Date());
+        cal.jy = p[0]; cal.jm = p[1]; cal.jd = p[2];
+        accCalRender(containerId, cal, displayId);
+    };
+    hd.appendChild(prev);
+    hd.appendChild(title);
+    hd.appendChild(next);
+    hd.appendChild(today);
+    cont.appendChild(hd);
+    // شبکهٔ ۷ ستونه — شنبه تا جمعه
+    const grid = document.createElement('div');
+    grid.className = 'acc-cal-grid';
+    ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'].forEach(function(w) {
+        const wd = document.createElement('div');
+        wd.className = 'acc-cal-wd';
+        wd.textContent = w;
+        grid.appendChild(wd);
+    });
+    // روز اول ماه چه روز هفته‌ای است؟ (شنبه = ستون ۰)
+    const firstG = jalaliToGregorian(cal.jy, cal.jm, 1);
+    const offset = (firstG.getDay() + 1) % 7;
+    const tp = toJalaliParts(new Date());
+    for (let b = 0; b < offset; b++) {
+        const empty = document.createElement('div');
+        empty.className = 'acc-cal-day empty';
+        grid.appendChild(empty);
+    }
+    const maxD = getDaysInJalaliMonth(cal.jy, cal.jm);
+    for (let d = 1; d <= maxD; d++) {
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'acc-cal-day' +
+            (d === cal.jd ? ' sel' : '') +
+            (d === tp[2] && cal.jm === tp[1] && cal.jy === tp[0] ? ' today' : '');
+        cell.textContent = toPersianDigits(d);
+        cell.onclick = function() {
+            cal.jd = d;
+            accCalRender(containerId, cal, displayId);
+        };
+        grid.appendChild(cell);
+    }
+    cont.appendChild(grid);
+    // نمایش تاریخ انتخاب‌شده بالای تقویم
+    if (displayId) {
+        const disp = document.getElementById(displayId);
+        if (disp) disp.textContent = '📅 ' + accDateStr(accCalISO(cal));
+    }
 }
 
 function accGetFormDateISO() {
-    const jd = parseInt(document.getElementById('accDateDay').value, 10);
-    const jm = parseInt(document.getElementById('accDateMonth').value, 10);
-    const jy = parseInt(document.getElementById('accDateYear').value, 10);
-    const g = jalaliToGregorian(jy, jm, jd);
-    return new Date(Date.UTC(g.getUTCFullYear(), g.getUTCMonth(), g.getUTCDate(), 12, 0, 0)).toISOString();
+    return accCalISO(accRecCal);
+}
+
+// ─── جداکنندهٔ سه‌رقمی مبلغ هنگام تایپ (الزام کاربر v210) ───
+function accAmountDigits(raw) {
+    let s = String(raw || '');
+    // ارقام فارسی → لاتین، سپس فقط ارقام می‌ماند (جداکننده‌ها حذف می‌شوند)
+    s = s.replace(/[۰-۹]/g, function(d) { return String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)); });
+    s = s.replace(/\D/g, '');
+    if (s.length > 15) s = s.slice(0, 15);
+    return s;
+}
+
+function accOnAmountInput(el) {
+    const digits = accAmountDigits(el.value);
+    el.value = digits ? toPersianNumberWithSep(parseInt(digits, 10)) : '';
+}
+
+function accParseAmountValue(raw) {
+    const digits = accAmountDigits(raw);
+    return digits ? parseInt(digits, 10) : NaN;
+}
+
+// ─── قید طبیعت حساب‌ها (الزام کاربر v210 — فعلاً فقط هشدار) ───
+// ماندهٔ «برآیند کل برنامه» (همهٔ اسناد) هر گروه/زیرگروه:
+//   دارایی: Σ(بدهکار − بستانکار) ≥ ۰ — نمی‌تواند بستانکار شود
+//   بدهی:   Σ(بستانکار − بدهکار) ≥ ۰ — نمی‌تواند بدهکار شود
+//   سرمایه: قیدی ندارد (کاربر فقط دارایی و بدهی را قید کرده است)
+// اگر رکورد چنین شود، «فقط هشدار» داده می‌شود ولی ذخیره انجام می‌گیرد.
+// رکوردِ در حال ذخیره به‌صورت فرضی اعمال می‌شود تا نتیجهٔ واقعی سنجیده شود.
+function accNatureWarningText(db, section, groupId, side, amount, editRecordId) {
+    if (section === 'equity') return null;
+    const chain = [];
+    let cur = accFindNode(db.groups[section], groupId);
+    let guard = 0;
+    while (cur && guard < 100) {
+        chain.push(cur);
+        cur = accFindParent(db.groups[section], cur.id);
+        guard++;
+    }
+    if (chain.length === 0) return null;
+    const recs = db.records.filter(function(r) { return !(editRecordId && r.id === editRecordId); });
+    recs.push({ section: section, groupId: groupId, amount: amount, side: side });
+    const debitPositive = (section === 'assets');
+    for (let i = 0; i < chain.length; i++) {
+        const node = chain[i];
+        const ids = accDescIds(node);
+        let sum = 0;
+        recs.forEach(function(r) {
+            if (r.section === section && ids.indexOf(r.groupId) !== -1) {
+                const amt = Math.abs(Number(r.amount) || 0);
+                const positive = ((r.side === 'debit') === debitPositive);
+                sum += positive ? amt : -amt;
+            }
+        });
+        if (sum < 0) {
+            if (section === 'assets') {
+                return 'با این رکورد ماندهٔ کلی «' + node.name + '» در دارایی بستانکار می‌شود — گروه‌های دارایی نمی‌توانند بستانکار شوند';
+            }
+            return 'با این رکورد ماندهٔ کلی «' + node.name + '» در بدهی بدهکار می‌شود — گروه‌های بدهی نمی‌توانند بدهکار شوند';
+        }
+    }
+    return null;
 }
 
 function accSaveRecord() {
     if (!accFormCtx) return;
     const text = document.getElementById('accRecText').value.trim();
     const amountRaw = document.getElementById('accRecAmount').value;
-    const amountNum = Number(amountRaw);
-    if (amountRaw === '' || !isFinite(amountNum) || amountNum < 0) {
-        showToast('مبلغ معتبر وارد کنید');
+    // 🔧 v210 (الزام کاربر): ورودی مبلغ با جداکنندهٔ سه‌رقمی است — با پاک‌سازی ارقام پارس می‌شود
+    const amountNum = accParseAmountValue(amountRaw);
+    if (!isFinite(amountNum) || amountNum <= 0) {
+        showToast('مبلغ معتبر وارد کنید (بیشتر از صفر)');
         return;
     }
-    const amount = Math.round(amountNum);
-    if (amount <= 0) {
-        showToast('مبلغ باید بیشتر از صفر باشد');
-        return;
-    }
+    const amount = amountNum;
     if (!accFormSide) {
         showToast('نوع رکورد را انتخاب کنید (بدهکار یا بستانکار)');
         return;
@@ -15888,6 +16955,10 @@ function accSaveRecord() {
     const createdAt = accGetFormDateISO();
     const ctx = accFormCtx;
     const side = accFormSide;
+    // 🔧 v210 (الزام کاربر): قید طبیعت حساب‌ها — ماندهٔ برآیند «کل برنامه» گروه‌های
+    // دارایی نمی‌تواند بستانکار و گروه‌های بدهی نمی‌تواند بدهکار شود.
+    // فعلاً فقط هشدار داده می‌شود و ذخیره انجام می‌گیرد.
+    const natureWarn = accNatureWarningText(getAccounting(), ctx.section, ctx.groupId, side, amount, ctx.recordId);
     accMutate(function(db) {
         if (ctx.recordId) {
             const rec = db.records.find(r => r.id === ctx.recordId);
@@ -15913,7 +16984,11 @@ function accSaveRecord() {
         }
     });
     accCloseRecordForm();
-    showToast('رکورد ذخیره شد ✓');
+    if (natureWarn) {
+        showToast('⚠️ هشدار: ' + natureWarn + ' — با این حال ذخیره شد');
+    } else {
+        showToast('رکورد ذخیره شد ✓');
+    }
 }
 
 function accDeleteRecord() {
@@ -15981,10 +17056,13 @@ function migrateAccounting(raw) {
             });
             (Array.isArray(raw.docs) ? raw.docs : []).forEach(function(d) {
                 if (!d || typeof d !== 'object' || !d.id) return;
+                const created2 = (typeof d.createdAt === 'string') ? d.createdAt : new Date().toISOString();
                 out.docs.push({
                     id: d.id,
                     name: (typeof d.name === 'string' && d.name.trim()) ? d.name.trim() : 'سند',
-                    createdAt: (typeof d.createdAt === 'string') ? d.createdAt : new Date().toISOString()
+                    // 🔧 v210: فیلد جدأ تاریخ سند (مبنای سورت) — دادهٔ قدیمی: تاریخ ایجاد
+                    date: (typeof d.date === 'string' && d.date) ? d.date : created2,
+                    createdAt: created2
                 });
             });
             raw.records.forEach(function(r) { accSanitizeRecord(r, out.records); });
@@ -16000,6 +17078,7 @@ function migrateAccounting(raw) {
                 name: (typeof d.name === 'string' && d.name.trim()) ? d.name.trim() : 'سند',
                 createdAt: (typeof d.createdAt === 'string') ? d.createdAt : new Date().toISOString()
             };
+            doc.date = doc.createdAt; // 🔧 v210: فیلد جدأ تاریخ سند
             out.docs.push(doc);
             ACC_SECTIONS.forEach(function(kind) {
                 const arr = (d.sections && Array.isArray(d.sections[kind])) ? d.sections[kind] : [];
@@ -16050,7 +17129,1004 @@ function migrateAccounting(raw) {
     }
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v211 — جستجو و گزارشات حسابداری
+// ════════════════════════════════════════════════════════════════════
+// منوی همبرگری هدر حسابداری (دو گزینه فعلاً: جستجو + گزارشات).
+// فرم جستجو/گزارش همان فیلترها را می‌گیرد؛ خروجی جستجو لیستی از رکوردها
+// با تگ گروه/زیرگروه است، خروجی گزارش جدولی با ۴ ستون:
+//   بدهکار / بستانکار / مانده / وضعیت
+// اگر شخص انتخاب نشود، گزارش می‌تواند در سطح «بخش / گروه / زیرگروه» هم
+// تهیه شود — هر ردیف همان ۴ ستون را دارد.
+// ناوبری Back موبایل دقیقاً الگوی v204-safe: open → navPush + trackModalOpen،
+// close (idempotent) → closeModalByType + navBack.
+// ---------------------------------------------------------------------
+
+let _accSearchScope = 'all';   // 'all' یا 'section' — برای جستجو
+let _accReportScope = 'all';   // 'all' یا 'section' — برای گزارش
+let _accSearchPersonCtxId = null;  // وقتی منوی انتخاب شخص باز است: 'search' یا 'report'
+
+// ─── منوی همبرگری حسابداری ───
+
+function accToggleHamburger() {
+    const ov = document.getElementById('accHamburgerOverlay');
+    if (!ov) return;
+    if (ov.classList.contains('active')) {
+        accCloseHamburger();
+    } else {
+        accOpenHamburger();
+    }
+}
+
+function accOpenHamburger() {
+    const ov = document.getElementById('accHamburgerOverlay');
+    if (!ov || ov.classList.contains('active')) return;
+    // کارت منو زیر topbar حسابداری باز شود
+    try {
+        const topbar = ov.previousElementSibling; // لمسی نیست، فقط display
+        const accTopbar = document.querySelector('#accountingOverlay .acc-topbar');
+        if (accTopbar) ov.style.paddingTop = (accTopbar.offsetHeight + 6) + 'px';
+    } catch(e) {}
+    ov.classList.add('active');
+    bringToFront(ov);
+    navPush({ view: 'modal', type: 'accHamburger' });
+    trackModalOpen('accHamburger');
+}
+
+function accCloseHamburger() {
+    const ov = document.getElementById('accHamburgerOverlay');
+    if (!ov || !ov.classList.contains('active')) return; // idempotent
+    closeModalByType('accHamburger');
+    navBack();
+}
+
+// ─── باز/بستن overlay جستجو ───
+
+function openAccSearch() {
+    // ریست فیلدها
+    document.getElementById('accSearchText').value = '';
+    document.getElementById('accSearchDateFrom').value = '';
+    document.getElementById('accSearchDateTo').value = '';
+    document.getElementById('accSearchContact').value = '';
+    document.getElementById('accSearchAmountMode').value = 'all';
+    document.getElementById('accSearchAmount').value = '';
+    document.getElementById('accSearchSection').value = 'all';
+    document.getElementById('accSearchGroup').innerHTML = '<option value="">— همهٔ گروه‌ها —</option>';
+    document.getElementById('accSearchSubgroup').innerHTML = '<option value="">— همهٔ زیرگروه‌ها —</option>';
+    document.getElementById('accSearchNodeHint').textContent = 'ابتدا یک بخش انتخاب کنید تا گروه‌هایش بارگذاری شود.';
+    document.getElementById('accSearchScopeQuestion').style.display = 'none';
+    _accSearchScope = 'all';
+    // 🔧 v211 (bugfix): populate the hidden <select> with contact options so that
+    // setting .value='c_alavi' actually sticks (Chromium ignores .value on a
+    // <select> with no matching <option>). Same pattern as v210 accOpenRecordForm.
+    accPopulateContactSelect('accSearchContact');
+    accUpdateSearchPersonField();
+    // وقتی بخش تغییر کرد، گروه‌های همان بخش بارگذاری شود
+    document.getElementById('accSearchSection').onchange = function() {
+        accLoadGroupsForSection('accSearchSection', 'accSearchGroup', 'accSearchSubgroup', 'accSearchNodeHint');
+        // 🔧 v211: سؤال دامنه را هم به‌روز کن (اگر شخص انتخاب شده)
+        const id = document.getElementById('accSearchContact').value;
+        if (id) accMaybeAskScope('search', id);
+    };
+    document.getElementById('accSearchGroup').onchange = function() { accLoadSubgroupsForGroup('accSearchSection', 'accSearchGroup', 'accSearchSubgroup'); };
+    const ov = document.getElementById('accSearchOverlay');
+    ov.classList.add('active');
+    bringToFront(ov);
+    navPush({ view: 'modal', type: 'accSearch' });
+    trackModalOpen('accSearch');
+}
+
+function closeAccSearch() {
+    const ov = document.getElementById('accSearchOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    closeModalByType('accSearch');
+    navBack();
+}
+
+// ─── باز/بستن overlay گزارش ───
+
+function openAccReport() {
+    document.getElementById('accReportText').value = '';
+    document.getElementById('accReportDateFrom').value = '';
+    document.getElementById('accReportDateTo').value = '';
+    document.getElementById('accReportContact').value = '';
+    document.getElementById('accReportAmountMode').value = 'all';
+    document.getElementById('accReportAmount').value = '';
+    document.getElementById('accReportSection').value = 'all';
+    document.getElementById('accReportGroup').innerHTML = '<option value="">— همهٔ گروه‌ها —</option>';
+    document.getElementById('accReportSubgroup').innerHTML = '<option value="">— همهٔ زیرگروه‌ها —</option>';
+    document.getElementById('accReportNodeHint').textContent = 'ابتدا یک بخش انتخاب کنید تا گروه‌هایش بارگذاری شود.';
+    document.getElementById('accReportLevel').value = 'record';
+    document.getElementById('accReportScopeQuestion').style.display = 'none';
+    _accReportScope = 'all';
+    // 🔧 v211 (bugfix): populate the hidden <select> with contact options
+    accPopulateContactSelect('accReportContact');
+    accUpdateReportPersonField();
+    document.getElementById('accReportSection').onchange = function() {
+        accLoadGroupsForSection('accReportSection', 'accReportGroup', 'accReportSubgroup', 'accReportNodeHint');
+        // 🔧 v211: سؤال دامنه را هم به‌روز کن
+        const id = document.getElementById('accReportContact').value;
+        if (id) accMaybeAskScope('report', id);
+    };
+    document.getElementById('accReportGroup').onchange = function() { accLoadSubgroupsForGroup('accReportSection', 'accReportGroup', 'accReportSubgroup'); };
+    const ov = document.getElementById('accReportOverlay');
+    ov.classList.add('active');
+    bringToFront(ov);
+    navPush({ view: 'modal', type: 'accReport' });
+    trackModalOpen('accReport');
+}
+
+// 🔧 v211 (bugfix helper): populate a hidden <select> with all contacts so that
+// setting .value='c_xxx' sticks (Chromium ignores .value on a <select> with no
+// matching <option>). Mirrors the pattern in v210 accOpenRecordForm.
+function accPopulateContactSelect(selectId) {
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">— بدون شخص —</option>';
+    getContacts().forEach(function(cn) {
+        const opt = document.createElement('option');
+        opt.value = cn.id;
+        opt.textContent = (cn.name || '—') + (cn.company ? ' (' + cn.company + ')' : '');
+        sel.appendChild(opt);
+    });
+}
+
+function closeAccReport() {
+    const ov = document.getElementById('accReportOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    closeModalByType('accReport');
+    navBack();
+}
+
+// ─── بارگذاری گروه‌ها/زیرگروه‌های همان بخش در dropdown ───
+
+// پیمایش بازگشتی درخت برای ساخت لیستIndented با depth
+function accFlattenNodes(list, depth, out) {
+    (list || []).forEach(function(n) {
+        out.push({ id: n.id, name: n.name, depth: depth });
+        accFlattenNodes(n.children, depth + 1, out);
+    });
+}
+
+function accLoadGroupsForSection(sectionSelId, groupSelId, subgroupSelId, hintId) {
+    const sectionVal = document.getElementById(sectionSelId).value;
+    const gSel = document.getElementById(groupSelId);
+    const sgSel = document.getElementById(subgroupSelId);
+    sgSel.innerHTML = '<option value="">— همهٔ زیرگروه‌ها —</option>';
+    if (!sectionVal || sectionVal === 'all') {
+        gSel.innerHTML = '<option value="">— همهٔ گروه‌ها —</option>';
+        if (hintId) document.getElementById(hintId).textContent = 'ابتدا یک بخش انتخاب کنید تا گروه‌هایش بارگذاری شود.';
+        return;
+    }
+    const db = getAccounting();
+    const nodes = db.groups[sectionVal] || [];
+    if (nodes.length === 0) {
+        gSel.innerHTML = '<option value="">— این بخش هنوز گروهی ندارد —</option>';
+        if (hintId) document.getElementById(hintId).textContent = 'بخش «' + ACC_SECTION_NAMES[sectionVal] + '» هنوز گروهی ندارد.';
+        return;
+    }
+    const flat = [];
+    accFlattenNodes(nodes, 0, flat);
+    let html = '<option value="">— همهٔ گروه‌ها —</option>';
+    flat.forEach(function(n) {
+        const indent = (new Array(n.depth + 1)).join('— ');
+        html += '<option value="' + n.id + '">' + indent + escapeHtml(n.name) + '</option>';
+    });
+    gSel.innerHTML = html;
+    if (hintId) document.getElementById(hintId).textContent = toPersianNumber(flat.length) + ' گروه/زیرگروه در بخش «' + ACC_SECTION_NAMES[sectionVal] + '».';
+}
+
+function accLoadSubgroupsForGroup(sectionSelId, groupSelId, subgroupSelId) {
+    const sectionVal = document.getElementById(sectionSelId).value;
+    const groupId = document.getElementById(groupSelId).value;
+    const sgSel = document.getElementById(subgroupSelId);
+    if (!sectionVal || sectionVal === 'all' || !groupId) {
+        sgSel.innerHTML = '<option value="">— همهٔ زیرگروه‌ها —</option>';
+        return;
+    }
+    const db = getAccounting();
+    const node = accFindNode(db.groups[sectionVal], groupId);
+    if (!node || !node.children || node.children.length === 0) {
+        sgSel.innerHTML = '<option value="">— زیرگروهی ندارد —</option>';
+        return;
+    }
+    const flat = [];
+    accFlattenNodes(node.children, 0, flat);
+    let html = '<option value="">— همهٔ زیرگروه‌ها —</option>';
+    flat.forEach(function(n) {
+        const indent = (new Array(n.depth + 1)).join('— ');
+        html += '<option value="' + n.id + '">' + indent + escapeHtml(n.name) + '</option>';
+    });
+    sgSel.innerHTML = html;
+}
+
+// ─── منوی انتخاب شخص مشترک بین جستجو و گزارش ───
+
+function accOpenSearchPersonPicker() {
+    _accSearchPersonCtxId = 'search';
+    accOpenSharedPersonPicker('search');
+}
+function accOpenReportPersonPicker() {
+    _accSearchPersonCtxId = 'report';
+    accOpenSharedPersonPicker('report');
+}
+
+function accOpenSharedPersonPicker(ctx) {
+    const ov = document.getElementById('accSearchPersonPickerOverlay');
+    if (!ov || ov.classList.contains('active')) return;
+    document.getElementById('accSearchPersonSearchInput').value = '';
+    accRenderSearchPersonList();
+    ov.classList.add('active');
+    bringToFront(ov);
+    navPush({ view: 'modal', type: 'accSearchPersonPicker' });
+    trackModalOpen('accSearchPersonPicker');
+}
+
+function accCloseSearchPersonPicker() {
+    const ov = document.getElementById('accSearchPersonPickerOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    closeModalByType('accSearchPersonPicker');
+    navBack();
+}
+
+function accRenderSearchPersonList() {
+    const list = document.getElementById('accSearchPersonList');
+    if (!list) return;
+    const qRaw = document.getElementById('accSearchPersonSearchInput').value || '';
+    const q = normalizeContactRefText(qRaw);
+    const ctx = _accSearchPersonCtxId || 'search';
+    const selId = document.getElementById(ctx === 'report' ? 'accReportContact' : 'accSearchContact').value;
+    list.innerHTML = '';
+    // گزینهٔ «بدون شخص»
+    const noneRow = document.createElement('div');
+    noneRow.className = 'acc-person-row';
+    noneRow.innerHTML = '<span class="acc-person-avatar" style="background:#bbb;">—</span>' +
+        '<span><div class="p-name">— بدون شخص —</div></span>' +
+        (selId ? '' : '<span class="p-check">✓</span>');
+    noneRow.onclick = function() { accPickSearchPerson(''); };
+    list.appendChild(noneRow);
+    const contacts = getContacts().filter(function(cn) {
+        if (!q) return true;
+        return normalizeContactRefText(cn.name || '').indexOf(q) !== -1 ||
+               normalizeContactRefText(cn.company || '').indexOf(q) !== -1;
+    });
+    if (contacts.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'acc-hint';
+        empty.style.padding = '14px';
+        empty.textContent = 'شخصی پیدا نشد';
+        list.appendChild(empty);
+        return;
+    }
+    contacts.forEach(function(cn) {
+        const row = document.createElement('div');
+        row.className = 'acc-person-row';
+        const initial = ((cn.name || '؟').trim().charAt(0)) || '؟';
+        row.innerHTML = '<span class="acc-person-avatar">' + escapeHtml(initial) + '</span>' +
+            '<span><div class="p-name">' + escapeHtml(cn.name || '—') + '</div>' +
+            (cn.company ? '<div class="p-company">' + escapeHtml(cn.company) + '</div>' : '') + '</span>' +
+            (selId === cn.id ? '<span class="p-check">✓</span>' : '');
+        row.onclick = function() { accPickSearchPerson(cn.id); };
+        list.appendChild(row);
+    });
+}
+
+function accPickSearchPerson(id) {
+    const ctx = _accSearchPersonCtxId || 'search';
+    const selId = (ctx === 'report') ? 'accReportContact' : 'accSearchContact';
+    const fldId = (ctx === 'report') ? 'accReportPersonField' : 'accSearchPersonField';
+    document.getElementById(selId).value = id || '';
+    accUpdateSharedPersonField(fldId, id);
+    accCloseSearchPersonPicker();
+    // سؤال دامنه: اگر شخص در بیش از یک بخش/گروه رکورد دارد، پرسیده می‌شود
+    if (id) {
+        accMaybeAskScope(ctx, id);
+    } else {
+        accHideScopeQuestion(ctx);
+    }
+}
+
+function accUpdateSearchPersonField() { accUpdateSharedPersonField('accSearchPersonField', document.getElementById('accSearchContact').value); }
+function accUpdateReportPersonField() { accUpdateSharedPersonField('accReportPersonField', document.getElementById('accReportContact').value); }
+
+function accUpdateSharedPersonField(fieldId, id) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    const cn = id ? getContactById(id) : null;
+    if (!cn) {
+        field.innerHTML = '<span class="acc-person-none">— بدون شخص —</span>';
+        return;
+    }
+    const initial = ((cn.name || '؟').trim().charAt(0)) || '؟';
+    field.innerHTML = '<span class="acc-person-avatar">' + escapeHtml(initial) + '</span>' +
+        '<span class="acc-person-name">' + escapeHtml(cn.name || '—') +
+        (cn.company ? ' <small>(' + escapeHtml(cn.company) + ')</small>' : '') + '</span>' +
+        '<span class="acc-person-x" title="برداشتن شخص">✕</span>';
+    field.querySelector('.acc-person-x').onclick = function(ev) {
+        ev.stopPropagation();
+        const ctx = (fieldId === 'accReportPersonField') ? 'report' : 'search';
+        accPickSearchPerson('');
+    };
+}
+
+// ─── سؤال «کل رکوردهای شخص یا فقط بخش انتخابی» ───
+// اگر شخص در بیش از یک بخش رکورد دارد و کاربر بخشی هم انتخاب کرده، پرسیده می‌شود.
+
+function accPersonSectionStats(contactId) {
+    const db = getAccounting();
+    const bySection = { assets: 0, liabilities: 0, equity: 0 };
+    const byGroup = {};  // section|groupId → count
+    db.records.forEach(function(r) {
+        if (r.contactId !== contactId) return;
+        if (ACC_SECTIONS.indexOf(r.section) === -1) return;
+        bySection[r.section] = (bySection[r.section] || 0) + 1;
+        const key = r.section + '|' + r.groupId;
+        byGroup[key] = (byGroup[key] || 0) + 1;
+    });
+    const sections = ACC_SECTIONS.filter(function(k) { return bySection[k] > 0; });
+    return { bySection: bySection, byGroup: byGroup, sections: sections, total: sections.reduce(function(s, k) { return s + bySection[k]; }, 0) };
+}
+
+function accMaybeAskScope(ctx, contactId) {
+    const stats = accPersonSectionStats(contactId);
+    const qId = (ctx === 'report') ? 'accReportScopeQuestion' : 'accSearchScopeQuestion';
+    const txtId = (ctx === 'report') ? 'accReportScopeText' : 'accSearchScopeText';
+    const sectionSelId = (ctx === 'report') ? 'accReportSection' : 'accSearchSection';
+    const sectionVal = document.getElementById(sectionSelId).value;
+    if (stats.total === 0) {
+        document.getElementById(qId).style.display = 'none';
+        return;
+    }
+    // اگر شخص فقط در یک بخش رکورد دارد یا کاربر بخشی انتخاب نکرده، نیازی به سؤال نیست
+    if (stats.sections.length <= 1 || !sectionVal || sectionVal === 'all') {
+        document.getElementById(qId).style.display = 'none';
+        // اما اگر چند بخش دارد و کاربر «همه» را انتخاب کرده، یک یادآوری کوتاه
+        if (stats.sections.length > 1) {
+            const txt = 'این شخص در ' + toPersianNumber(stats.sections.length) + ' بخش (' +
+                stats.sections.map(function(k) { return ACC_SECTION_NAMES[k]; }).join('، ') +
+                ') و در مجموع ' + toPersianNumber(stats.total) + ' رکورد دارد.';
+            document.getElementById(txtId).textContent = txt;
+            document.getElementById(qId).style.display = 'block';
+        }
+        return;
+    }
+    // شخص در چند بخش رکورد دارد و کاربر یک بخش مشخص هم انتخاب کرده — سؤال کامل
+    const inSelected = stats.bySection[sectionVal] || 0;
+    const otherSections = stats.sections.filter(function(k) { return k !== sectionVal; });
+    const txt = 'این شخص در بخش انتخابی شما («' + ACC_SECTION_NAMES[sectionVal] + '») ' +
+        toPersianNumber(inSelected) + ' رکورد دارد، و در بخش‌های دیگر (' +
+        otherSections.map(function(k) { return ACC_SECTION_NAMES[k]; }).join('، ') +
+        ') ' + toPersianNumber(stats.total - inSelected) + ' رکورد دیگر. کل رکوردهای شخص را می‌خواهید یا فقط همان بخش انتخابی؟';
+    document.getElementById(txtId).textContent = txt;
+    document.getElementById(qId).style.display = 'block';
+}
+
+function accHideScopeQuestion(ctx) {
+    const qId = (ctx === 'report') ? 'accReportScopeQuestion' : 'accSearchScopeQuestion';
+    document.getElementById(qId).style.display = 'none';
+}
+
+function accSetSearchScope(s) {
+    _accSearchScope = s;
+    document.querySelectorAll('#accSearchScopeQuestion .acc-scope-btn').forEach(function(b) {
+        b.classList.toggle('sel', b.getAttribute('data-scope') === s);
+    });
+}
+function accSetReportScope(s) {
+    _accReportScope = s;
+    document.querySelectorAll('#accReportScopeQuestion .acc-scope-btn').forEach(function(b) {
+        b.classList.toggle('sel', b.getAttribute('data-scope') === s);
+    });
+}
+
+// ─── فیلتر مشترک رکوردها ───
+// criteria = {text, dateFrom(ms), dateTo(ms), contactId, amountMode, amount, section, groupId, subgroupId, scope}
+// اگر scope='section' و section='all' باشد → معادل 'all' (نگه‌داشته می‌شود تا UI ساده بماند)
+
+function accFilterRecords(criteria) {
+    const db = getAccounting();
+    const text = (criteria.text || '').trim().toLowerCase();
+    let records = db.records.slice();
+    if (text) records = records.filter(function(r) { return (r.text || '').toLowerCase().indexOf(text) !== -1; });
+    if (criteria.dateFrom) records = records.filter(function(r) { return new Date(r.createdAt).getTime() >= criteria.dateFrom; });
+    if (criteria.dateTo) {
+        // پایان روز: +86400000 - 1
+        records = records.filter(function(r) { return new Date(r.createdAt).getTime() < (criteria.dateTo + 86400000); });
+    }
+    if (criteria.contactId) {
+        records = records.filter(function(r) { return r.contactId === criteria.contactId; });
+        if (criteria.scope === 'section' && criteria.section && criteria.section !== 'all') {
+            records = records.filter(function(r) { return r.section === criteria.section; });
+        }
+    }
+    if (criteria.section && criteria.section !== 'all') {
+        records = records.filter(function(r) { return r.section === criteria.section; });
+        if (criteria.groupId) {
+            // خود گروه + همهٔ نسل‌ها (زیرگروه‌ها) — طبق تعریف accDescIds
+            const node = accFindNode(db.groups[criteria.section], criteria.groupId);
+            if (node) {
+                const ids = accDescIds(node);
+                records = records.filter(function(r) { return ids.indexOf(r.groupId) !== -1; });
+            }
+            if (criteria.subgroupId) {
+                // دقیقاً همان زیرگروه (و فرزندانش)
+                const sNode = accFindNode(db.groups[criteria.section], criteria.subgroupId);
+                if (sNode) {
+                    const sids = accDescIds(sNode);
+                    records = records.filter(function(r) { return sids.indexOf(r.groupId) !== -1; });
+                }
+            }
+        }
+    }
+    if (criteria.amountMode && criteria.amountMode !== 'all') {
+        const amt = accParseAmountValue(criteria.amount || '');
+        if (isFinite(amt) && amt > 0) {
+            records = records.filter(function(r) {
+                const v = Math.abs(Number(r.amount) || 0);
+                if (criteria.amountMode === 'exact') return v === amt;
+                if (criteria.amountMode === 'min') return v >= amt;
+                if (criteria.amountMode === 'max') return v <= amt;
+                return true;
+            });
+        }
+    }
+    return records;
+}
+
+// خواندن criteria از فرم جستجو یا گزارش
+function accReadFormCriteria(prefix) {
+    // prefix = 'accSearch' یا 'accReport'
+    const text = document.getElementById(prefix + 'Text').value;
+    const dateFrom = parseJalaliDate(document.getElementById(prefix + 'DateFrom').value);
+    const dateTo = parseJalaliDate(document.getElementById(prefix + 'DateTo').value);
+    const contactId = document.getElementById(prefix + 'Contact').value || null;
+    const amountMode = document.getElementById(prefix + 'AmountMode').value;
+    const amount = document.getElementById(prefix + 'Amount').value;
+    const section = document.getElementById(prefix + 'Section').value;
+    const groupId = document.getElementById(prefix + 'Group').value || null;
+    const subgroupId = document.getElementById(prefix + 'Subgroup').value || null;
+    const scope = (prefix === 'accSearch') ? _accSearchScope : _accReportScope;
+    return {
+        text: text, dateFrom: dateFrom, dateTo: dateTo,
+        contactId: contactId, amountMode: amountMode, amount: amount,
+        section: section, groupId: groupId, subgroupId: subgroupId, scope: scope
+    };
+}
+
+// ─── اجرای جستجو ───
+
+function executeAccSearch() {
+    const criteria = accReadFormCriteria('accSearch');
+    const records = accFilterRecords(criteria);
+    // 🔧 v211 (bugfix): به‌جای closeAccSearch (که navBack می‌زند و popstate
+    // می‌سازد و نتایجِ تازه‌بازشده را می‌بندد)، فقط closeModalByType را صدا
+    // بزن تا overlay بسته شود + از _modalStack برداشته شود. سپس
+    // accShowSearchResults با navReplace ورودی تاریخچهٔ accSearch را با
+    // accSearchResults جایگزین می‌کند تا Back موبایل پس از بستن نتایج،
+    // مستقیم به حسابداری برگردد (نه به فرم جستجوی بسته‌شده).
+    closeModalByType('accSearch');
+    accShowSearchResults(records, criteria);
+}
+
+function accShowSearchResults(records, criteria) {
+    const body = document.getElementById('accSearchResultsBody');
+    document.getElementById('accSearchResultsCount').textContent = toPersianNumber(records.length) + ' رکورد';
+    body.innerHTML = '';
+    const db = getAccounting();
+    if (records.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'acc-search-empty';
+        empty.innerHTML = 'هیچ رکوردی با این معیارها یافت نشد.<br><span style="font-size:11px">فیلترها را عوض کنید و دوباره جستجو کنید.</span>';
+        body.appendChild(empty);
+    } else {
+        // سورت بر اساس تاریخ ایجاد نزولی
+        records.sort(function(a, b) { return (a.createdAt < b.createdAt) ? 1 : -1; });
+        records.forEach(function(r) {
+            body.appendChild(accBuildSearchResultRow(r, db));
+        });
+    }
+    const ov = document.getElementById('accSearchResultsOverlay');
+    try {
+        const header = document.querySelector('.header');
+        if (header) ov.style.top = header.offsetHeight + 'px';
+    } catch(e) {}
+    ov.classList.add('active');
+    bringToFront(ov);
+    // 🔧 v211: جایگزینی ورودی تاریخچهٔ accSearch با accSearchResults
+    navReplace({ view: 'modal', type: 'accSearchResults' });
+    trackModalOpen('accSearchResults');
+}
+
+function accBuildSearchResultRow(r, db) {
+    const row = document.createElement('div');
+    row.className = 'acc-search-result-row';
+    const doc = (db.docs || []).find(function(d) { return d.id === r.docId; });
+    const node = (ACC_SECTIONS.indexOf(r.section) !== -1) ? accFindNode(db.groups[r.section], r.groupId) : null;
+    // زنجیرهٔ گروه/زیرگروه — از والد ریشه تا خود گره
+    const chain = [];
+    let cur = node;
+    let guard = 0;
+    while (cur && guard < 100) {
+        chain.unshift(cur);
+        cur = accFindParent(db.groups[r.section], cur.id);
+        guard++;
+    }
+    const contact = r.contactId ? getContactById(r.contactId) : null;
+    const txt = document.createElement('div');
+    txt.className = 'acc-search-result-text';
+    txt.textContent = r.text || '(بدون شرح)';
+    row.appendChild(txt);
+    const meta = document.createElement('div');
+    meta.className = 'acc-search-result-meta';
+    meta.innerHTML = '📅 ' + accDateStr(r.createdAt) +
+        (doc ? ' • 📄 ' + escapeHtml(accDocTitle(doc)) : '') +
+        (contact ? ' • 👤 ' + escapeHtml(contact.name || '—') + (contact.company ? ' (' + escapeHtml(contact.company) + ')' : '') : '') +
+        ' • 💰 ' + toPersianNumberWithSep(Math.abs(Number(r.amount) || 0)) + ' ریال';
+    row.appendChild(meta);
+    // تگ‌ها: بخش + زنجیرهٔ گروه/زیرگروه + نوع رکورد
+    const tags = document.createElement('div');
+    tags.className = 'acc-search-result-tags';
+    const sectTag = document.createElement('span');
+    sectTag.className = 'acc-search-tag tag-section-' + r.section;
+    sectTag.textContent = ACC_SECTION_NAMES[r.section] || r.section;
+    tags.appendChild(sectTag);
+    chain.forEach(function(n, i) {
+        const t = document.createElement('span');
+        t.className = 'acc-search-tag ' + (i === 0 ? 'tag-group' : 'tag-subgroup');
+        t.textContent = (i === 0 ? '📁 ' : '↳ ') + n.name;
+        tags.appendChild(t);
+    });
+    const sideTag = document.createElement('span');
+    sideTag.className = 'acc-search-tag tag-side-' + r.side;
+    sideTag.textContent = (r.side === 'debit') ? 'بدهکار' : 'بستانکار';
+    tags.appendChild(sideTag);
+    row.appendChild(tags);
+    return row;
+}
+
+function closeAccSearchResults() {
+    const ov = document.getElementById('accSearchResultsOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    closeModalByType('accSearchResults');
+    navBack();
+}
+
+// ─── اجرای گزارش ───
+
+function executeAccReport() {
+    const criteria = accReadFormCriteria('accReport');
+    const level = document.getElementById('accReportLevel').value;
+    const records = accFilterRecords(criteria);
+    // 🔧 v211 (bugfix): همانند executeAccSearch — فقط closeModalByType بدون
+    // navBack؛ سپس accShowReportResults با navReplace ورودی تاریخچه را
+    // جایگزین می‌کند تا Back موبایل پس از بستن نتایج، مستقیم به حسابداری
+    // برگردد (نه به فرم گزارش بسته‌شده).
+    closeModalByType('accReport');
+    accShowReportResults(records, criteria, level);
+}
+
+// محاسبهٔ ۴ ستون برای یک مجموعهٔ رکورد:
+//   بدهکار = Σ amountِ رکوردهای side='debit'
+//   بستانکار = Σ amountِ رکوردهای side='credit'
+//   مانده = بدهکار − بستانکار
+//   وضعیت = 'debit' (بدهکار) اگر مانده > 0؛ 'credit' (بستانکار) اگر < 0؛ 'zero' اگر = 0
+function accCompute4Cols(records) {
+    let debit = 0, credit = 0;
+    (records || []).forEach(function(r) {
+        const v = Math.abs(Number(r && r.amount) || 0);
+        if (!isFinite(v) || v <= 0) return;
+        if (r.side === 'debit') debit += v;
+        else if (r.side === 'credit') credit += v;
+    });
+    const balance = debit - credit;
+    let status = 'zero';
+    if (balance > 0) status = 'debit';
+    else if (balance < 0) status = 'credit';
+    return { debit: debit, credit: credit, balance: balance, status: status };
+}
+
+function accStatusText(status) {
+    if (status === 'debit') return 'بدهکار';
+    if (status === 'credit') return 'بستانکار';
+    return 'تسویه';
+}
+
+function accShowReportResults(records, criteria, level) {
+    const body = document.getElementById('accReportResultsBody');
+    body.innerHTML = '';
+    const db = getAccounting();
+    const now = new Date();
+    const [jy, jm, jd] = toJalaliParts(now);
+    const dateStr = toPersianNumber(jy) + '/' + toPersianDigits(pad2(jm)) + '/' + toPersianDigits(pad2(jd));
+
+    // اگر شخص انتخاب شده، گزارش در سطح رکورد است (مجموعه-person-summary)
+    // اگر شخص انتخاب نشده و level = section/group/subgroup، تجمیع می‌شود.
+    let rows = [];
+    if (criteria.contactId) {
+        // گزارش شخص — ردیف = رکوردهای شخص
+        records.forEach(function(r) { rows.push(accReportRowFromRecord(r, db)); });
+    } else if (level === 'record') {
+        records.forEach(function(r) { rows.push(accReportRowFromRecord(r, db)); });
+    } else if (level === 'section') {
+        ACC_SECTIONS.forEach(function(k) {
+            const sub = records.filter(function(r) { return r.section === k; });
+            if (sub.length === 0) return;
+            const c = accCompute4Cols(sub);
+            rows.push({ kind: 'section', section: k, label: ACC_SECTION_NAMES[k], debit: c.debit, credit: c.credit, balance: c.balance, status: c.status, count: sub.length });
+        });
+    } else if (level === 'group' || level === 'subgroup') {
+        // برای هر بخش، درخت را پیمایش کن و جمع هر گره (level=group) یا هر زیرگروه (level=subgroup) را حساب کن
+        const sectionFilter = (criteria.section && criteria.section !== 'all') ? [criteria.section] : ACC_SECTIONS;
+        sectionFilter.forEach(function(k) {
+            const nodes = db.groups[k] || [];
+            if (level === 'group') {
+                nodes.forEach(function(n) {
+                    const ids = accDescIds(n);
+                    const sub = records.filter(function(r) { return r.section === k && ids.indexOf(r.groupId) !== -1; });
+                    if (sub.length === 0) return;
+                    const c = accCompute4Cols(sub);
+                    rows.push({ kind: 'group', section: k, label: n.name + ' (' + ACC_SECTION_NAMES[k] + ')', debit: c.debit, credit: c.credit, balance: c.balance, status: c.status, count: sub.length });
+                });
+            } else {
+                // level = subgroup: پیمایش بازگشتی — هر گره‌ای که والد دارد (یعنی خودش زیرگروه است)
+                function walk(list, depth) {
+                    (list || []).forEach(function(n) {
+                        if (depth >= 1) {
+                            const ids = accDescIds(n);
+                            const sub = records.filter(function(r) { return r.section === k && ids.indexOf(r.groupId) !== -1; });
+                            if (sub.length > 0) {
+                                const c = accCompute4Cols(sub);
+                                rows.push({ kind: 'subgroup', section: k, label: n.name + ' (' + ACC_SECTION_NAMES[k] + ')', debit: c.debit, credit: c.credit, balance: c.balance, status: c.status, count: sub.length });
+                            }
+                        }
+                        walk(n.children, depth + 1);
+                    });
+                }
+                walk(nodes, 0);
+            }
+        });
+    }
+
+    // عنوان و خلاصهٔ آماری
+    let titleParts = [];
+    if (criteria.contactId) {
+        const cn = getContactById(criteria.contactId);
+        if (cn) titleParts.push('👤 ' + (cn.name || '—') + (cn.company ? ' (' + cn.company + ')' : ''));
+    }
+    if (criteria.section && criteria.section !== 'all') titleParts.push('📦 ' + ACC_SECTION_NAMES[criteria.section]);
+    if (criteria.groupId && criteria.section && criteria.section !== 'all') {
+        const n = accFindNode(db.groups[criteria.section], criteria.groupId);
+        if (n) titleParts.push('📁 ' + n.name);
+    }
+    if (criteria.subgroupId && criteria.section && criteria.section !== 'all') {
+        const n = accFindNode(db.groups[criteria.section], criteria.subgroupId);
+        if (n) titleParts.push('↳ ' + n.name);
+    }
+    if (criteria.text) titleParts.push('📝 «' + criteria.text + '»');
+    if (!titleParts.length) titleParts.push('همهٔ رکوردها');
+    const titleStr = titleParts.join(' • ');
+
+    // خلاصهٔ آماری کلی — ۴ ستون روی همهٔ رکوردهای فیلترشده
+    const totals = accCompute4Cols(records);
+
+    document.getElementById('accReportResultsMeta').textContent = toPersianNumber(rows.length) + ' ردیف • ' + toPersianNumber(records.length) + ' رکورد';
+
+    // ذخیرهٔ داده برای export
+    body.dataset.reportData = JSON.stringify(rows);
+    body.dataset.reportTitle = titleStr;
+    body.dataset.reportDate = dateStr;
+
+    // خلاصه
+    const summary = document.createElement('div');
+    summary.className = 'acc-report-summary';
+    summary.innerHTML = '<div class="acc-report-summary-title">📊 گزارش حسابداری — ' + escapeHtml(titleStr) + '</div>' +
+        '<div style="font-size:11px;color:#888;margin-bottom:8px;">تاریخ تولید: ' + dateStr + ' — تعداد رکوردهای فیلترشده: ' + toPersianNumber(records.length) + '</div>' +
+        '<div class="acc-report-summary-grid">' +
+        '<div>بدهکار کل: <b>' + toPersianNumberWithSep(totals.debit) + '</b> ریال</div>' +
+        '<div>بستانکار کل: <b>' + toPersianNumberWithSep(totals.credit) + '</b> ریال</div>' +
+        '<div>مانده نهایی: <b>' + toPersianNumberWithSep(Math.abs(totals.balance)) + '</b> ریال</div>' +
+        '<div>وضعیت نهایی: <b class="col-status-' + totals.status + '">' + accStatusText(totals.status) + '</b></div>' +
+        '</div>';
+    body.appendChild(summary);
+
+    if (rows.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'acc-search-empty';
+        empty.innerHTML = 'هیچ رکوردی با این معیارها یافت نشد.<br><span style="font-size:11px">فیلترها را عوض کنید و دوباره گزارش بگیرید.</span>';
+        body.appendChild(empty);
+    } else {
+        const table = document.createElement('table');
+        table.className = 'acc-report-table';
+        // سرستون‌ها
+        const thead = document.createElement('thead');
+        let headHtml = '<tr>';
+        headHtml += '<th>ردیف</th>';
+        if (criteria.contactId) {
+            headHtml += '<th>تاریخ</th><th>شرح رکورد</th><th>سند</th><th>گروه/زیرگروه</th>';
+        } else {
+            headHtml += '<th>' + (level === 'section' ? 'بخش' : (level === 'subgroup' ? 'زیرگروه' : (level === 'group' ? 'گروه' : 'شرح'))) + '</th>';
+            headHtml += '<th>تعداد رکورد</th>';
+        }
+        headHtml += '<th>بدهکار</th><th>بستانکار</th><th>مانده</th><th>وضعیت</th>';
+        headHtml += '</tr>';
+        thead.innerHTML = headHtml;
+        table.appendChild(thead);
+        const tbody = document.createElement('tbody');
+        rows.forEach(function(rw, i) {
+            const tr = document.createElement('tr');
+            let html = '<td>' + toPersianNumber(i + 1) + '</td>';
+            if (rw.kind === 'record') {
+                html += '<td>' + accDateStr(rw.createdAt) + '</td>';
+                html += '<td>' + escapeHtml(rw.text || '(بدون شرح)') + '</td>';
+                html += '<td>' + escapeHtml(rw.docName || '—') + '</td>';
+                html += '<td style="font-size:11px;">' + escapeHtml(rw.nodeChain || '—') + '</td>';
+            } else {
+                html += '<td>' + escapeHtml(rw.label || '—') + '</td>';
+                html += '<td style="text-align:left;">' + toPersianNumber(rw.count || 0) + '</td>';
+            }
+            html += '<td class="col-num">' + toPersianNumberWithSep(rw.debit) + '</td>';
+            html += '<td class="col-num">' + toPersianNumberWithSep(rw.credit) + '</td>';
+            html += '<td class="col-num">' + toPersianNumberWithSep(Math.abs(rw.balance)) + '</td>';
+            html += '<td class="col-status-' + rw.status + '">' + accStatusText(rw.status) + '</td>';
+            tr.innerHTML = html;
+            tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        // footer جمع کل
+        const tfoot = document.createElement('tfoot');
+        let fHtml = '<tr><td colspan="' + (criteria.contactId ? 6 : 3) + '">جمع کل</td>';
+        fHtml += '<td class="col-num">' + toPersianNumberWithSep(totals.debit) + '</td>';
+        fHtml += '<td class="col-num">' + toPersianNumberWithSep(totals.credit) + '</td>';
+        fHtml += '<td class="col-num">' + toPersianNumberWithSep(Math.abs(totals.balance)) + '</td>';
+        fHtml += '<td class="col-status-' + totals.status + '">' + accStatusText(totals.status) + '</td>';
+        fHtml += '</tr>';
+        tfoot.innerHTML = fHtml;
+        table.appendChild(tfoot);
+        // wrap for horizontal scroll on mobile
+        const wrap = document.createElement('div');
+        wrap.style.overflowX = 'auto';
+        wrap.appendChild(table);
+        body.appendChild(wrap);
+    }
+
+    const ov = document.getElementById('accReportResultsOverlay');
+    try {
+        const header = document.querySelector('.header');
+        if (header) ov.style.top = header.offsetHeight + 'px';
+    } catch(e) {}
+    ov.classList.add('active');
+    bringToFront(ov);
+    // 🔧 v211: جایگزینی ورودی تاریخچهٔ accReport با accReportResults
+    navReplace({ view: 'modal', type: 'accReportResults' });
+    trackModalOpen('accReportResults');
+}
+
+// ساخت ردیف گزارش در سطح رکورد
+function accReportRowFromRecord(r, db) {
+    const doc = (db.docs || []).find(function(d) { return d.id === r.docId; });
+    const node = (ACC_SECTIONS.indexOf(r.section) !== -1) ? accFindNode(db.groups[r.section], r.groupId) : null;
+    let chain = [];
+    let cur = node;
+    let guard = 0;
+    while (cur && guard < 100) {
+        chain.unshift(cur.name);
+        cur = accFindParent(db.groups[r.section], cur.id);
+        guard++;
+    }
+    const v = Math.abs(Number(r.amount) || 0);
+    const debit = (r.side === 'debit') ? v : 0;
+    const credit = (r.side === 'credit') ? v : 0;
+    const balance = debit - credit;
+    const status = (balance > 0) ? 'debit' : ((balance < 0) ? 'credit' : 'zero');
+    return {
+        kind: 'record',
+        createdAt: r.createdAt,
+        text: r.text,
+        docName: doc ? accDocTitle(doc) : '',
+        nodeChain: chain.join(' / '),
+        debit: debit, credit: credit, balance: balance, status: status,
+        count: 1
+    };
+}
+
+function closeAccReportResults() {
+    const ov = document.getElementById('accReportResultsOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    closeModalByType('accReportResults');
+    navBack();
+}
+
+// ─── ذخیره/چاپ/ارسال گزارش — الگوی گزارش اشpersons (v146) ───
+
+function generateAccReportHTML() {
+    const body = document.getElementById('accReportResultsBody');
+    const rows = JSON.parse(body.dataset.reportData || '[]');
+    const titleStr = body.dataset.reportTitle || 'گزارش حسابداری';
+    const dateStr = body.dataset.reportDate || '';
+    const now = new Date();
+    const jalaliDate = toJalaliLong(now);
+    let html = '<!DOCTYPE html><html dir="rtl" lang="fa"><head><meta charset="utf-8">';
+    html += '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
+    html += '<title>گزارش حسابداری</title>';
+    html += '<style>';
+    html += 'body{font-family:Tahoma,Arial,sans-serif;padding:20px;direction:rtl;background:#fff;color:#333;}';
+    html += 'h1{text-align:center;color:#4E342E;margin-bottom:5px;font-size:18px;}';
+    html += '.report-date{text-align:center;color:#666;font-size:12px;margin-bottom:20px;}';
+    html += '.summary{background:#efebe9;border:2px solid #d7ccc8;border-radius:10px;padding:12px;margin-bottom:16px;}';
+    html += '.summary b{color:#333;}';
+    html += 'table{width:100%;border-collapse:collapse;font-size:11px;}';
+    html += 'th{background:#4E342E;color:white;padding:8px 6px;text-align:right;border:1px solid #3E2723;}';
+    html += 'td{border:1px solid #ddd;padding:6px;text-align:right;}';
+    html += 'tr:nth-child(even){background:#f9f9f9;}';
+    html += '.num{text-align:left;white-space:nowrap;font-weight:600;}';
+    html += '.st-debit{color:#e65100;font-weight:700;}';
+    html += '.st-credit{color:#00695c;font-weight:700;}';
+    html += '.st-zero{color:#888;}';
+    html += '@media print{body{padding:0;}h1{font-size:14px;}table{font-size:10px;}}';
+    html += '</style></head><body>';
+    html += '<h1>📊 گزارش حسابداری</h1>';
+    html += '<div class="report-date">عنوان: ' + escapeHtml(titleStr) + ' — تاریخ تولید: ' + jalaliDate + '</div>';
+    html += body.innerHTML;
+    html += '</body></html>';
+    return html;
+}
+
+function generateAccReportJSON() {
+    const body = document.getElementById('accReportResultsBody');
+    const rows = JSON.parse(body.dataset.reportData || '[]');
+    const titleStr = body.dataset.reportTitle || '';
+    return JSON.stringify({
+        type: 'accounting_report',
+        generatedAt: new Date().toISOString(),
+        title: titleStr,
+        count: rows.length,
+        rows: rows
+    }, null, 2);
+}
+
+function saveAccReportHTML() {
+    const ts = getReportTimestamp();
+    const html = generateAccReportHTML();
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'AccountingReport_' + ts + '.html';
+    a.style.display = 'none';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 2000);
+    showToast('گزارش HTML ذخیره شد ✓');
+}
+
+function saveAccReportPDF() {
+    const html = generateAccReportHTML();
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) { showToast('باز کردن پنجره چاپ مسدود شد'); return; }
+    printWindow.document.write(html);
+    printWindow.document.close();
+    setTimeout(function() { printWindow.print(); }, 300);
+    showToast('برای ذخیره PDF، در پنجره چاپ «Save as PDF» را انتخاب کنید');
+}
+
+function saveAccReportJSON() {
+    const ts = getReportTimestamp();
+    const json = generateAccReportJSON();
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'AccountingReport_' + ts + '.json';
+    a.style.display = 'none';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 2000);
+    showToast('گزارش JSON ذخیره شد ✓');
+}
+
+// استفاده از مودال انتخاب فرمت موجود (reportFormatOverlay)
+// با تغییر _reportFormatMode و callback سفارشی
+let _accReportFormatMode = null;
+function saveAccReportPrompt() {
+    _accReportFormatMode = 'save';
+    // استفاده از مودال موجود
+    _reportFormatMode = null;
+    _reportFormatSelected = null;
+    document.getElementById('reportFormatTitle').textContent = '💾 ذخیره گزارش حسابداری';
+    document.querySelectorAll('.report-format-option').forEach(function(el) { el.classList.remove('selected'); });
+    document.getElementById('reportFormatConfirmBtn').disabled = true;
+    document.getElementById('reportFormatOverlay').classList.add('active');
+    // Override confirm handler temporarily — با یک فلگ
+    _accFormatPending = 'save';
+}
+
+function shareAccReportPrompt() {
+    _accReportFormatMode = 'share';
+    _reportFormatMode = null;
+    _reportFormatSelected = null;
+    document.getElementById('reportFormatTitle').textContent = '📤 ارسال گزارش حسابداری';
+    document.querySelectorAll('.report-format-option').forEach(function(el) { el.classList.remove('selected'); });
+    document.getElementById('reportFormatConfirmBtn').disabled = true;
+    document.getElementById('reportFormatOverlay').classList.add('active');
+    _accFormatPending = 'share';
+}
+
+let _accFormatPending = null;
+let _origConfirmReportFormat = null;
+// Hook در confirmReportFormat: اگر _accFormatPending تنظیم شده، مسیر حسابداری اجرا شود
+function _accConfirmReportFormatHook() {
+    if (_accFormatPending && _reportFormatSelected) {
+        const format = _reportFormatSelected;
+        const mode = _accFormatPending;
+        document.getElementById('reportFormatOverlay').classList.remove('active');
+        _accFormatPending = null;
+        _reportFormatSelected = null;
+        _reportFormatMode = null;
+        if (mode === 'save') {
+            if (format === 'html') saveAccReportHTML();
+            else if (format === 'pdf') saveAccReportPDF();
+            else if (format === 'json') saveAccReportJSON();
+        } else {
+            accShareReportFile(format);
+        }
+        return true;
+    }
+    return false;
+}
+
+function accShareReportFile(format) {
+    const ts = getReportTimestamp();
+    let blob, fileName, mimeType;
+    if (format === 'html') {
+        const html = generateAccReportHTML();
+        blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        fileName = 'AccountingReport_' + ts + '.html';
+        mimeType = 'text/html';
+    } else if (format === 'pdf') {
+        const html = generateAccReportHTML();
+        blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        fileName = 'AccountingReport_' + ts + '.html';
+        mimeType = 'text/html';
+        showToast('برای PDF، فایل HTML ارسال می‌شود — گیرنده می‌تواند آن را چاپ و PDF کند');
+    } else {
+        const json = generateAccReportJSON();
+        blob = new Blob([json], { type: 'application/json' });
+        fileName = 'AccountingReport_' + ts + '.json';
+        mimeType = 'application/json';
+    }
+    const file = new File([blob], fileName, { type: mimeType });
+    if (navigator.share) {
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            navigator.share({
+                title: 'گزارش حسابداری',
+                text: '📊 گزارش حسابداری',
+                files: [file]
+            }).catch(function() { downloadBlob(blob, fileName); });
+        } else {
+            downloadBlob(blob, fileName);
+        }
+    } else {
+        downloadBlob(blob, fileName);
+        showToast('مرورگر از اشتراک‌گذاری پشتیبانی نمی‌کند — فایل دانلود شد');
+    }
+}
+
+function printAccReport() {
+    const html = generateAccReportHTML();
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) { showToast('باز کردن پنجره چاپ مسدود شد'); return; }
+    printWindow.document.write(html);
+    printWindow.document.close();
+    setTimeout(function() { printWindow.print(); }, 300);
+}
+
 // ─── منوی همبرگری هدر (v209) ───
+
+// 🔧 v210 (الزام کاربر): لمس دوبارهٔ ☰ در هدر اصلی، منوی باز را «می‌بندد»
+function toggleHamburgerMenu() {
+    const ov = document.getElementById('hamburgerMenuOverlay');
+    if (ov && ov.classList.contains('active')) {
+        closeHamburgerMenu();
+    } else {
+        openHamburgerMenu();
+    }
+}
 
 function openHamburgerMenu() {
     const ov = document.getElementById('hamburgerMenuOverlay');
@@ -16696,6 +18772,23 @@ function selectReportFormat(format) {
 // 🔧 تأیید انتخاب — اجرای عملیات
 function confirmReportFormat() {
     if (!_reportFormatSelected) return;
+    // 🔧 v211: اگر مودال برای گزارش حسابداری باز شده، مسیر جداگانه اجرا شود
+    if (typeof _accFormatPending !== 'undefined' && _accFormatPending) {
+        const format = _reportFormatSelected;
+        const mode = _accFormatPending;
+        document.getElementById('reportFormatOverlay').classList.remove('active');
+        _accFormatPending = null;
+        _reportFormatSelected = null;
+        _reportFormatMode = null;
+        if (mode === 'save') {
+            if (format === 'html') saveAccReportHTML();
+            else if (format === 'pdf') saveAccReportPDF();
+            else if (format === 'json') saveAccReportJSON();
+        } else {
+            accShareReportFile(format);
+        }
+        return;
+    }
     const format = _reportFormatSelected;
     const mode = _reportFormatMode;
     // بستن مودال
@@ -16717,6 +18810,8 @@ function cancelReportFormat() {
     document.getElementById('reportFormatOverlay').classList.remove('active');
     _reportFormatSelected = null;
     _reportFormatMode = null;
+    // 🔧 v211: ریست فلگ حسابداری هم (در صورت لغو توسط کاربر)
+    if (typeof _accFormatPending !== 'undefined') _accFormatPending = null;
 }
 
 // 🔧 ذخیره فایل — مودال زیبا
