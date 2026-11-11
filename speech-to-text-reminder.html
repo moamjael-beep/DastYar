@@ -1653,6 +1653,48 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   🔧 v213 — تقویم بازهٔ تاریخی + منوی زیبای حساب + لمس رکورد
+   ════════════════════════════════════════════════════════════════════ */
+/* فیلد تاریخ قابل لمس (تقویم) — از/تا */
+.acc-date-field {
+    flex: 1; min-width: 0;
+    background: #fafafa; border: 1.5px solid #ccc; border-radius: 8px;
+    padding: 9px 10px; font-size: 13px; color: #333; cursor: pointer;
+    display: flex; align-items: center; gap: 8px; min-height: 40px; box-sizing: border-box;
+}
+.acc-date-field:active { background: #fff; }
+.acc-date-field.has-value { border-color: #4E342E; background: #fff; font-weight: 600; }
+/* ردیف دکمه‌های تقویم (پاک کردن + بستن) */
+.acc-picker-btn-row { display: flex; gap: 8px; margin-top: 10px; }
+.acc-picker-btn-row button { flex: 1; width: auto; margin-top: 0; }
+.acc-picker-clear-btn {
+    border: 1px solid #ffcc80; border-radius: 10px; padding: 11px;
+    background: #fff3e0; color: #e65100; font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+}
+/* بج بخش در منوی انتخاب حساب */
+.acc-node-badge {
+    flex-shrink: 0;
+    font-size: 10px; font-weight: 700; padding: 3px 8px;
+    border-radius: 10px; color: #4E342E; background: #efebe9;
+    white-space: nowrap;
+}
+.acc-node-badge.b-assets      { color: #1565c0; background: #e3f2fd; }
+.acc-node-badge.b-liabilities { color: #c62828; background: #ffebee; }
+.acc-node-badge.b-equity      { color: #2e7d32; background: #e8f5e9; }
+/* ردیف نتیجهٔ جستجو — لمس‌پذیر برای ویرایش (v213) */
+.acc-search-result-row { cursor: pointer; }
+.acc-search-result-row:active { background: #f5f5f5; }
+.acc-search-result-row .acc-search-result-head { display: flex; align-items: center; gap: 8px; }
+.acc-search-result-row .acc-search-result-head .acc-search-result-text { flex: 1; }
+.acc-search-result-row .acc-search-result-edit-hint { flex-shrink: 0; color: #999; font-size: 14px; }
+/* یادداشت راهنمای نتایج */
+.acc-search-results-note {
+    font-size: 10.5px; color: #888; text-align: center;
+    padding: 4px 8px 10px; line-height: 1.8;
+}
+
+/* ════════════════════════════════════════════════════════════════════
    🔧 v211 — جستجو و گزارشات حسابداری
    ════════════════════════════════════════════════════════════════════ */
 /* دکمهٔ ☰ هدر حسابداری */
@@ -5247,11 +5289,15 @@ body.locked .header-actions button {
             <label>📝 متن رکورد</label>
             <input type="text" id="accSearchText" placeholder="بخشی از شرح رکورد...">
 
-            <label>📅 بازهٔ تاریخ ایجاد</label>
+            <!-- 🔧 v213 (الزام کاربر): بازهٔ تاریخی با تقویم شمسی انتخاب می‌شود -->
+            <label>📅 بازهٔ تاریخ ایجاد (با تقویم)</label>
             <div class="acc-search-date-row">
-                <input type="text" id="accSearchDateFrom" placeholder="از (۱۴۰۴/۰۱/۰۱)">
-                <input type="text" id="accSearchDateTo" placeholder="تا (۱۴۰۴/۱۲/۲۹)">
+                <div class="acc-date-field" id="accSearchDateFromField" onclick="accOpenDatePicker('accSearchDateFrom')">— از تاریخ —</div>
+                <div class="acc-date-field" id="accSearchDateToField" onclick="accOpenDatePicker('accSearchDateTo')">— تا تاریخ —</div>
             </div>
+            <!-- مقدار واقعی (شمسی jy/jm/jd) در input مخفی نگهداری می‌شود -->
+            <input type="text" id="accSearchDateFrom" style="display:none;">
+            <input type="text" id="accSearchDateTo" style="display:none;">
 
             <label>👤 شخص</label>
             <div class="acc-person-field" id="accSearchPersonField" onclick="accOpenSearchPersonPicker()">— بدون شخص —</div>
@@ -5285,12 +5331,13 @@ body.locked .header-actions button {
                 <option value="equity">سرمایه</option>
             </select>
 
-            <label>📁 گروه / زیرگروه</label>
-            <div class="acc-search-node-row">
-                <select id="accSearchGroup"><option value="">— همهٔ گروه‌ها —</option></select>
-                <select id="accSearchSubgroup"><option value="">— همهٔ زیرگروه‌ها —</option></select>
-            </div>
-            <div class="acc-search-node-hint" id="accSearchNodeHint">ابتدا یک بخش انتخاب کنید تا گروه‌هایش بارگذاری شود.</div>
+            <!-- 🔧 v213 (الزام کاربر): انتخاب حساب (گروه/زیرگروه) با منوی زیبا —
+                 select فقط نگهدارندهٔ مقدار است -->
+            <label>📁 حساب (گروه / زیرگروه)</label>
+            <div class="acc-person-field" id="accSearchGroupField" onclick="accOpenGroupPicker('search')">— همهٔ حساب‌ها —</div>
+            <select id="accSearchGroup" style="display:none;"><option value="">— همهٔ گروه‌ها —</option></select>
+            <div class="acc-person-field" id="accSearchSubgroupField" onclick="accOpenSubgroupPicker('search')">— همهٔ زیرگروه‌ها —</div>
+            <select id="accSearchSubgroup" style="display:none;"><option value="">— همهٔ زیرگروه‌ها —</option></select>
         </div>
         <div class="acc-form-buttons">
             <button type="button" class="acc-btn-cancel" onclick="closeAccSearch()">انصراف</button>
@@ -5323,11 +5370,14 @@ body.locked .header-actions button {
             <label>📝 متن رکورد</label>
             <input type="text" id="accReportText" placeholder="بخشی از شرح رکورد...">
 
-            <label>📅 بازهٔ تاریخ ایجاد</label>
+            <!-- 🔧 v213 (الزام کاربر): بازهٔ تاریخی با تقویم شمسی -->
+            <label>📅 بازهٔ تاریخ ایجاد (با تقویم)</label>
             <div class="acc-search-date-row">
-                <input type="text" id="accReportDateFrom" placeholder="از (۱۴۰۴/۰۱/۰۱)">
-                <input type="text" id="accReportDateTo" placeholder="تا (۱۴۰۴/۱۲/۲۹)">
+                <div class="acc-date-field" id="accReportDateFromField" onclick="accOpenDatePicker('accReportDateFrom')">— از تاریخ —</div>
+                <div class="acc-date-field" id="accReportDateToField" onclick="accOpenDatePicker('accReportDateTo')">— تا تاریخ —</div>
             </div>
+            <input type="text" id="accReportDateFrom" style="display:none;">
+            <input type="text" id="accReportDateTo" style="display:none;">
 
             <label>👤 شخص</label>
             <div class="acc-person-field" id="accReportPersonField" onclick="accOpenReportPersonPicker()">— بدون شخص —</div>
@@ -5359,12 +5409,12 @@ body.locked .header-actions button {
                 <option value="equity">سرمایه</option>
             </select>
 
-            <label>📁 گروه / زیرگروه</label>
-            <div class="acc-search-node-row">
-                <select id="accReportGroup"><option value="">— همهٔ گروه‌ها —</option></select>
-                <select id="accReportSubgroup"><option value="">— همهٔ زیرگروه‌ها —</option></select>
-            </div>
-            <div class="acc-search-node-hint" id="accReportNodeHint">ابتدا یک بخش انتخاب کنید تا گروه‌هایش بارگذاری شود.</div>
+            <!-- 🔧 v213 (الزام کاربر): انتخاب حساب با منوی زیبا -->
+            <label>📁 حساب (گروه / زیرگروه)</label>
+            <div class="acc-person-field" id="accReportGroupField" onclick="accOpenGroupPicker('report')">— همهٔ حساب‌ها —</div>
+            <select id="accReportGroup" style="display:none;"><option value="">— همهٔ گروه‌ها —</option></select>
+            <div class="acc-person-field" id="accReportSubgroupField" onclick="accOpenSubgroupPicker('report')">— همهٔ زیرگروه‌ها —</div>
+            <select id="accReportSubgroup" style="display:none;"><option value="">— همهٔ زیرگروه‌ها —</option></select>
 
             <label>🗂️ سطح گزارش (وقتی شخص انتخاب نشده)</label>
             <select id="accReportLevel">
@@ -5404,6 +5454,45 @@ body.locked .header-actions button {
         <input id="accSearchPersonSearchInput" placeholder="جستجوی نام یا شرکت..." oninput="accRenderSearchPersonList()">
         <div class="acc-picker-list" id="accSearchPersonList"></div>
         <button type="button" class="acc-picker-close" onclick="accCloseSearchPersonPicker()">بستن</button>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     🔧 v213 (الزام کاربر): تقویم شمسی برای انتخاب بازهٔ تاریخی در
+     فرم‌های جستجو و گزارش — بوتام‌شیت با تقویم + پاک کردن + بستن.
+     accDatePickTarget مشخص می‌کند مقدار در کدام input مخفی نوشته شود.
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="acc-picker-overlay" id="accDatePickerOverlay">
+    <div class="acc-picker-card">
+        <div class="acc-picker-title" id="accDatePickerTitle">انتخاب تاریخ</div>
+        <div class="acc-date-display" id="accDatePickerDisplay">—</div>
+        <div class="acc-cal" id="accDatePickerCal"></div>
+        <div class="acc-picker-btn-row">
+            <button type="button" class="acc-picker-clear-btn" onclick="accClearDatePicker()">پاک کردن</button>
+            <button type="button" class="acc-picker-close" onclick="accCloseDatePicker()">بستن</button>
+        </div>
+    </div>
+</div>
+
+<!-- 🔧 v213 (الزام کاربر): منوی زیبای انتخاب حساب (گروه/زیرگروه) —
+     لیست درختی همهٔ حساب‌های موجود (با تورفتگی) + جستجو + بج بخش.
+     اگر بخش «همهٔ بخش‌ها» باشد، با انتخاب حساب، بخش به‌طور خودکار تنظیم می‌شود. -->
+<div class="acc-picker-overlay" id="accGroupPickerOverlay">
+    <div class="acc-picker-card">
+        <div class="acc-picker-title">انتخاب حساب (گروه / زیرگروه)</div>
+        <input id="accGroupPickerSearch" placeholder="جستجوی نام حساب..." oninput="accRenderGroupPickerList()">
+        <div class="acc-picker-list" id="accGroupPickerList"></div>
+        <button type="button" class="acc-picker-close" onclick="accCloseGroupPicker()">بستن</button>
+    </div>
+</div>
+
+<!-- 🔧 v213 (الزام کاربر): منوی زیبای انتخاب زیرگروه — زیرگروه‌های
+     حساب انتخاب‌شده (در هر عمق) -->
+<div class="acc-picker-overlay" id="accSubgroupPickerOverlay">
+    <div class="acc-picker-card">
+        <div class="acc-picker-title">انتخاب زیرگروه</div>
+        <div class="acc-picker-list" id="accSubgroupPickerList"></div>
+        <button type="button" class="acc-picker-close" onclick="accCloseSubgroupPicker()">بستن</button>
     </div>
 </div>
 
@@ -6605,7 +6694,24 @@ body.locked .header-actions button {
 //               state.type و topType) ببندد. رفع: accCloseHamburgerSilent
 //               (closeModalByType بدون navBack) + navReplace در openAccSearch/
 //               openAccReport — انتقال اتمیک بدون ساخت popstate.
-const APP_VERSION = 'v212-2026-11-11-accounting-mic-hamburger-bell';
+//
+//         🔧 v213 (۱۴۰۵ آبان ۲۰) — سه الزام کاربر:
+//            ۱) تیترهای جدول گزارش نهایی اصلاح شد — ترتیب دقیق:
+//               ردیف / تاریخ / شرح / سند / حساب / بدهکار / بستانکار / مانده / وضعیت
+//               («شرح رکورد» → «شرح»؛ «گروه/زیرگروه» → «حساب»).
+//            ۲) بازهٔ تاریخی در فرم‌های جستجو و گزارش با تقویم شمسی انتخاب
+//               می‌شود (accDatePickerOverlay — بوتام‌شیت با تقویم accCalRender
+//               + پاک کردن + بستن). با لمس روز، مقدار jy/jm/jd در input مخفی
+//               ثبت و تقویم بسته می‌شود (cal.__onPick در accCalRender).
+//            ۳) انتخاب حساب (گروه/زیرگروه) با منوی زیبا (accGroupPickerOverlay
+//               با جستجو + بج بخش + تورفتگی درختی) و زیرگروه
+//               (accSubgroupPickerOverlay). اگر بخش «همه» باشد، با انتخاب
+//               حساب، بخش خودکار تنظیم می‌شود. select مخفی نگهدارندهٔ مقدار.
+//            ۴) با لمس هر رکورد در نتایج جستجو، فرم ویرایش همان رکورد روی
+//               نتایج باز می‌شود (row.onclick → accOpenRecordForm)؛ بعد از
+//               ذخیره/حذف، نتایج با accRerenderSearchResultsIfOpen تازه‌سازی
+//               می‌شود (بدون دست‌زدن به تاریخچه).
+const APP_VERSION = 'v213-2026-11-11-acc-report-cal-edit';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -11693,6 +11799,10 @@ function closeModalByType(type) {
         'accReport': 'accReportOverlay',
         'accReportResults': 'accReportResultsOverlay',
         'accSearchPersonPicker': 'accSearchPersonPickerOverlay',
+        // 🔧 v213: تقویم بازهٔ تاریخی + منوی زیبای حساب/زیرگروه
+        'accDatePicker': 'accDatePickerOverlay',
+        'accGroupPicker': 'accGroupPickerOverlay',
+        'accSubgroupPicker': 'accSubgroupPickerOverlay',
     }[type];
     if (overlayId) {
         const el = document.getElementById(overlayId);
@@ -12001,6 +12111,10 @@ function isAnyOverlayOpen() {
         'accReportOverlay',
         'accReportResultsOverlay',
         'accSearchPersonPickerOverlay',
+        // 🔧 v213: تقویم + منوی حساب/زیرگروه
+        'accDatePickerOverlay',
+        'accGroupPickerOverlay',
+        'accSubgroupPickerOverlay',
     ];
     for (var i = 0; i < staticOverlays.length; i++) {
         var el = document.getElementById(staticOverlays[i]);
@@ -14536,7 +14650,8 @@ function handleAddButtonClick() {
             _isVisible('accPersonPickerOverlay') || _isVisible('accHamburgerOverlay') ||
             _isVisible('accSearchOverlay') || _isVisible('accSearchResultsOverlay') ||
             _isVisible('accReportOverlay') || _isVisible('accReportResultsOverlay') ||
-            _isVisible('accSearchPersonPickerOverlay')) return;
+            _isVisible('accSearchPersonPickerOverlay') || _isVisible('accDatePickerOverlay') ||
+            _isVisible('accGroupPickerOverlay') || _isVisible('accSubgroupPickerOverlay')) return;
         accAddDoc();
         return;
     }
@@ -16804,6 +16919,9 @@ function accCloseRecordForm() {
     accFormSide = null;
     closeModalByType('accRecordForm');
     navBack();
+    // 🔧 v213 (الزام کاربر): اگر نتایج جستجو باز است، بعد از ویرایش/ذخیره/
+    // حذف رکورد تازه‌سازی شود تا متن/مبلغ/شخص تغییرکرده دیده شود.
+    accRerenderSearchResultsIfOpen();
 }
 
 // ─── منوی زیبای انتخاب شخص (الزام کاربر v210) ───
@@ -16978,6 +17096,11 @@ function accCalRender(containerId, cal, displayId) {
         cell.onclick = function() {
             cal.jd = d;
             accCalRender(containerId, cal, displayId);
+            // 🔧 v213: callback اختیاری روی خود cal — انتخابگر بازهٔ تاریخی
+            // جستجو/گزارش با لمس روز بلافاصله مقدار را ثبت و تقویم را می‌بندد.
+            if (typeof cal.__onPick === 'function') {
+                try { cal.__onPick(); } catch(e) { console.error('onPick', e); }
+            }
         };
         grid.appendChild(cell);
     }
@@ -17318,15 +17441,16 @@ function accCloseHamburgerSilent() {
 function openAccSearch() {
     // ریست فیلدها
     document.getElementById('accSearchText').value = '';
-    document.getElementById('accSearchDateFrom').value = '';
-    document.getElementById('accSearchDateTo').value = '';
+    // 🔧 v213: بازهٔ تاریخی با تقویم — فیلدهای نمایشی هم ریست شوند
+    accResetDateFieldPair('accSearch');
     document.getElementById('accSearchContact').value = '';
     document.getElementById('accSearchAmountMode').value = 'all';
     document.getElementById('accSearchAmount').value = '';
     document.getElementById('accSearchSection').value = 'all';
     document.getElementById('accSearchGroup').innerHTML = '<option value="">— همهٔ گروه‌ها —</option>';
     document.getElementById('accSearchSubgroup').innerHTML = '<option value="">— همهٔ زیرگروه‌ها —</option>';
-    document.getElementById('accSearchNodeHint').textContent = 'ابتدا یک بخش انتخاب کنید تا گروه‌هایش بارگذاری شود.';
+    // 🔧 v213: فیلدهای نمایشی حساب/زیرگروه هم ریست شوند
+    accResetNodeFields('search');
     document.getElementById('accSearchScopeQuestion').style.display = 'none';
     _accSearchScope = 'all';
     // 🔧 v211 (bugfix): populate the hidden <select> with contact options so that
@@ -17336,7 +17460,9 @@ function openAccSearch() {
     accUpdateSearchPersonField();
     // وقتی بخش تغییر کرد، گروه‌های همان بخش بارگذاری شود
     document.getElementById('accSearchSection').onchange = function() {
-        accLoadGroupsForSection('accSearchSection', 'accSearchGroup', 'accSearchSubgroup', 'accSearchNodeHint');
+        accLoadGroupsForSection('accSearchSection', 'accSearchGroup', 'accSearchSubgroup', null);
+        // 🔧 v213: فیلدهای نمایشی حساب/زیرگروه ریست شوند (بخش عوض شد)
+        accResetNodeFields('search');
         // 🔧 v211: سؤال دامنه را هم به‌روز کن (اگر شخص انتخاب شده)
         const id = document.getElementById('accSearchContact').value;
         if (id) accMaybeAskScope('search', id);
@@ -17370,15 +17496,16 @@ function closeAccSearch() {
 
 function openAccReport() {
     document.getElementById('accReportText').value = '';
-    document.getElementById('accReportDateFrom').value = '';
-    document.getElementById('accReportDateTo').value = '';
+    // 🔧 v213: بازهٔ تاریخی با تقویم
+    accResetDateFieldPair('accReport');
     document.getElementById('accReportContact').value = '';
     document.getElementById('accReportAmountMode').value = 'all';
     document.getElementById('accReportAmount').value = '';
     document.getElementById('accReportSection').value = 'all';
     document.getElementById('accReportGroup').innerHTML = '<option value="">— همهٔ گروه‌ها —</option>';
     document.getElementById('accReportSubgroup').innerHTML = '<option value="">— همهٔ زیرگروه‌ها —</option>';
-    document.getElementById('accReportNodeHint').textContent = 'ابتدا یک بخش انتخاب کنید تا گروه‌هایش بارگذاری شود.';
+    // 🔧 v213: فیلدهای نمایشی حساب/زیرگروه
+    accResetNodeFields('report');
     document.getElementById('accReportLevel').value = 'record';
     document.getElementById('accReportScopeQuestion').style.display = 'none';
     _accReportScope = 'all';
@@ -17386,7 +17513,9 @@ function openAccReport() {
     accPopulateContactSelect('accReportContact');
     accUpdateReportPersonField();
     document.getElementById('accReportSection').onchange = function() {
-        accLoadGroupsForSection('accReportSection', 'accReportGroup', 'accReportSubgroup', 'accReportNodeHint');
+        accLoadGroupsForSection('accReportSection', 'accReportGroup', 'accReportSubgroup', null);
+        // 🔧 v213: فیلدهای نمایشی حساب/زیرگروه ریست شوند
+        accResetNodeFields('report');
         // 🔧 v211: سؤال دامنه را هم به‌روز کن
         const id = document.getElementById('accReportContact').value;
         if (id) accMaybeAskScope('report', id);
@@ -17579,6 +17708,333 @@ function accPickSearchPerson(id) {
 function accUpdateSearchPersonField() { accUpdateSharedPersonField('accSearchPersonField', document.getElementById('accSearchContact').value); }
 function accUpdateReportPersonField() { accUpdateSharedPersonField('accReportPersonField', document.getElementById('accReportContact').value); }
 
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v213 (الزام کاربر): تقویم شمسی برای بازهٔ تاریخی جستجو/گزارش
+// ════════════════════════════════════════════════════════════════════
+// یک تقویم مشترک (accDatePickerOverlay) برای هر ۴ فیلد: search/report ×
+// from/to. accDatePickTarget = id فیلد مخفی؛ با لمس روز، مقدار jy/jm/jd
+// در input مخفی ثبت، فیلد نمایشی به‌روز و تقویم بسته می‌شود.
+let accDatePickTarget = null;
+let accDatePickCal = { jy: null, jm: null, jd: null };
+
+function accOpenDatePicker(fieldId) {
+    const hidden = document.getElementById(fieldId);
+    if (!hidden) return;
+    accDatePickTarget = fieldId;
+    // مقدار فعلی یا امروز
+    let p = null;
+    if (hidden.value) {
+        const ms = parseJalaliDate(hidden.value);
+        if (ms) p = toJalaliParts(new Date(ms));
+    }
+    if (!p) p = toJalaliParts(new Date());
+    accDatePickCal = { jy: p[0], jm: p[1], jd: p[2] };
+    accDatePickCal.__onPick = accDatePickerOnPick;
+    const isFrom = fieldId.indexOf('From') !== -1;
+    document.getElementById('accDatePickerTitle').textContent = isFrom ? 'انتخاب تاریخ «از»' : 'انتخاب تاریخ «تا»';
+    accCalRender('accDatePickerCal', accDatePickCal, 'accDatePickerDisplay');
+    const ov = document.getElementById('accDatePickerOverlay');
+    if (!ov || ov.classList.contains('active')) return;
+    ov.classList.add('active');
+    bringToFront(ov);
+    navPush({ view: 'modal', type: 'accDatePicker' });
+    trackModalOpen('accDatePicker');
+}
+
+function accDatePickerOnPick() {
+    if (!accDatePickTarget) return;
+    const jy = accDatePickCal.jy, jm = accDatePickCal.jm, jd = accDatePickCal.jd;
+    const hidden = document.getElementById(accDatePickTarget);
+    if (hidden) hidden.value = jy + '/' + jm + '/' + jd;
+    const fld = document.getElementById(accDatePickTarget + 'Field');
+    if (fld) {
+        fld.textContent = '📅 ' + jalaliMonths[jm - 1] + ' ' + toPersianNumber(jd) + ' ' + toPersianNumber(jy);
+        fld.classList.add('has-value');
+    }
+    accCloseDatePicker();
+}
+
+function accClearDatePicker() {
+    if (!accDatePickTarget) return;
+    const hidden = document.getElementById(accDatePickTarget);
+    if (hidden) hidden.value = '';
+    const fld = document.getElementById(accDatePickTarget + 'Field');
+    if (fld) {
+        fld.textContent = (accDatePickTarget.indexOf('From') !== -1) ? '— از تاریخ —' : '— تا تاریخ —';
+        fld.classList.remove('has-value');
+    }
+    accCloseDatePicker();
+}
+
+function accCloseDatePicker() {
+    const ov = document.getElementById('accDatePickerOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    closeModalByType('accDatePicker');
+    navBack();
+}
+
+// ریست هر جفت فیلد تاریخ فرم (openAccSearch / openAccReport)
+function accResetDateFieldPair(prefix) {
+    ['From', 'To'].forEach(function(suffix) {
+        const id = prefix + 'Date' + suffix;
+        const hidden = document.getElementById(id);
+        if (hidden) hidden.value = '';
+        const fld = document.getElementById(id + 'Field');
+        if (fld) {
+            fld.textContent = (suffix === 'From') ? '— از تاریخ —' : '— تا تاریخ —';
+            fld.classList.remove('has-value');
+        }
+    });
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v213 (الزام کاربر): منوی زیبای انتخاب حساب (گروه/زیرگروه)
+// بوتام‌شیت با جستجو + بج بخش + تورفتگی درختی. اگر بخش «همه» باشد و
+// کاربر حسابی انتخاب کند، بخش به‌طور خودکار تنظیم می‌شود تا فیلتر معنا
+// داشته باشد. select مخفی همچنان نگهدارندهٔ مقدار است (accReadFormCriteria
+// دست‌نخورده می‌ماند).
+// ════════════════════════════════════════════════════════════════════
+let _accGroupPickCtx = null; // 'search' | 'report'
+let _accSubPickCtx = null;   // 'search' | 'report'
+
+function accPickCtxIds(ctx) {
+    const p = (ctx === 'report') ? 'accReport' : 'accSearch';
+    return {
+        sectionSelId: p + 'Section',
+        groupSelId: p + 'Group',
+        groupFldId: p + 'GroupField',
+        subSelId: p + 'Subgroup',
+        subFldId: p + 'SubgroupField',
+        contactSelId: p + 'Contact'
+    };
+}
+
+function accOpenGroupPicker(ctx) {
+    const ov = document.getElementById('accGroupPickerOverlay');
+    if (!ov || ov.classList.contains('active')) return;
+    _accGroupPickCtx = ctx || 'search';
+    document.getElementById('accGroupPickerSearch').value = '';
+    accRenderGroupPickerList();
+    ov.classList.add('active');
+    bringToFront(ov);
+    navPush({ view: 'modal', type: 'accGroupPicker' });
+    trackModalOpen('accGroupPicker');
+}
+
+function accCloseGroupPicker() {
+    const ov = document.getElementById('accGroupPickerOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    closeModalByType('accGroupPicker');
+    navBack();
+}
+
+function accRenderGroupPickerList() {
+    const list = document.getElementById('accGroupPickerList');
+    if (!list) return;
+    const ctx = _accGroupPickCtx || 'search';
+    const ids = accPickCtxIds(ctx);
+    const selVal = document.getElementById(ids.groupSelId).value;
+    const qRaw = document.getElementById('accGroupPickerSearch').value || '';
+    const q = normalizeContactRefText(qRaw);
+    list.innerHTML = '';
+    // گزینهٔ «همهٔ حساب‌ها» — اول
+    const noneRow = document.createElement('div');
+    noneRow.className = 'acc-person-row';
+    noneRow.innerHTML = '<span class="acc-person-avatar" style="background:#bbb;">Σ</span>' +
+        '<span><div class="p-name">— همهٔ حساب‌ها —</div></span>' +
+        (selVal ? '' : '<span class="p-check">✓</span>');
+    noneRow.onclick = function() { accPickGroupPickerId(''); };
+    list.appendChild(noneRow);
+    const db = getAccounting();
+    const sectionVal = document.getElementById(ids.sectionSelId).value;
+    // جمع‌آوری گره‌ها (بخش مشخص یا همهٔ بخش‌ها)
+    const nodes = [];
+    const sections = (!sectionVal || sectionVal === 'all') ? ACC_SECTIONS : [sectionVal];
+    sections.forEach(function(k) {
+        const flat = [];
+        accFlattenNodes(db.groups[k], 0, flat);
+        flat.forEach(function(n) { nodes.push({ node: n, section: k, depth: n.depth }); });
+    });
+    const filtered = q ? nodes.filter(function(x) {
+        return normalizeContactRefText(x.node.name).indexOf(q) !== -1;
+    }) : nodes;
+    if (filtered.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'acc-hint';
+        empty.style.padding = '14px';
+        empty.textContent = 'حسابی پیدا نشد — ابتدا در بخش حسابداری گروه بسازید';
+        list.appendChild(empty);
+        return;
+    }
+    filtered.forEach(function(x) {
+        const row = document.createElement('div');
+        row.className = 'acc-person-row';
+        const indent = (new Array(x.depth + 1)).join('↳ ');
+        row.innerHTML = '<span class="acc-node-badge b-' + x.section + '">' + ACC_SECTION_NAMES[x.section] + '</span>' +
+            '<span><div class="p-name">' + escapeHtml(indent + x.node.name) + '</div></span>' +
+            (selVal === x.node.id ? '<span class="p-check">✓</span>' : '');
+        row.onclick = function() { accPickGroupPickerId(x.node.id, x.section); };
+        list.appendChild(row);
+    });
+}
+
+function accPickGroupPickerId(id, nodeSection) {
+    const ctx = _accGroupPickCtx || 'search';
+    const ids = accPickCtxIds(ctx);
+    const sSel = document.getElementById(ids.sectionSelId);
+    // اگر بخش «همه» بود و حسابی انتخاب شد → بخش خودکار تنظیم شود
+    if (id && nodeSection && sSel.value !== nodeSection) {
+        sSel.value = nodeSection;
+        accLoadGroupsForSection(ids.sectionSelId, ids.groupSelId, ids.subSelId, null);
+        const cid = document.getElementById(ids.contactSelId).value;
+        if (cid) accMaybeAskScope(ctx, cid);
+    }
+    document.getElementById(ids.groupSelId).value = id || '';
+    // 🔧 v213 (bugfix): زیرگروه‌های select مخفی باید بر اساس حساب جدید
+    // دوباره پر شوند — چون مقدار select به‌صورت برنامه‌ای ست شده، onchange
+    // اجرا نمی‌شود (همان درس v211: بدون option، .value نمی‌ماند).
+    accLoadSubgroupsForGroup(ids.sectionSelId, ids.groupSelId, ids.subSelId);
+    const fld = document.getElementById(ids.groupFldId);
+    if (fld) {
+        if (!id) {
+            fld.innerHTML = '<span class="acc-person-none">— همهٔ حساب‌ها —</span>';
+            fld.classList.remove('has-value');
+        } else {
+            const db = getAccounting();
+            const sec = nodeSection || sSel.value;
+            const n = accFindNode(db.groups[sec], id);
+            fld.innerHTML = '<span class="acc-person-avatar">📁</span>' +
+                '<span class="acc-person-name">' + escapeHtml(n ? n.name : '—') + '</span>' +
+                '<span class="acc-person-x" title="برداشتن حساب">✕</span>';
+            fld.classList.add('has-value');
+            fld.querySelector('.acc-person-x').onclick = function(ev) {
+                ev.stopPropagation();
+                accPickGroupPickerId('');
+            };
+        }
+    }
+    // زیرگروه هم ریست شود
+    accResetSubgroupField(ctx);
+    accCloseGroupPicker();
+}
+
+// ریست فیلد نمایشی زیرگروه (+ مقدار select)
+function accResetSubgroupField(ctx) {
+    const ids = accPickCtxIds(ctx);
+    const sSel = document.getElementById(ids.subSelId);
+    if (sSel) sSel.value = '';
+    const sFld = document.getElementById(ids.subFldId);
+    if (sFld) {
+        sFld.innerHTML = '<span class="acc-person-none">— همهٔ زیرگروه‌ها —</span>';
+        sFld.classList.remove('has-value');
+    }
+}
+
+// ریست هر دو فیلد حساب/زیرگروه فرم (openAccSearch / openAccReport + تغییر بخش)
+function accResetNodeFields(ctx) {
+    const ids = accPickCtxIds(ctx);
+    const gSel = document.getElementById(ids.groupSelId);
+    if (gSel) gSel.value = '';
+    const gFld = document.getElementById(ids.groupFldId);
+    if (gFld) {
+        gFld.innerHTML = '<span class="acc-person-none">— همهٔ حساب‌ها —</span>';
+        gFld.classList.remove('has-value');
+    }
+    accResetSubgroupField(ctx);
+}
+
+function accOpenSubgroupPicker(ctx) {
+    const ov = document.getElementById('accSubgroupPickerOverlay');
+    if (!ov || ov.classList.contains('active')) return;
+    _accSubPickCtx = ctx || 'search';
+    accRenderSubgroupPickerList();
+    ov.classList.add('active');
+    bringToFront(ov);
+    navPush({ view: 'modal', type: 'accSubgroupPicker' });
+    trackModalOpen('accSubgroupPicker');
+}
+
+function accCloseSubgroupPicker() {
+    const ov = document.getElementById('accSubgroupPickerOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    closeModalByType('accSubgroupPicker');
+    navBack();
+}
+
+function accRenderSubgroupPickerList() {
+    const list = document.getElementById('accSubgroupPickerList');
+    if (!list) return;
+    const ctx = _accSubPickCtx || 'search';
+    const ids = accPickCtxIds(ctx);
+    const selVal = document.getElementById(ids.subSelId).value;
+    list.innerHTML = '';
+    const noneRow = document.createElement('div');
+    noneRow.className = 'acc-person-row';
+    noneRow.innerHTML = '<span class="acc-person-avatar" style="background:#bbb;">Σ</span>' +
+        '<span><div class="p-name">— همهٔ زیرگروه‌ها —</div></span>' +
+        (selVal ? '' : '<span class="p-check">✓</span>');
+    noneRow.onclick = function() { accPickSubgroupPickerId(''); };
+    list.appendChild(noneRow);
+    const sectionVal = document.getElementById(ids.sectionSelId).value;
+    const groupId = document.getElementById(ids.groupSelId).value;
+    if (!sectionVal || sectionVal === 'all' || !groupId) {
+        const hint = document.createElement('div');
+        hint.className = 'acc-hint';
+        hint.style.padding = '14px';
+        hint.textContent = 'ابتدا حساب را انتخاب کنید تا زیرگروه‌هایش نمایش داده شود';
+        list.appendChild(hint);
+        return;
+    }
+    const db = getAccounting();
+    const gNode = accFindNode(db.groups[sectionVal], groupId);
+    if (!gNode || !gNode.children || gNode.children.length === 0) {
+        const hint = document.createElement('div');
+        hint.className = 'acc-hint';
+        hint.style.padding = '14px';
+        hint.textContent = 'این حساب زیرگروهی ندارد';
+        list.appendChild(hint);
+        return;
+    }
+    const flat = [];
+    accFlattenNodes(gNode.children, 0, flat);
+    flat.forEach(function(n) {
+        const row = document.createElement('div');
+        row.className = 'acc-person-row';
+        const indent = (new Array(n.depth + 1)).join('↳ ');
+        row.innerHTML = '<span class="acc-node-badge">' + ACC_SECTION_NAMES[sectionVal] + '</span>' +
+            '<span><div class="p-name">' + escapeHtml(indent + n.name) + '</div></span>' +
+            (selVal === n.id ? '<span class="p-check">✓</span>' : '');
+        row.onclick = function() { accPickSubgroupPickerId(n.id); };
+        list.appendChild(row);
+    });
+}
+
+function accPickSubgroupPickerId(id) {
+    const ctx = _accSubPickCtx || 'search';
+    const ids = accPickCtxIds(ctx);
+    document.getElementById(ids.subSelId).value = id || '';
+    const fld = document.getElementById(ids.subFldId);
+    if (fld) {
+        if (!id) {
+            fld.innerHTML = '<span class="acc-person-none">— همهٔ زیرگروه‌ها —</span>';
+            fld.classList.remove('has-value');
+        } else {
+            const db = getAccounting();
+            const sec = document.getElementById(ids.sectionSelId).value;
+            const n = accFindNode(db.groups[sec], id);
+            fld.innerHTML = '<span class="acc-person-avatar">↳</span>' +
+                '<span class="acc-person-name">' + escapeHtml(n ? n.name : '—') + '</span>' +
+                '<span class="acc-person-x" title="برداشتن زیرگروه">✕</span>';
+            fld.classList.add('has-value');
+            fld.querySelector('.acc-person-x').onclick = function(ev) {
+                ev.stopPropagation();
+                accPickSubgroupPickerId('');
+            };
+        }
+    }
+    accCloseSubgroupPicker();
+}
+
 function accUpdateSharedPersonField(fieldId, id) {
     const field = document.getElementById(fieldId);
     if (!field) return;
@@ -17745,6 +18201,9 @@ function accReadFormCriteria(prefix) {
 
 // ─── اجرای جستجو ───
 
+// آخرین معیارهای جستجو — برای تازه‌سازی نتایج بعد از ویرایش رکورد (v213)
+let _lastAccSearchCriteria = null;
+
 function executeAccSearch() {
     const criteria = accReadFormCriteria('accSearch');
     const records = accFilterRecords(criteria);
@@ -17754,14 +18213,21 @@ function executeAccSearch() {
     // accShowSearchResults با navReplace ورودی تاریخچهٔ accSearch را با
     // accSearchResults جایگزین می‌کند تا Back موبایل پس از بستن نتایج،
     // مستقیم به حسابداری برگردد (نه به فرم جستجوی بسته‌شده).
+    _lastAccSearchCriteria = criteria;
     closeModalByType('accSearch');
     accShowSearchResults(records, criteria);
 }
 
-function accShowSearchResults(records, criteria) {
+// پرکردن بدنهٔ نتایج جستجو — جدا از باز کردن overlay تا بعد از ویرایش
+// رکورد هم بدون دست‌زدن به تاریخچه قابل تازه‌سازی باشد (v213)
+function accFillSearchResults(records) {
     const body = document.getElementById('accSearchResultsBody');
     document.getElementById('accSearchResultsCount').textContent = toPersianNumber(records.length) + ' رکورد';
     body.innerHTML = '';
+    const note = document.createElement('div');
+    note.className = 'acc-search-results-note';
+    note.textContent = '👆 برای ویرایش هر رکورد، روی آن لمس کنید';
+    body.appendChild(note);
     const db = getAccounting();
     if (records.length === 0) {
         const empty = document.createElement('div');
@@ -17775,6 +18241,17 @@ function accShowSearchResults(records, criteria) {
             body.appendChild(accBuildSearchResultRow(r, db));
         });
     }
+}
+
+// تازه‌سازی نتایج جستجو اگر باز است (بعد از ویرایش/حذف رکورد از فرم)
+function accRerenderSearchResultsIfOpen() {
+    if (!(_isVisible('accSearchResultsOverlay') && _lastAccSearchCriteria)) return;
+    const records = accFilterRecords(_lastAccSearchCriteria);
+    accFillSearchResults(records);
+}
+
+function accShowSearchResults(records, criteria) {
+    accFillSearchResults(records);
     const ov = document.getElementById('accSearchResultsOverlay');
     try {
         const header = document.querySelector('.header');
@@ -17802,10 +18279,19 @@ function accBuildSearchResultRow(r, db) {
         guard++;
     }
     const contact = r.contactId ? getContactById(r.contactId) : null;
+    // 🔧 v213 (الزام کاربر): با لمس هر رکورد، فرم ویرایش همان رکورد باز شود
+    const head = document.createElement('div');
+    head.className = 'acc-search-result-head';
     const txt = document.createElement('div');
     txt.className = 'acc-search-result-text';
     txt.textContent = r.text || '(بدون شرح)';
-    row.appendChild(txt);
+    head.appendChild(txt);
+    const editHint = document.createElement('span');
+    editHint.className = 'acc-search-result-edit-hint';
+    editHint.textContent = '✏️';
+    editHint.title = 'ویرایش رکورد';
+    head.appendChild(editHint);
+    row.appendChild(head);
     const meta = document.createElement('div');
     meta.className = 'acc-search-result-meta';
     meta.innerHTML = '📅 ' + accDateStr(r.createdAt) +
@@ -17831,6 +18317,10 @@ function accBuildSearchResultRow(r, db) {
     sideTag.textContent = (r.side === 'debit') ? 'بدهکار' : 'بستانکار';
     tags.appendChild(sideTag);
     row.appendChild(tags);
+    // 🔧 v213: لمس ردیف → فرم ویرایش رکورد (روی نتایج جستجو باز می‌شود)
+    row.onclick = function() {
+        accOpenRecordForm(r.docId, r.section, r.groupId, r.id);
+    };
     return row;
 }
 
@@ -17988,11 +18478,13 @@ function accShowReportResults(records, criteria, level) {
         const table = document.createElement('table');
         table.className = 'acc-report-table';
         // سرستون‌ها
+        // 🔧 v213 (الزام کاربر): ترتیب و نام دقیق ستون‌ها:
+        //   ردیف / تاریخ / شرح / سند / حساب / بدهکار / بستانکار / مانده / وضعیت
         const thead = document.createElement('thead');
         let headHtml = '<tr>';
         headHtml += '<th>ردیف</th>';
         if (criteria.contactId) {
-            headHtml += '<th>تاریخ</th><th>شرح رکورد</th><th>سند</th><th>گروه/زیرگروه</th>';
+            headHtml += '<th>تاریخ</th><th>شرح</th><th>سند</th><th>حساب</th>';
         } else {
             headHtml += '<th>' + (level === 'section' ? 'بخش' : (level === 'subgroup' ? 'زیرگروه' : (level === 'group' ? 'گروه' : 'شرح'))) + '</th>';
             headHtml += '<th>تعداد رکورد</th>';

@@ -11,10 +11,10 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v212 — ۱۴۰۵ آبان ۲۰
-#  نسخهٔ فعلی کد:  APP_VERSION = v212-2026-11-11-accounting-mic-hamburger-bell
-#                  CACHE_NAME  = yadavar-cache-v212
-#                  version.txt = v212-2026-11-11-accounting-mic-hamburger-bell
+#  آخرین به‌روزرسانی: v213 — ۱۴۰۵ آبان ۲۰
+#  نسخهٔ فعلی کد:  APP_VERSION = v213-2026-11-11-acc-report-cal-edit
+#                  CACHE_NAME  = yadavar-cache-v213
+#                  version.txt = v213-2026-11-11-acc-report-cal-edit
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -720,6 +720,36 @@
 #
 #   (نسخه‌های مفصل از v204 به بعد؛ قدیمی‌ها خلاصه. changelog کامل
 #    تفصیلی در سرآیند HTML موجود است.)
+#
+### v213 (۱۴۰۵ آبان ۲۰) — سه الزام کاربر: تیتر جدول + تقویم + منوی حساب + ویرایش از نتایج
+#   ۱) «در گزارش نهایی حسابداری تیترهای جدول … اصلاح شود» → ترتیب دقیق:
+#      ردیف / تاریخ / شرح / سند / حساب / بدهکار / بستانکار / مانده / وضعیت
+#      («شرح رکورد»→«شرح»؛ «گروه/زیرگروه»→«حساب»).
+#   ۲) «بازه تاریخی با تقویم انتخاب شود» → accDatePickerOverlay
+#      (بوتام‌شیت با تقویم accCalRender + «پاک کردن» + «بستن») برای ۴ فیلد
+#      search/report × from/to. مقدار jy/jm/jd در input مخفی؛ hook
+#      cal.__onPick در accCalRender (backward-compatible) بلافاصله ثبت و
+#      بستن می‌کند. فیلتر تاریخ (accReadFormCriteria→parseJalaliDate)
+#      دست‌نخورده — فقط ورودی مخفی تغییر کرده.
+#   ۳) «انتخاب گروه‌ها و زیرگروه‌ها با منویی زیبا» → accGroupPickerOverlay
+#      (جستجو + بج بخش + تورفتگی درختی + گزینهٔ «همهٔ حساب‌ها») و
+#      accSubgroupPickerOverlay (زیرگروه‌های حساب انتخاب‌شده). اگر بخش
+#      «همه» باشد و حسابی انتخاب شود، بخش خودکار تنظیم می‌شود.
+#      bugfix: بعد از انتخاب حساب، accLoadSubgroupsForGroup صریح صدا زده
+#      می‌شود (برنامه‌ای set کردن select، onchange را نمی‌سازد — درس v211).
+#   ۴) «بعد از جستجو با لمس هر رکورد آن رکورد جهت ویرایش باز شود» →
+#      row.onclick → accOpenRecordForm(docId, section, groupId, id)؛ فرم
+#      روی نتایج باز می‌شود (navPush/trackModalOpen استاندارد). بعد از
+#      ذخیره/حذف/انصراف، accCloseRecordForm → accRerenderSearchResultsIfOpen
+#      (refactor: accFillSearchResults جدا شد؛ _lastAccSearchCriteria).
+#   - closeModalByType + isAnyOverlayOpen + handleAddButtonClick: ۳ overlay
+#     جدید (accDatePicker/accGroupPicker/accSubgroupPicker).
+#   - CSS جدید: .acc-date-field (+has-value)، .acc-picker-btn-row/
+#     .acc-picker-clear-btn، .acc-node-badge (+b-assets/liabilities/equity)،
+#     .acc-search-result-row (cursor/:active) + .acc-search-result-head/
+#     .acc-search-result-edit-hint، .acc-search-results-note.
+#   - سوئیت جدید: test_accounting_v213.mjs (۸ تست D1-D5) — ۸/۸ سبز.
+#     رگرسیون: v211 14/14 + v212 5/5 + v209 18/18 + v208 11/11 — همه سبز.
 #
 ### v212 (۱۴۰۵ آبان ۲۰) — سه اصلاح کاربر: میکروفون رکورد + حذف نقطهٔ زنگوله + bugfix منوی همبرگری
 #   کاربر (۳ مورد):
