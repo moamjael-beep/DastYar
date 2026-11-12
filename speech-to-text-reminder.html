@@ -4525,6 +4525,8 @@ body.locked .header-actions button {
     <span class="credit-sep">&amp;</span>
     <span class="credit-names">Emad Tavakoli</span>
     <span class="credit-version" id="creditVersion"></span>
+    <!-- 🔧 v220: تنظیمات موتور تشخیص صوت (آنلاین گوگل / آفلاین روی دستگاه) -->
+    <button id="osttOpenBtn" onclick="OfflineSTT.openPanel()" title="موتور تشخیص صوت (آنلاین/آفلاین)" style="background:none;border:1px solid #ddd;border-radius:10px;padding:2px 8px;font-size:11px;color:#666;cursor:pointer;font-family:inherit;">🎙 صوت</button>
 </div>
 
 <div class="modal-overlay" id="modalOverlay">
@@ -6945,7 +6947,33 @@ body.locked .header-actions button {
 //               نشد — فقط با شواهد مستند شد.
 //            تست: test_accounting_v219.mjs (۱۰ تست T1-T10، پورت ۸۱۹۹) +
 //               test_voice_pipeline_v219.mjs (۵ تست V1-V5، پورت ۸۱۹۸).
-const APP_VERSION = 'v219-2026-11-12-doc-name-edit-format';
+//
+//         🔧 v220 (۱۴۰۵ آبان ۲۲) — الزام کاربر:
+//            «آیا مدل آفلاینی از تشخیص صوت به متن می‌توانی پیدا کنی یا کدش
+//            را پیدا کنی در گیت‌هاب یا هرجای اینترنت که به برنامه اضافه تا
+//            از گوگل دیگر استفاده نکنیم»:
+//            موتور تشخیص صوت آفلاین Whisper (OpenAI) با Transformers.js
+//            (github.com/huggingface/transformers.js — الگوی xenova/whisper-web)
+//            اضافه شد — اجرای ۱۰۰٪ روی دستگاه با WASM؛ هیچ صدایی به گوگل
+//            یا هر سرور دیگری نمی‌رود. ماژول OfflineSTT (بخش جدید پیش از
+//            startRecording): ضبط با MediaRecorder → تبدیل به مونو ۱۶kHz →
+//            Worker (کد Blob — ساختار فایل تکی حفظ می‌شود) → Whisper با
+//            dtype q8 و زبان fa. سه مدل انتخابی: tiny ~۴۳MB / base ~۸۰MB /
+//            small ~۲۵۰MB؛ کش خودکار مدل در Cache Storage (transformers-cache)
+//            — اولین دانلود با اینترنت، پس از آن کاملاً آفلاین. پنل «🎙 صوت»
+//            در فوتر کِرِیدیت: انتخاب موتور (آنلاین گوگل / آفلاین دستگاه)،
+//            انتخاب مدل، دانلود با نوار پیشرفت، حذف مدل. هر ۴ میکروفون
+//            برنامه (یادآور / شرح سند / متن رکورد / یادداشت) هوک شدند:
+//            لمس 🎤 = شروع ضبط، لمس دوباره = پایان و تبدیل؛ متن با
+//            addNumericAfterWords در همان فیلد قبلی نوشته می‌شود (قواعد
+//            v180 یادداشت: تاریخ/کرسر، از مسیر اصلی toggleNotesRecording).
+//            ⚠️ قانون صفر: پیش‌فرض موتور = «آنلاین (گوگل)» — همهٔ مسیرهای
+//            SpeechRecognition قبلی دست‌نخورده؛ هوک‌ها فقط وقتی فعال
+//            می‌شوند که کاربر خودش موتور را روی «آفلاین» گذاشته باشد.
+//            capture پس‌زمینهٔ v203 هنگام ضبط آفلاین اصلی skip می‌شود
+//            (MediaRecorder خودش پس‌زمینه را ضبط می‌کند).
+//            تست: test_offline_stt_v220.mjs — ۱۰ تست Y1-Y10، پورت ۸۲۰۰.
+const APP_VERSION = 'v220-2026-11-12-offline-stt-whisper';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -9846,6 +9874,9 @@ function showBackgroundAudioNotice(captured) {
 // مدت صدا و دکمهٔ پخش نمایش داده می‌شود.
 let _lastVisibilityRestart = 0;
 async function handleRecordingVisibilityChange() {
+    // 🔧 v220: ضبط آفلاین با MediaRecorder خودش در پس‌زمینه ادامه می‌دهد —
+    // capture پس‌زمینهٔ v203 و restart گوگلی برای آن لازم نیست
+    if (window.OfflineSTT && OfflineSTT.isMainRecording()) return;
     if (document.hidden) {
         // صفحه hidden شد — SpeechRecognition متوقف می‌شود؛ MediaRecorder صدا را ثبت می‌کند
         console.log('[Recording] Page hidden — recognition may pause; capturing audio via MediaRecorder');
@@ -9889,7 +9920,591 @@ async function handleRecordingVisibilityChange() {
     } catch(e) { console.warn('[Recording] stopBgAudio failed:', e); }
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v220 (الزام کاربر): موتور تشخیص صوت آفلاین — بدون گوگل، روی دستگاه
+// ════════════════════════════════════════════════════════════════════
+// درخواست کاربر: «آیا مدل آفلاینی از تشخیص صوت به متن می‌توانی پیدا کنی
+// یا کدش را پیدا کنی در گیت‌هاب یا هرجای اینترنت که به برنامه اضافه تا
+// از گوگل دیگر استفاده نکنیم»
+//
+// ✅ راه‌حل انتخاب‌شده (بررسی‌شده از گیت‌هاب و اینترنت):
+//   Whisper (OpenAI) نسخهٔ ONNX + کتابخانهٔ Transformers.js (huggingface)
+//   — منبع کد: github.com/huggingface/transformers.js و github.com/xenova/whisper-web
+//   — اجرای ۱۰۰٪ روی دستگاه (WASM) — هیچ صدایی به هیچ سروری نمی‌رود
+//   — سه مدل قابل انتخاب: tiny (~۴۳MB) / base (~۸۰MB) / small (~۲۵۰MB)
+//   — زبان: فارسی (fa) — اولین دانلود با اینترنت، بعد از آن کاملاً آفلاین
+//   — کش خودکار مدل در Cache Storage مرورگر (transformers-cache)
+//   — سازگاری: Chrome/Edge (دسکتاپ و اندروید)
+//
+// ⚠️ قانون صفر (بدون بازگشت): وقتی موتور «آنلاین (گوگل)» انتخاب شده باشد
+//   (پیش‌فرض)، همهٔ مسیرهای قبلی SpeechRecognition دست‌نخورده اجرا
+//   می‌شوند. این ماژول فقط وقتی فعال می‌شود که کاربر خودش موتور را روی
+//   «آفلاین» گذاشته باشد. همهٔ هوک‌ها با `if (window.OfflineSTT && ...)`
+//   محافظت شده‌اند و با موتور آنلاین بلافاصله false برمی‌گردانند.
+//
+// جریان کار هر ۴ میکروفون برنامه (یادآور / شرح سند / متن رکورد / یادداشت):
+//   لمس 🎤 → شروع ضبط با MediaRecorder — لمس دوباره → پایان ضبط →
+//   تبدیل با Whisper روی دستگاه → متن با همان قوانین قبلی (تبدیل اعداد
+//   گفتاری با addNumericAfterWords) در همان فیلد قبلی نوشته می‌شود.
+// ════════════════════════════════════════════════════════════════════
+window.OfflineSTT = (function() {
+    var ENGINE_KEY = 'yadavar_stt_engine_v1';        // 'online' | 'offline'
+    var MODEL_KEY  = 'yadavar_stt_model_v1';
+    var READY_KEY  = 'yadavar_stt_offline_ready_v1'; // = شناسهٔ مدل وقتی آماده است
+    var CDN = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/transformers.min.js';
+    var MODELS = {
+        'onnx-community/whisper-tiny':  { label: 'سریع (tiny)',   mb: '۴۳'  },
+        'onnx-community/whisper-base':  { label: 'متعادل (base)', mb: '۸۰'  },
+        'onnx-community/whisper-small': { label: 'دقیق (small)',  mb: '۲۵۰' }
+    };
+    var FLOWS = {
+        main:   { btn: 'addBtn',      label: 'یادآور' },
+        accDoc: { btn: 'accDocMicBtn', target: 'accDocDesc', label: 'شرح سند',  append: false },
+        accRec: { btn: 'accRecMicBtn', target: 'accRecText', label: 'متن رکورد', append: true  },
+        notes:  { btn: 'notesMicBtn',  label: 'یادداشت' }
+    };
+
+    var _worker = null;
+    var _pending = null;      // انتظار برای نتیجهٔ transcribe
+    var _pendingLoad = null;  // انتظار برای آماده‌شدن مدل
+    var _busy = false;        // در حال تبدیل صدا به متن
+    var _activeFlow = null;   // 'main' | 'accDoc' | 'accRec' | 'notes'
+    var _recorder = null, _stream = null, _chunks = [], _mime = '';
+    var _msgId = 1;
+    var _fileMap = {};        // پیشرفت دانلود هر فایل مدل
+    var _loadHandlers = [];   // کال‌بک‌های پیشرفت پنل
+    var _testTranscribe = null; // فقط برای تست‌های Playwright — جایگزین تبدیل واقعی
+
+    // ─── تنظیمات ماندگار ───
+    function getEngine() {
+        try { return localStorage.getItem(ENGINE_KEY) === 'offline' ? 'offline' : 'online'; }
+        catch(e) { return 'online'; }
+    }
+    function setEngine(v) {
+        try { localStorage.setItem(ENGINE_KEY, v === 'offline' ? 'offline' : 'online'); } catch(e) {}
+        refreshPanel();
+    }
+    function getModel() {
+        try {
+            var m = localStorage.getItem(MODEL_KEY);
+            return (m && MODELS[m]) ? m : 'onnx-community/whisper-tiny';
+        } catch(e) { return 'onnx-community/whisper-tiny'; }
+    }
+    function setModel(m) {
+        if (!MODELS[m]) return;
+        try { localStorage.setItem(MODEL_KEY, m); } catch(e) {}
+        refreshPanel();
+    }
+    function isReady() {
+        try { return localStorage.getItem(READY_KEY) === getModel(); } catch(e) { return false; }
+    }
+
+    // ─── Worker: Transformers.js + Whisper (کد داخل Blob — فایل تکی می‌ماند) ───
+    var _WORKER_SRC =
+        'import { pipeline, env } from "' + CDN + '";\n' +
+        'env.allowLocalModels = false;\n' +
+        'var asr = null, currentModel = null, loading = null;\n' +
+        'function ensure(model) {\n' +
+        '  if (asr && currentModel === model) return Promise.resolve(asr);\n' +
+        '  if (loading && currentModel === model) return loading;\n' +
+        '  currentModel = model;\n' +
+        '  loading = pipeline("automatic-speech-recognition", model, {\n' +
+        '    dtype: "q8", device: "wasm",\n' +
+        '    progress_callback: function(p) {\n' +
+        '      self.postMessage({ type: "progress", data: { status: p.status, file: p.file, loaded: p.loaded, total: p.total } });\n' +
+        '    }\n' +
+        '  }).then(function(p) { asr = p; return p; })\n' +
+        '    .catch(function(e) { loading = null; currentModel = null; throw e; });\n' +
+        '  return loading;\n' +
+        '}\n' +
+        'self.onmessage = async function(e) {\n' +
+        '  var d = e.data || {};\n' +
+        '  if (d.type === "load") {\n' +
+        '    try { await ensure(d.model); self.postMessage({ type: "loaded", id: d.id }); }\n' +
+        '    catch(err) { self.postMessage({ type: "error", id: d.id, message: String(err && err.message || err) }); }\n' +
+        '    return;\n' +
+        '  }\n' +
+        '  if (d.type === "transcribe") {\n' +
+        '    try {\n' +
+        '      var p = await ensure(d.model);\n' +
+        '      var out = await p(d.audio, { language: "fa", task: "transcribe", chunk_length_s: 30, stride_length_s: 5 });\n' +
+        '      self.postMessage({ type: "result", id: d.id, text: String((out && out.text) || "").trim() });\n' +
+        '    } catch(err) {\n' +
+        '      self.postMessage({ type: "error", id: d.id, message: String(err && err.message || err) });\n' +
+        '    }\n' +
+        '  }\n' +
+        '};\n';
+
+    function ensureWorker() {
+        if (_worker) return _worker;
+        var blob = new Blob([_WORKER_SRC], { type: 'text/javascript' });
+        _worker = new Worker(URL.createObjectURL(blob), { type: 'module' });
+        _worker.onmessage = function(ev) {
+            var d = ev.data || {};
+            if (d.type === 'progress') { notifyProgress(d.data); return; }
+            if (d.type === 'loaded') {
+                if (_pendingLoad) { var r = _pendingLoad.resolve; _pendingLoad = null; r(); }
+                return;
+            }
+            if (d.type === 'result') {
+                if (_pending) { var p = _pending; _pending = null; p.resolve(d.text || ''); }
+                return;
+            }
+            if (d.type === 'error') {
+                var msg = d.message || 'خطای نامشخص';
+                if (_pendingLoad) { var rj = _pendingLoad.reject; _pendingLoad = null; rj(new Error(msg)); }
+                if (_pending) { var p2 = _pending; _pending = null; p2.reject(new Error(msg)); }
+            }
+        };
+        _worker.onerror = function(e) {
+            var msg = (e && e.message) ? e.message : 'خطای Worker';
+            if (_pendingLoad) { var rj2 = _pendingLoad.reject; _pendingLoad = null; rj2(new Error(msg)); }
+            if (_pending) { var p3 = _pending; _pending = null; p3.reject(new Error(msg)); }
+        };
+        return _worker;
+    }
+
+    function loadModel() {
+        return new Promise(function(resolve, reject) {
+            try { ensureWorker(); } catch(e) { reject(e); return; }
+            _pendingLoad = { resolve: resolve, reject: reject };
+            _worker.postMessage({ type: 'load', id: _msgId++, model: getModel() });
+        });
+    }
+
+    function notifyProgress(p) {
+        if (!p || p.status !== 'progress' || !p.total) return;
+        _fileMap[p.file] = [p.loaded, p.total];
+        var loaded = 0, total = 0;
+        for (var k in _fileMap) { loaded += _fileMap[k][0]; total += _fileMap[k][1]; }
+        var pct = total ? Math.min(100, Math.round(loaded / total * 100)) : 0;
+        _loadHandlers.forEach(function(fn) { try { fn(pct); } catch(e) {} });
+    }
+
+    // ─── ضبط با MediaRecorder (همان مجوزی که SpeechRecognition می‌گرفت) ───
+    function pickMime() {
+        if (!window.MediaRecorder) return '';
+        var cands = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'];
+        for (var i = 0; i < cands.length; i++) {
+            try { if (MediaRecorder.isTypeSupported(cands[i])) return cands[i]; } catch(e) {}
+        }
+        return '';
+    }
+
+    async function startCapture() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error('getUserMedia در دسترس نیست');
+        }
+        _stream = await navigator.mediaDevices.getUserMedia({
+            audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true }
+        });
+        _chunks = [];
+        _mime = pickMime();
+        _recorder = _mime ? new MediaRecorder(_stream, { mimeType: _mime }) : new MediaRecorder(_stream);
+        _recorder.ondataavailable = function(e) { if (e.data && e.data.size > 0) _chunks.push(e.data); };
+        _recorder.start(1000);
+    }
+
+    function stopCaptureAsync() {
+        return new Promise(function(resolve) {
+            if (!_recorder) { resolve(null); return; }
+            var rec = _recorder, stream = _stream;
+            _recorder = null; _stream = null;
+            var done = false;
+            // 🔧 v220 bugfix: chunk ها همیشه در _chunks جمع می‌شوند (هندلر
+            // ondataavailable به نام _chunks ارجاع می‌دهد)؛ خواندن/خالی‌کردن
+            // فقط در finish — وگرنه chunk آخرِ stop گم و blob خالی می‌شد.
+            var finish = function() {
+                if (done) return; done = true;
+                var chunks = _chunks; _chunks = [];
+                try { if (stream) stream.getTracks().forEach(function(t) { t.stop(); }); } catch(e) {}
+                resolve(chunks.length ? new Blob(chunks, { type: rec.mimeType || 'audio/webm' }) : null);
+            };
+            rec.onstop = finish;
+            try { rec.stop(); } catch(e) { finish(); }
+            setTimeout(finish, 2500); // اطمینان — اگر onstop نیامد
+        });
+    }
+
+    function cancelCapture() {
+        try { if (_recorder) { _recorder.onstop = null; _recorder.stop(); } } catch(e) {}
+        try { if (_stream) _stream.getTracks().forEach(function(t) { t.stop(); }); } catch(e) {}
+        _recorder = null; _stream = null; _chunks = [];
+    }
+
+    // ─── تبدیل webm/opus → Float32Array مونو ۱۶kHz (ورودی Whisper) ───
+    async function blobTo16kMono(blob) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) throw new Error('AudioContext در دسترس نیست');
+        var ab = await blob.arrayBuffer();
+        var tmp = new AC();
+        var decoded = await tmp.decodeAudioData(ab);
+        try { if (tmp.state !== 'closed') tmp.close(); } catch(e) {}
+        var dur = decoded.duration;
+        if (!isFinite(dur) || dur < 0.3) return null; // خیلی کوتاه
+        var frames = Math.min(Math.max(1, Math.ceil(dur * 16000)), 16000 * 600); // سقف ۱۰ دقیقه
+        var off = new OfflineAudioContext(1, frames, 16000);
+        var src = off.createBufferSource();
+        src.buffer = decoded;
+        src.connect(off.destination);
+        src.start(0);
+        var rendered = await off.startRendering();
+        return rendered.getChannelData(0);
+    }
+
+    function transcribeAudio(blob) {
+        if (_testTranscribe) return _testTranscribe(blob);
+        return blobTo16kMono(blob).then(function(audio) {
+            if (!audio) return '';
+            var w = ensureWorker();
+            return new Promise(function(resolve, reject) {
+                _pending = { resolve: resolve, reject: reject };
+                var copy = new Float32Array(audio);
+                w.postMessage({ type: 'transcribe', id: _msgId++, audio: copy, model: getModel() }, [copy.buffer]);
+            });
+        });
+    }
+
+    // ─── CSS و روکش «در حال تبدیل» ───
+    function ensureCss() {
+        if (document.getElementById('ostt-css')) return;
+        var st = document.createElement('style');
+        st.id = 'ostt-css';
+        st.textContent =
+            '.ostt-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99998;display:flex;align-items:center;justify-content:center;padding:16px;}' +
+            '.ostt-box{background:#fff;border-radius:14px;padding:16px;width:min(92vw,380px);box-shadow:0 10px 40px rgba(0,0,0,.25);font-family:inherit;}' +
+            '.ostt-btn{border:none;border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;cursor:pointer;}' +
+            '.ostt-btn-primary{background:#1a73e8;color:#fff;}' +
+            '.ostt-btn-danger{background:#fce8e6;color:#c5221f;}' +
+            '.ostt-btn-ghost{background:#f1f3f4;color:#333;}' +
+            '.ostt-eng{flex:1;background:#f1f3f4;color:#333;}' +
+            '.ostt-eng.sel{background:#1a73e8;color:#fff;}' +
+            '.ostt-model-row{display:flex;align-items:center;gap:8px;padding:7px 4px;font-size:13px;}' +
+            '.ostt-bar{height:8px;background:#e8eaed;border-radius:4px;overflow:hidden;}' +
+            '.ostt-bar-fill{height:100%;width:0%;background:#1a73e8;transition:width .3s;}' +
+            '.ostt-busy{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;gap:14px;font-family:inherit;}' +
+            '.ostt-spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:osttspin 1s linear infinite;}' +
+            '@keyframes osttspin{to{transform:rotate(360deg);}}';
+        document.head.appendChild(st);
+    }
+
+    function showBusy(text) {
+        ensureCss();
+        hideBusy();
+        var ov = document.createElement('div');
+        ov.id = 'ostt-busy';
+        ov.className = 'ostt-busy';
+        ov.innerHTML = '<div class="ostt-spinner"></div><div style="font-size:14px;">' + text + '</div>';
+        document.body.appendChild(ov);
+    }
+    function hideBusy() {
+        var el = document.getElementById('ostt-busy');
+        if (el) el.remove();
+    }
+
+    // ─── پنل تنظیمات موتور صوت ───
+    function openPanel() {
+        ensureCss();
+        var old = document.getElementById('ostt-panel');
+        if (old) old.remove();
+        var ov = document.createElement('div');
+        ov.id = 'ostt-panel';
+        ov.className = 'ostt-overlay';
+        var box = document.createElement('div');
+        box.className = 'ostt-box';
+        box.setAttribute('dir', 'rtl');
+        box.innerHTML =
+            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
+              '<b style="font-size:15px;">🎙 موتور تشخیص صوت</b>' +
+              '<button id="ostt-close" class="ostt-btn ostt-btn-ghost">بستن</button>' +
+            '</div>' +
+            '<div style="display:flex;gap:8px;margin-bottom:12px;">' +
+              '<button id="ostt-eng-online" class="ostt-btn ostt-eng">آنلاین (گوگل)</button>' +
+              '<button id="ostt-eng-offline" class="ostt-btn ostt-eng">آفلاین (روی دستگاه)</button>' +
+            '</div>' +
+            '<div style="font-size:12px;color:#555;margin-bottom:2px;">مدل آفلاین (فارسی):</div>' +
+            '<div id="ostt-models"></div>' +
+            '<div id="ostt-status" style="font-size:13px;margin:10px 0;"></div>' +
+            '<div id="ostt-progress-wrap" style="display:none;margin-bottom:10px;">' +
+              '<div class="ostt-bar"><div id="ostt-bar-fill" class="ostt-bar-fill"></div></div>' +
+              '<div id="ostt-progress-text" style="font-size:12px;color:#555;margin-top:4px;"></div>' +
+            '</div>' +
+            '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+              '<button id="ostt-download" class="ostt-btn ostt-btn-primary">دانلود مدل</button>' +
+              '<button id="ostt-delete" class="ostt-btn ostt-btn-danger">حذف مدل</button>' +
+            '</div>' +
+            '<div style="font-size:11px;color:#777;margin-top:10px;line-height:1.8;">' +
+              'اولین دانلود به اینترنت نیاز دارد؛ پس از آن ضبط صوت کاملاً آفلاین و بدون گوگل روی دستگاه شما انجام می‌شود. برای دقت/سرعت بهتر مدل‌های بزرگ‌تر را انتخاب کنید. (Chrome/Edge) — Whisper با Transformers.js' +
+            '</div>';
+        ov.appendChild(box);
+        document.body.appendChild(ov);
+        ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+        box.querySelector('#ostt-close').addEventListener('click', function() { ov.remove(); });
+        box.querySelector('#ostt-eng-online').addEventListener('click', function() { setEngine('online'); });
+        box.querySelector('#ostt-eng-offline').addEventListener('click', function() { setEngine('offline'); });
+        box.querySelector('#ostt-download').addEventListener('click', startDownload);
+        box.querySelector('#ostt-delete').addEventListener('click', deleteModel);
+        refreshPanel();
+    }
+
+    function refreshPanel() {
+        var panel = document.getElementById('ostt-panel');
+        if (!panel) return;
+        var engine = getEngine(), model = getModel(), ready = isReady();
+        panel.querySelector('#ostt-eng-online').classList.toggle('sel', engine === 'online');
+        panel.querySelector('#ostt-eng-offline').classList.toggle('sel', engine === 'offline');
+        var modelsEl = panel.querySelector('#ostt-models');
+        modelsEl.innerHTML = '';
+        for (var id in MODELS) {
+            var row = document.createElement('label');
+            row.className = 'ostt-model-row';
+            var checked = (id === model) ? ' checked' : '';
+            row.innerHTML = '<input type="radio" name="ostt-model" value="' + id + '"' + checked + '> ' +
+                MODELS[id].label + ' <span style="color:#888;font-size:11px;">(~' + MODELS[id].mb + ' مگابایت)</span>';
+            modelsEl.appendChild(row);
+        }
+        modelsEl.querySelectorAll('input[name="ostt-model"]').forEach(function(r) {
+            r.addEventListener('change', function() { setModel(r.value); });
+        });
+        panel.querySelector('#ostt-status').textContent = ready
+            ? '✓ مدل آماده است — ضبط آفلاین فعال'
+            : 'مدل دانلود نشده — برای ضبط آفلاین اول دانلود کنید';
+        panel.querySelector('#ostt-download').textContent = 'دانلود مدل (~' + MODELS[model].mb + ' مگابایت)';
+        panel.querySelector('#ostt-download').style.display = ready ? 'none' : '';
+        panel.querySelector('#ostt-delete').style.display = ready ? '' : 'none';
+        panel.querySelector('#ostt-progress-wrap').style.display = 'none';
+    }
+
+    function startDownload() {
+        var panel = document.getElementById('ostt-panel');
+        if (!panel) return;
+        var wrap = panel.querySelector('#ostt-progress-wrap');
+        var fill = panel.querySelector('#ostt-bar-fill');
+        var ptext = panel.querySelector('#ostt-progress-text');
+        var dlBtn = panel.querySelector('#ostt-download');
+        dlBtn.disabled = true;
+        wrap.style.display = 'block';
+        fill.style.width = '0%';
+        ptext.textContent = 'در حال دانلود مدل… (فقط این یک‌بار اینترنت لازم است)';
+        var onProg = function(pct) {
+            fill.style.width = pct + '%';
+            ptext.textContent = 'در حال دانلود مدل… ' + pct + '٪';
+        };
+        _loadHandlers.push(onProg);
+        loadModel().then(function() {
+            try { localStorage.setItem(READY_KEY, getModel()); } catch(e) {}
+            setEngine('offline');
+            showToast('مدل آفلاین دانلود شد ✓ — ضبط صوت حالا بدون اینترنت و بدون گوگل کار می‌کند');
+        }).catch(function(err) {
+            console.error('[OfflineSTT] download failed:', err);
+            showToast('خطا در دانلود مدل — اینترنت را بررسی کنید و دوباره تلاش کنید');
+        }).then(function() {
+            _loadHandlers = _loadHandlers.filter(function(fn) { return fn !== onProg; });
+            if (panel.parentNode) refreshPanel();
+        });
+    }
+
+    function deleteModel() {
+        if (!confirm('مدل آفلاین حذف شود؟ برای استفادهٔ دوباره باید دوباره دانلود شود.')) return;
+        try { if (window.caches && caches.delete) caches.delete('transformers-cache'); } catch(e) {}
+        try { localStorage.removeItem(READY_KEY); } catch(e) {}
+        setEngine('online');
+        showToast('مدل آفلاین حذف شد — موتور صوت به «آنلاین (گوگل)» برگشت');
+        refreshPanel();
+    }
+
+    // ══════════ هوک‌های ۴ میکروفون برنامه ══════════
+
+    // شروع/پایان ضبط هر جریان — وقتی true برگرداند، مسیر گوگل اجرا نمی‌شود
+    function hookStart(flow) {
+        if (getEngine() !== 'offline') return false;
+        if (_busy) { showToast('در حال تبدیل صدا به متن… چند لحظه صبر کنید'); return true; }
+        if (flow === 'main') {
+            if (_activeFlow === 'main') { finalizeMain(); return true; } // لمس دوباره = پایان
+            if (!isReady()) { openPanel(); showToast('برای ضبط آفلاین، اول مدل را دانلود کنید'); return true; }
+            startMain();
+            return true;
+        }
+        if (_activeFlow && _activeFlow !== flow) {
+            showToast('ابتدا ضبط «' + ((FLOWS[_activeFlow] || {}).label || '') + '» را تمام کنید');
+            return true;
+        }
+        if (_activeFlow === flow) { finalizeField(flow); return true; } // لمس دوباره = پایان
+        if (!isReady()) { openPanel(); showToast('برای ضبط آفلاین، اول مدل را دانلود کنید'); return true; }
+        startField(flow);
+        return true;
+    }
+
+    async function startField(flow) {
+        var cfg = FLOWS[flow];
+        try {
+            await startCapture();
+        } catch(e) {
+            console.error('[OfflineSTT] mic failed:', e);
+            showToast('دسترسی به میکروفون ممکن نشد — در تنظیمات مرورگر اجازه دهید');
+            return;
+        }
+        _activeFlow = flow;
+        var btn = document.getElementById(cfg.btn);
+        if (btn) btn.classList.add('recording');
+        if (flow === 'notes') {
+            // فریز موقعیت کرسر — همان قاعدهٔ v180 مسیر گوگل
+            try {
+                _notesInsertionRange = (_notesSavedRange && document.getElementById('notesContent').contains(_notesSavedRange.commonAncestorContainer))
+                    ? _notesSavedRange.cloneRange() : null;
+            } catch(e) { _notesInsertionRange = null; }
+        }
+        showToast('ضبط آفلاین «' + cfg.label + '» شروع شد — برای پایان دوباره 🎤 را بزنید (بدون گوگل)');
+    }
+
+    async function finalizeField(flow) {
+        var cfg = FLOWS[flow];
+        _activeFlow = null;
+        var btn = document.getElementById(cfg.btn);
+        if (btn) btn.classList.remove('recording');
+        var blob = await stopCaptureAsync();
+        if (!blob || blob.size < 1200) { showToast('صدایی ضبط نشد — دوباره تلاش کنید'); return; }
+        _busy = true;
+        showBusy('در حال تبدیل صدا به متن… (روی دستگاه شما — بدون اینترنت)');
+        try {
+            var text = await transcribeAudio(blob);
+            hideBusy(); _busy = false;
+            if (!text || !text.trim()) {
+                showToast('متنی تشخیص داده نشد — نزدیک‌تر صحبت کنید یا مدل بزرگ‌تر انتخاب کنید');
+                return;
+            }
+            text = addNumericAfterWords(text.trim());
+            if (flow === 'notes') {
+                // متن از همان مسیر توقف اصلی درج می‌شود — همهٔ قوانین تاریخ/کرسر حفظ می‌شود
+                _notesAccumulatedText = text;
+                _notesRecording = true;
+                toggleNotesRecording();
+            } else {
+                var el = document.getElementById(cfg.target);
+                if (!el) return;
+                if (cfg.append) {
+                    var prev = el.value || '';
+                    el.value = (prev.replace(/\s+$/, '') ? prev.replace(/\s+$/, '') + ' ' : '') + text;
+                } else {
+                    el.value = text;
+                }
+                try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch(e) {}
+                showToast('متن آفلاین ثبت شد ✓ (بدون گوگل)');
+            }
+        } catch(err) {
+            hideBusy(); _busy = false;
+            console.error('[OfflineSTT] transcribe failed:', err);
+            showToast('خطا در تبدیل آفلاین: ' + ((err && err.message) || 'نامشخص') + ' — مدل را در تنظیمات دوباره دانلود کنید');
+        }
+    }
+
+    async function startMain() {
+        try {
+            await startCapture();
+        } catch(e) {
+            console.error('[OfflineSTT] mic failed:', e);
+            showToast('دسترسی به میکروفون ممکن نشد — در تنظیمات مرورگر اجازه دهید');
+            return;
+        }
+        _activeFlow = 'main';
+        isRecording = true; // همگام با مسیر گوگل — دکمهٔ + هم به‌عنوان توقف کار می‌کند
+        document.getElementById('recordingSection').style.display = 'block';
+        document.getElementById('formSection').style.display = 'none';
+        document.getElementById('modalTitle').textContent = 'در حال ضبط صوت (آفلاین)';
+        document.getElementById('reRecordBtn').style.display = 'none';
+        document.getElementById('saveBtn').style.display = 'none';
+        document.getElementById('interimText').textContent = 'در حال ضبط آفلاین — بدون گوگل. برای پایان «توقف ضبط» را بزنید';
+        document.getElementById('addBtn').classList.add('recording');
+        var fab = document.getElementById('floatingAddBtn');
+        if (fab) fab.classList.add('recording');
+        acquireRecordingWakeLock();
+        setRecordingMediaSession();
+        showToast('ضبط آفلاین شروع شد — بدون گوگل، بدون اینترنت');
+    }
+
+    async function finalizeMain() {
+        if (_activeFlow !== 'main') return;
+        _activeFlow = null;
+        isRecording = false;
+        document.getElementById('addBtn').classList.remove('recording');
+        var fab = document.getElementById('floatingAddBtn');
+        if (fab) fab.classList.remove('recording');
+        releaseRecordingWakeLock();
+        clearRecordingMediaSession();
+        var blob = await stopCaptureAsync();
+        var text = '';
+        if (blob && blob.size >= 1200) {
+            _busy = true;
+            showBusy('در حال تبدیل صدا به متن… (روی دستگاه شما — بدون اینترنت)');
+            try {
+                text = await transcribeAudio(blob);
+                hideBusy(); _busy = false;
+                if (text && text.trim()) {
+                    document.getElementById('itemText').value = addNumericAfterWords(text.trim());
+                    showToast('متن آفلاین ثبت شد ✓ (بدون گوگل)');
+                } else {
+                    showToast('متنی تشخیص داده نشد — دوباره تلاش کنید یا تایپ کنید');
+                }
+            } catch(err) {
+                hideBusy(); _busy = false;
+                console.error('[OfflineSTT] main transcribe failed:', err);
+                showToast('خطا در تبدیل آفلاین — می‌توانید متن را تایپ کنید');
+            }
+        } else {
+            showToast('صدایی ضبط نشد');
+        }
+        document.getElementById('itemText').value = (text && text.trim()) ? addNumericAfterWords(text.trim()) : '';
+        setTimeout(function() { showFormSection(); }, 250);
+    }
+
+    function hookStopMain() {
+        if (getEngine() !== 'offline') return false;
+        if (_activeFlow !== 'main') return false;
+        finalizeMain();
+        return true;
+    }
+
+    function isMainRecording() {
+        return _activeFlow === 'main';
+    }
+
+    // لغو ضبط (مثلاً بستن فرم حین ضبط) — true یعنی لغو شد
+    function cancelIfActive(flow) {
+        if (_activeFlow !== flow) return false;
+        _activeFlow = null;
+        var btn = document.getElementById((FLOWS[flow] || {}).btn);
+        if (btn) btn.classList.remove('recording');
+        cancelCapture();
+        showToast('ضبط آفلاین لغو شد');
+        return true;
+    }
+
+    // وضعیت داخلی — برای تست‌ها و اشکال‌زدایی
+    function state() {
+        return { engine: getEngine(), model: getModel(), ready: isReady(), activeFlow: _activeFlow, busy: _busy };
+    }
+
+    return {
+        hookStart: hookStart,
+        hookStopMain: hookStopMain,
+        cancelIfActive: cancelIfActive,
+        isMainRecording: isMainRecording,
+        getEngine: getEngine,
+        setEngine: setEngine,
+        getModel: getModel,
+        setModel: setModel,
+        isReady: isReady,
+        openPanel: openPanel,
+        state: state,
+        // فقط برای تست‌های خودکار
+        get _testTranscribe() { return _testTranscribe; },
+        set _testTranscribe(v) { _testTranscribe = v; }
+    };
+})();
+
 function startRecording() {
+    // 🔧 v220: اگر موتور «آفلاین» انتخاب شده باشد، کل ضبط با Whisper روی دستگاه انجام می‌شود
+    if (window.OfflineSTT && OfflineSTT.hookStart('main')) return;
     if (!isSpeechSupported()) {
         showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. لطفاً از Chrome یا Edge استفاده کنید.');
         return;
@@ -9968,6 +10583,8 @@ function startRecording() {
 let _recordingKeepaliveInterval = null;
 
 function stopRecording() {
+    // 🔧 v220: پایان ضبط آفلاین — مسیر گوگل اجرا نشود
+    if (window.OfflineSTT && OfflineSTT.hookStopMain()) return;
     isRecording = false;
     document.getElementById('addBtn').classList.remove('recording');
     // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
@@ -17089,6 +17706,8 @@ function accDocToggleMic() {
 }
 
 function accDocStartRec() {
+    // 🔧 v220: ضبط آفلاین شرح سند — لمس دوباره = پایان و تبدیل
+    if (window.OfflineSTT && OfflineSTT.hookStart('accDoc')) return;
     if (!isSpeechSupported()) {
         showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. لطفاً از Chrome یا Edge استفاده کنید.');
         return;
@@ -17140,6 +17759,8 @@ function accDocStartRec() {
 }
 
 function accDocStopRec() {
+    // 🔧 v220: بستن فرم حین ضبط آفلاین → لغو ضبط
+    try { if (window.OfflineSTT) OfflineSTT.cancelIfActive('accDoc'); } catch(e) {}
     accDocRecActive = false;
     const btn = document.getElementById('accDocMicBtn');
     if (btn) btn.classList.remove('recording');
@@ -17167,6 +17788,8 @@ function accRecToggleMic() {
 }
 
 function accRecStartRec() {
+    // 🔧 v220: ضبط آفلاین متن رکورد — لمس دوباره = پایان و تبدیل
+    if (window.OfflineSTT && OfflineSTT.hookStart('accRec')) return;
     if (!isSpeechSupported()) {
         showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. لطفاً از Chrome یا Edge استفاده کنید.');
         return;
@@ -17219,6 +17842,8 @@ function accRecStartRec() {
 }
 
 function accRecStopRec() {
+    // 🔧 v220: بستن فرم حین ضبط آفلاین → لغو ضبط
+    try { if (window.OfflineSTT) OfflineSTT.cancelIfActive('accRec'); } catch(e) {}
     accRecRecActive = false;
     const btn = document.getElementById('accRecMicBtn');
     if (btn) btn.classList.remove('recording');
@@ -20468,6 +21093,8 @@ function toggleNotesRecording() {
         return;
     }
     // شروع ضبط
+    // 🔧 v220: ضبط آفلاین یادداشت — شروع/پایان با لمس دوبارهٔ میکروفون
+    if (window.OfflineSTT && OfflineSTT.hookStart('notes')) return;
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
         showToast('مرورگر از تشخیص صوت پشتیبانی نمی‌کند');
         return;
