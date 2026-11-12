@@ -11,11 +11,11 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v224 — ۱۴۰۵ آبان ۲۲ (رفع «دکمهٔ دانلود بعد از خطا
-#                   بی‌عکس‌العمل می‌ماند» — disabled reset + Worker terminate)
-#  نسخهٔ فعلی کد:  APP_VERSION = v224-2026-11-12-download-retry-button-fix
-#                  CACHE_NAME  = yadavar-cache-v224
-#                  version.txt = v224-2026-11-12-download-retry-button-fix
+#  آخرین به‌روزرسانی: v225 — ۱۴۰۵ آبان ۲۲ (رفع «نمی‌تونه دانلود کنه» —
+#                   fetch override robust: try/catch fallback + فقط ۲۰۶ + فقط فایل بزرگ)
+#  نسخهٔ فعلی کد:  APP_VERSION = v225-2026-11-12-download-fetch-fallback-robust
+#                  CACHE_NAME  = yadavar-cache-v225
+#                  version.txt = v225-2026-11-12-download-fetch-fallback-robust
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -728,6 +728,18 @@
 #          ۲) refreshPanel: disabled = _downloading (هم‌گام با state واقعی).
 #          ۳) error handler + onerror: Worker terminate() و _worker=null →
 #          تلاش بعدی ensureWorker، Worker تازه می‌سازد.
+#   BA-124 (v225 — الزام کاربر؛ قانون همیشگی) رفع «نمی‌تونه دانلود کنه»:
+#          ریشه‌ها در fetch override v223: ۱) Range request با status 200 (کل
+#          فایل) هم قبول می‌شد و به‌عنوان chunk ذخیره می‌شد → داده خراب؛
+#          ۲) هر خطا در override بدون fallback → Worker error → terminate →
+#          retry → همان خطا → حلقهٔ بی‌نهایت؛ ۳) فایل‌های کوچک (config.json)
+#          هم HEAD+chunk طی می‌کردند → سربار زیاد.
+#          راه‌حل‌ها: ۱) کل fetch override در try/catch — هر خطا → fallback به
+#          _origFetch (دانلود مستقیم بدون resume اما جلو می‌رود)؛
+#          ۲) فقط status 206 (Partial Content) قابل قبول برای Range — اگر 200
+#          برگرداند، fallback به fetch کامل؛ ۳) فقط فایل‌های بزرگ (>۱۰MB) با
+#          chunk دانلود می‌شوند — فایل‌های کوچک مستقیم fetch + کش می‌شوند؛
+#          ۴) لغو کاربر propagate می‌شود (نه fallback).
 #
 # ── ۴.۹) آفلاین و ماندگاری حافظه ──────────────────────────────────
 #   BA-080 همهٔ عملیات داده آفلاین کار کنند؛ فقط ضبط آنلاین است.
@@ -1028,6 +1040,29 @@
 #     «امروز» برخورد می‌کرد و سورت تساوی مبهم می‌شد)؛ ③ N6 انتظارش از
 #     دیتابیسِ همان سندِ درختِ باز محاسبه می‌شود (N4/N5 سندِ باز را عوض
 #     می‌کنند؛ جمع ردیف درخت «جمع همین سند» است — BA-105 الگوی درست).
+#
+### v225 (۱۴۰۵ آبان ۲۲) — رفع «نمی‌تونه دانلود کنه» — fetch override robust
+#   کاربر: «نمی تونه دانلود کنه»
+#   - ریشه‌یابی در fetch override v223:
+#     ۱) Range request با status 200 (کل فایل) هم قبول می‌شد و به‌عنوان chunk
+#     ذخیره می‌شد → داده خراب، دانلود شکست می‌خورد.
+#     ۲) هر خطا در override بدون fallback → Worker error → terminate (v224) →
+#     retry → همان خطا → حلقهٔ بی‌نهایت «can't download».
+#     ۳) فایل‌های کوچک (config.json, tokenizer.json) هم HEAD+chunk طی می‌کردند →
+#     سربار زیاد و احتمال خطا برای فایل‌های کوچک.
+#   - راه‌حل‌ها:
+#     • کل fetch override در try/catch — هر خطا → fallback به _origFetch.
+#     دانلود مستقیم بدون resume اما حداقل جلو می‌رود.
+#     • فقط status 206 (Partial Content) قابل قبول برای Range request — اگر 200
+#     برگرداند، fallback به fetch کامل (نه ذخیره به‌عنوان chunk).
+#     • فقط فایل‌های بزرگ (>۱۰MB) با chunk دانلود می‌شوند — فایل‌های کوچک
+#     مستقیم fetch + کش می‌شوند.
+#     • لغو کاربر propagate می‌شود (نه fallback).
+#   - قانون صفر حفظ شد: همهٔ تست‌های v216-v224 عیناً سبز. صفر pageerror.
+#   - فایل‌های نسخه: APP_VERSION / CACHE_NAME(yadavar-cache-v225) /
+#     version.txt → v225-2026-11-12-download-fetch-fallback-robust.
+#   - سوئیت جدید: test_offline_stt_v225.mjs (۲۳ تست، پورت ۸۲۰۵).
+#     نسخه‌های قدیمی آپدیت شدند: v217-v224 (v.indexOf('v225')).
 #
 ### v224 (۱۴۰۵ آبان ۲۲) — رفع «دکمهٔ دانلود بعد از خطا بی‌عکس‌العمل می‌ماند»
 #   کاربر: «دانلود یک‌بار که خطا می‌دهد دیگر عکس‌العملی ندارد کلیدش و چه در

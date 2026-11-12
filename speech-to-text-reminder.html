@@ -7005,7 +7005,7 @@ body.locked .header-actions button {
 //               ~۷۵۰MB-۱.۵GB) — فقط با WebGPU توصیه می‌شود.
 //            dtype: WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده).
 //            تست: test_offline_stt_v222.mjs — ۱۴ تست Y1-Y14، پورت ۸۲۰۲.
-const APP_VERSION = 'v224-2026-11-12-download-retry-button-fix';
+const APP_VERSION = 'v225-2026-11-12-download-fetch-fallback-robust';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -10160,81 +10160,93 @@ window.OfflineSTT = (function() {
         '  url = String(url);\n' +
         '  if (!HF_URL_RE.test(url)) return _origFetch(url, options);\n' +
         '  _abortFlag = false;\n' +
-        '  // ۱) بررسی Cache Storage برای فایل کامل\n' +
+        '  // 🔧 v225: کل override در try/catch — هر خطا → fallback به _origFetch.\n' +
+        '  // این تضمین می‌کند که حتی اگر chunked download شکست بخورد، دانلود\n' +
+        '  // اصلی هنوز کار می‌کند (بدون resume اما حداقل جلو می‌رود).\n' +
         '  try {\n' +
-        '    var cache = await caches.open("transformers-cache");\n' +
-        '    var cached = await cache.match(url);\n' +
-        '    if (cached) {\n' +
-        '      var idx0 = _fileOrder.indexOf(url);\n' +
-        '      if (idx0 < 0) { _fileOrder.push(url); idx0 = _fileOrder.length - 1; }\n' +
-        '      self.postMessage({ type: "progress", data: { status: "done", file: url,\n' +
-        '        loaded: 0, total: 0, fileIndex: idx0 + 1, fileCount: _fileOrder.length, cached: true } });\n' +
-        '      return cached;\n' +
+        '    // ۱) بررسی Cache Storage برای فایل کامل\n' +
+        '    try {\n' +
+        '      var cache = await caches.open("transformers-cache");\n' +
+        '      var cached = await cache.match(url);\n' +
+        '      if (cached) {\n' +
+        '        var idx0 = _fileOrder.indexOf(url);\n' +
+        '        if (idx0 < 0) { _fileOrder.push(url); idx0 = _fileOrder.length - 1; }\n' +
+        '        self.postMessage({ type: "progress", data: { status: "done", file: url,\n' +
+        '          loaded: 0, total: 0, fileIndex: idx0 + 1, fileCount: _fileOrder.length, cached: true } });\n' +
+        '        return cached;\n' +
+        '      }\n' +
+        '    } catch(e) {}\n' +
+        '    // ۲) HEAD برای گرفتن total size\n' +
+        '    var totalSize = 0;\n' +
+        '    try {\n' +
+        '      var headResp = await _origFetch(url, { method: "HEAD" });\n' +
+        '      totalSize = parseInt(headResp.headers.get("Content-Length") || "0", 10);\n' +
+        '    } catch(e) {}\n' +
+        '    // 🔧 v225: فقط فایل‌های بزرگ (>۱۰MB) را با chunk دانلود کن.\n' +
+        '    // فایل‌های کوچک (config.json, tokenizer.json و غیره) مستقیم fetch می‌شوند.\n' +
+        '    if (!totalSize || totalSize < 10 * 1024 * 1024) {\n' +
+        '      var directResp = await _origFetch(url, options);\n' +
+        '      try { var cDir = await caches.open("transformers-cache"); await cDir.put(url, directResp.clone()); } catch(e) {}\n' +
+        '      return directResp;\n' +
         '    }\n' +
-        '  } catch(e) {}\n' +
-        '  // ۲) بررسی IndexedDB برای chunk‌های قبلی → resume\n' +
-        '  var db = await openChunkDB();\n' +
-        '  var existing = await dbGetAllForUrl(db, url);\n' +
-        '  var haveBytes = existing.reduce(function(s, c) { return s + c.length; }, 0);\n' +
-        '  // ۳) HEAD برای گرفتن total size\n' +
-        '  var totalSize = 0;\n' +
-        '  try {\n' +
-        '    var headResp = await _origFetch(url, { method: "HEAD" });\n' +
-        '    totalSize = parseInt(headResp.headers.get("Content-Length") || "0", 10);\n' +
-        '  } catch(e) {}\n' +
-        '  if (!totalSize) return _origFetch(url, options); // بدون Content-Length → fallback\n' +
-        '  if (haveBytes >= totalSize) {\n' +
-        '    // همه chunk‌ها موجود → اسمبل و در cache بگذار\n' +
-        '    var all0 = await dbGetAllForUrl(db, url);\n' +
-        '    var parts0 = all0.map(function(c) { return c.data; });\n' +
-        '    var blob0 = new Blob(parts0);\n' +
-        '    var resp0 = new Response(blob0, { status: 200,\n' +
-        '      headers: { "Content-Type": "application/octet-stream", "Content-Length": String(blob0.size) } });\n' +
-        '    try { var c0 = await caches.open("transformers-cache"); await c0.put(url, resp0.clone()); } catch(e) {}\n' +
-        '    await dbClearForUrl(db, url);\n' +
-        '    return resp0;\n' +
-        '  }\n' +
-        '  // ۴) دانلود با Range از haveBytes تا totalSize\n' +
-        '  var currentBytes = haveBytes;\n' +
-        '  var chunkIdx = Math.floor(haveBytes / CHUNK_SIZE);\n' +
-        '  if (haveBytes > 0) postFileProgress(url, haveBytes, totalSize); // نشان‌دادن resume\n' +
-        '  while (currentBytes < totalSize) {\n' +
-        '    if (_abortFlag) throw new Error("دانلود لغو شد");\n' +
-        '    var endByte = Math.min(currentBytes + CHUNK_SIZE - 1, totalSize - 1);\n' +
-        '    var rangeResp = await _origFetch(url, {\n' +
-        '      headers: { "Range": "bytes=" + currentBytes + "-" + endByte }\n' +
-        '    });\n' +
-        '    if (rangeResp.status !== 206 && rangeResp.status !== 200) {\n' +
-        '      // Range پشتیبانی نمی‌شود → fallback به fetch کامل\n' +
-        '      var fullResp = await _origFetch(url, options);\n' +
-        '      var fullBuf = await fullResp.arrayBuffer();\n' +
-        '      var fullCacheResp = new Response(fullBuf, { status: 200, headers: fullResp.headers });\n' +
-        '      try { var cf = await caches.open("transformers-cache"); await cf.put(url, fullCacheResp.clone()); } catch(e) {}\n' +
+        '    // ۳) بررسی IndexedDB برای chunk‌های قبلی → resume\n' +
+        '    var db = await openChunkDB();\n' +
+        '    var existing = await dbGetAllForUrl(db, url);\n' +
+        '    var haveBytes = existing.reduce(function(s, c) { return s + c.length; }, 0);\n' +
+        '    if (haveBytes >= totalSize) {\n' +
+        '      var all0 = await dbGetAllForUrl(db, url);\n' +
+        '      var parts0 = all0.map(function(c) { return c.data; });\n' +
+        '      var blob0 = new Blob(parts0);\n' +
+        '      var resp0 = new Response(blob0, { status: 200,\n' +
+        '        headers: { "Content-Type": "application/octet-stream", "Content-Length": String(blob0.size) } });\n' +
+        '      try { var c0 = await caches.open("transformers-cache"); await c0.put(url, resp0.clone()); } catch(e) {}\n' +
         '      await dbClearForUrl(db, url);\n' +
-        '      return fullCacheResp;\n' +
+        '      return resp0;\n' +
         '    }\n' +
-        '    var chunkBuf = await rangeResp.arrayBuffer();\n' +
-        '    var chunkArr = new Uint8Array(chunkBuf);\n' +
-        '    var key = url + "_chunk_" + chunkIdx;\n' +
-        '    await dbPut(db, key, url, currentBytes, chunkBuf);\n' +
-        '    currentBytes += chunkArr.length;\n' +
-        '    chunkIdx++;\n' +
-        '    postFileProgress(url, currentBytes, totalSize);\n' +
+        '    // ۴) دانلود با Range از haveBytes تا totalSize\n' +
+        '    var currentBytes = haveBytes;\n' +
+        '    var chunkIdx = Math.floor(haveBytes / CHUNK_SIZE);\n' +
+        '    if (haveBytes > 0) postFileProgress(url, haveBytes, totalSize);\n' +
+        '    while (currentBytes < totalSize) {\n' +
+        '      if (_abortFlag) throw new Error("دانلود لغو شد");\n' +
+        '      var endByte = Math.min(currentBytes + CHUNK_SIZE - 1, totalSize - 1);\n' +
+        '      var rangeResp = await _origFetch(url, {\n' +
+        '        headers: { "Range": "bytes=" + currentBytes + "-" + endByte }\n' +
+        '      });\n' +
+        '      // 🔧 v225: فقط 206 (Partial Content) قابل قبول است. اگر 200 برگرداند\n' +
+        '      // یعنی Range پشتیبانی نمی‌شود → fallback به fetch کامل (نه ذخیره به‌عنوان chunk)\n' +
+        '      if (rangeResp.status !== 206) {\n' +
+        '        var fullResp = await _origFetch(url, options);\n' +
+        '        try { var cf = await caches.open("transformers-cache"); await cf.put(url, fullResp.clone()); } catch(e) {}\n' +
+        '        await dbClearForUrl(db, url);\n' +
+        '        return fullResp;\n' +
+        '      }\n' +
+        '      var chunkBuf = await rangeResp.arrayBuffer();\n' +
+        '      var chunkArr = new Uint8Array(chunkBuf);\n' +
+        '      var key = url + "_chunk_" + chunkIdx;\n' +
+        '      await dbPut(db, key, url, currentBytes, chunkBuf);\n' +
+        '      currentBytes += chunkArr.length;\n' +
+        '      chunkIdx++;\n' +
+        '      postFileProgress(url, currentBytes, totalSize);\n' +
+        '    }\n' +
+        '    // ۵) اسمبل chunk‌ها → Response کامل\n' +
+        '    var allChunks = await dbGetAllForUrl(db, url);\n' +
+        '    var parts = allChunks.map(function(c) { return c.data; });\n' +
+        '    var blob = new Blob(parts);\n' +
+        '    var finalResp = new Response(blob, { status: 200,\n' +
+        '      headers: { "Content-Type": "application/octet-stream", "Content-Length": String(blob.size) } });\n' +
+        '    try { var cache2 = await caches.open("transformers-cache"); await cache2.put(url, finalResp.clone()); } catch(e) {}\n' +
+        '    await dbClearForUrl(db, url);\n' +
+        '    self.postMessage({ type: "progress", data: { status: "done", file: url,\n' +
+        '      loaded: blob.size, total: blob.size, fileIndex: _fileOrder.indexOf(url) + 1,\n' +
+        '      fileCount: _fileOrder.length } });\n' +
+        '    return finalResp;\n' +
+        '  } catch(e) {\n' +
+        '    // 🔧 v225: لغو کاربر را propagate کن، ولی خطاهای دیگر را fallback کن\n' +
+        '    if (e && e.message && e.message.indexOf("لغو") >= 0) throw e;\n' +
+        '    console.error("[Worker fetch] override error for", url, ":", e && e.message, "→ fallback به fetch اصلی");\n' +
+        '    return _origFetch(url, options);\n' +
         '  }\n' +
-        '  // ۵) اسمبل chunk‌ها → Response کامل\n' +
-        '  var allChunks = await dbGetAllForUrl(db, url);\n' +
-        '  var parts = allChunks.map(function(c) { return c.data; });\n' +
-        '  var blob = new Blob(parts);\n' +
-        '  var finalResp = new Response(blob, { status: 200,\n' +
-        '    headers: { "Content-Type": "application/octet-stream", "Content-Length": String(blob.size) } });\n' +
-        '  // ۶) ذخیره در Cache Storage برای استفاده‌های بعدی transformers.js\n' +
-        '  try { var cache2 = await caches.open("transformers-cache"); await cache2.put(url, finalResp.clone()); } catch(e) {}\n' +
-        '  // ۷) پاک‌سازی chunk‌ها از IndexedDB\n' +
-        '  await dbClearForUrl(db, url);\n' +
-        '  self.postMessage({ type: "progress", data: { status: "done", file: url,\n' +
-        '    loaded: blob.size, total: blob.size, fileIndex: _fileOrder.indexOf(url) + 1,\n' +
-        '    fileCount: _fileOrder.length } });\n' +
-        '  return finalResp;\n' +
         '};\n' +
         '\n' +
         'import { pipeline, env } from "' + CDN + '";\n' +

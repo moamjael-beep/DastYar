@@ -1,1 +1,1 @@
-v224-2026-11-12-download-retry-button-fix
+v225-2026-11-12-download-fetch-fallback-robust
