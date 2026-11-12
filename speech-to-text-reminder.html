@@ -7005,7 +7005,7 @@ body.locked .header-actions button {
 //               ~۷۵۰MB-۱.۵GB) — فقط با WebGPU توصیه می‌شود.
 //            dtype: WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده).
 //            تست: test_offline_stt_v222.mjs — ۱۴ تست Y1-Y14، پورت ۸۲۰۲.
-const APP_VERSION = 'v225-2026-11-12-download-fetch-fallback-robust';
+const APP_VERSION = 'v226-2026-11-12-remove-wasm-manual-files';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -9982,15 +9982,31 @@ async function handleRecordingVisibilityChange() {
 window.OfflineSTT = (function() {
     var ENGINE_KEY = 'yadavar_stt_engine_v1';        // 'online' | 'offline'
     var MODEL_KEY  = 'yadavar_stt_model_v1';
-    var DEVICE_KEY = 'yadavar_stt_device_v1';        // 🔧 v222: 'webgpu' | 'wasm'
-    var READY_KEY  = 'yadavar_stt_offline_ready_v1'; // = شناسهٔ مدل+device وقتی آماده است
+    var READY_KEY  = 'yadavar_stt_offline_ready_v1'; // = شناسهٔ مدل وقتی آماده است
     var CDN = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/transformers.min.js';
+    // 🔧 v226: WASM حذف شد — فقط WebGPU. مدل‌ها فقط با WebGPU کار می‌کنند.
     var MODELS = {
-        'onnx-community/whisper-tiny':  { label: 'سریع (tiny, ~۴۳MB)',        mb: 43,  wasm: true,  webgpu: true  },
-        'onnx-community/whisper-base':  { label: 'متعادل (base, ~۸۰MB)',      mb: 80,  wasm: true,  webgpu: true  },
-        'onnx-community/whisper-small': { label: 'دقیق (small, ~۲۵۰MB)',      mb: 250, wasm: true,  webgpu: true  },
-        'onnx-community/whisper-large-v3-turbo': { label: 'حرفه‌ای (large-v3-turbo, ~۱.۵GB)', mb: 1500, wasm: false, webgpu: true }
+        'onnx-community/whisper-tiny':  { label: 'سریع (tiny, ~۴۳MB)',        mb: 43  },
+        'onnx-community/whisper-base':  { label: 'متعادل (base, ~۸۰MB)',      mb: 80  },
+        'onnx-community/whisper-small': { label: 'دقیق (small, ~۲۵۰MB)',      mb: 250 },
+        'onnx-community/whisper-large-v3-turbo': { label: 'حرفه‌ای (large-v3-turbo, ~۱.۵GB)', mb: 1500 }
     };
+    // 🔧 v226: فایل‌های مورد نیاز هر مدل — برای نمایش لینک‌های دانلود به کاربر.
+    // کاربر این فایل‌ها را دستی از هوفینگ‌فیس دانلود می‌کند و با دکمهٔ «انتخاب فایل‌ها»
+    // به برنامه معرفی می‌کند. فایل‌های ONNX در زیرپوشهٔ onnx/ هستند.
+    var REQUIRED_FILES = [
+        'config.json',
+        'generation_config.json',
+        'preprocessor_config.json',
+        'tokenizer.json',
+        'tokenizer_config.json',
+        'special_tokens_map.json',
+        'added_tokens.json',
+        'merges.txt',
+        'normalizer.json',
+        'vocab.json',
+        'onnx/model_fp16.onnx'
+    ];
     var FLOWS = {
         main:   { btn: 'addBtn',      label: 'یادآور' },
         accDoc: { btn: 'accDocMicBtn', target: 'accDocDesc', label: 'شرح سند',  append: false },
@@ -10003,16 +10019,12 @@ window.OfflineSTT = (function() {
     var _pendingLoad = null;  // انتظار برای آماده‌شدن مدل
     var _busy = false;        // در حال تبدیل صدا به متن
     var _activeFlow = null;   // 'main' | 'accDoc' | 'accRec' | 'notes'
-    var _starting = false;    // 🔧 v221: گارد رقابت لمس‌دوباره هنگام کندی getUserMedia
-    // 🔧 v222: ضبط PCM خام با AudioWorklet (یا ScriptProcessorNode fallback).
-    // حذف MediaRecorder+decodeAudioData (باگ crbug 40416298 — opus در WebAudio).
+    var _starting = false;    // گارد رقابت لمس‌دوباره هنگام کندی getUserMedia
     var _actx = null, _source = null, _node = null, _stream = null;
-    var _chunks = [];         // آرایهٔ Float32Arrayهای ضبط‌شده
-    var _sampleRate = 16000;  // نرخ نمونه‌برداری واقعی AudioContext
-    var _useWorklet = false;  // آیا از AudioWorklet استفاده شده (در غیر این صورت ScriptProcessor)
+    var _chunks = [];
+    var _sampleRate = 16000;
+    var _useWorklet = false;
     var _msgId = 1;
-    var _fileMap = {};        // پیشرفت دانلود هر فایل مدل
-    var _loadHandlers = [];   // کال‌بک‌های پیشرفت پنل
     var _testTranscribe = null; // فقط برای تست‌های Playwright — جایگزین تبدیل واقعی
 
     // ─── تنظیمات ماندگار ───
@@ -10032,267 +10044,81 @@ window.OfflineSTT = (function() {
     }
     function setModel(m) {
         if (!MODELS[m]) return;
-        // 🔧 v222: اگر مدل انتخابی با دستگاه فعلی ناسازگار است، هشدار بده
-        var dev = getDevice();
-        var info = MODELS[m];
-        if (dev === 'wasm' && !info.wasm) {
-            showToast('این مدل فقط با WebGPU کار می‌کند — دستگاه را در پنل روی WebGPU بگذارید');
-            return;
-        }
         try { localStorage.setItem(MODEL_KEY, m); } catch(e) {}
         refreshPanel();
     }
-    // 🔧 v222: انتخاب دستگاه WebGPU یا WASM
+    // 🔧 v226: WASM حذف شد — فقط WebGPU. تابع webgpuSupported برای پیام راهنما باقی می‌ماند.
     function webgpuSupported() {
         try { return !!(navigator.gpu && typeof navigator.gpu.requestAdapter === 'function'); }
         catch(e) { return false; }
     }
-    function getDevice() {
-        try {
-            var d = localStorage.getItem(DEVICE_KEY);
-            if (d === 'webgpu' || d === 'wasm') return d;
-        } catch(e) {}
-        // auto-detect: اولویت WebGPU
-        return webgpuSupported() ? 'webgpu' : 'wasm';
-    }
-    function setDevice(d) {
-        if (d !== 'webgpu' && d !== 'wasm') return;
-        if (d === 'webgpu' && !webgpuSupported()) {
-            showToast('مرورگر شما از WebGPU پشتیبانی نمی‌کند — روی WASM می‌مانید');
-            return;
-        }
-        try { localStorage.setItem(DEVICE_KEY, d); } catch(e) {}
-        // 🔧 v222: READY_KEY را حذف نمی‌کنیم — isReady() خودش با readyKey()
-        // (model@device) مقایسه می‌کند. اگر کاربر قبلاً tiny@wasm دانلود
-        // کرده باشد، با برگشت به wasm، ready دوباره true می‌شود (فایل‌های
-        // کش‌شده هنوز در Cache Storage هستند). با تغییر به webgpu، ready
-        // می‌شود false (چون tiny@webgpu در cache نیست) تا کاربر دانلود کند.
-        refreshPanel();
-    }
-    // شناسهٔ آماده‌بودن = مدل+device (تا تغییر دستگاه یا مدل، ready را بی‌اعتبار کند)
-    function readyKey() { return getModel() + '@' + getDevice(); }
+    function readyKey() { return getModel(); }
     function isReady() {
         try { return localStorage.getItem(READY_KEY) === readyKey(); } catch(e) { return false; }
     }
 
     // ─── Worker: Transformers.js + Whisper (کد داخل Blob — فایل تکی می‌ماند) ───
-    // 🔧 v222: worker حالا device می‌گیرد ('webgpu' یا 'wasm')؛ dtype تطبیقی:
-    //   WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده‌ترین).
-    // 🔧 v223: fetch override برای دانلود با resume در سطح بایت:
-    //   - فایل‌های huggingface.co/.../resolve/main/... در chunk‌های ۵MB دانلود می‌شوند
-    //   - هر chunk در IndexedDB ذخیره می‌شود (پس از رفرش، chunk‌ها باقی می‌مانند)
-    //   - با Range request از همان نقطه ادامه می‌دهد
-    //   - پس از تکمیل، فایل در Cache Storage (transformers-cache) ذخیره و chunk‌ها پاک می‌شوند
-    //   - progress postMessage ها throttle می‌شوند (حداکثر ۵ در ثانیه) تا UI هنگ نکند
-    //   - cancel: با پیام {type:'cancel'}، _abortFlag=true می‌شود و حلقه chunk متوقف می‌شود
+    // 🔧 v226: WASM حذف شد — فقط WebGPU، dtype fp16.
+    // 🔧 v226: دانلود اتوماتیک حذف شد — fetch override فقط Cache Storage را
+    //   بررسی می‌کند. اگر فایل نبود، 404 برمی‌گرداند. کاربر فایل‌ها را دستی
+    //   دانلود می‌کند و با دکمهٔ «انتخاب فایل‌ها» به Cache Storage اضافه می‌کند.
+    //   تطبیق با filename هم انجام می‌شود (تا فایل‌های onnx/ با URL درست پیدا شوند).
     var _WORKER_SRC =
-        '// ═══ v223: fetch override برای resume در سطح بایت ═══\n' +
-        'var CHUNK_SIZE = 5 * 1024 * 1024; // ۵MB\n' +
-        'var CHUNK_DB_NAME = "yadavar_model_chunks";\n' +
+        '// ═══ v226: fetch override — فقط Cache Storage، بدون دانلود اتوماتیک ═══\n' +
         'var HF_URL_RE = /^https:\\/\\/huggingface\\.co\\/[^/]+\\/[^/]+\\/resolve\\/main\\//;\n' +
-        'var _abortFlag = false;\n' +
-        'var _progressThrottle = {};\n' +
-        'var _fileOrder = [];\n' +
-        '\n' +
-        'function openChunkDB() {\n' +
-        '  return new Promise(function(resolve, reject) {\n' +
-        '    var req = indexedDB.open(CHUNK_DB_NAME, 1);\n' +
-        '    req.onupgradeneeded = function() {\n' +
-        '      var db = req.result;\n' +
-        '      if (!db.objectStoreNames.contains("chunks")) {\n' +
-        '        db.createObjectStore("chunks", { keyPath: "key" });\n' +
-        '      }\n' +
-        '    };\n' +
-        '    req.onsuccess = function() { resolve(req.result); };\n' +
-        '    req.onerror = function() { reject(req.error); };\n' +
-        '  });\n' +
-        '}\n' +
-        'function dbGetAllForUrl(db, url) {\n' +
-        '  return new Promise(function(resolve, reject) {\n' +
-        '    var tx = db.transaction("chunks", "readonly");\n' +
-        '    var store = tx.objectStore("chunks");\n' +
-        '    var req = store.getAll();\n' +
-        '    req.onsuccess = function() {\n' +
-        '      var all = req.result || [];\n' +
-        '      resolve(all.filter(function(r) { return r && r.url === url; })\n' +
-        '                   .sort(function(a, b) { return a.offset - b.offset; }));\n' +
-        '    };\n' +
-        '    req.onerror = function() { reject(req.error); };\n' +
-        '  });\n' +
-        '}\n' +
-        'function dbPut(db, key, url, offset, data) {\n' +
-        '  return new Promise(function(resolve, reject) {\n' +
-        '    var tx = db.transaction("chunks", "readwrite");\n' +
-        '    var store = tx.objectStore("chunks");\n' +
-        '    store.put({ key: key, url: url, offset: offset, length: data.byteLength, data: data });\n' +
-        '    tx.oncomplete = function() { resolve(); };\n' +
-        '    tx.onerror = function() { reject(tx.error); };\n' +
-        '  });\n' +
-        '}\n' +
-        'function dbClearForUrl(db, url) {\n' +
-        '  return new Promise(function(resolve, reject) {\n' +
-        '    var tx = db.transaction("chunks", "readwrite");\n' +
-        '    var store = tx.objectStore("chunks");\n' +
-        '    var req = store.getAll();\n' +
-        '    req.onsuccess = function() {\n' +
-        '      var all = req.result || [];\n' +
-        '      all.forEach(function(r) { if (r.url === url) store.delete(r.key); });\n' +
-        '    };\n' +
-        '    tx.oncomplete = function() { resolve(); };\n' +
-        '    tx.onerror = function() { reject(tx.error); };\n' +
-        '  });\n' +
-        '}\n' +
-        'function postFileProgress(url, loaded, total) {\n' +
-        '  var now = Date.now();\n' +
-        '  var last = _progressThrottle[url] || 0;\n' +
-        '  if (now - last < 200 && loaded < total) return; // throttle: max ۵ در ثانیه\n' +
-        '  _progressThrottle[url] = now;\n' +
-        '  var idx = _fileOrder.indexOf(url);\n' +
-        '  if (idx < 0) { _fileOrder.push(url); idx = _fileOrder.length - 1; }\n' +
-        '  self.postMessage({\n' +
-        '    type: "progress",\n' +
-        '    data: { status: "progress", file: url, loaded: loaded, total: total,\n' +
-        '            fileIndex: idx + 1, fileCount: _fileOrder.length }\n' +
-        '  });\n' +
-        '}\n' +
         'var _origFetch = self.fetch.bind(self);\n' +
         'self.fetch = async function(url, options) {\n' +
         '  url = String(url);\n' +
         '  if (!HF_URL_RE.test(url)) return _origFetch(url, options);\n' +
-        '  _abortFlag = false;\n' +
-        '  // 🔧 v225: کل override در try/catch — هر خطا → fallback به _origFetch.\n' +
-        '  // این تضمین می‌کند که حتی اگر chunked download شکست بخورد، دانلود\n' +
-        '  // اصلی هنوز کار می‌کند (بدون resume اما حداقل جلو می‌رود).\n' +
+        '  // فقط Cache Storage را بررسی کن — هیچ دانلود شبکه‌ای انجام نده\n' +
         '  try {\n' +
-        '    // ۱) بررسی Cache Storage برای فایل کامل\n' +
-        '    try {\n' +
-        '      var cache = await caches.open("transformers-cache");\n' +
-        '      var cached = await cache.match(url);\n' +
-        '      if (cached) {\n' +
-        '        var idx0 = _fileOrder.indexOf(url);\n' +
-        '        if (idx0 < 0) { _fileOrder.push(url); idx0 = _fileOrder.length - 1; }\n' +
-        '        self.postMessage({ type: "progress", data: { status: "done", file: url,\n' +
-        '          loaded: 0, total: 0, fileIndex: idx0 + 1, fileCount: _fileOrder.length, cached: true } });\n' +
-        '        return cached;\n' +
+        '    var cache = await caches.open("transformers-cache");\n' +
+        '    // ۱) تطبیق دقیق URL\n' +
+        '    var cached = await cache.match(url);\n' +
+        '    if (cached) return cached;\n' +
+        '    // ۲) تطبیق با filename (برای فایل‌های onnx/ که کاربر بدون مسیر ذخیره کرده)\n' +
+        '    var filename = url.split("/").pop();\n' +
+        '    var keys = await cache.keys();\n' +
+        '    for (var i = 0; i < keys.length; i++) {\n' +
+        '      if (keys[i].url.split("/").pop() === filename) {\n' +
+        '        var match = await cache.match(keys[i]);\n' +
+        '        if (match) return match;\n' +
         '      }\n' +
-        '    } catch(e) {}\n' +
-        '    // ۲) HEAD برای گرفتن total size\n' +
-        '    var totalSize = 0;\n' +
-        '    try {\n' +
-        '      var headResp = await _origFetch(url, { method: "HEAD" });\n' +
-        '      totalSize = parseInt(headResp.headers.get("Content-Length") || "0", 10);\n' +
-        '    } catch(e) {}\n' +
-        '    // 🔧 v225: فقط فایل‌های بزرگ (>۱۰MB) را با chunk دانلود کن.\n' +
-        '    // فایل‌های کوچک (config.json, tokenizer.json و غیره) مستقیم fetch می‌شوند.\n' +
-        '    if (!totalSize || totalSize < 10 * 1024 * 1024) {\n' +
-        '      var directResp = await _origFetch(url, options);\n' +
-        '      try { var cDir = await caches.open("transformers-cache"); await cDir.put(url, directResp.clone()); } catch(e) {}\n' +
-        '      return directResp;\n' +
         '    }\n' +
-        '    // ۳) بررسی IndexedDB برای chunk‌های قبلی → resume\n' +
-        '    var db = await openChunkDB();\n' +
-        '    var existing = await dbGetAllForUrl(db, url);\n' +
-        '    var haveBytes = existing.reduce(function(s, c) { return s + c.length; }, 0);\n' +
-        '    if (haveBytes >= totalSize) {\n' +
-        '      var all0 = await dbGetAllForUrl(db, url);\n' +
-        '      var parts0 = all0.map(function(c) { return c.data; });\n' +
-        '      var blob0 = new Blob(parts0);\n' +
-        '      var resp0 = new Response(blob0, { status: 200,\n' +
-        '        headers: { "Content-Type": "application/octet-stream", "Content-Length": String(blob0.size) } });\n' +
-        '      try { var c0 = await caches.open("transformers-cache"); await c0.put(url, resp0.clone()); } catch(e) {}\n' +
-        '      await dbClearForUrl(db, url);\n' +
-        '      return resp0;\n' +
-        '    }\n' +
-        '    // ۴) دانلود با Range از haveBytes تا totalSize\n' +
-        '    var currentBytes = haveBytes;\n' +
-        '    var chunkIdx = Math.floor(haveBytes / CHUNK_SIZE);\n' +
-        '    if (haveBytes > 0) postFileProgress(url, haveBytes, totalSize);\n' +
-        '    while (currentBytes < totalSize) {\n' +
-        '      if (_abortFlag) throw new Error("دانلود لغو شد");\n' +
-        '      var endByte = Math.min(currentBytes + CHUNK_SIZE - 1, totalSize - 1);\n' +
-        '      var rangeResp = await _origFetch(url, {\n' +
-        '        headers: { "Range": "bytes=" + currentBytes + "-" + endByte }\n' +
-        '      });\n' +
-        '      // 🔧 v225: فقط 206 (Partial Content) قابل قبول است. اگر 200 برگرداند\n' +
-        '      // یعنی Range پشتیبانی نمی‌شود → fallback به fetch کامل (نه ذخیره به‌عنوان chunk)\n' +
-        '      if (rangeResp.status !== 206) {\n' +
-        '        var fullResp = await _origFetch(url, options);\n' +
-        '        try { var cf = await caches.open("transformers-cache"); await cf.put(url, fullResp.clone()); } catch(e) {}\n' +
-        '        await dbClearForUrl(db, url);\n' +
-        '        return fullResp;\n' +
-        '      }\n' +
-        '      var chunkBuf = await rangeResp.arrayBuffer();\n' +
-        '      var chunkArr = new Uint8Array(chunkBuf);\n' +
-        '      var key = url + "_chunk_" + chunkIdx;\n' +
-        '      await dbPut(db, key, url, currentBytes, chunkBuf);\n' +
-        '      currentBytes += chunkArr.length;\n' +
-        '      chunkIdx++;\n' +
-        '      postFileProgress(url, currentBytes, totalSize);\n' +
-        '    }\n' +
-        '    // ۵) اسمبل chunk‌ها → Response کامل\n' +
-        '    var allChunks = await dbGetAllForUrl(db, url);\n' +
-        '    var parts = allChunks.map(function(c) { return c.data; });\n' +
-        '    var blob = new Blob(parts);\n' +
-        '    var finalResp = new Response(blob, { status: 200,\n' +
-        '      headers: { "Content-Type": "application/octet-stream", "Content-Length": String(blob.size) } });\n' +
-        '    try { var cache2 = await caches.open("transformers-cache"); await cache2.put(url, finalResp.clone()); } catch(e) {}\n' +
-        '    await dbClearForUrl(db, url);\n' +
-        '    self.postMessage({ type: "progress", data: { status: "done", file: url,\n' +
-        '      loaded: blob.size, total: blob.size, fileIndex: _fileOrder.indexOf(url) + 1,\n' +
-        '      fileCount: _fileOrder.length } });\n' +
-        '    return finalResp;\n' +
-        '  } catch(e) {\n' +
-        '    // 🔧 v225: لغو کاربر را propagate کن، ولی خطاهای دیگر را fallback کن\n' +
-        '    if (e && e.message && e.message.indexOf("لغو") >= 0) throw e;\n' +
-        '    console.error("[Worker fetch] override error for", url, ":", e && e.message, "→ fallback به fetch اصلی");\n' +
-        '    return _origFetch(url, options);\n' +
-        '  }\n' +
+        '  } catch(e) {}\n' +
+        '  // فایل پیدا نشد — 404\n' +
+        '  var fname = url.split("/").pop();\n' +
+        '  return new Response("File not found: " + fname + ". آن را از هوفینگ‌فیس دانلود و با دکمهٔ انتخاب فایل‌ها اضافه کنید.", {\n' +
+        '    status: 404,\n' +
+        '    statusText: "File Not Found",\n' +
+        '    headers: { "Content-Type": "text/plain" }\n' +
+        '  });\n' +
         '};\n' +
         '\n' +
         'import { pipeline, env } from "' + CDN + '";\n' +
         'env.allowLocalModels = false;\n' +
-        'var asr = null, currentModel = null, currentDevice = null, loading = null;\n' +
-        'function ensure(model, device) {\n' +
-        '  if (asr && currentModel === model && currentDevice === device) return Promise.resolve(asr);\n' +
-        '  if (loading && currentModel === model && currentDevice === device) return loading;\n' +
-        '  currentModel = model; currentDevice = device;\n' +
-        '  var dtype = (device === "webgpu") ? "fp16" : "q8";\n' +
+        'var asr = null, currentModel = null, loading = null;\n' +
+        'function ensure(model) {\n' +
+        '  if (asr && currentModel === model) return Promise.resolve(asr);\n' +
+        '  if (loading && currentModel === model) return loading;\n' +
+        '  currentModel = model;\n' +
         '  loading = pipeline("automatic-speech-recognition", model, {\n' +
-        '    dtype: dtype, device: device,\n' +
-        '    progress_callback: function(p) {\n' +
-        '      // transformers.js خودش progress می‌فرستد — اما fetch override ما\n' +
-        '      // پیشرفت دقیق‌تری می‌دهد. این را هم عبور می‌دهیم برای سازگاری.\n' +
-        '      if (p && p.status === "progress" && p.file) {\n' +
-        '        postFileProgress(String(p.file), p.loaded || 0, p.total || 0);\n' +
-        '      } else if (p && p.status === "done" && p.file) {\n' +
-        '        // skip — fetch override خودش done می‌فرستد\n' +
-        '      } else {\n' +
-        '        self.postMessage({ type: "progress", data: { status: p.status, file: p.file, loaded: p.loaded, total: p.total } });\n' +
-        '      }\n' +
-        '    }\n' +
+        '    dtype: "fp16", device: "webgpu"\n' +
         '  }).then(function(p) { asr = p; return p; })\n' +
-        '    .catch(function(e) { loading = null; currentModel = null; currentDevice = null; throw e; });\n' +
+        '    .catch(function(e) { loading = null; currentModel = null; throw e; });\n' +
         '  return loading;\n' +
         '}\n' +
         'self.onmessage = async function(e) {\n' +
         '  var d = e.data || {};\n' +
-        '  if (d.type === "cancel") {\n' +
-        '    _abortFlag = true;\n' +
-        '    self.postMessage({ type: "cancelled" });\n' +
-        '    return;\n' +
-        '  }\n' +
         '  if (d.type === "load") {\n' +
-        '    _abortFlag = false;\n' +
-        '    _fileOrder = [];\n' +
-        '    try { await ensure(d.model, d.device || "wasm"); self.postMessage({ type: "loaded", id: d.id }); }\n' +
+        '    try { await ensure(d.model); self.postMessage({ type: "loaded", id: d.id }); }\n' +
         '    catch(err) { self.postMessage({ type: "error", id: d.id, message: String(err && err.message || err) }); }\n' +
         '    return;\n' +
         '  }\n' +
         '  if (d.type === "transcribe") {\n' +
         '    try {\n' +
-        '      var p = await ensure(d.model, d.device || "wasm");\n' +
-        '      var opts = { language: "fa", task: "transcribe", chunk_length_s: 30, stride_length_s: 5 };\n' +
-        '      var out = await p(d.audio, opts);\n' +
+        '      var p = await ensure(d.model);\n' +
+        '      var out = await p(d.audio, { language: "fa", task: "transcribe", chunk_length_s: 30, stride_length_s: 5 });\n' +
         '      self.postMessage({ type: "result", id: d.id, text: String((out && out.text) || "").trim() });\n' +
         '    } catch(err) {\n' +
         '      self.postMessage({ type: "error", id: d.id, message: String(err && err.message || err) });\n' +
@@ -10306,12 +10132,6 @@ window.OfflineSTT = (function() {
         _worker = new Worker(URL.createObjectURL(blob), { type: 'module' });
         _worker.onmessage = function(ev) {
             var d = ev.data || {};
-            if (d.type === 'progress') { notifyProgress(d.data); return; }
-            if (d.type === 'cancelled') {
-                // 🔧 v223: download cancelled by user — reject pending load
-                if (_pendingLoad) { var rjC = _pendingLoad.reject; _pendingLoad = null; rjC(new Error('دانلود لغو شد')); }
-                return;
-            }
             if (d.type === 'loaded') {
                 if (_pendingLoad) { var r = _pendingLoad.resolve; _pendingLoad = null; r(); }
                 return;
@@ -10324,9 +10144,7 @@ window.OfflineSTT = (function() {
                 var msg = d.message || 'خطای نامشخص';
                 if (_pendingLoad) { var rj = _pendingLoad.reject; _pendingLoad = null; rj(new Error(msg)); }
                 if (_pending) { var p2 = _pending; _pending = null; p2.reject(new Error(msg)); }
-                // 🔧 v224: اگر خطا حین load (دانلود) رخ داد، Worker را terminate کن
-                // تا تلاش بعدی Worker تازه بسازد — وگرنه Worker مرده reuse می‌شود
-                // و دکمهٔ دانلود بی‌عکس‌العمل می‌ماند.
+                // Worker را terminate کن تا تلاش بعدی Worker تازه بسازد
                 try { if (_worker) _worker.terminate(); } catch(e) {}
                 _worker = null;
             }
@@ -10335,51 +10153,18 @@ window.OfflineSTT = (function() {
             var msg = (e && e.message) ? e.message : 'خطای Worker';
             if (_pendingLoad) { var rj2 = _pendingLoad.reject; _pendingLoad = null; rj2(new Error(msg)); }
             if (_pending) { var p3 = _pending; _pending = null; p3.reject(new Error(msg)); }
-            // 🔧 v224: Worker crash — terminate و null تا تلاش بعدی تازه بسازد
             try { if (_worker) _worker.terminate(); } catch(e2) {}
             _worker = null;
         };
         return _worker;
     }
 
+    // 🔧 v226: loadModel فقط model می‌فرستد (device همیشه webgpu است)
     function loadModel() {
         return new Promise(function(resolve, reject) {
             try { ensureWorker(); } catch(e) { reject(e); return; }
             _pendingLoad = { resolve: resolve, reject: reject };
-            _worker.postMessage({ type: 'load', id: _msgId++, model: getModel(), device: getDevice() });
-        });
-    }
-
-    // 🔧 v223: notifyProgress حالا اطلاعات سر فایل را هم می‌گیرد (fileIndex,
-    // fileCount، نام فایل) و progress کلی را روی همه فایل‌ها محاسبه می‌کند.
-    // همچنین status==='done' را به‌عنوان تکمیل فایل ثبت می‌کند.
-    var _lastProgressTs = 0;
-    function notifyProgress(p) {
-        if (!p || !p.file) return;
-        if (p.status === 'progress' || p.status === 'done') {
-            var loaded = p.loaded || 0, total = p.total || 0;
-            if (p.status === 'done' && p.cached) {
-                // فایل قبلاً در cache بوده — other size ناشناخته، فقط به‌عنوان کامل علامت بزن
-                if (!_fileMap[p.file]) _fileMap[p.file] = [1, 1];
-                _fileMap[p.file][0] = _fileMap[p.file][1];
-            } else if (p.status === 'done' && total === 0) {
-                if (!_fileMap[p.file]) _fileMap[p.file] = [1, 1];
-                _fileMap[p.file][0] = _fileMap[p.file][1];
-            } else if (total > 0) {
-                _fileMap[p.file] = [loaded, total];
-            }
-        }
-        var totalLoaded = 0, totalTotal = 0;
-        for (var k in _fileMap) { totalLoaded += _fileMap[k][0]; totalTotal += _fileMap[k][1]; }
-        var pct = totalTotal ? Math.min(100, Math.round(totalLoaded / totalTotal * 100)) : 0;
-        var fileInfo = '';
-        if (p.fileIndex && p.fileCount) {
-            var fname = String(p.file).split('/').pop();
-            if (fname.length > 40) fname = fname.substring(0, 37) + '...';
-            fileInfo = 'فایل ' + p.fileIndex + ' از ' + p.fileCount + ' — ' + fname;
-        }
-        _loadHandlers.forEach(function(fn) {
-            try { fn(pct, fileInfo, totalLoaded, totalTotal); } catch(e) {}
+            _worker.postMessage({ type: 'load', id: _msgId++, model: getModel() });
         });
     }
 
@@ -10531,9 +10316,9 @@ window.OfflineSTT = (function() {
         return new Promise(function(resolve, reject) {
             _pending = { resolve: resolve, reject: reject };
             var copy = new Float32Array(captured.audio);
+            // 🔧 v226: device همیشه webgpu — فقط model می‌فرستیم
             w.postMessage({
-                type: 'transcribe', id: _msgId++, audio: copy,
-                model: getModel(), device: getDevice()
+                type: 'transcribe', id: _msgId++, audio: copy, model: getModel()
             }, [copy.buffer]);
         });
     }
@@ -10586,6 +10371,8 @@ window.OfflineSTT = (function() {
         var box = document.createElement('div');
         box.className = 'ostt-box';
         box.setAttribute('dir', 'rtl');
+        // 🔧 v226: پنل بدون دستگاه (WebGPU فقط)، بدون دانلود اتوماتیک.
+        // به‌جای دانلود، لینک‌های هوفینگ‌فیس + دکمهٔ انتخاب فایل نمایش داده می‌شود.
         box.innerHTML =
             '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
               '<b style="font-size:15px;">🎙 موتور تشخیص صوت</b>' +
@@ -10595,25 +10382,20 @@ window.OfflineSTT = (function() {
               '<button id="ostt-eng-online" class="ostt-btn ostt-eng">آنلاین (گوگل)</button>' +
               '<button id="ostt-eng-offline" class="ostt-btn ostt-eng">آفلاین (روی دستگاه)</button>' +
             '</div>' +
-            '<div style="font-size:12px;color:#555;margin-bottom:2px;">دستگاه اجرا (🔥 WebGPU = ۵-۱۰x سریع‌تر):</div>' +
-            '<div id="ostt-device-row" style="display:flex;gap:8px;margin-bottom:10px;"></div>' +
-            '<div style="font-size:12px;color:#555;margin-bottom:2px;">مدل آفلاین (فارسی):</div>' +
+            '<div style="font-size:12px;color:#555;margin-bottom:2px;">مدل آفلاین (فارسی) — فقط WebGPU:</div>' +
             '<div id="ostt-models"></div>' +
             '<div id="ostt-status" style="font-size:13px;margin:10px 0;"></div>' +
-            '<div id="ostt-progress-wrap" style="display:none;margin-bottom:10px;">' +
-              '<div class="ostt-bar"><div id="ostt-bar-fill" class="ostt-bar-fill"></div></div>' +
-              '<div id="ostt-progress-text" style="font-size:12px;color:#555;margin-top:4px;line-height:1.6;"></div>' +
-              '<button id="ostt-cancel-dl" class="ostt-btn ostt-btn-danger" style="margin-top:6px;display:none;">لغو دانلود</button>' +
-            '</div>' +
+            '<div id="ostt-links" style="font-size:12px;color:#555;margin:8px 0;line-height:1.8;"></div>' +
+            '<input type="file" id="ostt-file-input" multiple style="display:none;">' +
             '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
-              '<button id="ostt-download" class="ostt-btn ostt-btn-primary">دانلود مدل</button>' +
+              '<button id="ostt-select-files" class="ostt-btn ostt-btn-primary">📂 انتخاب فایل‌های مدل</button>' +
               '<button id="ostt-delete" class="ostt-btn ostt-btn-danger">حذف مدل</button>' +
               '<button id="ostt-test-mic" class="ostt-btn ostt-btn-ghost">تست میکروفون</button>' +
             '</div>' +
             '<div style="font-size:11px;color:#777;margin-top:10px;line-height:1.8;">' +
-              'اولین دانلود به اینترنت نیاز دارد؛ پس از آن ضبط صوت کاملاً آفلاین و بدون گوگل روی دستگاه شما انجام می‌شود. ' +
-              'WebGPU (اگر مرورگر پشتیبانی کند) ۵-۱۰ برابر سریع‌تر از WASM است. ' +
-              'مدل large-v3-turbo فقط با WebGPU کار می‌کند و دقیق‌ترین نتیجه را می‌دهد. (Chrome/Edge) — Whisper با Transformers.js' +
+              'دانلود اتوماتیک حذف شده — فایل‌ها را دستی از لینک‌های بالا دانلود کنید، سپس با دکمهٔ «انتخاب فایل‌ها» به برنامه بدهید. ' +
+              'فایل model_fp16.onnx از پوشهٔ onnx/ لازم است. ضبط صوت کاملاً آفلاین و بدون گوگل روی دستگاه شما انجام می‌شود. ' +
+              '(Chrome/Edge با WebGPU) — Whisper با Transformers.js' +
             '</div>';
         ov.appendChild(box);
         document.body.appendChild(ov);
@@ -10621,129 +10403,103 @@ window.OfflineSTT = (function() {
         box.querySelector('#ostt-close').addEventListener('click', function() { ov.remove(); });
         box.querySelector('#ostt-eng-online').addEventListener('click', function() { setEngine('online'); });
         box.querySelector('#ostt-eng-offline').addEventListener('click', function() { setEngine('offline'); });
-        box.querySelector('#ostt-download').addEventListener('click', startDownload);
+        box.querySelector('#ostt-select-files').addEventListener('click', function() {
+            box.querySelector('#ostt-file-input').click();
+        });
+        box.querySelector('#ostt-file-input').addEventListener('change', selectModelFiles);
         box.querySelector('#ostt-delete').addEventListener('click', deleteModel);
         box.querySelector('#ostt-test-mic').addEventListener('click', testMic);
-        var cancelBtn = box.querySelector('#ostt-cancel-dl');
-        if (cancelBtn) cancelBtn.addEventListener('click', cancelDownload);
         refreshPanel();
     }
 
     function refreshPanel() {
         var panel = document.getElementById('ostt-panel');
         if (!panel) return;
-        var engine = getEngine(), model = getModel(), ready = isReady(), dev = getDevice(), gpuOk = webgpuSupported();
+        var engine = getEngine(), model = getModel(), ready = isReady(), gpuOk = webgpuSupported();
         panel.querySelector('#ostt-eng-online').classList.toggle('sel', engine === 'online');
         panel.querySelector('#ostt-eng-offline').classList.toggle('sel', engine === 'offline');
-        // 🔧 v222: ردیف انتخاب دستگاه WebGPU/WASM
-        var devRow = panel.querySelector('#ostt-device-row');
-        if (devRow) {
-            devRow.innerHTML = '';
-            var opts = [
-                { v: 'webgpu', label: '🔥 WebGPU (سریع‌تر)', disabled: !gpuOk },
-                { v: 'wasm', label: '⚡ WASM (پشتیبان‌گیر)' , disabled: false }
-            ];
-            opts.forEach(function(o) {
-                var b = document.createElement('button');
-                b.className = 'ostt-btn ostt-eng' + (dev === o.v ? ' sel' : '');
-                b.textContent = o.label + (o.disabled ? ' (پشتیبانی نمی‌شود)' : '');
-                b.disabled = o.disabled;
-                b.addEventListener('click', function() { setDevice(o.v); });
-                devRow.appendChild(b);
-            });
-        }
         var modelsEl = panel.querySelector('#ostt-models');
         modelsEl.innerHTML = '';
         for (var id in MODELS) {
             var row = document.createElement('label');
             row.className = 'ostt-model-row';
-            var info = MODELS[id];
             var checked = (id === model) ? ' checked' : '';
-            var compat = (dev === 'webgpu') ? info.webgpu : info.wasm;
-            var compatNote = !compat ? ' <span style="color:#c5221f;font-size:10px;">(با ' + dev + ' ناسازگار)</span>' : '';
-            var sizeNote = (info.mb >= 1000) ? (info.mb + ' MB') : (info.mb + ' MB');
-            row.innerHTML = '<input type="radio" name="ostt-model" value="' + id + '"' + checked + (compat ? '' : ' disabled') + '> ' +
-                info.label + compatNote;
+            row.innerHTML = '<input type="radio" name="ostt-model" value="' + id + '"' + checked + '> ' +
+                MODELS[id].label;
             modelsEl.appendChild(row);
         }
         modelsEl.querySelectorAll('input[name="ostt-model"]').forEach(function(r) {
             r.addEventListener('change', function() { setModel(r.value); });
         });
-        panel.querySelector('#ostt-status').textContent = ready
-            ? '✓ مدل آماده است — ضبط آفلاین فعال (' + dev + ')'
-            : 'مدل دانلود نشده — برای ضبط آفلاین اول دانلود کنید';
-        panel.querySelector('#ostt-download').textContent = 'دانلود مدل (~' + MODELS[model].mb + ' MB)';
-        panel.querySelector('#ostt-download').style.display = ready ? 'none' : '';
-        // 🔧 v224: disabled状态 را با _downloading هم‌گام کن — اگر دانلود تمام
-        // شده (خطا یا موفق)، دکمه فعال باشد.
-        panel.querySelector('#ostt-download').disabled = _downloading;
-        panel.querySelector('#ostt-delete').style.display = ready ? '' : 'none';
-        panel.querySelector('#ostt-progress-wrap').style.display = 'none';
-    }
-
-    var _downloading = false;
-    function startDownload() {
-        var panel = document.getElementById('ostt-panel');
-        if (!panel) return;
-        if (_downloading) { showToast('دانلود قبلی هنوز در حال انجام است — یا صبر کنید یا لغو کنید'); return; }
-        _downloading = true;
-        _fileMap = {};
-        var wrap = panel.querySelector('#ostt-progress-wrap');
-        var fill = panel.querySelector('#ostt-bar-fill');
-        var ptext = panel.querySelector('#ostt-progress-text');
-        var dlBtn = panel.querySelector('#ostt-download');
-        var cancelBtn = panel.querySelector('#ostt-cancel-dl');
-        dlBtn.disabled = true;
-        if (cancelBtn) cancelBtn.style.display = '';
-        wrap.style.display = 'block';
-        fill.style.width = '0%';
-        ptext.innerHTML = 'در حال دانلود مدل… (فقط این یک‌بار اینترنت لازم است)<br><span style="color:#888;font-size:11px;">اگر وسط دانلود قطع شد، دوباره بزنید — از همان نقطه ادامه می‌دهد</span>';
-        var onProg = function(pct, fileInfo, loaded, total) {
-            fill.style.width = pct + '%';
-            var mbL = (loaded / 1048576).toFixed(1);
-            var mbT = (total / 1048576).toFixed(1);
-            var html = '';
-            if (fileInfo) html += '<div style="margin-bottom:2px;">' + fileInfo + '</div>';
-            html += '<div>در حال دانلود… ' + pct + '٪ (' + mbL + ' از ' + mbT + ' MB)</div>';
-            ptext.innerHTML = html;
-        };
-        _loadHandlers.push(onProg);
-        loadModel().then(function() {
-            try { localStorage.setItem(READY_KEY, readyKey()); } catch(e) {}
-            setEngine('offline');
-            showToast('مدل آفلاین دانلود شد ✓ — ضبط صوت حالا بدون اینترنت و بدون گوگل کار می‌کند');
-        }).catch(function(err) {
-            console.error('[OfflineSTT] download failed:', err);
-            var msg = (err && err.message) ? err.message : 'نامشخص';
-            if (msg.indexOf('لغو') >= 0) {
-                showToast('دانلود لغو شد — chunk‌های ذخیره‌شده باقی می‌مانند. دوباره دانلود را بزنید تا از همان نقطه ادامه دهد');
-            } else {
-                showToast('خطا در دانلود مدل — دوباره تلاش کنید. chunk‌های ذخیره‌شده باقی می‌مانند');
-            }
-        }).then(function() {
-            _downloading = false;
-            _loadHandlers = _loadHandlers.filter(function(fn) { return fn !== onProg; });
-            // 🔧 v224: دکمهٔ دانلود را دوباره فعال کن — قبلاً disabled می‌ماند و
-            // کاربر نمی‌توانست دوباره تلاش کند.
-            if (dlBtn) dlBtn.disabled = false;
-            if (cancelBtn) cancelBtn.style.display = 'none';
-            if (panel.parentNode) refreshPanel();
-        });
-    }
-
-    // 🔧 v223: لغو دانلود — پیام cancel به Worker، chunk‌های IndexedDB باقی می‌مانند
-    function cancelDownload() {
-        if (_worker) {
-            try { _worker.postMessage({ type: 'cancel' }); } catch(e) {}
-            showToast('در حال لغو دانلود… chunk‌های ذخیره‌شده باقی می‌مانند');
+        // 🔧 v226: لینک‌های دانلود هوفینگ‌فیس برای مدل انتخاب‌شده
+        var linksEl = panel.querySelector('#ostt-links');
+        if (linksEl) {
+            var html = '<div style="font-weight:bold;margin-bottom:4px;">دانلود فایل‌های مدل از این آدرس‌ها:</div>';
+            html += '<div style="margin-bottom:4px;"><a href="https://huggingface.co/' + model + '/tree/main" target="_blank" style="color:#1a73e8;">📋 صفحهٔ فایل‌ها (همه فایل‌ها)</a></div>';
+            html += '<div style="margin-bottom:4px;"><a href="https://huggingface.co/' + model + '/tree/main/onnx" target="_blank" style="color:#1a73e8;">📁 پوشهٔ onnx (model_fp16.onnx)</a></div>';
+            html += '<div style="font-size:11px;color:#888;">همه فایل‌های config.json, tokenizer.json, preprocessor_config.json, ... و onnx/model_fp16.onnx را دانلود کنید.</div>';
+            linksEl.innerHTML = html;
         }
+        // وضعیت آماده‌بودن
+        var statusEl = panel.querySelector('#ostt-status');
+        if (statusEl) {
+            if (!gpuOk) {
+                statusEl.innerHTML = '⚠ مرورگر شما از WebGPU پشتیبانی نمی‌کند — از Chrome/Edge جدید استفاده کنید';;
+            } else if (ready) {
+                statusEl.textContent = '✓ مدل آماده است — ضبط آفلاین فعال';
+            } else {
+                statusEl.innerHTML = 'مدل آماده نیست — فایل‌ها را از لینک‌های بالا دانلود و با دکمهٔ «📂 انتخاب فایل‌های مدل» اضافه کنید';;
+            }
+        }
+        panel.querySelector('#ostt-select-files').style.display = ready ? 'none' : '';
+        panel.querySelector('#ostt-delete').style.display = ready ? '' : 'none';
+    }
+
+    // 🔧 v226: انتخاب فایل‌های مدل توسط کاربر — ذخیره در Cache Storage.
+    // کاربر فایل‌ها را از هوفینگ‌فیس دانلود کرده، سپس با file picker انتخاب می‌کند.
+    // فایل‌ها در Cache Storage با URL متناظر ذخیره می‌شوند تا Worker آنها را پیدا کند.
+    async function selectModelFiles(ev) {
+        var files = ev.target.files;
+        if (!files || files.length === 0) return;
+        var model = getModel();
+        var statusEl = document.querySelector('#ostt-panel #ostt-status');
+        if (statusEl) statusEl.textContent = 'در حال ذخیره فایل‌ها…';
+        try {
+            var cache = await caches.open('transformers-cache');
+            var stored = 0;
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                var filename = file.name;
+                // فایل‌های ONNX در onnx/ زیرپوشه هستند
+                var filepath = filename.endsWith('.onnx') ? ('onnx/' + filename) : filename;
+                var url = 'https://huggingface.co/' + model + '/resolve/main/' + filepath;
+                var response = new Response(file);
+                await cache.put(url, response);
+                stored++;
+            }
+            // مدل را آماده ثبت کن و سعی کن بارگذاری شود
+            loadModel().then(function() {
+                try { localStorage.setItem(READY_KEY, readyKey()); } catch(e) {}
+                setEngine('offline');
+                showToast(stored + ' فایل ذخیره شد ✓ — مدل آماده است');
+                refreshPanel();
+            }).catch(function(err) {
+                console.error('[OfflineSTT] load after file select failed:', err);
+                var msg = (err && err.message) ? err.message : 'نامشخص';
+                showToast('فایل‌ها ذخیره شدند ولی بارگذاری مدل خطا داد: ' + msg + ' — ممکن است فایلی کم باشد');
+                if (statusEl) statusEl.innerHTML = '⚠ خطا در بارگذاری: ' + msg + ' — همه فایل‌ها را دانلود کرده‌اید؟';
+            });
+        } catch(err) {
+            console.error('[OfflineSTT] selectModelFiles failed:', err);
+            showToast('خطا در ذخیره فایل‌ها: ' + ((err && err.message) || 'نامشخص'));
+        }
+        // reset input تا همان فایل دوباره قابل انتخاب باشد
+        ev.target.value = '';
     }
 
     function deleteModel() {
-        if (!confirm('مدل آفلاین حذف شود؟ برای استفادهٔ دوباره باید دوباره دانلود شود.')) return;
+        if (!confirm('مدل آفلاین حذف شود؟ برای استفادهٔ دوباره باید دوباره فایل‌ها را اضافه کنید.')) return;
         try { if (window.caches && caches.delete) caches.delete('transformers-cache'); } catch(e) {}
-        // 🔧 v223: حذف chunk‌های IndexedDB هم (برای resume)
-        try { indexedDB.deleteDatabase('yadavar_model_chunks'); } catch(e) {}
         try { localStorage.removeItem(READY_KEY); } catch(e) {}
         setEngine('online');
         showToast('مدل آفلاین حذف شد — موتور صوت به «آنلاین (گوگل)» برگشت');
@@ -10973,7 +10729,7 @@ window.OfflineSTT = (function() {
 
     // وضعیت داخلی — برای تست‌ها و اشکال‌زدایی
     function state() {
-        return { engine: getEngine(), model: getModel(), device: getDevice(), webgpuSupported: webgpuSupported(), ready: isReady(), activeFlow: _activeFlow, busy: _busy };
+        return { engine: getEngine(), model: getModel(), webgpuSupported: webgpuSupported(), ready: isReady(), activeFlow: _activeFlow, busy: _busy };
     }
 
     return {
@@ -10985,13 +10741,11 @@ window.OfflineSTT = (function() {
         setEngine: setEngine,
         getModel: getModel,
         setModel: setModel,
-        getDevice: getDevice,
-        setDevice: setDevice,
         webgpuSupported: webgpuSupported,
         isReady: isReady,
         openPanel: openPanel,
-        testMic: testMic, // 🔧 v221: تست میکروفون برای تشخیص خاموش‌بودن
-        cancelDownload: cancelDownload, // 🔧 v223: لغو دانلود با حفظ chunk‌های resume
+        testMic: testMic,
+        selectModelFiles: selectModelFiles, // 🔧 v226: انتخاب فایل‌های مدل توسط کاربر
         state: state,
         // فقط برای تست‌های خودکار
         get _testTranscribe() { return _testTranscribe; },

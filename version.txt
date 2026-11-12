@@ -1,1 +1,1 @@
-v225-2026-11-12-download-fetch-fallback-robust
+v226-2026-11-12-remove-wasm-manual-files

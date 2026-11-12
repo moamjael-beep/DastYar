@@ -11,11 +11,11 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v225 — ۱۴۰۵ آبان ۲۲ (رفع «نمی‌تونه دانلود کنه» —
-#                   fetch override robust: try/catch fallback + فقط ۲۰۶ + فقط فایل بزرگ)
-#  نسخهٔ فعلی کد:  APP_VERSION = v225-2026-11-12-download-fetch-fallback-robust
-#                  CACHE_NAME  = yadavar-cache-v225
-#                  version.txt = v225-2026-11-12-download-fetch-fallback-robust
+#  آخرین به‌روزرسانی: v226 — ۱۴۰۵ آبان ۲۳ (حذف WASM + حذف دانلود اتوماتیک +
+#                   انتخاب فایل‌های مدل توسط کاربر)
+#  نسخهٔ فعلی کد:  APP_VERSION = v226-2026-11-12-remove-wasm-manual-files
+#                  CACHE_NAME  = yadavar-cache-v226
+#                  version.txt = v226-2026-11-12-remove-wasm-manual-files
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -740,6 +740,24 @@
 #          برگرداند، fallback به fetch کامل؛ ۳) فقط فایل‌های بزرگ (>۱۰MB) با
 #          chunk دانلود می‌شوند — فایل‌های کوچک مستقیم fetch + کش می‌شوند؛
 #          ۴) لغو کاربر propagate می‌شود (نه fallback).
+#   BA-125 (v226 — الزام کاربر؛ قانون همیشگی) حذف WASM + حذف دانلود اتوماتیک:
+#          «مدل‌های WASM با کلید و کدهایش در برنامه را کلا حذف کن» +
+#          «دانلود اتوماتیک نمی‌خواهم... کاربر خودش دانلود و آدرس فایل‌ها را
+#           به برنامه معرفی کن».
+#          راه‌حل‌ها: ۱) حذف کامل WASM — فقط WebGPU. getDevice/setDevice/device
+#          toggle حذف شد. MODELS بدون wasm/webgpu fields. Worker همیشه device:webgpu,
+#          dtype:fp16. ۲) حذف دانلود اتوماتیک — startDownload/cancelDownload/
+#          progress bar/IndexedDB chunks/Range requests/HEAD/throttle/abort همگی
+#          حذف شدند. ۳) به‌جای آن: پنل لینک‌های هوفینگ‌فیس (صفحهٔ فایل‌ها + پوشهٔ
+#          onnx) را نمایش می‌دهد + دکمهٔ «انتخاب فایل‌های مدل» + file input.
+#          کاربر فایل‌ها را دستی دانلود می‌کند و با file picker به برنامه می‌دهد.
+#          ۴) فایل‌ها در Cache Storage با URL متناظر ذخیره می‌شوند. Worker fetch
+#          override فقط Cache Storage را بررسی می‌کند (تطبیق URL یا filename) —
+#          اگر فایل نبود، 404 برمی‌گرداند. هیچ دانلود شبکه‌ای انجام نمی‌شود.
+#          ۵) selectModelFiles پس از ذخیره فایل‌ها، loadModel را صدا می‌زند تا
+#          مدل بارگذاری شود و READY_KEY را تنظیم کند.
+#          API عمومی جدید: selectModelFiles. حذف شده‌ها: getDevice/setDevice/
+#          cancelDownload. readyKey = فقط مدل (بدون device).
 #
 # ── ۴.۹) آفلاین و ماندگاری حافظه ──────────────────────────────────
 #   BA-080 همهٔ عملیات داده آفلاین کار کنند؛ فقط ضبط آنلاین است.
@@ -1040,6 +1058,37 @@
 #     «امروز» برخورد می‌کرد و سورت تساوی مبهم می‌شد)؛ ③ N6 انتظارش از
 #     دیتابیسِ همان سندِ درختِ باز محاسبه می‌شود (N4/N5 سندِ باز را عوض
 #     می‌کنند؛ جمع ردیف درخت «جمع همین سند» است — BA-105 الگوی درست).
+#
+### v226 (۱۴۰۵ آبان ۲۳) — حذف WASM + حذف دانلود اتوماتیک + انتخاب فایل توسط کاربر
+#   کاربر (دو الزام):
+#   ۱) «مدل‌های WASM با کلید و کدهایش در برنامه را کلا حذف کن»
+#   ۲) «دانلود اتوماتیک نمی‌خواهم در قسمت دانلود بنویس از کجا دانلود شود کاربر
+#      خودش دانلود و آدرس فایل‌ها را به برنامه معرفی کن»
+#   - راه‌حل ۱ (حذف WASM): getDevice/setDevice/device toggle/DEVICE_KEY حذف شد.
+#     MODELS بدون wasm/webgpu fields. Worker همیشه device:webgpu, dtype:fp16.
+#     readyKey = فقط مدل (بدون @device).
+#   - راه‌حل ۲ (حذف دانلود اتوماتیک): startDownload/cancelDownload/progress bar/
+#     IndexedDB chunks/Range requests/HEAD/throttle/abort/_fileMap/_loadHandlers/
+#     _downloading همگی حذف شدند. Worker fetch override بسیار ساده شد (۲۵۳۵ char
+#     vs ۹۴۶۹ char در v225) — فقط Cache Storage را بررسی می‌کند.
+#   - راه‌حل ۳ (انتخاب فایل توسط کاربر): پنل لینک‌های هوفینگ‌فیس نمایش می‌دهد:
+#     • صفحهٔ فایل‌ها: huggingface.co/{model}/tree/main
+#     • پوشهٔ onnx: huggingface.co/{model}/tree/main/onnx
+#     کاربر فایل‌ها را دستی دانلود می‌کند، سپس با دکمهٔ «انتخاب فایل‌های مدل»
+#     و file picker آنها را انتخاب می‌کند.
+#   - ذخیره فایل‌ها: selectModelFiles هر فایل را در Cache Storage با URL متناظر
+#     ذخیره می‌کند. فایل‌های ONNX در onnx/ زیرپوشه ذخیره می‌شوند. سپس loadModel
+#     صدا زده می‌شود تا مدل بارگذاری شود.
+#   - Worker fetch override: فقط Cache Storage را بررسی می‌کند — اول تطبیق دقیق
+#     URL، سپس تطبیق با filename (برای فایل‌های onnx/). اگر نبود، 404 برمی‌گرداند.
+#     هیچ دانلود شبکه‌ای انجام نمی‌شود.
+#   - API: selectModelFiles اضافه شد. getDevice/setDevice/cancelDownload حذف شدند.
+#   - قانون صفر حفظ شد: مسیر گوگل + هر چهار میک آفلاین + v216-v225 عیناً سبز.
+#     صفر pageerror.
+#   - فایل‌های نسخه: APP_VERSION / CACHE_NAME(yadavar-cache-v226) /
+#     version.txt → v226-2026-11-12-remove-wasm-manual-files.
+#   - سوئیت جدید: test_offline_stt_v226.mjs (۲۳ تست Y1-Y23، پورت ۸۲۰۶).
+#     نسخه‌های قدیمی آپدیت شدند: v217-v225 (v.indexOf('v226') + skip removed-feature tests).
 #
 ### v225 (۱۴۰۵ آبان ۲۲) — رفع «نمی‌تونه دانلود کنه» — fetch override robust
 #   کاربر: «نمی تونه دانلود کنه»
