@@ -11,11 +11,11 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v221 — ۱۴۰۵ آبان ۲۲ (رفع «صدایی ضبط نشد» در آفلاین +
-#                   دکمهٔ تست میکروفون + گارد رقابت لمس‌دوباره)
-#  نسخهٔ فعلی کد:  APP_VERSION = v221-2026-11-12-offline-empty-blob-fix
-#                  CACHE_NAME  = yadavar-cache-v221
-#                  version.txt = v221-2026-11-12-offline-empty-blob-fix
+#  آخرین به‌روزرسانی: v222 — ۱۴۰۵ آبان ۲۲ (ضبط PCM خام با AudioWorklet +
+#                   WebGPU + مدل whisper-large-v3-turbo)
+#  نسخهٔ فعلی کد:  APP_VERSION = v222-2026-11-12-pcm-capture-webgpu-large
+#                  CACHE_NAME  = yadavar-cache-v222
+#                  version.txt = v222-2026-11-12-pcm-capture-webgpu-large
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -658,6 +658,35 @@
 #          ⚠️ قانون صفر: همهٔ مسیرهای v220 (و مسیر گوگل) دست‌نخورده؛
 #             فقط آستانه و گارد و دکمهٔ تست اضافه شد. تست‌های v220 (Y1-Y10)
 #             عیناً سبز ماندند (با آپدیت نسخه به v221).
+#   BA-120 (v222 — الزام کاربر؛ قانون همیشگی) رفع «unable to decode audio
+#          data» + سرعت/دقت بهتر:
+#          «پیغام تست میکروفون: unable to decode audio data — مرورگر ممکن
+#           است این قالب صوتی را پشتیبانی نکند» + «در بهترین مدل هم بسیار
+#           کند و با غلط است؛ مدل بزرگتری هم اگر باشد مشکلی نیست چند گیگ هم
+#           باشد ولی سریع و درست تشخیص دهد».
+#          ریشه‌یابی ۱ (decode): باگ شناخته‌شدهٔ Chromium (crbug 40416298) —
+#          WebAudio decodeAudioData در بسیاری از نصب‌های Chrome از opus-in-
+#          webm پشتیبانی نمی‌کند (وابسته به پرچم ffmpeg/opus هنگام build).
+#          راه‌حل: حذف کامل MediaRecorder+decodeAudioData. ضبط PCM خام با
+#          AudioWorklet (fallback: ScriptProcessorNode). نمونه‌های Float32
+#          مستقیم از میکروفون → Worker → Whisper. هیچ encode/decode‌ای در
+#          کار نیست — دیگر خطای «unable to decode audio data» ممکن نیست.
+#          متغیرهای قدیمی حذف: _recorder, _mime, blobTo16kMono, pickMime.
+#          متغیرهای جدید: _actx, _source, _node, _sampleRate, _useWorklet.
+#          resampleTo16k: اگر AudioContext نرخی غیر از ۱۶kHz داشت، خطی resample.
+#          ریشه‌یابی ۲ (سرعت): WebGPU ۵-۱۰x سریع‌تر از WASM است (Sitepoint:
+#          ۲۵-۴۰ token/s روی GPU مجزا vs ۲-۵ روی WASM). گزینهٔ دستگاه
+#          (WebGPU/WASM) به پنل اضافه شد؛ auto-detect اولویت WebGPU.
+#          dtype تطبیقی: WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8.
+#          مدل جدید: onnx-community/whisper-large-v3-turbo (~۱.۵GB) —
+#          دقیق‌ترین؛ فقط با WebGPU (با WASM ناسازگار است و رد می‌شود).
+#          readyKey = model@device — تغییر دستگاه یا مدل، ready را بی‌اعتبار
+#          می‌کند؛ اما برگشت به combo قبلی که قبلاً دانلود شده، ready=true
+#          می‌ماند (فایل‌های cache هنوز موجودند).
+#          API عمومی جدید: getDevice/setDevice/webgpuSupported.
+#          ⚠️ قانون صفر: مسیر گوگل (Y9) + هر چهار میک آفلاین (Y4-Y8) عیناً
+#             سبز ماندند. مد MediaRecorder پس‌زمینهٔ v203 (برای مسیر گوگل)
+#             دست‌نخورده ماند.
 #
 # ── ۴.۹) آفلاین و ماندگاری حافظه ──────────────────────────────────
 #   BA-080 همهٔ عملیات داده آفلاین کار کنند؛ فقط ضبط آنلاین است.
@@ -958,6 +987,48 @@
 #     «امروز» برخورد می‌کرد و سورت تساوی مبهم می‌شد)؛ ③ N6 انتظارش از
 #     دیتابیسِ همان سندِ درختِ باز محاسبه می‌شود (N4/N5 سندِ باز را عوض
 #     می‌کنند؛ جمع ردیف درخت «جمع همین سند» است — BA-105 الگوی درست).
+#
+### v222 (۱۴۰۵ آبان ۲۲) — ضبط PCM خام + WebGPU + whisper-large-v3-turbo
+#   کاربر (دو الزام):
+#   ۱) «پیغام تست میکروفون: unable to decode audio data — مرورگر ممکن است
+#      این قالب صوتی را پشتیبانی نکند»
+#   ۲) «در بهترین مدل هم بسیار کند و با غلط است؛ مدل بزرگتری هم اگر باشد
+#      مشکلی نیست چند گیگ هم باشد ولی سریع و درست تشخیص دهد»
+#   - ریشه‌یابی ۱ (decode error): باگ شناخته‌شدهٔ Chromium (crbug 40416298) —
+#     WebAudio decodeAudioData در بسیاری از نصب‌های Chrome از opus-in-webm
+#     پشتیبانی نمی‌کند (ffmpeg/opus ممکن است هنگام build فعال نباشد).
+#     راه‌حل: حذف کامل MediaRecorder+decodeAudioData. ضبط PCM خام با
+#     AudioWorklet (روی thread جدا) با fallback به ScriptProcessorNode.
+#     کد AudioWorklet از یک Blob URL بارگذاری می‌شود (ساختار فایل تکی حفظ
+#     می‌شود). نمونه‌های Float32 مستقیم از میکروفون → Worker → Whisper.
+#     متغیرهای قدیمی حذف: _recorder, _mime, blobTo16kMono, pickMime.
+#     متغیرهای جدید: _actx, _source, _node, _sampleRate, _useWorklet.
+#     resampleTo16k: resample خطی اگر AudioContext نرخ غیر ۱۶kHz داشت.
+#     stopCaptureAsync حالا برمی‌گرداند: {audio: Float32Array, duration,
+#     size, sampleRate} یا null. transcribeAudio مستقیم به Worker post می‌کند.
+#   - ریشه‌یابی ۲ (سرعت/دقت): WebGPU ۵-۱۰x سریع‌تر از WASM است (Sitepoint:
+#     ۲۵-۴۰ token/s روی GPU مجزا vs ۲-۵ روی WASM). راه‌حل‌ها:
+#     • گزینهٔ دستگاه (WebGPU/WASM) به پنل اضافه شد؛ auto-detect اولویت
+#       WebGPU (navigator.gpu). getDevice/setDevice/webgpuSupported.
+#     • dtype تطبیقی: WebGPU ⇒ fp16؛ WASM ⇒ q8.
+#     • مدل جدید: onnx-community/whisper-large-v3-turbo (~۱.۵GB) —
+#       دقیق‌ترین. فقط با WebGPU (با WASM رد می‌شود).
+#     • readyKey = model@device — تغییر دستگاه یا مدل، ready را بی‌اعتبار
+#       می‌کند. اما برگشت به combo قبلی که قبلاً دانلود شده، ready=true
+#       می‌ماند (فایل‌های cache هنوز موجودند).
+#   - قانون صفر حفظ شد: مسیر گوگل (Y9) + هر چهار میک آفلاین (Y4-Y8) عیناً
+#     سبز ماندند. مد MediaRecorder پس‌زمینهٔ v203 (برای مسیر گوگل)
+#     دست‌نخورده ماند. صفر pageerror در کل سوئیت.
+#   - اثبات تست‌ها: Y11 (ضبط کوتاه ۳۵۰ms با PCM، capSize=۲۳۰۴۰ بایت)؛
+#     Y12/Y16 (تست میکروفون بدون خطای decode، اندازه=۱۲۸KB، مدت=۲s،
+#     دامنه=۰.۳۵، «میکروفون سالم است»)؛ Y14 (WebGPU detection + setDevice
+#     ماندگار)؛ Y15 (large-v3-turbo با WASM رد، با WebGPU پذیرفته)؛
+#     Y17 (تغییر دستگاه → ready بی‌اعتبار، برگشت → ready=true).
+#   - فایل‌های نسخه: APP_VERSION / CACHE_NAME(yadavar-cache-v222) /
+#     version.txt → v222-2026-11-12-pcm-capture-webgpu-large.
+#   - سوئیت جدید: test_offline_stt_v222.mjs (۱۷ تست Y1-Y17، پورت ۸۲۰۲).
+#     نسخه‌های قدیمی آپدیت شدند: v217/v218/v219/v220/v221 (افزونه `v.indexOf('v222')`،
+#     READY_KEY با فرمت model@device، modelCount===4).
 #
 ### v221 (۱۴۰۵ آبان ۲۲) — رفع «صدایی ضبط نشد» در موتور آفلاین + تست میکروفون
 #   کاربر: «آفلاین را دانلود کردم. بعد از ضبط در یک تسک می‌گوید صدایی
