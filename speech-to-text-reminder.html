@@ -7005,7 +7005,7 @@ body.locked .header-actions button {
 //               ~۷۵۰MB-۱.۵GB) — فقط با WebGPU توصیه می‌شود.
 //            dtype: WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده).
 //            تست: test_offline_stt_v222.mjs — ۱۴ تست Y1-Y14، پورت ۸۲۰۲.
-const APP_VERSION = 'v223-2026-11-12-resume-download-mic-blink';
+const APP_VERSION = 'v224-2026-11-12-download-retry-button-fix';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -10312,12 +10312,20 @@ window.OfflineSTT = (function() {
                 var msg = d.message || 'خطای نامشخص';
                 if (_pendingLoad) { var rj = _pendingLoad.reject; _pendingLoad = null; rj(new Error(msg)); }
                 if (_pending) { var p2 = _pending; _pending = null; p2.reject(new Error(msg)); }
+                // 🔧 v224: اگر خطا حین load (دانلود) رخ داد، Worker را terminate کن
+                // تا تلاش بعدی Worker تازه بسازد — وگرنه Worker مرده reuse می‌شود
+                // و دکمهٔ دانلود بی‌عکس‌العمل می‌ماند.
+                try { if (_worker) _worker.terminate(); } catch(e) {}
+                _worker = null;
             }
         };
         _worker.onerror = function(e) {
             var msg = (e && e.message) ? e.message : 'خطای Worker';
             if (_pendingLoad) { var rj2 = _pendingLoad.reject; _pendingLoad = null; rj2(new Error(msg)); }
             if (_pending) { var p3 = _pending; _pending = null; p3.reject(new Error(msg)); }
+            // 🔧 v224: Worker crash — terminate و null تا تلاش بعدی تازه بسازد
+            try { if (_worker) _worker.terminate(); } catch(e2) {}
+            _worker = null;
         };
         return _worker;
     }
@@ -10654,6 +10662,9 @@ window.OfflineSTT = (function() {
             : 'مدل دانلود نشده — برای ضبط آفلاین اول دانلود کنید';
         panel.querySelector('#ostt-download').textContent = 'دانلود مدل (~' + MODELS[model].mb + ' MB)';
         panel.querySelector('#ostt-download').style.display = ready ? 'none' : '';
+        // 🔧 v224: disabled状态 را با _downloading هم‌گام کن — اگر دانلود تمام
+        // شده (خطا یا موفق)، دکمه فعال باشد.
+        panel.querySelector('#ostt-download').disabled = _downloading;
         panel.querySelector('#ostt-delete').style.display = ready ? '' : 'none';
         panel.querySelector('#ostt-progress-wrap').style.display = 'none';
     }
@@ -10700,6 +10711,9 @@ window.OfflineSTT = (function() {
         }).then(function() {
             _downloading = false;
             _loadHandlers = _loadHandlers.filter(function(fn) { return fn !== onProg; });
+            // 🔧 v224: دکمهٔ دانلود را دوباره فعال کن — قبلاً disabled می‌ماند و
+            // کاربر نمی‌توانست دوباره تلاش کند.
+            if (dlBtn) dlBtn.disabled = false;
             if (cancelBtn) cancelBtn.style.display = 'none';
             if (panel.parentNode) refreshPanel();
         });

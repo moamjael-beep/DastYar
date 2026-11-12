@@ -11,11 +11,11 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v223 — ۱۴۰۵ آبان ۲۲ (استقلال ضبط از چشمک هدر +
-#                   دانلود با resume در سطح بایت + دکمهٔ لغو)
-#  نسخهٔ فعلی کد:  APP_VERSION = v223-2026-11-12-resume-download-mic-blink
-#                  CACHE_NAME  = yadavar-cache-v223
-#                  version.txt = v223-2026-11-12-resume-download-mic-blink
+#  آخرین به‌روزرسانی: v224 — ۱۴۰۵ آبان ۲۲ (رفع «دکمهٔ دانلود بعد از خطا
+#                   بی‌عکس‌العمل می‌ماند» — disabled reset + Worker terminate)
+#  نسخهٔ فعلی کد:  APP_VERSION = v224-2026-11-12-download-retry-button-fix
+#                  CACHE_NAME  = yadavar-cache-v224
+#                  version.txt = v224-2026-11-12-download-retry-button-fix
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -716,6 +716,18 @@
 #          • دکمهٔ «لغو دانلود» در پنل — chunk‌های ذخیره‌شده باقی می‌مانند.
 #          • deleteModel هم IndexedDB chunks را پاک می‌کند.
 #          API عمومی جدید: cancelDownload.
+#   BA-123 (v224 — الزام کاربر؛ قانون همیشگی) رفع «دکمهٔ دانلود بعد از خطا
+#          بی‌عکس‌العمل می‌ماند»:
+#          «دانلود یک‌بار که خطا می‌دهد دیگر عکس‌العملی ندارد کلیدش و چه در
+#           بار پیام و چه بعدش دانلود نمی‌کند».
+#          ریشه‌ها: ۱) startDownload ابتدا dlBtn.disabled=true می‌گذاشت ولی
+#          هرگز false نمی‌کرد — بعد از خطا یا لغو، دکمه disabled می‌ماند.
+#          ۲) Worker پس از خطا terminate نمی‌شد → تلاش بعدی Worker مرده reuse
+#          می‌کرد و هیچ پیامی پردازش نمی‌کرد.
+#          راه‌حل‌ها: ۱) finally block: dlBtn.disabled = false (پس از خطا/موفق/لغو).
+#          ۲) refreshPanel: disabled = _downloading (هم‌گام با state واقعی).
+#          ۳) error handler + onerror: Worker terminate() و _worker=null →
+#          تلاش بعدی ensureWorker، Worker تازه می‌سازد.
 #
 # ── ۴.۹) آفلاین و ماندگاری حافظه ──────────────────────────────────
 #   BA-080 همهٔ عملیات داده آفلاین کار کنند؛ فقط ضبط آنلاین است.
@@ -1016,6 +1028,27 @@
 #     «امروز» برخورد می‌کرد و سورت تساوی مبهم می‌شد)؛ ③ N6 انتظارش از
 #     دیتابیسِ همان سندِ درختِ باز محاسبه می‌شود (N4/N5 سندِ باز را عوض
 #     می‌کنند؛ جمع ردیف درخت «جمع همین سند» است — BA-105 الگوی درست).
+#
+### v224 (۱۴۰۵ آبان ۲۲) — رفع «دکمهٔ دانلود بعد از خطا بی‌عکس‌العمل می‌ماند»
+#   کاربر: «دانلود یک‌بار که خطا می‌دهد دیگر عکس‌العملی ندارد کلیدش و چه در
+#   بار پیام و چه بعدش دانلود نمی‌کند».
+#   - ریشه‌یابی: دو مشکل —
+#     ۱) startDownload ابتدا dlBtn.disabled=true می‌گذاشت ولی هرگز false نمی‌کرد.
+#     بعد از خطا یا لغو، دکمه disabled می‌ماند و کاربر نمی‌توانست دوباره تلاش کند.
+#     ۲) Worker پس از خطا terminate نمی‌شد → ensureWorker در تلاش بعدی، Worker
+#     مرده را reuse می‌کرد و هیچ پیامی پردازش نمی‌کرد.
+#   - راه‌حل‌ها:
+#     • finally block در startDownload: dlBtn.disabled = false (پس از خطا/موفق/لغو).
+#     • refreshPanel: disabled = _downloading (هم‌گام با state واقعی).
+#     • error handler در ensureWorker: Worker terminate() و _worker=null.
+#     • onerror handler هم همین (Worker crash).
+#   - قانون صفر حفظ شد: همهٔ تست‌های v216-v223 عیناً سبز. صفر pageerror.
+#   - اثبات تست Y23: refreshPanel با _downloading=false، disabled را false می‌کند
+#     (حتی اگر قبلاً true بوده) + کد استاتیک: terminate() و _worker=null موجود.
+#   - فایل‌های نسخه: APP_VERSION / CACHE_NAME(yadavar-cache-v224) /
+#     version.txt → v224-2026-11-12-download-retry-button-fix.
+#   - سوئیت جدید: test_offline_stt_v224.mjs (۲۳ تست Y1-Y23، پورت ۸۲۰۴).
+#     نسخه‌های قدیمی آپدیت شدند: v217/v218/v219/v220/v221/v222/v223 (v.indexOf('v224')).
 #
 ### v223 (۱۴۰۵ آبان ۲۲) — استقلال ضبط از چشمک هدر + دانلود resume در سطح بایت
 #   کاربر (دو الزام):
