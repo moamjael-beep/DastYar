@@ -6973,7 +6973,26 @@ body.locked .header-actions button {
 //            capture پس‌زمینهٔ v203 هنگام ضبط آفلاین اصلی skip می‌شود
 //            (MediaRecorder خودش پس‌زمینه را ضبط می‌کند).
 //            تست: test_offline_stt_v220.mjs — ۱۰ تست Y1-Y10، پورت ۸۲۰۰.
-const APP_VERSION = 'v220-2026-11-12-offline-stt-whisper';
+//
+//         🔧 v221 (۱۴۰۵ آبان ۲۲) — الزام کاربر:
+//            «آفلاین را دانلود کردم. بعد از ضبط در یک تسک می‌گوید صدایی
+//            ضبط نشد و هیچ کلمه‌ای نمی‌نویسد» — سه ریشهٔ احتمالی:
+//            ۱) آستانهٔ blob.size < 1200 خیلی سخت‌گیرانه بود (قطعهٔ کوتاه
+//               یا صدای خاموش اپوس می‌توانست زیر ۱۲۰۰ بایت بیفتد) → آستانه
+//               به «!blob» کاهش یافت؛ بررسی مدت < ۰.۳s به blobTo16kMono
+//               واگذار شد.
+//            ۲) رقابت لمس‌دوباره وقتی getUserMedia کند است (اندروید) —
+//               startMain/startField دو بار پشت سر هم صدا زده می‌شد و
+//               رکوردر دوم جای اولی می‌نشست → گارد _starting اضافه شد.
+//            ۳) برای تشخیص آنکه میکروفون واقعاً صدایی می‌گیرد یا نه،
+//               دکمهٔ «تست میکروفون» در پنل موتور صوت اضافه شد: ۲ ثانیه
+//               ضبط → اندازهٔ blob، مدت صوت، بیشینهٔ دامنه و تشخیص
+//               خاموش‌بودن میکروفون.
+//            علاوه بر این: requestData() پیش از stop() برای فلش دادهٔ
+//            معلق، پذیرش همهٔ chunkها (بدون فیلتر size>0)، و console.log‌های
+//            تشخیصی. قانون صفر (عدم بازگشت) حفظ شد.
+//            تست: test_offline_stt_v221.mjs — ۱۱ تست Y1-Y11، پورت ۸۲۰۱.
+const APP_VERSION = 'v221-2026-11-12-offline-empty-blob-fix';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -9969,6 +9988,7 @@ window.OfflineSTT = (function() {
     var _pendingLoad = null;  // انتظار برای آماده‌شدن مدل
     var _busy = false;        // در حال تبدیل صدا به متن
     var _activeFlow = null;   // 'main' | 'accDoc' | 'accRec' | 'notes'
+    var _starting = false;    // 🔧 v221: گارد رقابت لمس‌دوباره هنگام کندی getUserMedia
     var _recorder = null, _stream = null, _chunks = [], _mime = '';
     var _msgId = 1;
     var _fileMap = {};        // پیشرفت دانلود هر فایل مدل
@@ -10095,14 +10115,21 @@ window.OfflineSTT = (function() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             throw new Error('getUserMedia در دسترس نیست');
         }
-        _stream = await navigator.mediaDevices.getUserMedia({
-            audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true }
-        });
+        _starting = true; // 🔧 v221: گارد رقابت
+        try {
+            _stream = await navigator.mediaDevices.getUserMedia({
+                audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true }
+            });
+        } finally { _starting = false; }
         _chunks = [];
         _mime = pickMime();
         _recorder = _mime ? new MediaRecorder(_stream, { mimeType: _mime }) : new MediaRecorder(_stream);
-        _recorder.ondataavailable = function(e) { if (e.data && e.data.size > 0) _chunks.push(e.data); };
+        // 🔧 v221: پذیرش همهٔ chunkها — حتی با size=0 (در برخی مرورگرها اولین
+        // dataavailable یک Blob خالی است). فیلتر size>0 باعث می‌شد chunkهای
+        // معتبر در صدای خاموش گم شوند.
+        _recorder.ondataavailable = function(e) { if (e.data) _chunks.push(e.data); };
         _recorder.start(1000);
+        console.log('[OfflineSTT] capture started — mime=' + (_recorder.mimeType || _mime || '?'));
     }
 
     function stopCaptureAsync() {
@@ -10118,9 +10145,15 @@ window.OfflineSTT = (function() {
                 if (done) return; done = true;
                 var chunks = _chunks; _chunks = [];
                 try { if (stream) stream.getTracks().forEach(function(t) { t.stop(); }); } catch(e) {}
-                resolve(chunks.length ? new Blob(chunks, { type: rec.mimeType || 'audio/webm' }) : null);
+                var blob = chunks.length ? new Blob(chunks, { type: rec.mimeType || 'audio/webm' }) : null;
+                console.log('[OfflineSTT] capture stopped — chunks=' + chunks.length + ', blobSize=' + (blob ? blob.size : 'null') + ', mime=' + (rec.mimeType || '?'));
+                resolve(blob);
             };
             rec.onstop = finish;
+            // 🔧 v221: requestData() پیش از stop() برای فلش دادهٔ معلق — در برخی
+            // مرورگرها اگر timeslice سپری نشده باشد، stop() بدون fire کردن
+            // dataavailableِ آخر می‌تواند blob را خالی برگرداند.
+            try { if (rec.state === 'recording') rec.requestData(); } catch(e) {}
             try { rec.stop(); } catch(e) { finish(); }
             setTimeout(finish, 2500); // اطمینان — اگر onstop نیامد
         });
@@ -10232,6 +10265,7 @@ window.OfflineSTT = (function() {
             '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
               '<button id="ostt-download" class="ostt-btn ostt-btn-primary">دانلود مدل</button>' +
               '<button id="ostt-delete" class="ostt-btn ostt-btn-danger">حذف مدل</button>' +
+              '<button id="ostt-test-mic" class="ostt-btn ostt-btn-ghost">تست میکروفون</button>' +
             '</div>' +
             '<div style="font-size:11px;color:#777;margin-top:10px;line-height:1.8;">' +
               'اولین دانلود به اینترنت نیاز دارد؛ پس از آن ضبط صوت کاملاً آفلاین و بدون گوگل روی دستگاه شما انجام می‌شود. برای دقت/سرعت بهتر مدل‌های بزرگ‌تر را انتخاب کنید. (Chrome/Edge) — Whisper با Transformers.js' +
@@ -10244,6 +10278,7 @@ window.OfflineSTT = (function() {
         box.querySelector('#ostt-eng-offline').addEventListener('click', function() { setEngine('offline'); });
         box.querySelector('#ostt-download').addEventListener('click', startDownload);
         box.querySelector('#ostt-delete').addEventListener('click', deleteModel);
+        box.querySelector('#ostt-test-mic').addEventListener('click', testMic);
         refreshPanel();
     }
 
@@ -10313,12 +10348,71 @@ window.OfflineSTT = (function() {
         refreshPanel();
     }
 
+    // 🔧 v221: تست میکروفون — ۲ ثانیه ضبط بدون تبدیل، فقط برای تشخیص آنکه
+    // میکروفون واقعاً صدایی می‌گیرد. نتیجه در #ostt-status نمایش داده می‌شود:
+    //   • اندازهٔ blob (بایت)
+    //   • مدت صوت (ثانیه)
+    //   • بیشینهٔ دامنه (۰ تا ۱) — اگر <۰٫۰۰۱ باشد، یعنی میکروفون خاموش است
+    //     یا دستگاه ورودی اشتباه انتخاب شده.
+    async function testMic() {
+        var panel = document.getElementById('ostt-panel');
+        var statusEl = panel ? panel.querySelector('#ostt-status') : null;
+        var testBtn = panel ? panel.querySelector('#ostt-test-mic') : null;
+        if (!statusEl) return;
+        if (testBtn) { testBtn.disabled = true; testBtn.textContent = 'در حال تست…'; }
+        statusEl.textContent = 'در حال ضبط ۲ ثانیه برای تست میکروفون…';
+        try {
+            await startCapture();
+        } catch(e) {
+            console.error('[OfflineSTT] testMic mic failed:', e);
+            statusEl.textContent = '✗ دسترسی به میکروفون ممکن نشد — در تنظیمات مرورگر اجازه دهید';
+            if (testBtn) { testBtn.disabled = false; testBtn.textContent = 'تست میکروفون'; }
+            return;
+        }
+        await new Promise(function(r) { setTimeout(r, 2000); });
+        var blob = await stopCaptureAsync();
+        if (!blob) {
+            statusEl.textContent = '✗ هیچ داتی ضبط نشد — مرورگر صدا را دریافت نکرد. احتمالاً میکروفون در اختیار برنامهٔ دیگری است یا قطع شده است.';
+            if (testBtn) { testBtn.disabled = false; testBtn.textContent = 'تست میکروفون'; }
+            return;
+        }
+        var sizeStr = blob.size + ' بایت';
+        var dur = 0, hasAudio = false, maxAmp = 0;
+        try {
+            var audio = await blobTo16kMono(blob);
+            if (audio) {
+                dur = audio.length / 16000;
+                // نمونه‌برداری هر ۱۰۰ نمونه برای سرعت
+                for (var i = 0; i < audio.length; i += 100) {
+                    var a = Math.abs(audio[i]);
+                    if (a > maxAmp) maxAmp = a;
+                    if (a > 0.001) hasAudio = true;
+                }
+            }
+        } catch(e) {
+            statusEl.textContent = '✗ خطا در رمزگشایی صدا (' + sizeStr + '): ' + ((e && e.message) || 'نامشخص') + ' — مرورگر ممکن است این قالب صوتی را پشتیبانی نکند';
+            if (testBtn) { testBtn.disabled = false; testBtn.textContent = 'تست میکروفون'; }
+            return;
+        }
+        var msg = '✓ اندازه: ' + sizeStr + ' — مدت: ' + (dur ? dur.toFixed(2) + 's' : 'خیلی کوتاه') + ' — بیشینه دامنه: ' + maxAmp.toFixed(3);
+        if (!hasAudio) msg += ' ⚠ صدایی ضبط نشد — میکروفون درست کار نمی‌کند. چک کنید: سطح صدا، دستگاه ورودی، اجازهٔ مرورگر، یا اینکه برنامهٔ دیگری میکروفون را در اختیار ندارد.';
+        else if (dur < 0.3) msg += ' ⚠ ضبط خیلی کوتاه بود — دوباره تلاش کنید و واضح صحبت کنید';
+        else if (maxAmp < 0.01) msg += ' ⚠ صدا خیلی آهسته است — نزدیک‌تر به میکروفون صحبت کنید';
+        else msg += ' ✓ میکروفون سالم است — اگر متن نمی‌نویسد، مدل را در پنل دوباره دانلود کنید یا مدل بزرگ‌تر انتخاب کنید';
+        statusEl.textContent = msg;
+        if (testBtn) { testBtn.disabled = false; testBtn.textContent = 'تست میکروفون'; }
+    }
+
     // ══════════ هوک‌های ۴ میکروفون برنامه ══════════
 
     // شروع/پایان ضبط هر جریان — وقتی true برگرداند، مسیر گوگل اجرا نمی‌شود
     function hookStart(flow) {
         if (getEngine() !== 'offline') return false;
         if (_busy) { showToast('در حال تبدیل صدا به متن… چند لحظه صبر کنید'); return true; }
+        // 🔧 v221: گارد رقابت — اگر startCapture هنوز در حال انجام است (getUserMedia
+        // کند است، مخصوصاً روی اندروید)، لمس دوباره نباید دوباره startMain/startField
+        // را صدا بزند؛ وگرنه دو رکوردر ساخته می‌شود و رکوردر اول گم می‌شود.
+        if (_starting) { showToast('کمی صبر کنید — در حال آماده‌سازی میکروفون…'); return true; }
         if (flow === 'main') {
             if (_activeFlow === 'main') { finalizeMain(); return true; } // لمس دوباره = پایان
             if (!isReady()) { openPanel(); showToast('برای ضبط آفلاین، اول مدل را دانلود کنید'); return true; }
@@ -10363,14 +10457,19 @@ window.OfflineSTT = (function() {
         var btn = document.getElementById(cfg.btn);
         if (btn) btn.classList.remove('recording');
         var blob = await stopCaptureAsync();
-        if (!blob || blob.size < 1200) { showToast('صدایی ضبط نشد — دوباره تلاش کنید'); return; }
+        // 🔧 v221: آستانه ۱۲۰۰ بایت حذف شد — فقط !blob (یعنی هیچ chunk‌ای نیامد).
+        // بررسی مدتِ کوتاه به blobTo16kMono واگذار شد (dur < 0.3s → خروجی خالی).
+        if (!blob) {
+            showToast('صدایی ضبط نشد — میکروفون را در «تست میکروفون» (پنل موتور صوت) بررسی کنید');
+            return;
+        }
         _busy = true;
         showBusy('در حال تبدیل صدا به متن… (روی دستگاه شما — بدون اینترنت)');
         try {
             var text = await transcribeAudio(blob);
             hideBusy(); _busy = false;
             if (!text || !text.trim()) {
-                showToast('متنی تشخیص داده نشد — نزدیک‌تر صحبت کنید یا مدل بزرگ‌تر انتخاب کنید');
+                showToast('متنی تشخیص داده نشد — نزدیک‌تر صحبت کنید، مدل بزرگ‌تر انتخاب کنید، یا «تست میکروفون» را در پنل بزنید');
                 return;
             }
             text = addNumericAfterWords(text.trim());
@@ -10433,7 +10532,9 @@ window.OfflineSTT = (function() {
         clearRecordingMediaSession();
         var blob = await stopCaptureAsync();
         var text = '';
-        if (blob && blob.size >= 1200) {
+        // 🔧 v221: آستانهٔ blob.size >= 1200 حذف شد — فقط !blob (هیچ chunk‌ای نیامد).
+        // blobTo16kMono خودش مدت < ۰.۳s را با خروجی خالی هندل می‌کند.
+        if (blob) {
             _busy = true;
             showBusy('در حال تبدیل صدا به متن… (روی دستگاه شما — بدون اینترنت)');
             try {
@@ -10443,7 +10544,7 @@ window.OfflineSTT = (function() {
                     document.getElementById('itemText').value = addNumericAfterWords(text.trim());
                     showToast('متن آفلاین ثبت شد ✓ (بدون گوگل)');
                 } else {
-                    showToast('متنی تشخیص داده نشد — دوباره تلاش کنید یا تایپ کنید');
+                    showToast('متنی تشخیص داده نشد — دوباره تلاش کنید، یا «تست میکروفون» را در پنل موتور صوت بزنید');
                 }
             } catch(err) {
                 hideBusy(); _busy = false;
@@ -10451,7 +10552,7 @@ window.OfflineSTT = (function() {
                 showToast('خطا در تبدیل آفلاین — می‌توانید متن را تایپ کنید');
             }
         } else {
-            showToast('صدایی ضبط نشد');
+            showToast('صدایی ضبط نشد — «تست میکروفون» را در پنل موتور صوت (دکمهٔ 🎙) بزنید');
         }
         document.getElementById('itemText').value = (text && text.trim()) ? addNumericAfterWords(text.trim()) : '';
         setTimeout(function() { showFormSection(); }, 250);
@@ -10495,6 +10596,7 @@ window.OfflineSTT = (function() {
         setModel: setModel,
         isReady: isReady,
         openPanel: openPanel,
+        testMic: testMic, // 🔧 v221: تست میکروفون برای تشخیص خاموش‌بودن
         state: state,
         // فقط برای تست‌های خودکار
         get _testTranscribe() { return _testTranscribe; },
