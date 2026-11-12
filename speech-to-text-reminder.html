@@ -1341,6 +1341,15 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     margin-bottom: 10px;
     overflow: hidden;
 }
+/* 🔧 v217 (الزام کاربر): فلشِ توجه روی سندِ ناتمام — وقتی کلیدهای افزودن
+   تا سبز شدن سندِ قبلی اجازهٔ ساخت سند جدید ندارند، همان سند با این
+   انیمیشن مشخص می‌شود */
+@keyframes accDocFlash {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    30%      { box-shadow: 0 0 0 5px rgba(220, 53, 69, 0.55); }
+    60%      { box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.25); }
+}
+.acc-doc-flash { animation: accDocFlash 1.1s ease-in-out 2; }
 .acc-doc-head {
     display: flex;
     align-items: center;
@@ -5375,10 +5384,14 @@ body.locked .header-actions button {
 
             <!-- 🔧 v213 (الزام کاربر): انتخاب حساب (گروه/زیرگروه) با منوی زیبا —
                  select فقط نگهدارندهٔ مقدار است -->
+            <!-- 🔧 v217 (الزام کاربر): باکس دوم (زیرگروه) حذف شد — منوی درختی
+                 باکس اول همهٔ گروه‌ها و زیرگروه‌ها را با هم نشان می‌دهد و انتخاب
+                 زیرگروه در همان باکس اول = فیلتر همان زیرگروه + فرزندانش
+                 (accFilterRecords با accDescIds). select مخفی زیرگروه فقط
+                 نگهدارندهٔ مقدار خالی می‌ماند تا accReadFormCriteria سالم بماند. -->
             <label>📁 حساب (گروه / زیرگروه)</label>
             <div class="acc-person-field" id="accSearchGroupField" onclick="accOpenGroupPicker('search')">— همهٔ حساب‌ها —</div>
             <select id="accSearchGroup" style="display:none;"><option value="">— همهٔ گروه‌ها —</option></select>
-            <div class="acc-person-field" id="accSearchSubgroupField" onclick="accOpenSubgroupPicker('search')">— همهٔ زیرگروه‌ها —</div>
             <select id="accSearchSubgroup" style="display:none;"><option value="">— همهٔ زیرگروه‌ها —</option></select>
         </div>
         <div class="acc-form-buttons">
@@ -5450,10 +5463,11 @@ body.locked .header-actions button {
             </select>
 
             <!-- 🔧 v213 (الزام کاربر): انتخاب حساب با منوی زیبا -->
+            <!-- 🔧 v217 (الزام کاربر): باکس دوم (زیرگروه) حذف شد — همان باکس اول
+                 (فرم جستجو)؛ دلیل کامل بالای فرم جستجو نوشته شده. -->
             <label>📁 حساب (گروه / زیرگروه)</label>
             <div class="acc-person-field" id="accReportGroupField" onclick="accOpenGroupPicker('report')">— همهٔ حساب‌ها —</div>
             <select id="accReportGroup" style="display:none;"><option value="">— همهٔ گروه‌ها —</option></select>
-            <div class="acc-person-field" id="accReportSubgroupField" onclick="accOpenSubgroupPicker('report')">— همهٔ زیرگروه‌ها —</div>
             <select id="accReportSubgroup" style="display:none;"><option value="">— همهٔ زیرگروه‌ها —</option></select>
 
             <label>🗂️ سطح گزارش (وقتی شخص انتخاب نشده)</label>
@@ -6850,7 +6864,33 @@ body.locked .header-actions button {
 //               دیگر یا از مسیر popstate با _popstateClose)؛ فرم→نتایج=
 //               navReplace. هر overlay آینده بدون این سه الگو ممنوع است.
 //            تست: test_backnav_v216.mjs (۲۰ سناریو B1-B20) — صفر pageerror.
-const APP_VERSION = 'v216-2026-11-11-back-nav-audit';
+//
+//         🔧 v217 (۱۴۰۵ آبان ۲۲) — دو الزام جدید کاربر:
+//            ۱) «در صفحهٔ گرفتن اطلاعات برای جستجو/گزارش حسابداری، در قسمت
+//               انتخاب حساب باکس اول کافی است و دوم را حذف کن؛ در همان اولی
+//               می‌شود همهٔ گروه‌ها و زیرگروه‌ها را دید و انتخاب کرد»:
+//               باکس دوم («— همهٔ زیرگروه‌ها —») از هر دو فرم جستجو و گزارش
+//               حذف شد. منوی درختی باکس اول از قبل همهٔ حساب‌ها (گروه + زیرگروه
+//               هر عمق، با تورفتگی ↳ و بج بخش) را نشان می‌داد؛ حالا انتخابِ
+//               یک زیرگروه در همان باکس اول = فیلترِ همان زیرگروه + فرزندانش
+//               (accFilterRecords با accDescIds روی مقدار select گروه). بخش
+//               هم اگر «همه» باشد خودکار تنظیم می‌شود (رفتار v213 دست‌نخورده).
+//               select مخفی زیرگروه فقط نگهدارندهٔ مقدار خالی ماند تا
+//               accReadFormCriteria و همهٔ ارجاع‌های قبلی سالم بمانند؛
+//               منوی accSubgroupPickerOverlay بدون trigger شد (کد مردهٔ بی‌خطر).
+//            ۲) «وقتی سند حسابداری جدید با کلیدهای اضافه‌کردن می‌سازیم، تا آن
+//               پر نشده و اطلاعات آن متعادل نشده و به رنگ سبز تأییدشده
+//               درنیامده، با فشار دادن کلیدها سند جدید ایجاد نکند»:
+//               گارد در accAddDoc (هر دو کلید: «+ افزودن سند حسابداری جدید +»
+//               و کلید + هدر اصلی در حالت حسابداری) — اگر آخرین سندِ
+//               ساخته‌شده (db.docs[0]) رکورد ندارد یا نامتعادل است (خط
+//               سه‌باکسی سبز نیست)، سند جدید ساخته نمی‌شود؛ به‌جایش همان
+//               سند ناتمام با accFocusDoc (باز کردن کارت + اسکرول نرم +
+//               فلش قرمز acc-doc-flash) مشخص و با toast توضیح داده می‌شود.
+//               بعد از سبز شدن آن سند (رکورد دارد + دارایی = بدهی + سرمایه)،
+//               کلیدها دوباره سند جدید می‌سازند.
+//            تست: test_accounting_v217.mjs — ۸ تست W1-W8، پورت ۸۱۹۶.
+const APP_VERSION = 'v217-2026-11-12-acc-single-account-box-doc-guard';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -16833,6 +16873,20 @@ function accBuildSummaryNode(db, kind, node, sibIdx, depth) {
 
 function accAddDoc() {
     const db = getAccounting();
+    // 🔧 v217 (الزام کاربر): تا آخرین سندِ ساخته‌شده «پر نشده و اطلاعات آن
+    //     متعادل نشده و به رنگ سبز تأییدشده درنیامده»، کلیدهای افزودن سند
+    //     جدید نمی‌سازند — فقط همان سند ناتمام را نشان می‌دهند.
+    //     سبز = خط سه‌باکسی سند «ok» یعنی رکورد دارد و دارایی = بدهی + سرمایه.
+    //     آخرین سندِ ساخته‌شده همیشه db.docs[0] است (unshift — الزام v210).
+    if (db.docs.length > 0) {
+        const lastDoc = db.docs[0];
+        const tLast = accDocTotals(lastDoc.id, db.records);
+        if (!tLast.hasRecords || !tLast.balanced) {
+            accFocusDoc(lastDoc.id);
+            showToast('⛔ سند جدید ساخته نشد — سندِ «' + accDocTitle(lastDoc) + '» هنوز متعادل و سبز نیست. ابتدا رکوردهایش را کامل کنید تا دارایی = بدهی + سرمایه شود');
+            return;
+        }
+    }
     // 🔧 v210 (الزام کاربر): سند جدید «بالای بالا» — بقیه اسناد یکی به پایین می‌روند
     const doc = accNewDocObj('');
     db.docs.unshift(doc);
@@ -16843,6 +16897,27 @@ function accAddDoc() {
         if (c) c.scrollTop = 0;
     } catch(e) {}
     showToast('سند جدید ساخته شد و بالای لیست قرار گرفت ✓ — شرح و تاریخ آن را با ✏️ وارد کنید');
+}
+
+// 🔧 v217 (الزام کاربر): فوکوس سندِ ناتمام — باز کردن کارت + اسکرول نرم +
+// فلش قرمز، تا کاربر بداند کدام سند را باید کامل کند. اگر کارت سند همان
+// سندِ باز فعلی است، درخت دست‌نخورده می‌ماند و فقط فلش می‌زند.
+function accFocusDoc(docId) {
+    if (accState.openDocId !== docId) {
+        accState.openDocId = docId;
+        accState.openSection = null;
+        accState.openNodes = {};
+        renderAccounting();
+    }
+    try {
+        const card = document.getElementById('accDocCard_' + docId);
+        if (card) {
+            if (card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.classList.remove('acc-doc-flash');
+            void card.offsetWidth; // ری‌استارت انیمیشن
+            card.classList.add('acc-doc-flash');
+        }
+    } catch(e) {}
 }
 
 // ─── فرم ویرایش سند (الزام کاربر v210) ───
