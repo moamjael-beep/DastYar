@@ -7005,7 +7005,7 @@ body.locked .header-actions button {
 //               ~۷۵۰MB-۱.۵GB) — فقط با WebGPU توصیه می‌شود.
 //            dtype: WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده).
 //            تست: test_offline_stt_v222.mjs — ۱۴ تست Y1-Y14، پورت ۸۲۰۲.
-const APP_VERSION = 'v222-2026-11-12-pcm-capture-webgpu-large';
+const APP_VERSION = 'v223-2026-11-12-resume-download-mic-blink';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -10078,7 +10078,165 @@ window.OfflineSTT = (function() {
     // ─── Worker: Transformers.js + Whisper (کد داخل Blob — فایل تکی می‌ماند) ───
     // 🔧 v222: worker حالا device می‌گیرد ('webgpu' یا 'wasm')؛ dtype تطبیقی:
     //   WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده‌ترین).
+    // 🔧 v223: fetch override برای دانلود با resume در سطح بایت:
+    //   - فایل‌های huggingface.co/.../resolve/main/... در chunk‌های ۵MB دانلود می‌شوند
+    //   - هر chunk در IndexedDB ذخیره می‌شود (پس از رفرش، chunk‌ها باقی می‌مانند)
+    //   - با Range request از همان نقطه ادامه می‌دهد
+    //   - پس از تکمیل، فایل در Cache Storage (transformers-cache) ذخیره و chunk‌ها پاک می‌شوند
+    //   - progress postMessage ها throttle می‌شوند (حداکثر ۵ در ثانیه) تا UI هنگ نکند
+    //   - cancel: با پیام {type:'cancel'}، _abortFlag=true می‌شود و حلقه chunk متوقف می‌شود
     var _WORKER_SRC =
+        '// ═══ v223: fetch override برای resume در سطح بایت ═══\n' +
+        'var CHUNK_SIZE = 5 * 1024 * 1024; // ۵MB\n' +
+        'var CHUNK_DB_NAME = "yadavar_model_chunks";\n' +
+        'var HF_URL_RE = /^https:\\/\\/huggingface\\.co\\/[^/]+\\/[^/]+\\/resolve\\/main\\//;\n' +
+        'var _abortFlag = false;\n' +
+        'var _progressThrottle = {};\n' +
+        'var _fileOrder = [];\n' +
+        '\n' +
+        'function openChunkDB() {\n' +
+        '  return new Promise(function(resolve, reject) {\n' +
+        '    var req = indexedDB.open(CHUNK_DB_NAME, 1);\n' +
+        '    req.onupgradeneeded = function() {\n' +
+        '      var db = req.result;\n' +
+        '      if (!db.objectStoreNames.contains("chunks")) {\n' +
+        '        db.createObjectStore("chunks", { keyPath: "key" });\n' +
+        '      }\n' +
+        '    };\n' +
+        '    req.onsuccess = function() { resolve(req.result); };\n' +
+        '    req.onerror = function() { reject(req.error); };\n' +
+        '  });\n' +
+        '}\n' +
+        'function dbGetAllForUrl(db, url) {\n' +
+        '  return new Promise(function(resolve, reject) {\n' +
+        '    var tx = db.transaction("chunks", "readonly");\n' +
+        '    var store = tx.objectStore("chunks");\n' +
+        '    var req = store.getAll();\n' +
+        '    req.onsuccess = function() {\n' +
+        '      var all = req.result || [];\n' +
+        '      resolve(all.filter(function(r) { return r && r.url === url; })\n' +
+        '                   .sort(function(a, b) { return a.offset - b.offset; }));\n' +
+        '    };\n' +
+        '    req.onerror = function() { reject(req.error); };\n' +
+        '  });\n' +
+        '}\n' +
+        'function dbPut(db, key, url, offset, data) {\n' +
+        '  return new Promise(function(resolve, reject) {\n' +
+        '    var tx = db.transaction("chunks", "readwrite");\n' +
+        '    var store = tx.objectStore("chunks");\n' +
+        '    store.put({ key: key, url: url, offset: offset, length: data.byteLength, data: data });\n' +
+        '    tx.oncomplete = function() { resolve(); };\n' +
+        '    tx.onerror = function() { reject(tx.error); };\n' +
+        '  });\n' +
+        '}\n' +
+        'function dbClearForUrl(db, url) {\n' +
+        '  return new Promise(function(resolve, reject) {\n' +
+        '    var tx = db.transaction("chunks", "readwrite");\n' +
+        '    var store = tx.objectStore("chunks");\n' +
+        '    var req = store.getAll();\n' +
+        '    req.onsuccess = function() {\n' +
+        '      var all = req.result || [];\n' +
+        '      all.forEach(function(r) { if (r.url === url) store.delete(r.key); });\n' +
+        '    };\n' +
+        '    tx.oncomplete = function() { resolve(); };\n' +
+        '    tx.onerror = function() { reject(tx.error); };\n' +
+        '  });\n' +
+        '}\n' +
+        'function postFileProgress(url, loaded, total) {\n' +
+        '  var now = Date.now();\n' +
+        '  var last = _progressThrottle[url] || 0;\n' +
+        '  if (now - last < 200 && loaded < total) return; // throttle: max ۵ در ثانیه\n' +
+        '  _progressThrottle[url] = now;\n' +
+        '  var idx = _fileOrder.indexOf(url);\n' +
+        '  if (idx < 0) { _fileOrder.push(url); idx = _fileOrder.length - 1; }\n' +
+        '  self.postMessage({\n' +
+        '    type: "progress",\n' +
+        '    data: { status: "progress", file: url, loaded: loaded, total: total,\n' +
+        '            fileIndex: idx + 1, fileCount: _fileOrder.length }\n' +
+        '  });\n' +
+        '}\n' +
+        'var _origFetch = self.fetch.bind(self);\n' +
+        'self.fetch = async function(url, options) {\n' +
+        '  url = String(url);\n' +
+        '  if (!HF_URL_RE.test(url)) return _origFetch(url, options);\n' +
+        '  _abortFlag = false;\n' +
+        '  // ۱) بررسی Cache Storage برای فایل کامل\n' +
+        '  try {\n' +
+        '    var cache = await caches.open("transformers-cache");\n' +
+        '    var cached = await cache.match(url);\n' +
+        '    if (cached) {\n' +
+        '      var idx0 = _fileOrder.indexOf(url);\n' +
+        '      if (idx0 < 0) { _fileOrder.push(url); idx0 = _fileOrder.length - 1; }\n' +
+        '      self.postMessage({ type: "progress", data: { status: "done", file: url,\n' +
+        '        loaded: 0, total: 0, fileIndex: idx0 + 1, fileCount: _fileOrder.length, cached: true } });\n' +
+        '      return cached;\n' +
+        '    }\n' +
+        '  } catch(e) {}\n' +
+        '  // ۲) بررسی IndexedDB برای chunk‌های قبلی → resume\n' +
+        '  var db = await openChunkDB();\n' +
+        '  var existing = await dbGetAllForUrl(db, url);\n' +
+        '  var haveBytes = existing.reduce(function(s, c) { return s + c.length; }, 0);\n' +
+        '  // ۳) HEAD برای گرفتن total size\n' +
+        '  var totalSize = 0;\n' +
+        '  try {\n' +
+        '    var headResp = await _origFetch(url, { method: "HEAD" });\n' +
+        '    totalSize = parseInt(headResp.headers.get("Content-Length") || "0", 10);\n' +
+        '  } catch(e) {}\n' +
+        '  if (!totalSize) return _origFetch(url, options); // بدون Content-Length → fallback\n' +
+        '  if (haveBytes >= totalSize) {\n' +
+        '    // همه chunk‌ها موجود → اسمبل و در cache بگذار\n' +
+        '    var all0 = await dbGetAllForUrl(db, url);\n' +
+        '    var parts0 = all0.map(function(c) { return c.data; });\n' +
+        '    var blob0 = new Blob(parts0);\n' +
+        '    var resp0 = new Response(blob0, { status: 200,\n' +
+        '      headers: { "Content-Type": "application/octet-stream", "Content-Length": String(blob0.size) } });\n' +
+        '    try { var c0 = await caches.open("transformers-cache"); await c0.put(url, resp0.clone()); } catch(e) {}\n' +
+        '    await dbClearForUrl(db, url);\n' +
+        '    return resp0;\n' +
+        '  }\n' +
+        '  // ۴) دانلود با Range از haveBytes تا totalSize\n' +
+        '  var currentBytes = haveBytes;\n' +
+        '  var chunkIdx = Math.floor(haveBytes / CHUNK_SIZE);\n' +
+        '  if (haveBytes > 0) postFileProgress(url, haveBytes, totalSize); // نشان‌دادن resume\n' +
+        '  while (currentBytes < totalSize) {\n' +
+        '    if (_abortFlag) throw new Error("دانلود لغو شد");\n' +
+        '    var endByte = Math.min(currentBytes + CHUNK_SIZE - 1, totalSize - 1);\n' +
+        '    var rangeResp = await _origFetch(url, {\n' +
+        '      headers: { "Range": "bytes=" + currentBytes + "-" + endByte }\n' +
+        '    });\n' +
+        '    if (rangeResp.status !== 206 && rangeResp.status !== 200) {\n' +
+        '      // Range پشتیبانی نمی‌شود → fallback به fetch کامل\n' +
+        '      var fullResp = await _origFetch(url, options);\n' +
+        '      var fullBuf = await fullResp.arrayBuffer();\n' +
+        '      var fullCacheResp = new Response(fullBuf, { status: 200, headers: fullResp.headers });\n' +
+        '      try { var cf = await caches.open("transformers-cache"); await cf.put(url, fullCacheResp.clone()); } catch(e) {}\n' +
+        '      await dbClearForUrl(db, url);\n' +
+        '      return fullCacheResp;\n' +
+        '    }\n' +
+        '    var chunkBuf = await rangeResp.arrayBuffer();\n' +
+        '    var chunkArr = new Uint8Array(chunkBuf);\n' +
+        '    var key = url + "_chunk_" + chunkIdx;\n' +
+        '    await dbPut(db, key, url, currentBytes, chunkBuf);\n' +
+        '    currentBytes += chunkArr.length;\n' +
+        '    chunkIdx++;\n' +
+        '    postFileProgress(url, currentBytes, totalSize);\n' +
+        '  }\n' +
+        '  // ۵) اسمبل chunk‌ها → Response کامل\n' +
+        '  var allChunks = await dbGetAllForUrl(db, url);\n' +
+        '  var parts = allChunks.map(function(c) { return c.data; });\n' +
+        '  var blob = new Blob(parts);\n' +
+        '  var finalResp = new Response(blob, { status: 200,\n' +
+        '    headers: { "Content-Type": "application/octet-stream", "Content-Length": String(blob.size) } });\n' +
+        '  // ۶) ذخیره در Cache Storage برای استفاده‌های بعدی transformers.js\n' +
+        '  try { var cache2 = await caches.open("transformers-cache"); await cache2.put(url, finalResp.clone()); } catch(e) {}\n' +
+        '  // ۷) پاک‌سازی chunk‌ها از IndexedDB\n' +
+        '  await dbClearForUrl(db, url);\n' +
+        '  self.postMessage({ type: "progress", data: { status: "done", file: url,\n' +
+        '    loaded: blob.size, total: blob.size, fileIndex: _fileOrder.indexOf(url) + 1,\n' +
+        '    fileCount: _fileOrder.length } });\n' +
+        '  return finalResp;\n' +
+        '};\n' +
+        '\n' +
         'import { pipeline, env } from "' + CDN + '";\n' +
         'env.allowLocalModels = false;\n' +
         'var asr = null, currentModel = null, currentDevice = null, loading = null;\n' +
@@ -10090,7 +10248,15 @@ window.OfflineSTT = (function() {
         '  loading = pipeline("automatic-speech-recognition", model, {\n' +
         '    dtype: dtype, device: device,\n' +
         '    progress_callback: function(p) {\n' +
-        '      self.postMessage({ type: "progress", data: { status: p.status, file: p.file, loaded: p.loaded, total: p.total } });\n' +
+        '      // transformers.js خودش progress می‌فرستد — اما fetch override ما\n' +
+        '      // پیشرفت دقیق‌تری می‌دهد. این را هم عبور می‌دهیم برای سازگاری.\n' +
+        '      if (p && p.status === "progress" && p.file) {\n' +
+        '        postFileProgress(String(p.file), p.loaded || 0, p.total || 0);\n' +
+        '      } else if (p && p.status === "done" && p.file) {\n' +
+        '        // skip — fetch override خودش done می‌فرستد\n' +
+        '      } else {\n' +
+        '        self.postMessage({ type: "progress", data: { status: p.status, file: p.file, loaded: p.loaded, total: p.total } });\n' +
+        '      }\n' +
         '    }\n' +
         '  }).then(function(p) { asr = p; return p; })\n' +
         '    .catch(function(e) { loading = null; currentModel = null; currentDevice = null; throw e; });\n' +
@@ -10098,7 +10264,14 @@ window.OfflineSTT = (function() {
         '}\n' +
         'self.onmessage = async function(e) {\n' +
         '  var d = e.data || {};\n' +
+        '  if (d.type === "cancel") {\n' +
+        '    _abortFlag = true;\n' +
+        '    self.postMessage({ type: "cancelled" });\n' +
+        '    return;\n' +
+        '  }\n' +
         '  if (d.type === "load") {\n' +
+        '    _abortFlag = false;\n' +
+        '    _fileOrder = [];\n' +
         '    try { await ensure(d.model, d.device || "wasm"); self.postMessage({ type: "loaded", id: d.id }); }\n' +
         '    catch(err) { self.postMessage({ type: "error", id: d.id, message: String(err && err.message || err) }); }\n' +
         '    return;\n' +
@@ -10122,6 +10295,11 @@ window.OfflineSTT = (function() {
         _worker.onmessage = function(ev) {
             var d = ev.data || {};
             if (d.type === 'progress') { notifyProgress(d.data); return; }
+            if (d.type === 'cancelled') {
+                // 🔧 v223: download cancelled by user — reject pending load
+                if (_pendingLoad) { var rjC = _pendingLoad.reject; _pendingLoad = null; rjC(new Error('دانلود لغو شد')); }
+                return;
+            }
             if (d.type === 'loaded') {
                 if (_pendingLoad) { var r = _pendingLoad.resolve; _pendingLoad = null; r(); }
                 return;
@@ -10152,13 +10330,37 @@ window.OfflineSTT = (function() {
         });
     }
 
+    // 🔧 v223: notifyProgress حالا اطلاعات سر فایل را هم می‌گیرد (fileIndex,
+    // fileCount، نام فایل) و progress کلی را روی همه فایل‌ها محاسبه می‌کند.
+    // همچنین status==='done' را به‌عنوان تکمیل فایل ثبت می‌کند.
+    var _lastProgressTs = 0;
     function notifyProgress(p) {
-        if (!p || p.status !== 'progress' || !p.total) return;
-        _fileMap[p.file] = [p.loaded, p.total];
-        var loaded = 0, total = 0;
-        for (var k in _fileMap) { loaded += _fileMap[k][0]; total += _fileMap[k][1]; }
-        var pct = total ? Math.min(100, Math.round(loaded / total * 100)) : 0;
-        _loadHandlers.forEach(function(fn) { try { fn(pct); } catch(e) {} });
+        if (!p || !p.file) return;
+        if (p.status === 'progress' || p.status === 'done') {
+            var loaded = p.loaded || 0, total = p.total || 0;
+            if (p.status === 'done' && p.cached) {
+                // فایل قبلاً در cache بوده — other size ناشناخته، فقط به‌عنوان کامل علامت بزن
+                if (!_fileMap[p.file]) _fileMap[p.file] = [1, 1];
+                _fileMap[p.file][0] = _fileMap[p.file][1];
+            } else if (p.status === 'done' && total === 0) {
+                if (!_fileMap[p.file]) _fileMap[p.file] = [1, 1];
+                _fileMap[p.file][0] = _fileMap[p.file][1];
+            } else if (total > 0) {
+                _fileMap[p.file] = [loaded, total];
+            }
+        }
+        var totalLoaded = 0, totalTotal = 0;
+        for (var k in _fileMap) { totalLoaded += _fileMap[k][0]; totalTotal += _fileMap[k][1]; }
+        var pct = totalTotal ? Math.min(100, Math.round(totalLoaded / totalTotal * 100)) : 0;
+        var fileInfo = '';
+        if (p.fileIndex && p.fileCount) {
+            var fname = String(p.file).split('/').pop();
+            if (fname.length > 40) fname = fname.substring(0, 37) + '...';
+            fileInfo = 'فایل ' + p.fileIndex + ' از ' + p.fileCount + ' — ' + fname;
+        }
+        _loadHandlers.forEach(function(fn) {
+            try { fn(pct, fileInfo, totalLoaded, totalTotal); } catch(e) {}
+        });
     }
 
     // ─── 🔧 v222: ضبط PCM خام با AudioWorklet (fallback: ScriptProcessorNode) ───
@@ -10380,7 +10582,8 @@ window.OfflineSTT = (function() {
             '<div id="ostt-status" style="font-size:13px;margin:10px 0;"></div>' +
             '<div id="ostt-progress-wrap" style="display:none;margin-bottom:10px;">' +
               '<div class="ostt-bar"><div id="ostt-bar-fill" class="ostt-bar-fill"></div></div>' +
-              '<div id="ostt-progress-text" style="font-size:12px;color:#555;margin-top:4px;"></div>' +
+              '<div id="ostt-progress-text" style="font-size:12px;color:#555;margin-top:4px;line-height:1.6;"></div>' +
+              '<button id="ostt-cancel-dl" class="ostt-btn ostt-btn-danger" style="margin-top:6px;display:none;">لغو دانلود</button>' +
             '</div>' +
             '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
               '<button id="ostt-download" class="ostt-btn ostt-btn-primary">دانلود مدل</button>' +
@@ -10401,6 +10604,8 @@ window.OfflineSTT = (function() {
         box.querySelector('#ostt-download').addEventListener('click', startDownload);
         box.querySelector('#ostt-delete').addEventListener('click', deleteModel);
         box.querySelector('#ostt-test-mic').addEventListener('click', testMic);
+        var cancelBtn = box.querySelector('#ostt-cancel-dl');
+        if (cancelBtn) cancelBtn.addEventListener('click', cancelDownload);
         refreshPanel();
     }
 
@@ -10453,20 +10658,31 @@ window.OfflineSTT = (function() {
         panel.querySelector('#ostt-progress-wrap').style.display = 'none';
     }
 
+    var _downloading = false;
     function startDownload() {
         var panel = document.getElementById('ostt-panel');
         if (!panel) return;
+        if (_downloading) { showToast('دانلود قبلی هنوز در حال انجام است — یا صبر کنید یا لغو کنید'); return; }
+        _downloading = true;
+        _fileMap = {};
         var wrap = panel.querySelector('#ostt-progress-wrap');
         var fill = panel.querySelector('#ostt-bar-fill');
         var ptext = panel.querySelector('#ostt-progress-text');
         var dlBtn = panel.querySelector('#ostt-download');
+        var cancelBtn = panel.querySelector('#ostt-cancel-dl');
         dlBtn.disabled = true;
+        if (cancelBtn) cancelBtn.style.display = '';
         wrap.style.display = 'block';
         fill.style.width = '0%';
-        ptext.textContent = 'در حال دانلود مدل… (فقط این یک‌بار اینترنت لازم است)';
-        var onProg = function(pct) {
+        ptext.innerHTML = 'در حال دانلود مدل… (فقط این یک‌بار اینترنت لازم است)<br><span style="color:#888;font-size:11px;">اگر وسط دانلود قطع شد، دوباره بزنید — از همان نقطه ادامه می‌دهد</span>';
+        var onProg = function(pct, fileInfo, loaded, total) {
             fill.style.width = pct + '%';
-            ptext.textContent = 'در حال دانلود مدل… ' + pct + '٪';
+            var mbL = (loaded / 1048576).toFixed(1);
+            var mbT = (total / 1048576).toFixed(1);
+            var html = '';
+            if (fileInfo) html += '<div style="margin-bottom:2px;">' + fileInfo + '</div>';
+            html += '<div>در حال دانلود… ' + pct + '٪ (' + mbL + ' از ' + mbT + ' MB)</div>';
+            ptext.innerHTML = html;
         };
         _loadHandlers.push(onProg);
         loadModel().then(function() {
@@ -10475,16 +10691,33 @@ window.OfflineSTT = (function() {
             showToast('مدل آفلاین دانلود شد ✓ — ضبط صوت حالا بدون اینترنت و بدون گوگل کار می‌کند');
         }).catch(function(err) {
             console.error('[OfflineSTT] download failed:', err);
-            showToast('خطا در دانلود مدل — اینترنت را بررسی کنید و دوباره تلاش کنید');
+            var msg = (err && err.message) ? err.message : 'نامشخص';
+            if (msg.indexOf('لغو') >= 0) {
+                showToast('دانلود لغو شد — chunk‌های ذخیره‌شده باقی می‌مانند. دوباره دانلود را بزنید تا از همان نقطه ادامه دهد');
+            } else {
+                showToast('خطا در دانلود مدل — دوباره تلاش کنید. chunk‌های ذخیره‌شده باقی می‌مانند');
+            }
         }).then(function() {
+            _downloading = false;
             _loadHandlers = _loadHandlers.filter(function(fn) { return fn !== onProg; });
+            if (cancelBtn) cancelBtn.style.display = 'none';
             if (panel.parentNode) refreshPanel();
         });
+    }
+
+    // 🔧 v223: لغو دانلود — پیام cancel به Worker، chunk‌های IndexedDB باقی می‌مانند
+    function cancelDownload() {
+        if (_worker) {
+            try { _worker.postMessage({ type: 'cancel' }); } catch(e) {}
+            showToast('در حال لغو دانلود… chunk‌های ذخیره‌شده باقی می‌مانند');
+        }
     }
 
     function deleteModel() {
         if (!confirm('مدل آفلاین حذف شود؟ برای استفادهٔ دوباره باید دوباره دانلود شود.')) return;
         try { if (window.caches && caches.delete) caches.delete('transformers-cache'); } catch(e) {}
+        // 🔧 v223: حذف chunk‌های IndexedDB هم (برای resume)
+        try { indexedDB.deleteDatabase('yadavar_model_chunks'); } catch(e) {}
         try { localStorage.removeItem(READY_KEY); } catch(e) {}
         setEngine('online');
         showToast('مدل آفلاین حذف شد — موتور صوت به «آنلاین (گوگل)» برگشت');
@@ -10732,6 +10965,7 @@ window.OfflineSTT = (function() {
         isReady: isReady,
         openPanel: openPanel,
         testMic: testMic, // 🔧 v221: تست میکروفون برای تشخیص خاموش‌بودن
+        cancelDownload: cancelDownload, // 🔧 v223: لغو دانلود با حفظ chunk‌های resume
         state: state,
         // فقط برای تست‌های خودکار
         get _testTranscribe() { return _testTranscribe; },
@@ -11528,13 +11762,12 @@ function startAdding(prefilledDeadline, prefilledText) {
         setTimeout(() => document.getElementById('itemText').focus(), 100);
         return;
     }
-    // If the header is flashing blue-yellow (offline / no real internet),
-    // skip auto-recording and go directly to manual typing.
-    // 🔧 طبق درخواست کاربر: در حالت آفلاین همهٔ کلیدها (انصراف، ضبط دوباره،
-    // ذخیره) کامل نمایش داده شوند، اما ضبط صوت کار نکند. اگر کاربر روی
-    // «ضبط دوباره» کلیک کند، startRecording() آفلاین بودن را تشخیص داده و
-    // پیام مناسب نمایش می‌دهد.
-    if (!isReachable) {
+    // 🔧 v223: طبق درخواست کاربر — شروع خودکار ضبط از چشمک هدر مستقل شود.
+    // قبلاً !isReachable (fetch-based) چک می‌شد که با چشمک هدر، ضبط خودکار را
+    // skip می‌کرد و مستقیم فرم تایپ می‌رفت. حالا فقط navigator.onLine (مثل
+    // میک اصلی) — اگر مرورگر آنلاین بگوید، ضبط خودکار شروع می‌شود حتی اگر
+    // هدر چشمک بزند. اگر واقعاً آفلاین باشد، فرم تایپ نمایش داده می‌شود.
+    if (!navigator.onLine) {
         document.getElementById('recordingSection').style.display = 'none';
         document.getElementById('formSection').style.display = 'block';
         // 🔧 نمایش همهٔ دکمه‌ها در حالت آفلاین
@@ -21336,8 +21569,11 @@ function toggleNotesRecording() {
         showToast('مرورگر از تشخیص صوت پشتیبانی نمی‌کند');
         return;
     }
-    // بررسی اتصال اینترنت
-    if (typeof isReachable !== 'undefined' && !isReachable) {
+    // 🔧 v223: طبق درخواست کاربر — ضبط صوت از چشمک هدر مستقل شود.
+    // قبلاً !isReachable (fetch-based) چک می‌شد که با چشمک هدر قفل می‌کرد.
+    // حالا فقط navigator.onLine (مثل میک اصلی) — اگر مرورگر آنلاین بگوید،
+    // ضبط تلاش می‌کند حتی اگر هدر چشمک بزند.
+    if (!navigator.onLine) {
         showToast('اینترنت در دسترس نیست. ضبط کار نمی‌کند.');
         return;
     }
