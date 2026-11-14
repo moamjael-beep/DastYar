@@ -7005,7 +7005,7 @@ body.locked .header-actions button {
 //               ~۷۵۰MB-۱.۵GB) — فقط با WebGPU توصیه می‌شود.
 //            dtype: WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده).
 //            تست: test_offline_stt_v222.mjs — ۱۴ تست Y1-Y14، پورت ۸۲۰۲.
-const APP_VERSION = 'v227-2026-11-13-ready-key-immediate-no-sizes';
+const APP_VERSION = 'v228-2026-11-13-no-model-selector-better-errors';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -10382,8 +10382,6 @@ window.OfflineSTT = (function() {
               '<button id="ostt-eng-online" class="ostt-btn ostt-eng">آنلاین (گوگل)</button>' +
               '<button id="ostt-eng-offline" class="ostt-btn ostt-eng">آفلاین (روی دستگاه)</button>' +
             '</div>' +
-            '<div style="font-size:12px;color:#555;margin-bottom:2px;">مدل آفلاین (فارسی) — فقط WebGPU:</div>' +
-            '<div id="ostt-models"></div>' +
             '<div id="ostt-status" style="font-size:13px;margin:10px 0;"></div>' +
             '<div id="ostt-links" style="font-size:12px;color:#555;margin:8px 0;line-height:1.8;"></div>' +
             '<input type="file" id="ostt-file-input" multiple style="display:none;">' +
@@ -10396,7 +10394,7 @@ window.OfflineSTT = (function() {
               'دانلود اتوماتیک حذف شده — فایل‌ها را دستی از لینک‌های بالا دانلود کنید، سپس با دکمهٔ «انتخاب فایل‌ها» به برنامه بدهید. ' +
               'فایل model_fp16.onnx از پوشهٔ onnx/ لازم است. ضبط صوت کاملاً آفلاین و بدون گوگل روی دستگاه شما انجام می‌شود. ' +
               '(Chrome/Edge با WebGPU) — Whisper با Transformers.js' +
-            '</div>';
+            '</div>;' 
         ov.appendChild(box);
         document.body.appendChild(ov);
         ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
@@ -10418,20 +10416,8 @@ window.OfflineSTT = (function() {
         var engine = getEngine(), model = getModel(), ready = isReady(), gpuOk = webgpuSupported();
         panel.querySelector('#ostt-eng-online').classList.toggle('sel', engine === 'online');
         panel.querySelector('#ostt-eng-offline').classList.toggle('sel', engine === 'offline');
-        var modelsEl = panel.querySelector('#ostt-models');
-        modelsEl.innerHTML = '';
-        for (var id in MODELS) {
-            var row = document.createElement('label');
-            row.className = 'ostt-model-row';
-            var checked = (id === model) ? ' checked' : '';
-            row.innerHTML = '<input type="radio" name="ostt-model" value="' + id + '"' + checked + '> ' +
-                MODELS[id].label;
-            modelsEl.appendChild(row);
-        }
-        modelsEl.querySelectorAll('input[name="ostt-model"]').forEach(function(r) {
-            r.addEventListener('change', function() { setModel(r.value); });
-        });
-        // 🔧 v226: لینک‌های دانلود هوفینگ‌فیس برای مدل انتخاب‌شده
+        // 🔧 v228: انتخابگر ۴ مدل حذف شد — کاربر خودش فایل‌ها را دانلود می‌کند.
+        // لینک‌های دانلود برای مدل پیش‌فرض (whisper-large-v3-turbo) نمایش داده می‌شوند.
         var linksEl = panel.querySelector('#ostt-links');
         if (linksEl) {
             var html = '<div style="font-weight:bold;margin-bottom:4px;">دانلود فایل‌های مدل از این آدرس‌ها:</div>';
@@ -10456,41 +10442,66 @@ window.OfflineSTT = (function() {
     }
 
     // 🔧 v226: انتخاب فایل‌های مدل توسط کاربر — ذخیره در Cache Storage.
-    // 🔧 v227: READY_KEY بلافاصله پس از ذخیره فایل‌ها تنظیم می‌شود — نیازی به
-    // موفقیت loadModel نیست. مدل در اولین ضبط به‌صورت تنبل بارگذاری می‌شود.
+    // 🔧 v227: READY_KEY بلافاصله پس از ذخیره فایل‌ها تنظیم می‌شود.
+    // 🔧 v228: بهبود خطا‌ها — اگر cache.put شکست بخورد (quota و غیره)، پیام
+    // واضح نشان داده می‌شود و READY_KEY تنظیم نمی‌شود.
     async function selectModelFiles(ev) {
         var files = ev.target.files;
         if (!files || files.length === 0) return;
         var model = getModel();
         var statusEl = document.querySelector('#ostt-panel #ostt-status');
         if (statusEl) statusEl.textContent = 'در حال ذخیره فایل‌ها…';
+        console.log('[OfflineSTT] selectModelFiles: ' + files.length + ' files, model=' + model);
         try {
+            // پاک‌سازی کش قبلی برای آزادکردن فضا (quota)
+            try { await caches.delete('transformers-cache'); } catch(e) {}
             var cache = await caches.open('transformers-cache');
-            var stored = 0;
+            var stored = 0, lastError = null;
             for (var i = 0; i < files.length; i++) {
                 var file = files[i];
                 var filename = file.name;
                 var filepath = filename.endsWith('.onnx') ? ('onnx/' + filename) : filename;
                 var url = 'https://huggingface.co/' + model + '/resolve/main/' + filepath;
-                var response = new Response(file);
-                await cache.put(url, response);
-                stored++;
+                console.log('[OfflineSTT] storing: ' + filename + ' → ' + url + ' (' + file.size + ' bytes)');
+                try {
+                    var response = new Response(file);
+                    await cache.put(url, response);
+                    stored++;
+                } catch(putErr) {
+                    console.error('[OfflineSTT] cache.put failed for ' + filename + ':', putErr);
+                    lastError = filename + ': ' + ((putErr && putErr.message) || 'نامشخص');
+                    // اگر quota است، دیگر ادامه نده
+                    if (putErr && (putErr.name === 'QuotaExceededError' || (putErr.message && putErr.message.indexOf('quota') >= 0))) {
+                        break;
+                    }
+                }
             }
-            // 🔧 v227: READY_KEY را بلافاصله تنظیم کن — فایل‌ها ذخیره شده‌اند.
-            // مدل در اولین ضبط به‌صورت تنبل بارگذاری می‌شود (ensure در Worker).
-            try { localStorage.setItem(READY_KEY, readyKey()); } catch(e) {}
-            setEngine('offline');
-            showToast(stored + ' فایل ذخیره شد ✓ — مدل آماده است');
-            refreshPanel();
-            // تلاش برای پیش‌بارگذاری مدل (اختیاری — برای سرعت بیشتر در اولین ضبط)
-            loadModel().then(function() {
-                console.log('[OfflineSTT] model pre-loaded successfully');
-            }).catch(function(err) {
-                console.warn('[OfflineSTT] pre-load failed (will retry on first recording):', err);
-            });
+            console.log('[OfflineSTT] stored ' + stored + ' of ' + files.length + ' files');
+            if (stored > 0) {
+                // READY_KEY را بلافاصله تنظیم کن — حداقل یک فایل ذخیره شده است.
+                try { localStorage.setItem(READY_KEY, readyKey()); } catch(e) {}
+                setEngine('offline');
+                if (lastError) {
+                    showToast(stored + ' فایل ذخیره شد، اما برخی خطا دادند: ' + lastError);
+                    if (statusEl) statusEl.innerHTML = '⚠ ' + stored + ' فایل ذخیره شد — برخی فایل‌ها خطا دادند: ' + lastError;
+                } else {
+                    showToast(stored + ' فایل ذخیره شد ✓ — مدل آماده است');
+                }
+                refreshPanel();
+                // تلاش برای پیش‌بارگذاری مدل (اختیاری)
+                loadModel().then(function() {
+                    console.log('[OfflineSTT] model pre-loaded successfully');
+                }).catch(function(err) {
+                    console.warn('[OfflineSTT] pre-load failed (will retry on first recording):', err);
+                });
+            } else {
+                showToast('هیچ فایلی ذخیره نشد — خطا: ' + (lastError || 'نامشخص'));
+                if (statusEl) statusEl.innerHTML = '✗ هیچ فایلی ذخیره نشد: ' + (lastError || 'نامشخص');
+            }
         } catch(err) {
             console.error('[OfflineSTT] selectModelFiles failed:', err);
             showToast('خطا در ذخیره فایل‌ها: ' + ((err && err.message) || 'نامشخص'));
+            if (statusEl) statusEl.innerHTML = '✗ خطا: ' + ((err && err.message) || 'نامشخص');
         }
         ev.target.value = '';
     }
