@@ -7003,6 +7003,18 @@ body.locked .header-actions button {
 //               ~۷۵۰MB-۱.۵GB) — فقط با WebGPU توصیه می‌شود.
 //            dtype: WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده).
 //            تست: test_offline_stt_v222.mjs — ۱۴ تست Y1-Y14، پورت ۸۲۰۲.
+//         🔧 v235 (۱۴۰۵ آبان ۲۶) — الزام کاربر: «بسیار عالی همین سبک را برای
+//               ضبط صدا و تبدیل به متن در تسک‌ها کپی کن». کاوش نشان داد فلوی
+//               تسک‌ها از قبل میکروفون تا قطع باز نگه می‌داشت (onend با ۳۰۰ms
+//               سیکل را ری‌استارت می‌کرد) و نمایش لحظه‌ای کلمات داشت
+//               (interimResults=true، onresult در هر رویداد itemText + interimText
+//               را به‌روز می‌کرد). شکاف واقعی: addNumericAfterWords (تبدیل اعداد
+//               فارسی گفتاری به دیجیت: «دو میلیون تومان» → «۲٬۰۰۰٬۰۰۰ تومان»،
+//               تلفن «صفر نه یک...» → «۰۹۱...») تنها هنگام توقف اعمال می‌شد، نه
+//               در حین ضبط. رفع: addNumericAfterWords در onresult روی خروجی
+//               نمایشی اعمال می‌شود (itemText.value و hint.textContent)؛
+//               متغیرهای انباشتگر متن خام را نگه می‌دارند تا تبدیل دوباره رخ
+//               ندهد. پروب ۶ سناریو سبز + رگرسیون ۸/۸ سوئیت (۹۶ تست) سبز.
 //         🔧 v234 (۱۴۰۵ آبان ۲۶) — الزام کاربر: «مکانیزم باز بودن میکرفون تا
 //               قطع و یادداشت کلمات تشخیص داده شده در لحظه در بخش تیتر اسناد
 //               حسابداری که بسیار مورد قبول من است را برای تمام بخش یادداشت‌ها
@@ -7147,7 +7159,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v234-2026-11-14-notes-live';
+const APP_VERSION = 'v235-2026-11-14-tasks-live';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -9620,12 +9632,19 @@ function initRecognition() {
                 interim = transcript;
             }
         }
-        // Display: all sessions + current session + current interim
+        // 🔧 v235: نمایش زنده با تبدیل اعداد فارسی گفتاری به دیجیت (مانند
+        // سبک یادداشت‌ها v234 و تیتر اسناد حسابداری). متغیرهای انباشتگر
+        // (allFinalText / currentSessionText) متن خام را نگه می‌دارند تا
+        // تبدیل دوباره رخ ندهد؛ تنها خروجیِ نمایشی تبدیل می‌شود. به این
+        // ترتیب کاربر در حین ضبط می‌بیند «دو میلیون» → «۲٬۰۰۰٬۰۰۰» و شمارهٔ
+        // تلفن «صفر نه یک...» → «۰۹۱...» می‌شود، بی‌آنکه تا قطع صبر کند.
         const rawDisplay = (allFinalText + ' ' + currentSessionText + ' ' + interim).trim().replace(/\s+/g, ' ');
-        document.getElementById('itemText').value = rawDisplay;
+        document.getElementById('itemText').value = addNumericAfterWords(rawDisplay);
         const hintEl = document.getElementById('interimText');
         if (hintEl) {
-            hintEl.textContent = interim || (currentSessionText ? 'در حال پردازش...' : 'صحبت کنید...');
+            // 🔧 v235: عبارت موقتی هم با تبدیل نشان داده شود — کاربر همان چیزی را
+            // می‌بیند که پس از قطع دریافت خواهد کرد.
+            hintEl.textContent = addNumericAfterWords(interim) || (currentSessionText ? 'در حال پردازش...' : 'صحبت کنید...');
         }
     };
 
