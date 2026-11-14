@@ -7003,6 +7003,18 @@ body.locked .header-actions button {
 //               ~۷۵۰MB-۱.۵GB) — فقط با WebGPU توصیه می‌شود.
 //            dtype: WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده).
 //            تست: test_offline_stt_v222.mjs — ۱۴ تست Y1-Y14، پورت ۸۲۰۲.
+//         🔧 v233 (۱۴۰۵ آبان ۲۶) — الزام کاربر: «مکانیزم اضافه کردن خطوط جدید
+//               در کل یادداشت‌ها بهم خورده. باید هر خط جدید که ضبط صدا میشود
+//               اگر در تاریخ امروز یادداشتی از قبل داشتیم زیر آخرین خط امروز
+//               اضافه شود نه بالای صفحه». ریشهٔ باگ: گوشهٔ selectionchange هنگام
+//               focus خودکار contenteditable یک placeholder range در ابتدای محتوای
+//               خالی می‌ساخت و آن را به‌عنوان «انتخاب کاربر» ذخیره می‌کرد → مسیر
+//               _insertTextAtCursor فعال می‌شد و خط جدید قبل از تاریخ (بالای
+//               صفحه) درج می‌شد. رفع: پرچم _notesUserTouched — selectionchange
+//               فقط پس از تعامل مکانیکی واقعی کاربر (mousedown/keydown/touchstart
+//               روی #notesContent) انتخاب را معتبر می‌داند. در openNotes و آغاز
+//               هر ضبط، پرگ و انتخاب ریست می‌شوند. ویرایش درون‌خطی (کلیک واقعی
+//               در وسط خط) هنوز در همان نقطه درج می‌کند. تست‌های G11-G14 سبز.
 //         🔧 v232 (۱۴۰۵ آبان ۲۵) — الزام کاربر: «کل مکانیزیم و کد ها و کلید
 //               صوت را پاک کن فقط با تشخیص صوت گوگل برنامه کار کند».
 //               ماژول کامل تشخیص صوت آفلاین (OfflineSTT IIFE با Whisper/ONNX/
@@ -7122,7 +7134,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v232-2026-11-14-google-only';
+const APP_VERSION = 'v233-2026-11-14-notes-order';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20420,6 +20432,11 @@ function getNotesKey(groupId) {
 function openNotes(groupId, customTitle) {
     _notesTargetGroup = groupId || null;
     const content = document.getElementById('notesContent');
+    // 🔧 v232: ریست انتخاب کاربر — پنل تازه باز شده، placeholder focus نباید
+    // به‌عنوان انتخاب واقعی در نظر گرفته شود (باگ «خط جدید بالا می‌رود»).
+    _notesUserTouched = false;
+    _notesSavedRange = null;
+    _notesInsertionRange = null;
     // بارگذاری یادداشت‌های ذخیره‌شده برای این گروه/روز
     const key = getNotesKey(_notesTargetGroup);
     const saved = localStorage.getItem(key) || '';
@@ -20490,6 +20507,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const key = getNotesKey(_notesTargetGroup);
                 localStorage.setItem(key, content.innerHTML);
             });
+            // 🔧 v232: هر تعامل مکانیکی واقعی کاربر با محتوا را علامت بزن
+            // (کلیک یا کلید) — تا selectionchange بداند این انتخاب واقعی است،
+            // نه placeholder پیش‌فرض focus. بدون این، خط جدید ضبط‌شده در بالا
+            // درج می‌شد نه در انتهای بلوک امروز.
+            content.addEventListener('mousedown', function() { _notesUserTouched = true; });
+            content.addEventListener('keydown', function() { _notesUserTouched = true; });
+            content.addEventListener('touchstart', function() { _notesUserTouched = true; });
         }
     }, 500);
 });
@@ -20546,10 +20570,18 @@ function _insertTextAtCursor(content, text, range) {
     _notesSavedRange.collapse(true);
 }
 
-// 🔧 v180: ردیابی کرسر در محتوای یادداشت
-// هر بار که انتخاب (selection) در صفحه تغییر می‌کند، اگر کرسر داخل
-// #notesContent باشد، موقعیت آن ذخیره می‌شود. این کار حتی وقتی کاربر
-// میکروفون را لمس می‌کند (و فوکوس از محتوا خارج می‌شود) موقعیت قبلی را حفظ می‌کند.
+// 🔧 v232: ردیابی کرسر در محتوای یادداشت — فقط انتخاب «واقعی» کاربر
+// مشکل قبلی: وقتی openNotes می‌شد و content.focus() اجرا می‌شد، مرورگر یک
+// placeholder range در ابتدای محتوای خالی می‌ساخت و selectionchange این را
+// به‌عنوان «انتخاب کاربر» ذخیره می‌کرد. نتیجه: خط جدید ضبط‌شده در بالا (قبل
+// از تاریخ) درج می‌شد نه در انتها — باگ کاربر.
+// راه‌حل: پرچم _notesUserTouched — فقط وقتی کاربر واقعاً کلیک/تایپ داخل محتوا
+// کرده باشد، selection را معتبر می‌دانیم. به‌این‌ترتیب ضبط بدون انتخاب واقعی،
+// به انتهای بلوک امروز (مسیر تاریخ) اضافه می‌شود.
+let _notesUserTouched = false;
+function _notesResetUserTouch() {
+    _notesUserTouched = false;
+}
 document.addEventListener('selectionchange', function() {
     var sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
@@ -20558,7 +20590,12 @@ document.addEventListener('selectionchange', function() {
     var range = sel.getRangeAt(0);
     // بررسی: آیا کرسر داخل محتوای یادداشت است؟
     if (content.contains(range.commonAncestorContainer)) {
-        _notesSavedRange = range.cloneRange();
+        // 🔧 v232: فقط انتخاب «واقعی» کاربر را ذخیره کن — نه placeholder
+        // پیش‌فرض مرورگر هنگام focus. اگر کاربر هنوز محتوا را لمس نکرده،
+        // _notesSavedRange را ست نکن (باطل می‌ماند تا انتخاب واقعی).
+        if (_notesUserTouched) {
+            _notesSavedRange = range.cloneRange();
+        }
     }
 });
 
