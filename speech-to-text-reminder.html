@@ -1285,6 +1285,118 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .hamburger-item .h-ico { font-size: 17px; width: 24px; text-align: center; }
 
 /* بخش حسابداری — تمام‌صفحه */
+/* ════════════════════════════════════════════════════════════════
+   🔧 v238: ضبط جلسه کاری + فایل‌های PDF — دو صفحهٔ جدید
+   ════════════════════════════════════════════════════════════════ */
+.meeting-overlay {
+    position: fixed; inset: 0;
+    background: #f0f2f5; z-index: 10100;
+    display: none; flex-direction: column; direction: rtl;
+}
+.meeting-overlay.active { display: flex; }
+.meeting-topbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px; background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    flex-shrink: 0;
+}
+.meeting-back-btn {
+    background: none; border: none; color: #007aff;
+    font-size: 15px; font-family: inherit; cursor: pointer; padding: 4px 6px;
+}
+.meeting-title { font-size: 17px; font-weight: 700; color: #1a1a1a; flex: 1; }
+.meeting-status {
+    font-size: 12px; color: #888; padding: 4px 12px; background: #fafafa;
+    text-align: center; flex-shrink: 0;
+}
+.meeting-status.recording { color: #ff3b30; font-weight: 600; }
+.meeting-status.recording::before {
+    content: '●'; margin-left: 4px; animation: meetPulse 1s infinite;
+}
+@keyframes meetPulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.meeting-textarea {
+    flex: 1; width: 100%; border: none; outline: none;
+    padding: 16px 14px; font-family: 'Vazirmatn',Tahoma,sans-serif;
+    font-size: 16px; line-height: 1.9; color: #222;
+    resize: none; background: #fff; direction: rtl; text-align: right;
+}
+.meeting-textarea:focus { background: #fff; }
+.meeting-toolbar {
+    display: flex; gap: 8px; padding: 12px;
+    background: #fff; box-shadow: 0 -1px 3px rgba(0,0,0,0.08);
+    flex-shrink: 0; align-items: center;
+}
+.meeting-mic-btn {
+    width: 56px; height: 56px; border-radius: 50%; border: none;
+    background: #ff3b30; color: #fff; font-size: 24px; cursor: pointer;
+    flex-shrink: 0; box-shadow: 0 2px 8px rgba(255,59,48,0.4);
+    transition: transform .15s, box-shadow .15s;
+}
+.meeting-mic-btn.recording {
+    background: #34c759; box-shadow: 0 2px 12px rgba(52,199,89,0.5);
+    animation: meetMicPulse 1.5s infinite;
+}
+@keyframes meetMicPulse {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+}
+.meeting-save-btn, .meeting-clear-btn {
+    flex: 1; padding: 12px; border: none; border-radius: 10px;
+    font-size: 14px; font-family: inherit; cursor: pointer; font-weight: 600;
+}
+.meeting-save-btn { background: #007aff; color: #fff; }
+.meeting-save-btn:active { background: #0066d6; }
+.meeting-save-btn:disabled { background: #c7c7cc; }
+.meeting-clear-btn { background: #f0f2f5; color: #555; }
+.meeting-hint { font-size: 11px; color: #aaa; text-align: center; padding: 0 4px; }
+
+/* صفحهٔ فایل‌های PDF */
+.pdffiles-overlay {
+    position: fixed; inset: 0;
+    background: #f0f2f5; z-index: 10100;
+    display: none; flex-direction: column; direction: rtl;
+}
+.pdffiles-overlay.active { display: flex; }
+.pdffiles-topbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px; background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12); flex-shrink: 0;
+}
+.pdffiles-back-btn {
+    background: none; border: none; color: #007aff;
+    font-size: 15px; font-family: inherit; cursor: pointer; padding: 4px 6px;
+}
+.pdffiles-title { font-size: 17px; font-weight: 700; color: #1a1a1a; flex: 1; }
+.pdffiles-list {
+    flex: 1; overflow-y: auto; padding: 12px;
+    -webkit-overflow-scrolling: touch;
+}
+.pdffiles-empty {
+    text-align: center; color: #999; font-size: 14px;
+    padding: 60px 20px; line-height: 1.8;
+}
+.pdffiles-empty .empty-ico { font-size: 48px; display: block; margin-bottom: 12px; }
+.pdffile-card {
+    background: #fff; border-radius: 12px; padding: 14px 16px;
+    margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    display: flex; align-items: center; gap: 12px;
+}
+.pdffile-ico { font-size: 32px; flex-shrink: 0; }
+.pdffile-info { flex: 1; min-width: 0; }
+.pdffile-name {
+    font-size: 14px; font-weight: 600; color: #1a1a1a;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pdffile-meta { font-size: 11px; color: #888; margin-top: 3px; }
+.pdffile-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.pdffile-btn {
+    border: none; border-radius: 8px; padding: 7px 10px;
+    font-size: 12px; font-family: inherit; cursor: pointer; font-weight: 600;
+}
+.pdffile-btn.open { background: #007aff; color: #fff; }
+.pdffile-btn.del { background: #ffeaea; color: #ff3b30; }
+
+/* ════════════════════════════════════════════════════════════════ */
 .accounting-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -5231,7 +5343,39 @@ body.locked .header-actions button {
         <div class="hamburger-item" onclick="closeHamburgerMenu(); toggleNotifications();">
             <span class="h-ico">🔔</span><span>اعلان‌ها (زنگوله)</span>
         </div>
+        <div class="hamburger-item" onclick="closeHamburgerMenu(); openMeetingRecorder();">
+            <span class="h-ico">🎙️</span><span>ضبط جلسه کاری</span>
+        </div>
+        <div class="hamburger-item" onclick="closeHamburgerMenu(); openPdfFilesPage();">
+            <span class="h-ico">📄</span><span>فایل‌های PDF</span>
+        </div>
     </div>
+</div>
+
+<!-- 🔧 v238: صفحهٔ ضبط جلسه کاری — میکروفون پیوسته (الگوی accDocStartRec)
+     + نمایش زندهٔ متن + ذخیره PDF با فونت زیبا و تاریخ/ساعت شمسی -->
+<div class="meeting-overlay" id="meetingOverlay">
+    <div class="meeting-topbar">
+        <button class="meeting-back-btn" onclick="closeMeetingRecorder()">بازگشت ❯</button>
+        <div class="meeting-title">🎙️ ضبط جلسه کاری</div>
+    </div>
+    <div class="meeting-status" id="meetingStatus">آمادهٔ ضبط — دکمهٔ میکروفون را بزنید</div>
+    <textarea class="meeting-textarea" id="meetingText" placeholder="متن جلسه اینجا نمایش داده می‌شود... می‌توانید آن را ویرایش کنید" dir="rtl"></textarea>
+    <div class="meeting-toolbar">
+        <button class="meeting-mic-btn" id="meetingMicBtn" onclick="meetingToggleMic()" title="شروع/توقف ضبط">🎤</button>
+        <button class="meeting-clear-btn" onclick="meetingClearText()" title="پاک‌کردن متن">پاک‌کردن</button>
+        <button class="meeting-save-btn" id="meetingSaveBtn" onclick="meetingSavePdf()" title="ذخیره به‌صورت PDF">💾 ذخیره PDF</button>
+    </div>
+    <div class="meeting-hint">برای توقف، دوباره میکروفون را بزنید. سپس «ذخیره PDF» را بزنید.</div>
+</div>
+
+<!-- 🔧 v238: صفحهٔ فایل‌های PDF ذخیره‌شده روی گوشی -->
+<div class="pdffiles-overlay" id="pdffilesOverlay">
+    <div class="pdffiles-topbar">
+        <button class="pdffiles-back-btn" onclick="closePdfFilesPage()">بازگشت ❯</button>
+        <div class="pdffiles-title">📄 فایل‌های PDF</div>
+    </div>
+    <div class="pdffiles-list" id="pdffilesList"></div>
 </div>
 
 <!-- 🔧 v209 (بازنگری): بخش حسابداری — تمام‌صفحه. معادلهٔ اصلی: دارایی = بدهی + سرمایه.
@@ -7034,6 +7178,33 @@ body.locked .header-actions button {
 //               ~۷۵۰MB-۱.۵GB) — فقط با WebGPU توصیه می‌شود.
 //            dtype: WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده).
 //            تست: test_offline_stt_v222.mjs — ۱۴ تست Y1-Y14، پورت ۸۲۰۲.
+//         🔧 v238 (۱۴۰۵ آبان ۲۶) — الزام کاربر: «در منوی همبرگری تیتر اصلی یک
+//               کلید برای ایجاد یک ضبط جلسه کاری و تبدیل آن به متن ایجاد کن
+//               که مثل صفحه یادداشت باشد میکرفونش را که فعال میکنیم شروع به
+//               شنیدن صدای محیط یا صدای از منبع داخلی گوشی موبایل کند و
+//               پیوسته حرفها و شنیده هار ا تایپ کند. کاربر بتواند هر زمان
+//               که خواست از ضبط دست بکشد و با یک کلید ذخیره آن را بصورت یک
+//               فایل pdf زیبا و پاراگراف بندی شده با فونت زیبا با گرفتن نام
+//               فایل از کاربر که تاریخ شمسی درست و ساعت روز هم اتوماتیک به
+//               آن اضافه میشودذخیره شود. در همان منوی همبرگری کلیدی دیگر
+//               برای نمایش فایل های pdf روی گوشی بگذار.»
+//               دو قابلیت جدید + یک صفحه:
+//               ۱) «ضبط جلسه کاری» — صفحه تمام‌صفحه با textarea زنده و دکمه
+//                  میکروفون بزرگ. مکانیزم کپی عینی accDocStartRec:
+//                  SpeechRecognition با continuous=true + interimResults=false،
+//                  restart 200ms داخل onend، بدون worker/keepalive/
+//                  MediaRecorder (همان الگوی تمیز v237). تبدیل اعداد گفتاری
+//                  به دیجیت (addNumericAfterWords) هم اعمال می‌شود.
+//               ۲) «ذخیره PDF» — prompt نام فایل → پنجرهٔ چاپ با HTML زیبا
+//                  (فونت Vazirmatn از CDN، RTL، سرتیتر شامل نام فایل + تاریخ
+//                  شمسی + ساعت via toJalaliLong). کاربر «Save as PDF» می‌زند
+//                  و فایل روی گوشی ذخیره می‌شود. همزمان متن در IndexedDB
+//                  (store جدید pdf_meetings) ذخیره می‌شود.
+//               ۳) «فایل‌های PDF» — صفحه لیست فایل‌های ذخیره‌شده با باز کردن
+//                  (بازسازی پنجرهٔ چاپ) و حذف.
+//               تمام عملیات (navPush / closeModalByType / isAnyOverlayOpen /
+//               lockBodyScroll) با الگوی موجود هماهنگ شد. ضبط هنگام Back
+//               موبایل یا بستن overlay حتماً متوقف می‌شود (closeModalByType).
 //         🔧 v237 (۱۴۰۵ آبان ۲۶) — الزام کاربر: «هنوز میکرفون در حال قطع و
 //               وصل با بوق های متوالی داریم. مکانیزم کاملا کپی از نوع ضبط
 //               تیتر سند حسابداری باشد». تحلیل نشان داد منشأ بوق‌ها پنج
@@ -7237,7 +7408,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v237-2026-11-14-rec-like-acc';
+const APP_VERSION = 'v238-2026-11-14-meeting-rec-pdf';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -7938,6 +8109,7 @@ const IDB_VERSION = 2;  // bumped to v2 for the new STORE_BACKUP store
 const STORE_REMINDERS = 'reminders';
 const STORE_NOTIF_LOG = 'notif_log';
 const STORE_BACKUP = 'backup';  // NEW: full-DB backup store (key = 'main')
+const STORE_PDF_MEETINGS = 'pdf_meetings';  // 🔧 v238: متن جلسات ذخیره‌شدهٔ PDF
 let idbPromise = null;
 
 function idbAvailable() { return 'indexedDB' in window; }
@@ -7959,6 +8131,11 @@ function openIDB() {
             }
             if (!db.objectStoreNames.contains(STORE_BACKUP)) {
                 db.createObjectStore(STORE_BACKUP);
+            }
+            // 🔧 v238: متن جلسات ذخیره‌شده (PDF). keyPath = id (timestamp-based)
+            if (!db.objectStoreNames.contains(STORE_PDF_MEETINGS)) {
+                const s = db.createObjectStore(STORE_PDF_MEETINGS, { keyPath: 'id' });
+                s.createIndex('createdAt', 'createdAt', { unique: false });
             }
         };
         req.onsuccess = () => resolve(req.result);
@@ -12353,6 +12530,9 @@ function closeModalByType(type) {
         'contactPicker': 'contactPickerOverlay',
         'contactActionMenu': 'contactActionMenuOverlay',
         'bellSettings': 'bellSettingsOverlay',
+        // 🔧 v238: ضبط جلسه کاری + فایل‌های PDF
+        'meeting': 'meetingOverlay',
+        'pdffiles': 'pdffilesOverlay',
     }[type];
     if (overlayId) {
         const el = document.getElementById(overlayId);
@@ -12382,6 +12562,12 @@ function closeModalByType(type) {
         // یا بستن با انصراف/ذخیره/حذف) — الگوی accDocForm.
         if (typeof accRecStopRec === 'function') {
             try { accRecStopRec(); } catch(e) {}
+        }
+    }
+    if (type === 'meeting') {
+        // 🔧 v238: ضبط جلسه کاری حتماً متوقف شود (حتی با Back موبایل)
+        if (typeof meetRecActive !== 'undefined' && meetRecActive && typeof meetingStopRec === 'function') {
+            try { meetingStopRec(); } catch(e) {}
         }
     }
     if (type === 'taskForm') {
@@ -12713,6 +12899,9 @@ function isAnyOverlayOpen() {
         'accDatePickerOverlay',
         'accGroupPickerOverlay',
         'accSubgroupPickerOverlay',
+        // 🔧 v238: ضبط جلسه کاری + فایل‌های PDF
+        'meetingOverlay',
+        'pdffilesOverlay',
     ];
     for (var i = 0; i < staticOverlays.length; i++) {
         var el = document.getElementById(staticOverlays[i]);
@@ -19753,6 +19942,380 @@ function closeHamburgerMenu() {
     if (!ov || !ov.classList.contains('active')) return; // idempotent
     closeModalByType('hamburger');
     navBack();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v238: ضبط جلسه کاری + فایل‌های PDF
+// ════════════════════════════════════════════════════════════════════
+// الزام کاربر: «در منوی همبرگری تیتر اصلی یک کلید برای ایجاد یک ضبط جلسه
+// کاری و تبدیل آن به متن ایجاد کن که مثل صفحه یادداشت باشد میکرفونش را
+// که فعال میکنیم شروع به شنیدن صدای محیط یا صدای از منبع داخلی گوشی
+// موبایل کند و پیوسته حرفها و شنیده هار ا تایپ کند. کاربر بتواند هر زمان
+// که خواست از ضبط دست بکشد و با یک کلید ذخیره آن را بصورت یک فایل pdf زیبا
+// و پاراگراف بندی شده با فونت زیبا با گرفتن نام فایل از کاربر که تاریخ
+// شمسی درست و ساعت روز هم اتوماتیک به آن اضافه میشودذخیره شود. در همان
+// منوی همبرگری کلیدی دیگر برای نمایش فایل های pdf روی گوشی بگذار.»
+//
+// طراحی:
+//   • ضبط جلسه = کپی عینی accDocStartRec (continuous=true, interimResults=false،
+//     restart 200ms داخل onend، بدون worker/keepalive/MediaRecorder). تفاوت:
+//     continuous=true (پیوسته، نه مثل تسک که false بود) چون جلسه طولانی است.
+//   • متن زنده در textarea نشان داده می‌شود (قابل ویرایش).
+//   • ذخیره PDF: window.open + print با HTML زیبا (فونت Vazirmatn از CDN، RTL،
+//     سرتیتر شامل نام فایل + تاریخ شمسی + ساعت) — کاربر «Save as PDF» می‌زند
+//     و فایل روی گوشی ذخیره می‌شود. همزمان متن در IndexedDB ذخیره می‌شود تا
+//     بتوان دوباره آن را باز کرد (صفحهٔ فایل‌های PDF).
+//   • صفحهٔ فایل‌های PDF: لیست رکوردهای IndexedDB با بازکردن (بازسازی PDF)
+//     و حذف.
+// ════════════════════════════════════════════════════════════════════
+
+let meetRecObj = null;
+let meetRecActive = false;
+let meetRecAccum = '';
+let meetRecIndices = null;
+
+function openMeetingRecorder() {
+    const ov = document.getElementById('meetingOverlay');
+    if (!ov) return;
+    // اگر ضبط حسابداری/تسک فعال است، متوقف کن (هیچ‌گاه دو SR هم‌زمان نباشند)
+    try { if (typeof accDocStopRec === 'function') accDocStopRec(); } catch(e) {}
+    try { if (typeof accRecStopRec === 'function') accRecStopRec(); } catch(e) {}
+    try { if (typeof stopRecording === 'function' && typeof isRecording !== 'undefined' && isRecording) stopRecording(); } catch(e) {}
+    // بازنشانی state ضبط جلسه
+    meetRecObj = null; meetRecActive = false; meetRecAccum = ''; meetRecIndices = null;
+    document.getElementById('meetingText').value = '';
+    const btn = document.getElementById('meetingMicBtn');
+    if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
+    document.getElementById('meetingStatus').textContent = 'آمادهٔ ضبط — دکمهٔ میکروفون را بزنید';
+    document.getElementById('meetingStatus').classList.remove('recording');
+    document.getElementById('meetingSaveBtn').disabled = false;
+    ov.classList.add('active');
+    navPush({ view: 'overlay', type: 'meeting' });
+    lockBodyScroll();
+}
+
+function closeMeetingRecorder() {
+    // توقف ضبط اگر فعال است (مثل accDocStopRec: فقط flag + stop + null)
+    if (meetRecActive) {
+        meetRecActive = false;
+        const btn = document.getElementById('meetingMicBtn');
+        if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
+        if (meetRecObj) { try { meetRecObj.stop(); } catch(e) {} meetRecObj = null; }
+        document.getElementById('meetingStatus').textContent = 'ضبط متوقف شد';
+        document.getElementById('meetingStatus').classList.remove('recording');
+    }
+    const ov = document.getElementById('meetingOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    ov.classList.remove('active');
+    closeModalByType('meeting');
+    navBack();
+    unlockBodyScroll();
+}
+
+function meetingToggleMic() {
+    if (meetRecActive) meetingStopRec();
+    else meetingStartRec();
+}
+
+// کپی عینی accDocStartRec — تفاوت: continuous=true (پیوسته برای جلسه طولانی)
+// و هدف textarea + دکمهٔ meetingMicBtn.
+function meetingStartRec() {
+    if (!isSpeechSupported()) {
+        showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. از Chrome یا Edge استفاده کنید.');
+        return;
+    }
+    if (!navigator.onLine) {
+        showToast('اینترنت در دسترس نیست — متن جلسه را تایپ کنید');
+        return;
+    }
+    // متن تایپ‌شدهٔ قبلی را حفظ کن
+    const existing = document.getElementById('meetingText').value || '';
+    meetRecAccum = existing.trim();
+    if (meetRecAccum && !meetRecAccum.endsWith(' ')) meetRecAccum += ' ';
+    meetRecIndices = new Set();
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    meetRecObj = new SR();
+    meetRecObj.lang = 'fa-IR';
+    meetRecObj.continuous = true;
+    meetRecObj.interimResults = false;
+    meetRecObj.onresult = function(ev) {
+        for (let i = 0; i < ev.results.length; i++) {
+            if (ev.results[i].isFinal && meetRecIndices && !meetRecIndices.has(i)) {
+                meetRecAccum += ev.results[i][0].transcript + ' ';
+                meetRecIndices.add(i);
+                const el = document.getElementById('meetingText');
+                if (el) el.value = addNumericAfterWords(meetRecAccum).trim();
+            }
+        }
+    };
+    meetRecObj.onerror = function(ev) {
+        console.error('[MeetingMic] error:', ev.error);
+        if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+            meetingStopRec();
+            showToast('دسترسی به میکروفون رد شد. در تنظیمات مرورگر اجازه دهید.');
+        }
+        // خطاهای گذرا — سیکل بعدی (onend → 200ms restart) ادامه می‌دهد
+    };
+    meetRecObj.onend = function() {
+        if (meetRecActive && meetRecObj) {
+            setTimeout(function() {
+                if (meetRecActive && meetRecObj) {
+                    try { meetRecObj.start(); } catch(e) {}
+                }
+            }, 200);
+        }
+    };
+    meetRecActive = true;
+    const btn = document.getElementById('meetingMicBtn');
+    if (btn) { btn.classList.add('recording'); btn.textContent = '⏹'; }
+    const st = document.getElementById('meetingStatus');
+    if (st) { st.textContent = 'در حال ضبط... صحبت کنید'; st.classList.add('recording'); }
+    try { meetRecObj.start(); } catch(e) {
+        console.error('[MeetingMic] start failed', e);
+        showToast('خطا در شروع ضبط');
+        meetRecActive = false;
+        if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
+        if (st) { st.textContent = 'خطا در شروع ضبط'; st.classList.remove('recording'); }
+    }
+}
+
+function meetingStopRec() {
+    meetRecActive = false;
+    const btn = document.getElementById('meetingMicBtn');
+    if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
+    if (meetRecObj) {
+        try { meetRecObj.stop(); } catch(e) {}
+        meetRecObj = null;
+    }
+    const st = document.getElementById('meetingStatus');
+    if (st) { st.textContent = 'ضبط متوقف شد — می‌توانید متن را ویرایش یا ذخیره کنید'; st.classList.remove('recording'); }
+}
+
+function meetingClearText() {
+    if (!confirm('کل متن جلسه پاک شود؟')) return;
+    document.getElementById('meetingText').value = '';
+    meetRecAccum = '';
+    meetRecIndices = new Set();
+}
+
+// ─── ذخیره PDF ───
+// رویکرد: HTML زیبا با Vazirmatn از CDN + RTL + سرتیتر (نام فایل + تاریخ
+// شمسی + ساعت) → window.print() که کاربر «Save as PDF» می‌زند و فایل روی
+// گوشی ذخیره می‌شود. همزمان متن در IndexedDB ذخیره می‌شود تا در صفحهٔ
+// فایل‌های PDF قابل باز شدن/حذف باشد.
+function meetingSavePdf() {
+    const text = (document.getElementById('meetingText').value || '').trim();
+    if (!text) {
+        showToast('متن خالی است — چیزی برای ذخیره نیست');
+        return;
+    }
+    // اگر در حال ضبط است، توقف کن
+    if (meetRecActive) meetingStopRec();
+    const now = new Date();
+    const defaultName = 'جلسه ' + toJalaliDateOnly(now);
+    const fileName = prompt('نام فایل PDF را وارد کنید:', defaultName);
+    if (fileName === null) return; // لغو
+    const finalName = (fileName && fileName.trim()) ? fileName.trim() : defaultName;
+    const dateLong = toJalaliLong(now); // «چهارشنبه ۱۲ آبان ۱۴۰۵ - ۱۴:۳۰»
+    const dateFull = toJalaliFull(now); // «۱۴۰۵/۰۸/۱۲ - ۱۴:۳۰»
+
+    // پاراگراف‌بندی: خط‌های خالی → پاراگراف، هر «.» پشت سر هم → فاصله
+    const paragraphs = text
+        .split(/\n+/)                       // خط‌های خالی → جداکنندهٔ پاراگراف
+        .map(p => p.trim())
+        .filter(p => p.length > 0);
+
+    // ذخیرهٔ رکورد در IndexedDB (متادیتا + متن)
+    const recId = 'meet_' + now.getTime();
+    const record = {
+        id: recId,
+        name: finalName,
+        text: text,
+        createdAt: now.getTime(),
+        dateLong: dateLong,
+        dateFull: dateFull
+    };
+    meetSavePdfRecord(record).then(function() {
+        // باز کردن پنجرهٔ چاپ با HTML زیبا
+        meetingOpenPrintWindow(finalName, dateLong, paragraphs);
+    }).catch(function(e) {
+        console.warn('[MeetingPDF] IDB save failed (still opening print)', e);
+        meetingOpenPrintWindow(finalName, dateLong, paragraphs);
+    });
+}
+
+function meetingOpenPrintWindow(title, dateLong, paragraphs) {
+    const paragraphsHtml = paragraphs.map(function(p) {
+        return '<p>' + escapeHtmlMeeting(p) + '</p>';
+    }).join('\n');
+    const html = '' +
+        '<!DOCTYPE html><html lang="fa" dir="rtl"><head>' +
+        '<meta charset="utf-8">' +
+        '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+        '<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" media="all">' +
+        '<title>' + escapeHtmlMeeting(title) + '</title>' +
+        '<style>' +
+        '@page { size: A4; margin: 20mm 18mm; }' +
+        'body { font-family: "Vazirmatn","Tahoma","IRANSans",sans-serif;' +
+        '       direction: rtl; text-align: right; color: #1a1a1a;' +
+        '       line-height: 2.1; font-size: 13pt; margin: 0; padding: 0; }' +
+        '.doc-header { border-bottom: 2px solid #007aff; padding-bottom: 14px; margin-bottom: 22px; }' +
+        '.doc-title { font-size: 20pt; font-weight: 700; color: #1a1a1a; margin: 0 0 6px; }' +
+        '.doc-meta { font-size: 11pt; color: #666; }' +
+        '.doc-meta .sep { margin: 0 8px; color: #ccc; }' +
+        '.doc-body p { margin: 0 0 14px; text-align: justify;' +
+        '   text-justify: inter-word; text-indent: 0; }' +
+        '.doc-body p:first-of-type { margin-top: 0; }' +
+        '.doc-footer { margin-top: 32px; padding-top: 10px;' +
+        '   border-top: 1px solid #eee; font-size: 9pt; color: #999;' +
+        '   text-align: center; }' +
+        '@media print { body { font-size: 12pt; } }' +
+        '</style></head><body>' +
+        '<div class="doc-header">' +
+        '<div class="doc-title">' + escapeHtmlMeeting(title) + '</div>' +
+        '<div class="doc-meta">' + escapeHtmlMeeting(dateLong) + '</div>' +
+        '</div>' +
+        '<div class="doc-body">' + paragraphsHtml + '</div>' +
+        '<div class="doc-footer">این سند با ضبط صوتی جلسهٔ کاری تولید شد — ' +
+        escapeHtmlMeeting(dateLong) + '</div>' +
+        '</body></html>';
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        showToast('باز کردن پنجرهٔ چاپ مسدود شد — پاپ‌آپ را مجاز کنید');
+        return;
+    }
+    printWindow.document.write(html);
+    printWindow.document.close();
+    setTimeout(function() {
+        try { printWindow.focus(); printWindow.print(); } catch(e) {}
+    }, 500);
+    showToast('در پنجرهٔ چاپ، «Save as PDF» را انتخاب کنید ✓');
+}
+
+function escapeHtmlMeeting(s) {
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+// ─── IndexedDB برای PDF جلسات ───
+async function meetSavePdfRecord(record) {
+    if (!idbAvailable()) return;
+    const db = await openIDB();
+    await new Promise(function(resolve, reject) {
+        const tx = db.transaction([STORE_PDF_MEETINGS], 'readwrite');
+        tx.objectStore(STORE_PDF_MEETINGS).put(record);
+        tx.oncomplete = resolve;
+        tx.onerror = function() { reject(tx.error); };
+    });
+}
+
+async function meetGetAllPdfRecords() {
+    if (!idbAvailable()) return [];
+    try {
+        const db = await openIDB();
+        return await new Promise(function(resolve, reject) {
+            const tx = db.transaction([STORE_PDF_MEETINGS], 'readonly');
+            const req = tx.objectStore(STORE_PDF_MEETINGS).getAll();
+            req.onsuccess = function() { resolve(req.result || []); };
+            req.onerror = function() { reject(req.error); };
+        });
+    } catch(e) { console.warn('[MeetingPDF] getAll failed', e); return []; }
+}
+
+async function meetDeletePdfRecord(id) {
+    if (!idbAvailable()) return;
+    const db = await openIDB();
+    await new Promise(function(resolve, reject) {
+        const tx = db.transaction([STORE_PDF_MEETINGS], 'readwrite');
+        tx.objectStore(STORE_PDF_MEETINGS).delete(id);
+        tx.oncomplete = resolve;
+        tx.onerror = function() { reject(tx.error); };
+    });
+}
+
+// ─── صفحهٔ فایل‌های PDF ───
+function openPdfFilesPage() {
+    const ov = document.getElementById('pdffilesOverlay');
+    if (!ov) return;
+    ov.classList.add('active');
+    navPush({ view: 'overlay', type: 'pdffiles' });
+    lockBodyScroll();
+    renderPdfFilesList();
+}
+
+function closePdfFilesPage() {
+    const ov = document.getElementById('pdffilesOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    ov.classList.remove('active');
+    closeModalByType('pdffiles');
+    navBack();
+    unlockBodyScroll();
+}
+
+async function renderPdfFilesList() {
+    const listEl = document.getElementById('pdffilesList');
+    if (!listEl) return;
+    listEl.innerHTML = '<div class="pdffiles-empty">در حال بارگذاری...</div>';
+    const records = await meetGetAllPdfRecords();
+    records.sort(function(a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+    if (records.length === 0) {
+        listEl.innerHTML = '' +
+            '<div class="pdffiles-empty">' +
+            '<span class="empty-ico">📄</span>' +
+            'هنوز فایل PDF ذخیره نشده است.<br>' +
+            'از منوی همبرگری، «ضبط جلسه کاری» را باز کنید، صحبت کنید و سپس «ذخیره PDF» را بزنید.' +
+            '</div>';
+        return;
+    }
+    let html = '';
+    records.forEach(function(r) {
+        const name = r.name || 'بدون نام';
+        const dateLong = r.dateLong || toJalaliLong(new Date(r.createdAt || Date.now()));
+        const words = (r.text || '').trim().split(/\s+/).filter(Boolean).length;
+        html += '' +
+            '<div class="pdffile-card">' +
+            '<div class="pdffile-ico">📄</div>' +
+            '<div class="pdffile-info">' +
+            '<div class="pdffile-name">' + escapeHtmlMeeting(name) + '</div>' +
+            '<div class="pdffile-meta">' + escapeHtmlMeeting(dateLong) + ' — ' + toPersianNumber(words) + ' واژه</div>' +
+            '</div>' +
+            '<div class="pdffile-actions">' +
+            '<button class="pdffile-btn open" onclick="openPdfFile(\'' + r.id + '\')">باز کردن</button>' +
+            '<button class="pdffile-btn del" onclick="deletePdfFile(\'' + r.id + '\')">حذف</button>' +
+            '</div>' +
+            '</div>';
+    });
+    listEl.innerHTML = html;
+}
+
+async function openPdfFile(id) {
+    if (!idbAvailable()) { showToast('دسترسی به IndexedDB ممکن نیست'); return; }
+    let record;
+    try {
+        const db = await openIDB();
+        record = await new Promise(function(resolve, reject) {
+            const tx = db.transaction([STORE_PDF_MEETINGS], 'readonly');
+            const req = tx.objectStore(STORE_PDF_MEETINGS).get(id);
+            req.onsuccess = function() { resolve(req.result); };
+            req.onerror = function() { reject(req.error); };
+        });
+    } catch(e) { showToast('خطا در خواندن فایل'); return; }
+    if (!record) { showToast('فایل یافت نشد'); return; }
+    const paragraphs = (record.text || '')
+        .split(/\n+/)
+        .map(function(p) { return p.trim(); })
+        .filter(function(p) { return p.length > 0; });
+    meetingOpenPrintWindow(record.name || 'جلسه', record.dateLong || toJalaliLong(new Date(record.createdAt)), paragraphs);
+}
+
+async function deletePdfFile(id) {
+    if (!confirm('این فایل PDF حذف شود؟')) return;
+    try { await meetDeletePdfRecord(id); } catch(e) {}
+    renderPdfFilesList();
+    showToast('حذف شد');
 }
 
 // ════════════════════════════════════════════════════════════════════
