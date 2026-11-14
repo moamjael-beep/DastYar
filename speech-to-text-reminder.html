@@ -7005,6 +7005,22 @@ body.locked .header-actions button {
 //               ~۷۵۰MB-۱.۵GB) — فقط با WebGPU توصیه می‌شود.
 //            dtype: WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده).
 //            تست: test_offline_stt_v222.mjs — ۱۴ تست Y1-Y14، پورت ۸۲۰۲.
+//         🔧 v231 (۱۴۰۵ آبان ۲۴) — گزارش کاربر: «کلا این مدل فارسی نمینویسد
+//               در کامیونیتی فارسی گیت هاب بگرد و بهترین مدل آفلاین دقیق و
+//               سریع را به همین حالت فعلی منوی صوت اضافه کن».
+//               مدل قبلی (whisper-large-v3-turbo) چندزبانه است و فارسی را از
+//               روی تسک تشخیص می‌زند — دقت پایین. دو مدل فارسی‌بومی اضافه شد:
+//               ۱) onnx-community/whisper-large-fa-v1-ONNX — دقیق (WER 14.07 روی
+//                  persian-voice-v1.1، Fine-tune فارسی روی whisper-large-v3).
+//                  q4f16 ~601MB (encoder 370 + decoder 231) — مناسب گوشی و دسکتاپ.
+//               ۲) onnx-community/whisper-tiny-fa-ONNX — سریع/سبک (~63MB q4f16،
+//                  Fine-tune روی common_voice_17_0). مناسب دستگاه ضعیف یا تست.
+//               مدل چندزبانه قبلی هم نگه داشته شد (پیش‌فرض برای زبان‌های دیگر).
+//               انتخابگر سه‌گانه در پنل 🎙 صوت (همان حالت فعلی)؛ انتخاب در
+//               localStorage (yadavar_stt_model_v1) مانا است. فایل‌های همهٔ مدل‌ها
+//               هم‌نام‌اند (encoder_model_fp16/q4f16، decoder_model_merged_fp16/
+//               q4f16) پس Worker و ONNX_FILES بدون تغییر کار می‌کنند. Worker
+//               language:"fa" + task:"transcribe" از v230 حفظ شد.
 //         🔧 v230 (۱۴۰۵ آبان ۲۳) — چهار الزام کاربر:
 //            ۱) «پیام فایل های مدل کامل است - ضبط آفلاین شروع میشود ولی کل
 //               گوشی را هنگ میکند نه تنها برنامه قفل بلکه گوشی را به حالت
@@ -7094,7 +7110,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v230-2026-11-14-mobile-fp16-guard-panel-scroll';
+const APP_VERSION = 'v231-2026-11-14-persian-models';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -10079,7 +10095,9 @@ window.OfflineSTT = (function() {
     //   باشد ولی سریع و درست تشخیص دهد»). کاربر فایل‌های همین مدل را دانلود و
     //   معرفی می‌کند. توجه: Worker فایل‌ها را با تطبیق filename پیدا می‌کند، پس
     //   اگر فایل‌های قدیمی مدل دیگری در کش باشد هم بارگذاری می‌شود (سازگاری).
-    var FIXED_MODEL = 'onnx-community/whisper-large-v3-turbo';
+    // 🔧 v231: FIXED_MODEL حذف شد — getModel() از MODELS رجیستری + localStorage
+    // می‌خواند (MODEL_KEY = yadavar_stt_model_v1). سه مدل: fa-large (دقیق،
+    // پیش‌فرض)، fa-tiny (سریع)، multi (چندزبانه).
     // 🔧 v229: فهرست دقیق فایل‌های لازم — از سورس واقعی transformers.js 3.8.1
     // استخراج شد (برای seq2seq: {encoder_model، decoder_model_merged} + فایل‌های
     // config/tokenizer/generation). در مخزن whisper-large-v3-turbo فایل
@@ -10127,10 +10145,55 @@ window.OfflineSTT = (function() {
         try { localStorage.setItem(ENGINE_KEY, v === 'offline' ? 'offline' : 'online'); } catch(e) {}
         refreshPanel();
     }
-    // 🔧 v228: مدل ثابت — دیگر انتخاب مدل وجود ندارد (setModel/MODEL_KEY حذف
-    // شدند). اگر yadavar_stt_model_v1 قدیمی در localStorage مانده باشد نادیده
-    // گرفته می‌شود.
-    function getModel() { return FIXED_MODEL; }
+    // 🔧 v231: رجیستری مدل‌ها — کاربر: «بهترین مدل آفلاین دقیق و سریع را به
+    // همین حالت فعلی منوی صوت اضافه کن». مدل چندزبانه قبلی نگه داشته شد
+    // (پیش‌فرض) و دو مدل فارسی‌بومی اضافه شد. فایل‌های همه هم‌نام‌اند پس
+    // Worker و ONNX_FILES بدون تغییر کار می‌کنند.
+    //   fa-large — onnx-community/whisper-large-fa-v1-ONNX: Fine-tune فارسی روی
+    //     whisper-large-v3، WER 14.07 روی persian-voice-v1.1 — دقیق‌ترین.
+    //   fa-tiny  — onnx-community/whisper-tiny-fa-ONNX: Fine-tune روی
+    //     common_voice_17_0، ~63MB q4f16 — سریع‌ترین/سبک‌ترین.
+    //   multi    — onnx-community/whisper-large-v3-turbo: چندزبانه (قدیمی).
+    var MODEL_KEY = 'yadavar_stt_model_v1';
+    var MODELS = [
+        { id: 'fa-large', path: 'onnx-community/whisper-large-fa-v1-ONNX',
+          label: 'فارسی — دقیق', desc: 'whisper-large-fa-v1 (WER 14.07) — پیشنهادی برای فارسی' },
+        { id: 'fa-tiny',  path: 'onnx-community/whisper-tiny-fa-ONNX',
+          label: 'فارسی — سبک/سریع', desc: 'whisper-tiny-fa (~63MB) — مناسب دستگاه ضعیف یا تست سریع' },
+        { id: 'multi',    path: 'onnx-community/whisper-large-v3-turbo',
+          label: 'چندزبانه', desc: 'whisper-large-v3-turbo — برای زبان‌های دیگر' }
+    ];
+    var DEFAULT_MODEL_ID = 'fa-large'; // 🔧 v231: پیش‌فرض فارسیِ دقیق
+    function getModel() {
+        try {
+            var id = localStorage.getItem(MODEL_KEY);
+            if (id && MODELS.some(function(m){ return m.id === id; })) {
+                var m = MODELS.filter(function(x){ return x.id === id; })[0];
+                return m.path;
+            }
+        } catch(e) {}
+        return MODELS[0].path; // fa-large
+    }
+    function getModelId() {
+        try {
+            var id = localStorage.getItem(MODEL_KEY);
+            if (id && MODELS.some(function(m){ return m.id === id; })) return id;
+        } catch(e) {}
+        return DEFAULT_MODEL_ID;
+    }
+    function setModel(id) {
+        var valid = MODELS.some(function(m){ return m.id === id; });
+        if (!valid) return;
+        try { localStorage.setItem(MODEL_KEY, id); } catch(e) {}
+        // آماده‌بودن مدل قبلی دیگر معتبر نیست — مدل عوض شد
+        try { localStorage.removeItem(READY_KEY); } catch(e) {}
+        // Worker را ریست کن تا مدل تازه با کلید تازه ensure شود
+        try { if (_worker) { _worker.terminate(); _worker = null; } } catch(e) {}
+        _dtype = null;
+        refreshPanel();
+        updateCacheInfo();
+        showToast('مدل انتخاب شد: ' + MODELS.filter(function(m){return m.id===id;})[0].label + ' — اگر فایل‌های این مدل را ندارید، از لینک‌های پایین دانلود و معرفی کنید');
+    }
     // 🔧 v226: WASM حذف شد — فقط WebGPU. تابع webgpuSupported برای پیام راهنما باقی می‌ماند.
     function webgpuSupported() {
         try { return !!(navigator.gpu && typeof navigator.gpu.requestAdapter === 'function'); }
@@ -10568,6 +10631,9 @@ window.OfflineSTT = (function() {
             '.ostt-btn-ghost{background:#f1f3f4;color:#333;}' +
             '.ostt-eng{flex:1;background:#f1f3f4;color:#333;}' +
             '.ostt-eng.sel{background:#1a73e8;color:#fff;}' +
+            '.ostt-model-btn{background:#f8f9fa;color:#333;border:1px solid #e0e0e0;}' +
+            '.ostt-model-btn:hover{background:#e8f0fe;border-color:#1a73e8;}' +
+            '.ostt-model-sel{background:#e8f0fe;border-color:#1a73e8;}' +
             '.ostt-model-row{display:flex;align-items:center;gap:8px;padding:7px 4px;font-size:13px;}' +
             '.ostt-bar{height:8px;background:#e8eaed;border-radius:4px;overflow:hidden;}' +
             '.ostt-bar-fill{height:100%;width:0%;background:#1a73e8;transition:width .3s;}' +
@@ -10622,6 +10688,10 @@ window.OfflineSTT = (function() {
               '<button id="ostt-eng-online" class="ostt-btn ostt-eng">آنلاین (گوگل)</button>' +
               '<button id="ostt-eng-offline" class="ostt-btn ostt-eng">آفلاین (روی دستگاه)</button>' +
             '</div>' +
+            '<div id="ostt-model-row" style="margin-bottom:12px;display:none;">' +
+              '<div style="font-size:12px;color:#555;margin-bottom:4px;font-weight:bold;">مدل آفلاین:</div>' +
+              '<div id="ostt-model-btns" style="display:flex;flex-direction:column;gap:6px;"></div>' +
+            '</div>' +
             '<div id="ostt-status" style="font-size:13px;margin:10px 0;"></div>' +
             '<div id="ostt-cacheinfo" style="font-size:11px;color:#666;margin:4px 0 8px 0;line-height:1.8;"></div>' +
             '<div id="ostt-links" style="font-size:12px;color:#555;margin:8px 0;line-height:1.8;"></div>' +
@@ -10662,6 +10732,34 @@ window.OfflineSTT = (function() {
         var engine = getEngine(), model = getModel(), ready = isReady(), gpuOk = webgpuSupported();
         panel.querySelector('#ostt-eng-online').classList.toggle('sel', engine === 'online');
         panel.querySelector('#ostt-eng-offline').classList.toggle('sel', engine === 'offline');
+        // 🔧 v231: انتخابگر مدل فقط در حالت آفلاین نمایش داده می‌شود
+        var modelRow = panel.querySelector('#ostt-model-row');
+        if (modelRow) {
+            modelRow.style.display = (engine === 'offline') ? '' : 'none';
+            if (engine === 'offline') {
+                var curId = getModelId();
+                var btnsEl = panel.querySelector('#ostt-model-btns');
+                if (btnsEl) {
+                    var html = '';
+                    for (var mi = 0; mi < MODELS.length; mi++) {
+                        var m = MODELS[mi];
+                        var sel = (m.id === curId) ? ' ostt-model-sel' : '';
+                        html += '<button class="ostt-btn ostt-model-btn' + sel + '" data-mid="' + m.id + '" style="text-align:right;justify-content:flex-start;width:100%;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;">' +
+                          '<div style="font-size:13px;font-weight:bold;">' + (m.id === curId ? '✓ ' : '') + m.label + '</div>' +
+                          '<div style="font-size:11px;color:#666;font-weight:normal;">' + m.desc + '</div>' +
+                          '<div style="font-size:10px;color:#888;font-weight:normal;">' + m.path + '</div>' +
+                        '</button>';
+                    }
+                    btnsEl.innerHTML = html;
+                    var nodes = btnsEl.querySelectorAll('.ostt-model-btn');
+                    for (var ni = 0; ni < nodes.length; ni++) {
+                        nodes[ni].addEventListener('click', function(e) {
+                            setModel(e.currentTarget.getAttribute('data-mid'));
+                        });
+                    }
+                }
+            }
+        }
         // 🔧 v228: انتخابگر ۴ مدل حذف شد — کاربر خودش فایل‌ها را دانلود می‌کند.
         // 🔧 v229: لینک مستقیم تک‌تک فایل‌های MANIFEST — راهنمای قدیمی کاربر را
         // به «model_fp16.onnx» (فایل ناموجود در مخزن!) هدایت می‌کرد.
@@ -11103,6 +11201,10 @@ window.OfflineSTT = (function() {
         testMic: testMic,
         selectModelFiles: selectModelFiles, // 🔧 v226: انتخاب فایل‌های مدل توسط کاربر
         transcribeAudio: transcribeAudio, // 🔧 v230: برای تشخیص و تست — تبدیل مستقیم
+        // 🔧 v231: برای تست و اشکال‌زدایی — رجیستری مدل و انتخاب
+        MODELS: MODELS,
+        getModelId: getModelId,
+        setModel: setModel,
         state: state,
         // فقط برای تست‌های خودکار
         get _testTranscribe() { return _testTranscribe; },
