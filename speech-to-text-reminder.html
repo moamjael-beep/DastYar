@@ -7005,6 +7005,36 @@ body.locked .header-actions button {
 //               ~۷۵۰MB-۱.۵GB) — فقط با WebGPU توصیه می‌شود.
 //            dtype: WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده).
 //            تست: test_offline_stt_v222.mjs — ۱۴ تست Y1-Y14، پورت ۸۲۰۲.
+//         🔧 v230 (۱۴۰۵ آبان ۲۳) — چهار الزام کاربر:
+//            ۱) «پیام فایل های مدل کامل است - ضبط آفلاین شروع میشود ولی کل
+//               گوشی را هنگ میکند نه تنها برنامه قفل بلکه گوشی را به حالت
+//               کما میبرد و با بوت سخت افزاری بوت میشود»
+//               ریشه: مدل بزرگ fp16 = انکودر ۱٫۲۷ گیگابایتی روی WebGPU گوشی.
+//               GPU/رم گوشی اشتراکی است؛ تخصیص ۱٫۲۷GB + فعال‌سازی‌ها + KV-cache
+//               → فشار OOM سطح سیستم → کاما/بوت سخت‌افزاری. راه‌حل:
+//               isMobileDevice() (فقط UA — Android/iPhone/iPad/iPod/Mobile؛
+//               deviceMemory قابل‌اعتماد نیست) — روی گوشی fp16 ممنوع؛
+//               فقط گروه سبک q4f16 (~۵۶۰MB). دسکتاپ بدون تغییر (fp16 ترجیح).
+//               transcribeAudio دیگر هرگز به‌صورت کورکورانه به fp16 برنمی‌گردد
+//               — بدون dtype مجاز، رد با پیام صادقانه.
+//            ۲) «صفحه صوت قابل اسکرول باشد بالای آن با زیر هدر برنامه تراز
+//               شود و فیکس شود و تا پایین آن بتوانیم اسکرول کنیم» — پنل
+//               align-items:flex-start + paddingTop = ارتفاع هدر + maxHeight =
+//               ۱۰۰dvh − هدر − حاشیه + overflow-y:auto (همان الگوی هدر داخلی
+//               گروه که top=headerHeight فیکس می‌شود).
+//            ۳) «آیکن یادداشت روی هدر خارجی هر گروه در هدر داخلی همان گروه
+//               هم نمایش داده شود» — دکمهٔ 📝 (group-notes-btn، همان
+//               openNotes(groupId)) به ردیف هدر داخلی (renderTasksView) بعد از
+//               شمارش اضافه شد — برای همهٔ گروه‌ها مثل هدر خارجی.
+//            ۴) «مکانیزم چشمک زدن هدر از روی مکانیزم کار کردن کلیدهای ضبط صوت
+//               در تمام برنامه کپی شود» — updateOnlineStatus حالا فقط
+//               navigator.onLine را می‌خواند (مکانیزم v223 کلیدهای ضبط)، بدون
+//               ping؛ شنونده‌های online/offline هم مستقیم updateOnlineStatus
+//               را صدا می‌زنند. checkReachability فقط برای refresh/handshake
+//               رفت‌به-آنلاین می‌ماند (رفتار تأییدشدهٔ قدیمی — قانون صفر).
+//            ⚠️ قانون صفر: دسکتاپ fp16 همان‌جا کار می‌کند؛ رفتار آنلاین‌شدن
+//               (clearSWCacheAndReload) دست‌نخورده. تست:
+//               test_offline_stt_v230.mjs — پورت ۸۲۱۰.
 //         🔧 v229 (۱۴۰۵ آبان ۲۳) — گزارش کاربر:
 //            «فایل ها را قبول و آماده ضبط اعلام کرد ولی در ضبط پس از صحبت و
 //             توقف ضبط، خطا در تبدیل آفلاین میدهد»
@@ -7064,7 +7094,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v229-2026-11-14-exact-manifest-real-errors';
+const APP_VERSION = 'v230-2026-11-14-mobile-fp16-guard-panel-scroll';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -10106,6 +10136,19 @@ window.OfflineSTT = (function() {
         try { return !!(navigator.gpu && typeof navigator.gpu.requestAdapter === 'function'); }
         catch(e) { return false; }
     }
+    // 🔧 v230: تشخیص دستگاه موبایل — گزارش کاربر: «کل گوشی را هنگ میکند نه
+    // تنها برنامه قفل بلکه گوشی را به حالت کما میبرد و با بوت سخت افزاری بوت
+    // میشود». انکودر fp16 (۱٫۲۷GB) روی GPU/رم اشتراکی گوشی → OOM سطح سیستم.
+    // روی گوشی فقط گروه سبک q4f16 (~۵۶۰MB) مجاز است.
+    // ⚠️ فقط UA — navigator.deviceMemory قابل‌اعتماد نیست (دسکتاپ کم‌حافظه
+    // را اشتباهی موبایل می‌کند؛ سناریوی کما مخصوص گوشی است و UA آن را
+    // مطمئن تشخیص می‌دهد).
+    function isMobileDevice() {
+        try {
+            return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+        } catch(e) {}
+        return false;
+    }
     function readyKey() { return getModel(); }
     function isReady() {
         try { return localStorage.getItem(READY_KEY) === readyKey(); } catch(e) { return false; }
@@ -10142,23 +10185,24 @@ window.OfflineSTT = (function() {
         return String(name || '').replace(/\s*\(\d+\)(?=\.[^.]*$)/, '').trim();
     }
     // 🔧 v229: بر اساس فایل‌های واقعاً موجود، dtype کارا را انتخاب کن:
-    // هر دو فایل fp16 ⇒ 'fp16'؛ وگرنه هر دو فایل q4f16 ⇒ 'q4f16'؛ وگرنه null.
-    function pickDtype(names) {
+    // دسکتاپ: هر دو فایل fp16 ⇒ 'fp16'؛ وگرنه هر دو فایل q4f16 ⇒ 'q4f16'.
+    // 🔧 v230: روی گوشی fp16 ممنوع (خاموشی کامل گوشی) — فقط q4f16.
+    function pickDtype(names, mobile) {
         var set = {};
         for (var i = 0; i < names.length; i++) set[names[i]] = true;
         function complete(list) {
             for (var j = 0; j < list.length; j++) if (!set[list[j]]) return false;
             return true;
         }
-        if (complete(ONNX_FILES.fp16)) return 'fp16';
+        if (!mobile && complete(ONNX_FILES.fp16)) return 'fp16';
         if (complete(ONNX_FILES.q4f16)) return 'q4f16';
         return null;
     }
-    // فایل‌های مفقود برای dtype مشخص (dtype=null ⇒ fp16 پیشنهادی + فایل‌های پایه)
-    function missingFiles(names, dtype) {
+    // فایل‌های مفقود برای dtype مشخص (dtype=null ⇒ گروه پیشنهادی همان دستگاه)
+    function missingFiles(names, dtype, mobile) {
         var set = {};
         for (var i = 0; i < names.length; i++) set[names[i]] = true;
-        var need = AUX_FILES.concat(ONNX_FILES[dtype || 'fp16']);
+        var need = AUX_FILES.concat(ONNX_FILES[dtype || (mobile ? 'q4f16' : 'fp16')]);
         var out = [];
         for (var j = 0; j < need.length; j++) if (!set[need[j]]) out.push(need[j]);
         return out;
@@ -10166,10 +10210,17 @@ window.OfflineSTT = (function() {
     // وضعیت کامل MANIFEST: چه فایل‌هایی هست، چه dtype ممکن است، چه چیزی کم است
     async function manifestStatus() {
         var info = await checkCacheFiles();
-        var dtype = pickDtype(info.names);
-        var missing = missingFiles(info.names, dtype);
+        var mobile = isMobileDevice();
+        var dtype = pickDtype(info.names, mobile);
+        var missing = missingFiles(info.names, dtype, mobile);
+        // 🔧 v230: اگر کاربر فقط گروه fp16 را دارد ولی روی گوشی است — توضیح صادقانه
+        var note = '';
+        if (mobile && !dtype && pickDtype(info.names, false) === 'fp16') {
+            note = 'مدل بزرگ fp16 روی گوشی اجرا نمی‌شود (فریز کامل گوشی) — گروه سبک q4f16 لازم است';
+        }
         return { count: info.count, hasOnnx: info.hasOnnx, names: info.names,
-                 dtype: dtype, missing: missing, complete: missing.length === 0 };
+                 dtype: dtype, missing: missing, complete: missing.length === 0,
+                 mobile: mobile, note: note };
     }
     // اگر READY_KEY با وضعیت واقعی کش نمی‌خواند → ترمیم دوطرفه:
     // MANIFEST کامل و READY نیست ⇒ تنظیم؛ MANIFEST ناقص و READY هست (مثلاً
@@ -10317,10 +10368,12 @@ window.OfflineSTT = (function() {
     // 🔧 v229: dtype از فایل‌های واقعاً موجود در کش انتخاب می‌شود (fp16 یا q4f16).
     // اگر MANIFEST ناقص باشد، با فهرست نام فایل‌های مفقود رد می‌شود — نه با
     // پیام مبهم 404 در زمان تبدیل.
+    // 🔧 v230: پیام شامل توضیح mobile-fp16 (اگر مربوط باشد).
     async function loadModel() {
         var st = await manifestStatus();
         if (!st.complete) {
-            return Promise.reject(new Error('فایل‌های مدل ناقص است — این فایل‌ها کم است: ' + st.missing.join('، ')));
+            var msg = st.note ? (st.note + ' — ') : 'فایل‌های مدل ناقص است — ';
+            return Promise.reject(new Error(msg + 'این فایل‌ها کم است: ' + st.missing.join('، ')));
         }
         _dtype = st.dtype;
         return new Promise(function(resolve, reject) {
@@ -10473,11 +10526,18 @@ window.OfflineSTT = (function() {
     // duration, size, sampleRate}) — مستقیم به Worker، بدون encode/decode.
     // 🔧 v229: dtype در لحظهٔ تبدیل از کش انتخاب می‌شود (fp16 یا q4f16) و با
     // پیام می‌رود تا ensure کلید درست بگیرد.
+    // 🔧 v230: دیگر هیچ fallback کورکورانه به fp16 وجود ندارد — اگر dtype
+    // مجازی برای این دستگاه در کش نیست، رد با پیام صادقانه (گزارش کاربر:
+    // fp16 روی گوشی = فریز کامل گوشی).
     function transcribeAudio(captured) {
         if (_testTranscribe) return _testTranscribe(captured);
         if (!captured || !captured.audio || captured.audio.length === 0) return Promise.resolve('');
         return manifestStatus().then(function(st) {
-            var dtype = st.dtype || _dtype || 'fp16';
+            if (!st.dtype) {
+                var msg = st.note ? (st.note + ' — ') : 'فایل‌های مدل ناقص است — ';
+                return Promise.reject(new Error(msg + 'این فایل‌ها کم است: ' + st.missing.join('، ')));
+            }
+            var dtype = st.dtype;
             _dtype = dtype;
             var w = ensureWorker();
             return new Promise(function(resolve, reject) {
@@ -10497,8 +10557,11 @@ window.OfflineSTT = (function() {
         var st = document.createElement('style');
         st.id = 'ostt-css';
         st.textContent =
-            '.ostt-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99998;display:flex;align-items:center;justify-content:center;padding:16px;}' +
-            '.ostt-box{background:#fff;border-radius:14px;padding:16px;width:min(92vw,380px);box-shadow:0 10px 40px rgba(0,0,0,.25);font-family:inherit;}' +
+            // 🔧 v230: پنل زیر هدر برنامه فیکس می‌شود و تا پایین قابل اسکرول است
+            // (الزام کاربر: «صفحه صوت قابل اسکرول باشد بالای آن با زیر هدر
+            // برنامه تراز شود و فیکس شود و تا پایین آن بتوانیم اسکرول کنیم»)
+            '.ostt-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99998;display:flex;align-items:flex-start;justify-content:center;padding:12px;padding-top:64px;box-sizing:border-box;}' +
+            '.ostt-box{background:#fff;border-radius:14px;padding:16px;width:min(92vw,380px);max-height:calc(100dvh - 76px);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-shadow:0 10px 40px rgba(0,0,0,.25);font-family:inherit;box-sizing:border-box;}' +
             '.ostt-btn{border:none;border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;cursor:pointer;}' +
             '.ostt-btn-primary{background:#1a73e8;color:#fff;}' +
             '.ostt-btn-danger{background:#fce8e6;color:#c5221f;}' +
@@ -10539,6 +10602,15 @@ window.OfflineSTT = (function() {
         var box = document.createElement('div');
         box.className = 'ostt-box';
         box.setAttribute('dir', 'rtl');
+        // 🔧 v230: top پنل دقیقاً زیر هدر برنامه — همان الگوی هدر داخلی گروه
+        // (header.style.top = headerHeight). fallback CSS هم در ensureCss هست.
+        var mainHeader = document.querySelector('.header');
+        if (mainHeader) {
+            var hh = mainHeader.offsetHeight;
+            ov.style.paddingTop = (hh + 8) + 'px';
+            box.style.maxHeight = 'calc(100vh - ' + (hh + 16) + 'px)';
+            box.style.maxHeight = 'calc(100dvh - ' + (hh + 16) + 'px)';
+        }
         // 🔧 v226: پنل بدون دستگاه (WebGPU فقط)، بدون دانلود اتوماتیک.
         // به‌جای دانلود، لینک‌های هوفینگ‌فیس + دکمهٔ انتخاب فایل نمایش داده می‌شود.
         box.innerHTML =
@@ -10561,7 +10633,7 @@ window.OfflineSTT = (function() {
             '</div>' +
             '<div style="font-size:11px;color:#777;margin-top:10px;line-height:1.8;">' +
               'دانلود اتوماتیک حذف شده — فایل‌ها را دستی از لینک‌های بالا دانلود کنید، سپس با دکمهٔ «انتخاب فایل‌ها» به برنامه بدهید. ' +
-              'فایل‌های onnx/encoder_model_fp16.onnx و onnx/decoder_model_merged_fp16.onnx لازم‌اند (یا گروه سبک‌تر q4f16). ضبط صوت کاملاً آفلاین و بدون گوگل روی دستگاه شما انجام می‌شود. ' +
+              'فایل‌های onnx/encoder_model_fp16.onnx و onnx/decoder_model_merged_fp16.onnx لازم‌اند (یا گروه سبک‌تر q4f16). روی گوشی فقط گروه q4f16 اجرا می‌شود — گروه بزرگ fp16 گوشی را فریز می‌کند. ضبط صوت کاملاً آفلاین و بدون گوگل روی دستگاه شما انجام می‌شود. ' +
               '(Chrome/Edge با WebGPU) — Whisper با Transformers.js' +
             '</div>;' 
         ov.appendChild(box);
@@ -10603,12 +10675,12 @@ window.OfflineSTT = (function() {
             }
             html += '<div style="font-weight:bold;margin-top:6px;">از پوشهٔ onnx — فقط یکی از دو گروه:</div>';
             for (var fi = 0; fi < ONNX_FILES.fp16.length; fi++) {
-                html += '<div style="margin-bottom:2px;"><a href="https://huggingface.co/' + model + '/resolve/main/onnx/' + ONNX_FILES.fp16[fi] + '" target="_blank" style="color:#1a73e8;">⬇ onnx/' + ONNX_FILES.fp16[fi] + '</a> <span style="color:#188038;">(پیشنهادی — دقیق‌تر)</span></div>';
+                html += '<div style="margin-bottom:2px;"><a href="https://huggingface.co/' + model + '/resolve/main/onnx/' + ONNX_FILES.fp16[fi] + '" target="_blank" style="color:#1a73e8;">⬇ onnx/' + ONNX_FILES.fp16[fi] + '</a> <span style="color:#188038;">(دقیق‌تر — فقط دسکتاپ)</span></div>';
             }
             for (var qi = 0; qi < ONNX_FILES.q4f16.length; qi++) {
-                html += '<div style="margin-bottom:2px;"><a href="https://huggingface.co/' + model + '/resolve/main/onnx/' + ONNX_FILES.q4f16[qi] + '" target="_blank" style="color:#1a73e8;">⬇ onnx/' + ONNX_FILES.q4f16[qi] + '</a> <span style="color:#666;">(سبک‌تر — جایگزین)</span></div>';
+                html += '<div style="margin-bottom:2px;"><a href="https://huggingface.co/' + model + '/resolve/main/onnx/' + ONNX_FILES.q4f16[qi] + '" target="_blank" style="color:#1a73e8;">⬇ onnx/' + ONNX_FILES.q4f16[qi] + '</a> <span style="color:#b26a00;">(سبک‌تر — مناسب گوشی و دسکتاپ)</span></div>';
             }
-            html += '<div style="font-size:11px;color:#888;margin-top:4px;">همهٔ ۵ فایل پایه + یک گروه کامل از onnx را دانلود و همزمان با دکمهٔ «📂 انتخاب فایل‌های مدل» معرفی کنید (چون حافظهٔ قبلی پاک می‌شود).</div>';
+            html += '<div style="font-size:11px;color:#888;margin-top:4px;">همهٔ ۵ فایل پایه + یک گروه کامل از onnx را دانلود و همزمان با دکمهٔ «📂 انتخاب فایل‌های مدل» معرفی کنید (چون حافظهٔ قبلی پاک می‌شود). روی گوشی فقط گروه q4f16 اجرا می‌شود — گروه fp16 گوشی را فریز می‌کند.</div>';
             linksEl.innerHTML = html;
         }
         // وضعیت آماده‌بودن — 🔧 v229: از کش واقعی (MANIFEST) نه READY_KEY
@@ -10631,7 +10703,8 @@ window.OfflineSTT = (function() {
                 if (st.complete) {
                     statusEl2.textContent = '✓ مدل آماده است (' + st.dtype + ') — ضبط آفلاین فعال';
                 } else {
-                    statusEl2.innerHTML = 'مدل آماده نیست — این فایل‌ها را دانلود و با دکمهٔ «📂 انتخاب فایل‌های مدل» معرفی کنید: <b>' + st.missing.join('، ') + '</b>';
+                    statusEl2.innerHTML = (st.note ? '⚠ ' + st.note + ' — ' : '') +
+                        'این فایل‌ها را دانلود و با دکمهٔ «📂 انتخاب فایل‌های مدل» معرفی کنید: <b>' + st.missing.join('، ') + '</b>';
                 }
             }
             panel.querySelector('#ostt-select-files').style.display = st.complete ? 'none' : '';
@@ -10643,24 +10716,27 @@ window.OfflineSTT = (function() {
     // Cache Storage. تا کاربر ببیند فایل‌هایش واقعاً ذخیره شده‌اند یا نه،
     // و مشخص باشد کدام نسخهٔ کد در حال اجراست (اشکال‌زدایی از راه دور).
     // 🔧 v229: چک‌لیست ✓/✗ تک‌تک فایل‌های MANIFEST + dtype کارا + فهرست مفقودها.
+    // 🔧 v230: هشدار mobile-fp16 + چک‌لیست بر اساس گروه مجاز همان دستگاه.
     async function updateCacheInfo() {
         var el = document.querySelector('#ostt-panel #ostt-cacheinfo');
         if (!el) return;
-        var st = { count: 0, names: [], missing: AUX_FILES.concat(ONNX_FILES.fp16), complete: false, dtype: null };
+        var st = { count: 0, names: [], missing: AUX_FILES.concat(ONNX_FILES.fp16), complete: false, dtype: null, mobile: false, note: '' };
         try { st = await manifestStatus(); } catch(e) {}
         var ver = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : '?';
         var namesSet = {};
         for (var i = 0; i < st.names.length; i++) namesSet[st.names[i]] = true;
-        var files = AUX_FILES.concat(ONNX_FILES[st.dtype || 'fp16']);
+        var files = AUX_FILES.concat(ONNX_FILES[st.dtype || (st.mobile ? 'q4f16' : 'fp16')]);
         var rows = '';
         for (var j = 0; j < files.length; j++) {
             var ok = !!namesSet[files[j]];
             rows += '<div style="' + (ok ? 'color:#188038;' : 'color:#c5221f;') + '">' + (ok ? '✓' : '✗') + ' ' + files[j] + '</div>';
         }
+        var head = st.mobile ? '<div style="color:#b26a00;">📱 این دستگاه گوشی است — فقط گروه سبک q4f16 اجرا می‌شود (مدل بزرگ fp16 = فریز کامل گوشی)</div>' : '';
+        var note = st.note ? '<div style="color:#c5221f;">⚠ ' + st.note + '</div>' : '';
         var tail = st.complete
             ? '<div style="color:#188038;">✓ همهٔ فایل‌های لازم موجود است — گروه: ' + st.dtype + '</div>'
             : '<div style="color:#c5221f;">✗ این فایل‌ها هنوز کم است: <b>' + st.missing.join('، ') + '</b></div>';
-        el.innerHTML = 'نسخهٔ برنامه: ' + ver + ' — فایل‌های ذخیره‌شده: ' + st.count + '<br>' + rows + tail;
+        el.innerHTML = 'نسخهٔ برنامه: ' + ver + ' — فایل‌های ذخیره‌شده: ' + st.count + '<br>' + head + note + rows + tail;
     }
 
     // 🔧 v226: انتخاب فایل‌های مدل توسط کاربر — ذخیره در Cache Storage.
@@ -10714,8 +10790,8 @@ window.OfflineSTT = (function() {
                     // دقیقاً بگو چه کم است. ضبط با بررسی کش از پنل/میک محافظت می‌شود.
                     try { localStorage.removeItem(READY_KEY); } catch(e) {}
                     setEngine('offline');
-                    showToast(stored + ' فایل ذخیره شد — این فایل‌ها هنوز کم است: ' + st.missing.join('، '));
-                    if (statusEl) statusEl.innerHTML = '⚠ ' + stored + ' فایل ذخیره شد — این فایل‌ها هنوز کم است: <b>' + st.missing.join('، ') + '</b>';
+                    showToast(stored + ' فایل ذخیره شد — ' + (st.note ? st.note + ' — ' : '') + 'این فایل‌ها هنوز کم است: ' + st.missing.join('، '));
+                    if (statusEl) statusEl.innerHTML = '⚠ ' + stored + ' فایل ذخیره شد — ' + (st.note ? st.note + ' — ' : '') + 'این فایل‌ها هنوز کم است: <b>' + st.missing.join('، ') + '</b>';
                 }
                 refreshPanel();
                 updateCacheInfo(); // 🔧 v228: نمایش تعداد فایل‌های واقعی ذخیره‌شده
@@ -10812,7 +10888,8 @@ window.OfflineSTT = (function() {
                 return;
             }
             openPanel();
-            showToast('فایل‌های مدل ناقص است — این فایل‌ها را هم دانلود و معرفی کنید: ' + st.missing.join('، '));
+            showToast((st.note ? st.note + ' — ' : 'فایل‌های مدل ناقص است — ') +
+                'این فایل‌ها را هم دانلود و معرفی کنید: ' + st.missing.join('، '));
         } finally {
             _verifying = false;
         }
@@ -11025,6 +11102,7 @@ window.OfflineSTT = (function() {
         openPanel: openPanel,
         testMic: testMic,
         selectModelFiles: selectModelFiles, // 🔧 v226: انتخاب فایل‌های مدل توسط کاربر
+        transcribeAudio: transcribeAudio, // 🔧 v230: برای تشخیص و تست — تبدیل مستقیم
         state: state,
         // فقط برای تست‌های خودکار
         get _testTranscribe() { return _testTranscribe; },
@@ -13929,13 +14007,18 @@ function renderTasksView(groupId) {
     }
     countHtml += `<span class="group-task-count">${toPersianNumber(activeCount)}</span>`;
 
+    // 🔧 v230 (الزام کاربر): «آیکن یادداشت روی هدر خارجی هر گروه در هدر
+    // داخلی همان گروه هم نمایش داده شود» — همان دکمهٔ 📝 با همان
+    // openNotes(groupId) که در هدر خارجی (buildGroupBadges) هست.
+    const notesBtnHtml = `<button class="group-notes-btn" onclick="event.stopPropagation(); openNotes('${group.id}')" title="یادداشت">📝</button>`;
+
     // چیدمان: back → icon → title (flex:1) → menu → count
     // 🔧 منوی کشویی (dropdownHtml) مستقیماً در هدر قرار می‌گیرد (نه داخل
     // wrapper داخلی). چون منو position: fixed دارد، موقعیت آن مستقل از
     // والد DOM است و با جاوا اسکریپت تنظیم می‌شود.
     header.innerHTML = `<div style="display: flex; flex-direction: column; width: 100%; gap: 8px;">
         <div style="text-align: center; font-size: 16px; font-weight: 700; color: white; padding: 2px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(group.name)}</div>
-        <div style="display: flex; align-items: center; gap: 10px;">${backBtnHtml}${iconHtml}<div style="flex: 1;"></div>${menuHtml}${countHtml}</div>
+        <div style="display: flex; align-items: center; gap: 10px;">${backBtnHtml}${iconHtml}<div style="flex: 1;"></div>${menuHtml}${countHtml}${notesBtnHtml}</div>
     </div><div class="back-touch-area" onclick="event.stopPropagation(); goToGroups()"></div>${dropdownHtml}`;
     container.appendChild(header);
 
@@ -22718,7 +22801,10 @@ function clearSWCacheAndReload() {
 //   - Restrictive firewalls
 //   - GitHub itself being down
 function updateOnlineStatus() {
-    const isOnline = isReachable; // use real reachability, not navigator.onLine
+    // 🔧 v230 (الزام کاربر): «مکانیزم چشمک زدن هدر از روی مکانیزم کار کردن
+    // کلیدهای ضبط صوت در تمام برنامه کپی شود» — همان شرط v223 کلیدهای ضبط:
+    // فقط navigator.onLine، بدون ping. چشمک هدر و کلیدهای ضبط همیشه هم‌وضعیت‌اند.
+    const isOnline = navigator.onLine;
     const header = document.querySelector('.header');
     if (header) {
         if (isOnline) {
@@ -23013,8 +23099,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 🔧 v196: فقط fetch — navigator.onLine حذف شد کامل
     // online/offline events فقط checkReachability را تریگر می‌کنند
     // ─────────────────────────────────────────────────────────────────────
-    window.addEventListener('online', () => { checkReachability(); });
-    window.addEventListener('offline', () => { checkReachability(); });
+    // 🔧 v230: شنونده‌های online/offline مستقیم چشمک هدر را به‌روز می‌کنند
+    // (مکانیزم همان کلیدهای ضبط) — checkReachability فقط برای refresh/handshake
+    // رفت‌به-آنلاین می‌ماند.
+    window.addEventListener('online', () => { checkReachability(); updateOnlineStatus(); });
+    window.addEventListener('offline', () => { checkReachability(); updateOnlineStatus(); });
     // چک اولیه بعد از ۱ ثانیه
     setTimeout(function() { checkReachability(); }, 1000);
     // هر ۳ ثانیه چک کن
