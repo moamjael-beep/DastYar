@@ -1,1 +1,1 @@
-v228-2026-11-13-no-model-selector-better-errors
+v228-2026-11-14-cache-selfheal-fixed-model

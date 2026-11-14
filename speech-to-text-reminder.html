@@ -7005,7 +7005,33 @@ body.locked .header-actions button {
 //               ~۷۵۰MB-۱.۵GB) — فقط با WebGPU توصیه می‌شود.
 //            dtype: WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده).
 //            تست: test_offline_stt_v222.mjs — ۱۴ تست Y1-Y14، پورت ۸۲۰۲.
-const APP_VERSION = 'v228-2026-11-13-no-model-selector-better-errors';
+//         🔧 v228 (۱۴۰۵ آبان ۲۳) — الزام کاربر (تکرار مجدد):
+//            «فایل هارا دانلود کردم و به برنامه معرفی کردم هنوز اشکال میگیرد
+//             و میگوید برای ضبط آفلاین اول مدل را دانلود کنید»
+//            ریشهٔ واقعی: آماده‌بودن فقط از localStorage خوانده می‌شد (READY_KEY).
+//            اگر فایل‌ها در نسخهٔ قدیمی معرفی شده بودند (که READY_KEY را فقط پس
+//            از موفقیت loadModel تنظیم می‌کرد)، یا localStorage در مرورگر کاربر
+//            خطا می‌داد، یا کاربر مدل را با رادیوی نسخهٔ قبل انتخاب کرده بود —
+//            فایل‌ها در Cache Storage بودند ولی نشان ready هرگز/درست تنظیم
+//            نمی‌شد ⇒ پیام «اول مدل را دانلود کنید» برای همیشه.
+//            راه‌حل ریشه‌ای — خودترمیمی از Cache Storage:
+//            ۱) checkCacheFiles(): تعداد فایل‌های واقعی «transformers-cache» را
+//               می‌خواند (تنها منبع نوشتن این کش، معرفی فایل‌ها توسط کاربر است).
+//            ۲) هنگام راه‌اندازی: اگر READY_KEY نیست ولی ≥۲ فایل در کش هست →
+//               خودکار READY_KEY تنظیم می‌شود (بدون هیچ اقدام کاربر).
+//            ۳) هنگام لمس 🎤 با موتور آفلاین اگر ready نبود: بلافاصله خطا داده
+//               نمی‌شود — اول کش بررسی می‌شود؛ اگر فایل‌ها بودند ضبط شروع
+//               می‌شود، فقط اگر واقعاً هیچ فایلی نبود پنل + پیام راهنما.
+//            ۴) پنل: «نسخهٔ برنامه» + «تعداد فایل‌های ذخیره‌شده در حافظه» نمایش
+//               داده می‌شود تا کاربر/توسعه‌دهنده بتواند وضعیت واقعی را ببیند.
+//            ۵) حذف کامل مفهوم ۴ مدل: MODELS/MODEL_KEY/setModel حذف — مدل
+//               ثابت FIXED_MODEL = whisper-large-v3-turbo (بهترین دقت، الزام
+//               v222 کاربر: «چند گیگ هم باشد ولی سریع و درست تشخیص دهد»).
+//               لینک‌های دانلود پنل همیشه برای همین مدل نشان داده می‌شود.
+//            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
+//               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
+//            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
+const APP_VERSION = 'v228-2026-11-14-cache-selfheal-fixed-model';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -9981,32 +10007,16 @@ async function handleRecordingVisibilityChange() {
 // ════════════════════════════════════════════════════════════════════
 window.OfflineSTT = (function() {
     var ENGINE_KEY = 'yadavar_stt_engine_v1';        // 'online' | 'offline'
-    var MODEL_KEY  = 'yadavar_stt_model_v1';
     var READY_KEY  = 'yadavar_stt_offline_ready_v1'; // = شناسهٔ مدل وقتی آماده است
     var CDN = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/transformers.min.js';
     // 🔧 v226: WASM حذف شد — فقط WebGPU. مدل‌ها فقط با WebGPU کار می‌کنند.
-    var MODELS = {
-        'onnx-community/whisper-tiny':  { label: 'سریع (tiny)' },
-        'onnx-community/whisper-base':  { label: 'متعادل (base)' },
-        'onnx-community/whisper-small': { label: 'دقیق (small)' },
-        'onnx-community/whisper-large-v3-turbo': { label: 'حرفه‌ای (large-v3-turbo)' }
-    };
-    // 🔧 v226: فایل‌های مورد نیاز هر مدل — برای نمایش لینک‌های دانلود به کاربر.
-    // کاربر این فایل‌ها را دستی از هوفینگ‌فیس دانلود می‌کند و با دکمهٔ «انتخاب فایل‌ها»
-    // به برنامه معرفی می‌کند. فایل‌های ONNX در زیرپوشهٔ onnx/ هستند.
-    var REQUIRED_FILES = [
-        'config.json',
-        'generation_config.json',
-        'preprocessor_config.json',
-        'tokenizer.json',
-        'tokenizer_config.json',
-        'special_tokens_map.json',
-        'added_tokens.json',
-        'merges.txt',
-        'normalizer.json',
-        'vocab.json',
-        'onnx/model_fp16.onnx'
-    ];
+    // 🔧 v228 (الزام کاربر): «چهار مدل انتخابی که نوشتی برای دانلود را پاک کن»
+    //   — انتخابگر ۴ مدل کلاً حذف شد. یک مدل ثابت برای همه:
+    //   whisper-large-v3-turbo (بهترین دقت — الزام v222 کاربر: «چند گیگ هم
+    //   باشد ولی سریع و درست تشخیص دهد»). کاربر فایل‌های همین مدل را دانلود و
+    //   معرفی می‌کند. توجه: Worker فایل‌ها را با تطبیق filename پیدا می‌کند، پس
+    //   اگر فایل‌های قدیمی مدل دیگری در کش باشد هم بارگذاری می‌شود (سازگاری).
+    var FIXED_MODEL = 'onnx-community/whisper-large-v3-turbo';
     var FLOWS = {
         main:   { btn: 'addBtn',      label: 'یادآور' },
         accDoc: { btn: 'accDocMicBtn', target: 'accDocDesc', label: 'شرح سند',  append: false },
@@ -10020,6 +10030,7 @@ window.OfflineSTT = (function() {
     var _busy = false;        // در حال تبدیل صدا به متن
     var _activeFlow = null;   // 'main' | 'accDoc' | 'accRec' | 'notes'
     var _starting = false;    // گارد رقابت لمس‌دوباره هنگام کندی getUserMedia
+    var _verifying = false;   // 🔧 v228: گارد رقابت هنگام بررسی کش (self-heal)
     var _actx = null, _source = null, _node = null, _stream = null;
     var _chunks = [];
     var _sampleRate = 16000;
@@ -10036,17 +10047,10 @@ window.OfflineSTT = (function() {
         try { localStorage.setItem(ENGINE_KEY, v === 'offline' ? 'offline' : 'online'); } catch(e) {}
         refreshPanel();
     }
-    function getModel() {
-        try {
-            var m = localStorage.getItem(MODEL_KEY);
-            return (m && MODELS[m]) ? m : 'onnx-community/whisper-tiny';
-        } catch(e) { return 'onnx-community/whisper-tiny'; }
-    }
-    function setModel(m) {
-        if (!MODELS[m]) return;
-        try { localStorage.setItem(MODEL_KEY, m); } catch(e) {}
-        refreshPanel();
-    }
+    // 🔧 v228: مدل ثابت — دیگر انتخاب مدل وجود ندارد (setModel/MODEL_KEY حذف
+    // شدند). اگر yadavar_stt_model_v1 قدیمی در localStorage مانده باشد نادیده
+    // گرفته می‌شود.
+    function getModel() { return FIXED_MODEL; }
     // 🔧 v226: WASM حذف شد — فقط WebGPU. تابع webgpuSupported برای پیام راهنما باقی می‌ماند.
     function webgpuSupported() {
         try { return !!(navigator.gpu && typeof navigator.gpu.requestAdapter === 'function'); }
@@ -10055,6 +10059,44 @@ window.OfflineSTT = (function() {
     function readyKey() { return getModel(); }
     function isReady() {
         try { return localStorage.getItem(READY_KEY) === readyKey(); } catch(e) { return false; }
+    }
+
+    // ═══ 🔧 v228: خودترمیمی آماده‌بودن از Cache Storage — ریشه‌یابی پیام
+    // «اول مدل را دانلود کنید» بعد از معرفی فایل‌ها ═══
+    // آماده‌بودن تا v227 فقط از localStorage (READY_KEY) خوانده می‌شد. اگر
+    // فایل‌ها در نسخهٔ قدیمی معرفی شده بودند (که READY_KEY را فقط پس از
+    // موفقیت loadModel تنظیم می‌کرد) یا localStorage خطا می‌داد یا کلید با
+    // مدل انتخابی قدیمی می‌خواند — فایل‌ها در کش بودند ولی ready=false می‌ماند.
+    // حالا: تعداد فایل‌های واقعی «transformers-cache» ملاک است. این کش فقط
+    // توسط «انتخاب فایل‌های مدل» (و در نسخه‌های خیلی قدیمی توسط دانلود
+    // اتوماتیک) نوشته می‌شود — پس ≥۲ فایل = کاربر واقعاً فایل معرفی کرده است.
+    async function checkCacheFiles() {
+        var count = 0, hasOnnx = false;
+        try {
+            if (!window.caches || typeof caches.open !== 'function') return { count: 0, hasOnnx: false };
+            var cache = await caches.open('transformers-cache');
+            var keys = await cache.keys();
+            count = keys.length;
+            for (var i = 0; i < keys.length; i++) {
+                var u = (keys[i] && keys[i].url) || '';
+                if (/\.onnx(\?|$)/.test(u)) { hasOnnx = true; break; }
+            }
+        } catch(e) { console.warn('[OfflineSTT] checkCacheFiles failed:', e); }
+        return { count: count, hasOnnx: hasOnnx };
+    }
+    // اگر READY_KEY درست نیست ولی فایل‌ها واقعاً در کش هستند → ترمیم.
+    // برمی‌گرداند: true یعنی ترمیم شد.
+    async function verifyReadyFromCache() {
+        try {
+            if (isReady()) return false;
+            var info = await checkCacheFiles();
+            if (info.count >= 2) { // آستانهٔ v227 حفظ شد: هر فایل معرفی‌شده کافی است
+                try { localStorage.setItem(READY_KEY, readyKey()); } catch(e) {}
+                console.log('[OfflineSTT] self-heal: READY_KEY set from cache (' + info.count + ' files)');
+                return true;
+            }
+        } catch(e) { console.warn('[OfflineSTT] verifyReadyFromCache failed:', e); }
+        return false;
     }
 
     // ─── Worker: Transformers.js + Whisper (کد داخل Blob — فایل تکی می‌ماند) ───
@@ -10383,6 +10425,7 @@ window.OfflineSTT = (function() {
               '<button id="ostt-eng-offline" class="ostt-btn ostt-eng">آفلاین (روی دستگاه)</button>' +
             '</div>' +
             '<div id="ostt-status" style="font-size:13px;margin:10px 0;"></div>' +
+            '<div id="ostt-cacheinfo" style="font-size:11px;color:#666;margin:4px 0 8px 0;line-height:1.8;"></div>' +
             '<div id="ostt-links" style="font-size:12px;color:#555;margin:8px 0;line-height:1.8;"></div>' +
             '<input type="file" id="ostt-file-input" multiple style="display:none;">' +
             '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
@@ -10408,6 +10451,11 @@ window.OfflineSTT = (function() {
         box.querySelector('#ostt-delete').addEventListener('click', deleteModel);
         box.querySelector('#ostt-test-mic').addEventListener('click', testMic);
         refreshPanel();
+        // 🔧 v228: خودترمیمی + نمایش وضعیت واقعی کش هنگام بازشدن پنل
+        verifyReadyFromCache().then(function(changed) {
+            if (changed) refreshPanel();
+            updateCacheInfo();
+        }).catch(function() { updateCacheInfo(); });
     }
 
     function refreshPanel() {
@@ -10439,6 +10487,21 @@ window.OfflineSTT = (function() {
         }
         panel.querySelector('#ostt-select-files').style.display = ready ? 'none' : '';
         panel.querySelector('#ostt-delete').style.display = ready ? '' : 'none';
+    }
+
+    // 🔧 v228: نمایش وضعیت واقعی — نسخهٔ برنامه + تعداد فایل‌های واقعی در
+    // Cache Storage. تا کاربر ببیند فایل‌هایش واقعاً ذخیره شده‌اند یا نه،
+    // و مشخص باشد کدام نسخهٔ کد در حال اجراست (اشکال‌زدایی از راه دور).
+    async function updateCacheInfo() {
+        var el = document.querySelector('#ostt-panel #ostt-cacheinfo');
+        if (!el) return;
+        var info = { count: 0, hasOnnx: false };
+        try { info = await checkCacheFiles(); } catch(e) {}
+        var ver = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : '?';
+        var onnxPart = info.hasOnnx
+            ? '✓ فایل ONNX موجود است'
+            : '✗ فایل ONNX موجود نیست (از پوشهٔ onnx دانلود کنید)';
+        el.textContent = 'نسخهٔ برنامه: ' + ver + ' — فایل‌های مدل در حافظه: ' + info.count + ' — ' + onnxPart;
     }
 
     // 🔧 v226: انتخاب فایل‌های مدل توسط کاربر — ذخیره در Cache Storage.
@@ -10488,6 +10551,7 @@ window.OfflineSTT = (function() {
                     showToast(stored + ' فایل ذخیره شد ✓ — مدل آماده است');
                 }
                 refreshPanel();
+                updateCacheInfo(); // 🔧 v228: نمایش تعداد فایل‌های واقعی ذخیره‌شده
                 // تلاش برای پیش‌بارگذاری مدل (اختیاری)
                 loadModel().then(function() {
                     console.log('[OfflineSTT] model pre-loaded successfully');
@@ -10513,6 +10577,7 @@ window.OfflineSTT = (function() {
         setEngine('online');
         showToast('مدل آفلاین حذف شد — موتور صوت به «آنلاین (گوگل)» برگشت');
         refreshPanel();
+        updateCacheInfo();
     }
 
     // 🔧 v222: تست میکروفون — ۲ ثانیه ضبط PCM خام بدون تبدیل. حالا چون
@@ -10553,12 +10618,35 @@ window.OfflineSTT = (function() {
         if (!hasAudio) msg += ' ⚠ صدای خاموش — میکروفون درست کار نمی‌کند (سطح صدا، دستگاه ورودی، مجوز مرورگر)';
         else if (dur < 0.3) msg += ' ⚠ ضبط خیلی کوتاه';
         else if (maxAmp < 0.01) msg += ' ⚠ صدا خیلی آهسته — نزدیک‌تر صحبت کنید';
-        else msg += ' ✓ میکروفون سالم است — اگر متن نمی‌نویسد، مدل را دوباره دانلود کنید یا مدل بزرگ‌تر انتخاب کنید';
+        else msg += ' ✓ میکروفون سالم است — اگر متن نمی‌نویسد، فایل‌های مدل را دوباره معرفی کنید یا «انتخاب فایل‌های مدل» را در همین پنل بزنید';
         statusEl.textContent = msg;
         if (testBtn) { testBtn.disabled = false; testBtn.textContent = 'تست میکروفون'; }
     }
 
     // ══════════ هوک‌های ۴ میکروفون برنامه ══════════
+
+    // 🔧 v228: به‌جای بلاک‌کردن ضبط با پیام «اول مدل را دانلود کنید»، اول
+    // Cache Storage واقعاً بررسی می‌شود. اگر فایل‌های مدل در کش باشند
+    // (حتی اگر READY_KEY از دست رفته باشد — مثلاً معرفی فایل‌ها در نسخهٔ
+    // قدیمی، localStorage معیوب، یا تغییر مدل در نسخه‌های قبل) — ضبط همان‌جا
+    // شروع می‌شود. فقط اگر واقعاً هیچ فایلی در کش نیست، پنل + پیام راهنما.
+    async function selfHealThenStart(flow) {
+        if (_verifying) { showToast('کمی صبر کنید — در حال بررسی فایل‌های مدل…'); return; }
+        _verifying = true;
+        try {
+            var info = await checkCacheFiles();
+            if (info.count >= 2) {
+                try { localStorage.setItem(READY_KEY, readyKey()); } catch(e) {}
+                showToast('فایل‌های مدل در حافظه پیدا شد ✓ — ضبط آفلاین شروع می‌شود');
+                if (flow === 'main') startMain(); else startField(flow);
+                return;
+            }
+            openPanel();
+            showToast('برای ضبط آفلاین، اول فایل‌های مدل را دانلود و با «📂 انتخاب فایل‌های مدل» معرفی کنید');
+        } finally {
+            _verifying = false;
+        }
+    }
 
     // شروع/پایان ضبط هر جریان — وقتی true برگرداند، مسیر گوگل اجرا نمی‌شود
     function hookStart(flow) {
@@ -10568,9 +10656,10 @@ window.OfflineSTT = (function() {
         // کند است، مخصوصاً روی اندروید)، لمس دوباره نباید دوباره startMain/startField
         // را صدا بزند؛ وگرنه دو رکوردر ساخته می‌شود و رکوردر اول گم می‌شود.
         if (_starting) { showToast('کمی صبر کنید — در حال آماده‌سازی میکروفون…'); return true; }
+        if (_verifying) { showToast('کمی صبر کنید — در حال بررسی فایل‌های مدل…'); return true; }
         if (flow === 'main') {
             if (_activeFlow === 'main') { finalizeMain(); return true; } // لمس دوباره = پایان
-            if (!isReady()) { openPanel(); showToast('برای ضبط آفلاین، اول مدل را دانلود کنید'); return true; }
+            if (!isReady()) { selfHealThenStart(flow); return true; }
             startMain();
             return true;
         }
@@ -10579,7 +10668,7 @@ window.OfflineSTT = (function() {
             return true;
         }
         if (_activeFlow === flow) { finalizeField(flow); return true; } // لمس دوباره = پایان
-        if (!isReady()) { openPanel(); showToast('برای ضبط آفلاین، اول مدل را دانلود کنید'); return true; }
+        if (!isReady()) { selfHealThenStart(flow); return true; }
         startField(flow);
         return true;
     }
@@ -10625,7 +10714,7 @@ window.OfflineSTT = (function() {
             var text = await transcribeAudio(captured);
             hideBusy(); _busy = false;
             if (!text || !text.trim()) {
-                showToast('متنی تشخیص داده نشد — نزدیک‌تر صحبت کنید، مدل بزرگ‌تر انتخاب کنید، یا «تست میکروفون» را در پنل بزنید');
+                showToast('متنی تشخیص داده نشد — نزدیک‌تر صحبت کنید، یا «تست میکروفون» را در پنل بزنید');
                 return;
             }
             text = addNumericAfterWords(text.trim());
@@ -10741,6 +10830,15 @@ window.OfflineSTT = (function() {
         return { engine: getEngine(), model: getModel(), webgpuSupported: webgpuSupported(), ready: isReady(), activeFlow: _activeFlow, busy: _busy };
     }
 
+        // 🔧 v228: راه‌اندازی خودترمیمی — اگر فایل‌های مدل در کش هستند ولی
+        // READY_KEY تنظیم نشده (مثلاً معرفی فایل‌ها در نسخهٔ قدیمی)، خودکار
+        // ترمیم می‌شود تا پنل و ضبط درست کار کنند.
+        setTimeout(function() {
+            verifyReadyFromCache().then(function(changed) {
+                if (changed) refreshPanel();
+            }).catch(function(e) { console.warn('[OfflineSTT] boot self-heal failed:', e); });
+        }, 1200);
+
     return {
         hookStart: hookStart,
         hookStopMain: hookStopMain,
@@ -10749,7 +10847,6 @@ window.OfflineSTT = (function() {
         getEngine: getEngine,
         setEngine: setEngine,
         getModel: getModel,
-        setModel: setModel,
         webgpuSupported: webgpuSupported,
         isReady: isReady,
         openPanel: openPanel,
@@ -22097,8 +22194,16 @@ async function registerServiceWorker() {
             console.warn('SW requires HTTPS or localhost, current:', location.protocol, location.hostname);
             return false;
         }
-        const reg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+        // 🔧 v228: updateViaCache:'none' — خود sw.js هرگز از کش HTTP سروِ
+        // نمی‌شود (پیش‌فرض مرورگر تا ۲۴ ساعت sw.js را کش می‌کند و به‌روزرسانی
+        // را عقب می‌اندازد). این کار تضمین می‌کند کاربر سریع‌تر نسخهٔ جدید را
+        // بگیرد (ریشهٔ «تغییرات روی دستگاه کاربر اعمال نمی‌شود»).
+        const reg = await navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' });
         console.log('[Page] SW registered:', reg.scope);
+
+        // 🔧 v228: بررسی فوری به‌روزرسانی — بلافاصله بعد از ثبت، sw.js را با
+        // شبکه مقایسه کن (بدون انتظار برای ناوبری بعدی).
+        try { reg.update().catch(function(e) { console.warn('[Page] SW update check failed:', e); }); } catch(e) {}
 
         // Auto-update: if a new SW is waiting to activate, force it to take over immediately.
         // This ensures users always get the latest version without manual cache clearing.
