@@ -1,1 +1,1 @@
-v231-2026-11-14-persian-models
+v226-2026-11-12-remove-wasm-manual-files
