@@ -1,1 +1,1 @@
-v228-2026-11-14-cache-selfheal-fixed-model
+v229-2026-11-14-exact-manifest-real-errors

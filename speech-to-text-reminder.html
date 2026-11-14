@@ -7005,6 +7005,39 @@ body.locked .header-actions button {
 //               ~۷۵۰MB-۱.۵GB) — فقط با WebGPU توصیه می‌شود.
 //            dtype: WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده).
 //            تست: test_offline_stt_v222.mjs — ۱۴ تست Y1-Y14، پورت ۸۲۰۲.
+//         🔧 v229 (۱۴۰۵ آبان ۲۳) — گزارش کاربر:
+//            «فایل ها را قبول و آماده ضبط اعلام کرد ولی در ضبط پس از صحبت و
+//             توقف ضبط، خطا در تبدیل آفلاین میدهد»
+//            ریشهٔ واقعی (بازبینی مخزن HF): در onnx-community/whisper-large-v3-turbo
+//            فایلی به نام «model_fp16.onnx» وجود ندارد! این مخزن فقط فایل‌های
+//            جدا encoder/decoder دارد. راهنمای پنل (v227/v228) کاربر را به
+//            دانلود فایلی هدایت می‌کرد که وجود ندارد ⇒ کاربر فایل نادرست (یا
+//            فقط بخشی از فایل‌ها) را معرفی می‌کرد؛ «آماده» فقط تعداد فایل‌ها را
+//            می‌شمرد (≥۲) و transcription در زمان اجرا با 404 شکست می‌خورد.
+//            راه‌حل ریشه‌ای — فهرست دقیق + خطای واقعی:
+//            ۱) MANIFEST دقیق از کد واقعی transformers.js 3.8.1 استخراج شد:
+//               ۵ فایل JSON پایه (config، generation_config،
+//               preprocessor_config، tokenizer، tokenizer_config) + دو فایل
+//               onnx/encoder_model_fp16.onnx و onnx/decoder_model_merged_fp16.onnx
+//               (سنجش از سورس: ترتیب درخواست‌ها برای seq2seq =
+//               {encoder_model، decoder_model_merged} + generation_config.json؛
+//               quantize_config و special_tokens_map درخواست نمی‌شوند).
+//               گزینهٔ سبک‌تر: جفت q4f16 (جمعاً ~۵۶۰MB) برای GPUهای ضعیف.
+//            ۲) «آماده» حالا یعنی همهٔ فایل‌های MANIFEST در کش باشد — نه صرفاً
+//               ≥۲ فایل. هر فایل مفقود، نام‌به‌نام در پنل/toast نشان داده می‌شود
+//               (چک‌لیست ✓/✗) و لینک مستقیم دانلود تک‌تک فایل‌ها داده می‌شود.
+//            ۳) خطای تبدیل حالا متن واقعی err.message را در هر دو مسیر (اصلی و
+//               فیلدها) نشان می‌دهد (قبلاً مسیر اصلی پیام را حذف می‌کرد).
+//            ۴) Worker: ensure(model, dtype) — dtype بر اساس فایل‌های موجود
+//               انتخاب می‌شود (fp16 کامل ⇒ fp16؛ وگرنه q4f16 کامل ⇒ q4f16)؛
+//               پاسخ 404 فهرست فایل‌های موجود در کش را هم می‌آورد تا تشخیص
+//               از راه دور ممکن باشد.
+//            ۵) نام فایل معرفی‌شده نرمال می‌شود (پسوند « (1)» مرورگر حذف).
+//            ⚠️ قانون صفر: مدل ثابت و WebGPU-فقط (v226/v228) دست‌نخورده ماند؛
+//               فایل‌های fp16 که کاربر قبلاً درست دانلود کرده باشد همان‌جا
+//               کار می‌کند. دانلود اتوماتیک همچنان وجود ندارد — fetch override
+//               فقط Cache Storage را می‌بیند.
+//            تست: test_offline_stt_v229.mjs — پورت ۸۲۰۹.
 //         🔧 v228 (۱۴۰۵ آبان ۲۳) — الزام کاربر (تکرار مجدد):
 //            «فایل هارا دانلود کردم و به برنامه معرفی کردم هنوز اشکال میگیرد
 //             و میگوید برای ضبط آفلاین اول مدل را دانلود کنید»
@@ -7031,7 +7064,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v228-2026-11-14-cache-selfheal-fixed-model';
+const APP_VERSION = 'v229-2026-11-14-exact-manifest-real-errors';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -10017,6 +10050,22 @@ window.OfflineSTT = (function() {
     //   معرفی می‌کند. توجه: Worker فایل‌ها را با تطبیق filename پیدا می‌کند، پس
     //   اگر فایل‌های قدیمی مدل دیگری در کش باشد هم بارگذاری می‌شود (سازگاری).
     var FIXED_MODEL = 'onnx-community/whisper-large-v3-turbo';
+    // 🔧 v229: فهرست دقیق فایل‌های لازم — از سورس واقعی transformers.js 3.8.1
+    // استخراج شد (برای seq2seq: {encoder_model، decoder_model_merged} + فایل‌های
+    // config/tokenizer/generation). در مخزن whisper-large-v3-turbo فایل
+    // «model_fp16.onnx» وجود ندارد — راهنمای قدیمی کاربر را به فایل ناموجود
+    // هدایت می‌کرد و تبدیل آفلاین در زمان اجرا 404 می‌خورد.
+    var AUX_FILES = [
+        'config.json',
+        'generation_config.json',
+        'preprocessor_config.json',
+        'tokenizer.json',
+        'tokenizer_config.json'
+    ];
+    var ONNX_FILES = {
+        fp16: ['encoder_model_fp16.onnx', 'decoder_model_merged_fp16.onnx'],          // پیشنهادی (~۱٫۶GB)
+        q4f16: ['encoder_model_q4f16.onnx', 'decoder_model_merged_q4f16.onnx']        // سبک‌تر (~۵۶۰MB)
+    };
     var FLOWS = {
         main:   { btn: 'addBtn',      label: 'یادآور' },
         accDoc: { btn: 'accDocMicBtn', target: 'accDocDesc', label: 'شرح سند',  append: false },
@@ -10036,6 +10085,7 @@ window.OfflineSTT = (function() {
     var _sampleRate = 16000;
     var _useWorklet = false;
     var _msgId = 1;
+    var _dtype = 'fp16'; // 🔧 v229: بر اساس فایل‌های موجود در کش انتخاب می‌شود
     var _testTranscribe = null; // فقط برای تست‌های Playwright — جایگزین تبدیل واقعی
 
     // ─── تنظیمات ماندگار ───
@@ -10071,28 +10121,79 @@ window.OfflineSTT = (function() {
     // توسط «انتخاب فایل‌های مدل» (و در نسخه‌های خیلی قدیمی توسط دانلود
     // اتوماتیک) نوشته می‌شود — پس ≥۲ فایل = کاربر واقعاً فایل معرفی کرده است.
     async function checkCacheFiles() {
-        var count = 0, hasOnnx = false;
+        var count = 0, hasOnnx = false, names = [];
         try {
-            if (!window.caches || typeof caches.open !== 'function') return { count: 0, hasOnnx: false };
+            if (!window.caches || typeof caches.open !== 'function') return { count: 0, hasOnnx: false, names: [] };
             var cache = await caches.open('transformers-cache');
             var keys = await cache.keys();
             count = keys.length;
             for (var i = 0; i < keys.length; i++) {
                 var u = (keys[i] && keys[i].url) || '';
-                if (/\.onnx(\?|$)/.test(u)) { hasOnnx = true; break; }
+                var nm = u.split('/').pop();
+                if (nm) names.push(nm);
+                if (/\.onnx(\?|$)/.test(u)) { hasOnnx = true; }
             }
         } catch(e) { console.warn('[OfflineSTT] checkCacheFiles failed:', e); }
-        return { count: count, hasOnnx: hasOnnx };
+        return { count: count, hasOnnx: hasOnnx, names: names };
     }
-    // اگر READY_KEY درست نیست ولی فایل‌ها واقعاً در کش هستند → ترمیم.
-    // برمی‌گرداند: true یعنی ترمیم شد.
+    // 🔧 v229: نام فایل معرفی‌شده را نرمال کن — مرورگرها نسخهٔ تکراری را
+    // «file (1).onnx» ذخیره می‌کنند و تطبیق filename در Worker می‌شکند.
+    function normalizeFilename(name) {
+        return String(name || '').replace(/\s*\(\d+\)(?=\.[^.]*$)/, '').trim();
+    }
+    // 🔧 v229: بر اساس فایل‌های واقعاً موجود، dtype کارا را انتخاب کن:
+    // هر دو فایل fp16 ⇒ 'fp16'؛ وگرنه هر دو فایل q4f16 ⇒ 'q4f16'؛ وگرنه null.
+    function pickDtype(names) {
+        var set = {};
+        for (var i = 0; i < names.length; i++) set[names[i]] = true;
+        function complete(list) {
+            for (var j = 0; j < list.length; j++) if (!set[list[j]]) return false;
+            return true;
+        }
+        if (complete(ONNX_FILES.fp16)) return 'fp16';
+        if (complete(ONNX_FILES.q4f16)) return 'q4f16';
+        return null;
+    }
+    // فایل‌های مفقود برای dtype مشخص (dtype=null ⇒ fp16 پیشنهادی + فایل‌های پایه)
+    function missingFiles(names, dtype) {
+        var set = {};
+        for (var i = 0; i < names.length; i++) set[names[i]] = true;
+        var need = AUX_FILES.concat(ONNX_FILES[dtype || 'fp16']);
+        var out = [];
+        for (var j = 0; j < need.length; j++) if (!set[need[j]]) out.push(need[j]);
+        return out;
+    }
+    // وضعیت کامل MANIFEST: چه فایل‌هایی هست، چه dtype ممکن است، چه چیزی کم است
+    async function manifestStatus() {
+        var info = await checkCacheFiles();
+        var dtype = pickDtype(info.names);
+        var missing = missingFiles(info.names, dtype);
+        return { count: info.count, hasOnnx: info.hasOnnx, names: info.names,
+                 dtype: dtype, missing: missing, complete: missing.length === 0 };
+    }
+    // اگر READY_KEY با وضعیت واقعی کش نمی‌خواند → ترمیم دوطرفه:
+    // MANIFEST کامل و READY نیست ⇒ تنظیم؛ MANIFEST ناقص و READY هست (مثلاً
+    // کاربر بعداً معرفی ناقص کرده که کش را پاک می‌کند) ⇒ حذف — «آماده» هرگز
+    // دروغ نمی‌گوید. ضبط به هر حال با manifestStatus() از کش تأیید می‌شود.
+    // برمی‌گرداند: true یعنی ترمیمی انجام شد.
+    // 🔧 v229: ملاک دیگر «≥۲ فایل» نیست — کامل‌بودن MANIFEST است. کاربری
+    // که فایل نادرست (مثل راهنمای قدیمی model_fp16.onnx ناموجود) معرفی کرده
+    // بود «آماده» می‌شد و در زمان تبدیل خطا می‌گرفت؛ حالا دقیقاً می‌بیند چه
+    // فایل‌هایی کم است.
     async function verifyReadyFromCache() {
         try {
-            if (isReady()) return false;
-            var info = await checkCacheFiles();
-            if (info.count >= 2) { // آستانهٔ v227 حفظ شد: هر فایل معرفی‌شده کافی است
-                try { localStorage.setItem(READY_KEY, readyKey()); } catch(e) {}
-                console.log('[OfflineSTT] self-heal: READY_KEY set from cache (' + info.count + ' files)');
+            var st = await manifestStatus();
+            if (st.complete) {
+                if (!isReady()) {
+                    try { localStorage.setItem(READY_KEY, readyKey()); } catch(e) {}
+                    console.log('[OfflineSTT] self-heal: READY_KEY set from cache (' + st.count + ' files, dtype=' + st.dtype + ')');
+                    return true;
+                }
+                return false;
+            }
+            if (isReady()) {
+                try { localStorage.removeItem(READY_KEY); } catch(e) {}
+                console.log('[OfflineSTT] self-heal: READY_KEY removed (manifest incomplete — missing: ' + st.missing.join('، ') + ')');
                 return true;
             }
         } catch(e) { console.warn('[OfflineSTT] verifyReadyFromCache failed:', e); }
@@ -10107,6 +10208,7 @@ window.OfflineSTT = (function() {
     //   تطبیق با filename هم انجام می‌شود (تا فایل‌های onnx/ با URL درست پیدا شوند).
     var _WORKER_SRC =
         '// ═══ v226: fetch override — فقط Cache Storage، بدون دانلود اتوماتیک ═══\n' +
+        '// ═══ v229: پاسخ 404 فهرست فایل‌های موجود در کش را هم می‌آورد ═══\n' +
         'var HF_URL_RE = /^https:\\/\\/huggingface\\.co\\/[^/]+\\/[^/]+\\/resolve\\/main\\//;\n' +
         'var _origFetch = self.fetch.bind(self);\n' +
         'self.fetch = async function(url, options) {\n' +
@@ -10121,16 +10223,24 @@ window.OfflineSTT = (function() {
         '    // ۲) تطبیق با filename (برای فایل‌های onnx/ که کاربر بدون مسیر ذخیره کرده)\n' +
         '    var filename = url.split("/").pop();\n' +
         '    var keys = await cache.keys();\n' +
+        '    var names = [];\n' +
         '    for (var i = 0; i < keys.length; i++) {\n' +
-        '      if (keys[i].url.split("/").pop() === filename) {\n' +
+        '      var nm = keys[i].url.split("/").pop();\n' +
+        '      if (nm) names.push(nm);\n' +
+        '      if (nm === filename) {\n' +
         '        var match = await cache.match(keys[i]);\n' +
         '        if (match) return match;\n' +
         '      }\n' +
         '    }\n' +
+        '    // ۳) فایل پیدا نشد — 404 با فهرست واقعی کش (تشخیص از راه دور)\n' +
+        '    var avail = " | فایل‌های موجود در حافظه: " + (names.join("، ") || "هیچ");\n' +
+        '    return new Response("File not found: " + filename + " (" + url + ")" + avail + " — فایل را دانلود و با دکمهٔ «انتخاب فایل‌های مدل» معرفی کنید.", {\n' +
+        '      status: 404,\n' +
+        '      statusText: "File Not Found",\n' +
+        '      headers: { "Content-Type": "text/plain" }\n' +
+        '    });\n' +
         '  } catch(e) {}\n' +
-        '  // فایل پیدا نشد — 404\n' +
-        '  var fname = url.split("/").pop();\n' +
-        '  return new Response("File not found: " + fname + ". آن را از هوفینگ‌فیس دانلود و با دکمهٔ انتخاب فایل‌ها اضافه کنید.", {\n' +
+        '  return new Response("File not found: " + url.split("/").pop(), {\n' +
         '    status: 404,\n' +
         '    statusText: "File Not Found",\n' +
         '    headers: { "Content-Type": "text/plain" }\n' +
@@ -10139,27 +10249,30 @@ window.OfflineSTT = (function() {
         '\n' +
         'import { pipeline, env } from "' + CDN + '";\n' +
         'env.allowLocalModels = false;\n' +
-        'var asr = null, currentModel = null, loading = null;\n' +
-        'function ensure(model) {\n' +
-        '  if (asr && currentModel === model) return Promise.resolve(asr);\n' +
-        '  if (loading && currentModel === model) return loading;\n' +
-        '  currentModel = model;\n' +
+        '// 🔧 v229: ensure(model, dtype) — کلید = مدل + dtype؛ dtype بر اساس\n' +
+        '// فایل‌های موجود در کش توسط صفحهٔ اصلی انتخاب و در پیام فرستاده می‌شود.\n' +
+        'var asr = null, currentKey = null, loading = null;\n' +
+        'function ensure(model, dtype) {\n' +
+        '  var key = model + "|" + (dtype || "fp16");\n' +
+        '  if (asr && currentKey === key) return Promise.resolve(asr);\n' +
+        '  if (loading && currentKey === key) return loading;\n' +
+        '  currentKey = key;\n' +
         '  loading = pipeline("automatic-speech-recognition", model, {\n' +
-        '    dtype: "fp16", device: "webgpu"\n' +
+        '    dtype: dtype || "fp16", device: "webgpu"\n' +
         '  }).then(function(p) { asr = p; return p; })\n' +
-        '    .catch(function(e) { loading = null; currentModel = null; throw e; });\n' +
+        '    .catch(function(e) { loading = null; currentKey = null; throw e; });\n' +
         '  return loading;\n' +
         '}\n' +
         'self.onmessage = async function(e) {\n' +
         '  var d = e.data || {};\n' +
         '  if (d.type === "load") {\n' +
-        '    try { await ensure(d.model); self.postMessage({ type: "loaded", id: d.id }); }\n' +
+        '    try { await ensure(d.model, d.dtype); self.postMessage({ type: "loaded", id: d.id }); }\n' +
         '    catch(err) { self.postMessage({ type: "error", id: d.id, message: String(err && err.message || err) }); }\n' +
         '    return;\n' +
         '  }\n' +
         '  if (d.type === "transcribe") {\n' +
         '    try {\n' +
-        '      var p = await ensure(d.model);\n' +
+        '      var p = await ensure(d.model, d.dtype);\n' +
         '      var out = await p(d.audio, { language: "fa", task: "transcribe", chunk_length_s: 30, stride_length_s: 5 });\n' +
         '      self.postMessage({ type: "result", id: d.id, text: String((out && out.text) || "").trim() });\n' +
         '    } catch(err) {\n' +
@@ -10201,12 +10314,19 @@ window.OfflineSTT = (function() {
         return _worker;
     }
 
-    // 🔧 v226: loadModel فقط model می‌فرستد (device همیشه webgpu است)
-    function loadModel() {
+    // 🔧 v229: dtype از فایل‌های واقعاً موجود در کش انتخاب می‌شود (fp16 یا q4f16).
+    // اگر MANIFEST ناقص باشد، با فهرست نام فایل‌های مفقود رد می‌شود — نه با
+    // پیام مبهم 404 در زمان تبدیل.
+    async function loadModel() {
+        var st = await manifestStatus();
+        if (!st.complete) {
+            return Promise.reject(new Error('فایل‌های مدل ناقص است — این فایل‌ها کم است: ' + st.missing.join('، ')));
+        }
+        _dtype = st.dtype;
         return new Promise(function(resolve, reject) {
             try { ensureWorker(); } catch(e) { reject(e); return; }
             _pendingLoad = { resolve: resolve, reject: reject };
-            _worker.postMessage({ type: 'load', id: _msgId++, model: getModel() });
+            _worker.postMessage({ type: 'load', id: _msgId++, model: getModel(), dtype: _dtype });
         });
     }
 
@@ -10351,17 +10471,23 @@ window.OfflineSTT = (function() {
 
     // 🔧 v222: transcribeAudio حالا شیء captured می‌گیرد ({audio: Float32Array,
     // duration, size, sampleRate}) — مستقیم به Worker، بدون encode/decode.
+    // 🔧 v229: dtype در لحظهٔ تبدیل از کش انتخاب می‌شود (fp16 یا q4f16) و با
+    // پیام می‌رود تا ensure کلید درست بگیرد.
     function transcribeAudio(captured) {
         if (_testTranscribe) return _testTranscribe(captured);
         if (!captured || !captured.audio || captured.audio.length === 0) return Promise.resolve('');
-        var w = ensureWorker();
-        return new Promise(function(resolve, reject) {
-            _pending = { resolve: resolve, reject: reject };
-            var copy = new Float32Array(captured.audio);
-            // 🔧 v226: device همیشه webgpu — فقط model می‌فرستیم
-            w.postMessage({
-                type: 'transcribe', id: _msgId++, audio: copy, model: getModel()
-            }, [copy.buffer]);
+        return manifestStatus().then(function(st) {
+            var dtype = st.dtype || _dtype || 'fp16';
+            _dtype = dtype;
+            var w = ensureWorker();
+            return new Promise(function(resolve, reject) {
+                _pending = { resolve: resolve, reject: reject };
+                var copy = new Float32Array(captured.audio);
+                // 🔧 v226: device همیشه webgpu؛ 🔧 v229: dtype پارامتر شد
+                w.postMessage({
+                    type: 'transcribe', id: _msgId++, audio: copy, model: getModel(), dtype: dtype
+                }, [copy.buffer]);
+            });
         });
     }
 
@@ -10435,7 +10561,7 @@ window.OfflineSTT = (function() {
             '</div>' +
             '<div style="font-size:11px;color:#777;margin-top:10px;line-height:1.8;">' +
               'دانلود اتوماتیک حذف شده — فایل‌ها را دستی از لینک‌های بالا دانلود کنید، سپس با دکمهٔ «انتخاب فایل‌ها» به برنامه بدهید. ' +
-              'فایل model_fp16.onnx از پوشهٔ onnx/ لازم است. ضبط صوت کاملاً آفلاین و بدون گوگل روی دستگاه شما انجام می‌شود. ' +
+              'فایل‌های onnx/encoder_model_fp16.onnx و onnx/decoder_model_merged_fp16.onnx لازم‌اند (یا گروه سبک‌تر q4f16). ضبط صوت کاملاً آفلاین و بدون گوگل روی دستگاه شما انجام می‌شود. ' +
               '(Chrome/Edge با WebGPU) — Whisper با Transformers.js' +
             '</div>;' 
         ov.appendChild(box);
@@ -10465,49 +10591,85 @@ window.OfflineSTT = (function() {
         panel.querySelector('#ostt-eng-online').classList.toggle('sel', engine === 'online');
         panel.querySelector('#ostt-eng-offline').classList.toggle('sel', engine === 'offline');
         // 🔧 v228: انتخابگر ۴ مدل حذف شد — کاربر خودش فایل‌ها را دانلود می‌کند.
-        // لینک‌های دانلود برای مدل پیش‌فرض (whisper-large-v3-turbo) نمایش داده می‌شوند.
+        // 🔧 v229: لینک مستقیم تک‌تک فایل‌های MANIFEST — راهنمای قدیمی کاربر را
+        // به «model_fp16.onnx» (فایل ناموجود در مخزن!) هدایت می‌کرد.
         var linksEl = panel.querySelector('#ostt-links');
         if (linksEl) {
             var html = '<div style="font-weight:bold;margin-bottom:4px;">دانلود فایل‌های مدل از این آدرس‌ها:</div>';
             html += '<div style="margin-bottom:4px;"><a href="https://huggingface.co/' + model + '/tree/main" target="_blank" style="color:#1a73e8;">📋 صفحهٔ فایل‌ها</a></div>';
-            html += '<div style="margin-bottom:4px;"><a href="https://huggingface.co/' + model + '/tree/main/onnx" target="_blank" style="color:#1a73e8;">📁 پوشهٔ onnx (model_fp16.onnx)</a></div>';
-            html += '<div style="font-size:11px;color:#888;">همه فایل‌ها را از لینک‌های بالا دانلود کنید، سپس با دکمهٔ «انتخاب فایل‌های مدل» به برنامه بدهید.</div>';
+            html += '<div style="font-weight:bold;margin-top:4px;">۵ فایل پایه (کوچک):</div>';
+            for (var ai = 0; ai < AUX_FILES.length; ai++) {
+                html += '<div style="margin-bottom:2px;"><a href="https://huggingface.co/' + model + '/resolve/main/' + AUX_FILES[ai] + '" target="_blank" style="color:#1a73e8;">⬇ ' + AUX_FILES[ai] + '</a></div>';
+            }
+            html += '<div style="font-weight:bold;margin-top:6px;">از پوشهٔ onnx — فقط یکی از دو گروه:</div>';
+            for (var fi = 0; fi < ONNX_FILES.fp16.length; fi++) {
+                html += '<div style="margin-bottom:2px;"><a href="https://huggingface.co/' + model + '/resolve/main/onnx/' + ONNX_FILES.fp16[fi] + '" target="_blank" style="color:#1a73e8;">⬇ onnx/' + ONNX_FILES.fp16[fi] + '</a> <span style="color:#188038;">(پیشنهادی — دقیق‌تر)</span></div>';
+            }
+            for (var qi = 0; qi < ONNX_FILES.q4f16.length; qi++) {
+                html += '<div style="margin-bottom:2px;"><a href="https://huggingface.co/' + model + '/resolve/main/onnx/' + ONNX_FILES.q4f16[qi] + '" target="_blank" style="color:#1a73e8;">⬇ onnx/' + ONNX_FILES.q4f16[qi] + '</a> <span style="color:#666;">(سبک‌تر — جایگزین)</span></div>';
+            }
+            html += '<div style="font-size:11px;color:#888;margin-top:4px;">همهٔ ۵ فایل پایه + یک گروه کامل از onnx را دانلود و همزمان با دکمهٔ «📂 انتخاب فایل‌های مدل» معرفی کنید (چون حافظهٔ قبلی پاک می‌شود).</div>';
             linksEl.innerHTML = html;
         }
-        // وضعیت آماده‌بودن
+        // وضعیت آماده‌بودن — 🔧 v229: از کش واقعی (MANIFEST) نه READY_KEY
         var statusEl = panel.querySelector('#ostt-status');
         if (statusEl) {
             if (!gpuOk) {
                 statusEl.innerHTML = '⚠ مرورگر شما از WebGPU پشتیبانی نمی‌کند — از Chrome/Edge جدید استفاده کنید';;
-            } else if (ready) {
-                statusEl.textContent = '✓ مدل آماده است — ضبط آفلاین فعال';
             } else {
-                statusEl.innerHTML = 'مدل آماده نیست — فایل‌ها را از لینک‌های بالا دانلود و با دکمهٔ «📂 انتخاب فایل‌های مدل» اضافه کنید';;
+                statusEl.textContent = 'در حال بررسی فایل‌های مدل…';
             }
         }
-        panel.querySelector('#ostt-select-files').style.display = ready ? 'none' : '';
-        panel.querySelector('#ostt-delete').style.display = ready ? '' : 'none';
+        manifestStatus().then(function(st) {
+            if (!document.getElementById('ostt-panel')) return; // پنل بسته شده
+            if (st.complete) {
+                // خودترمیمی READY_KEY — اگر از دست رفته بود
+                try { if (localStorage.getItem(READY_KEY) !== readyKey()) localStorage.setItem(READY_KEY, readyKey()); } catch(e) {}
+            }
+            var statusEl2 = panel.querySelector('#ostt-status');
+            if (statusEl2 && gpuOk) {
+                if (st.complete) {
+                    statusEl2.textContent = '✓ مدل آماده است (' + st.dtype + ') — ضبط آفلاین فعال';
+                } else {
+                    statusEl2.innerHTML = 'مدل آماده نیست — این فایل‌ها را دانلود و با دکمهٔ «📂 انتخاب فایل‌های مدل» معرفی کنید: <b>' + st.missing.join('، ') + '</b>';
+                }
+            }
+            panel.querySelector('#ostt-select-files').style.display = st.complete ? 'none' : '';
+            panel.querySelector('#ostt-delete').style.display = st.complete ? '' : 'none';
+        });
     }
 
     // 🔧 v228: نمایش وضعیت واقعی — نسخهٔ برنامه + تعداد فایل‌های واقعی در
     // Cache Storage. تا کاربر ببیند فایل‌هایش واقعاً ذخیره شده‌اند یا نه،
     // و مشخص باشد کدام نسخهٔ کد در حال اجراست (اشکال‌زدایی از راه دور).
+    // 🔧 v229: چک‌لیست ✓/✗ تک‌تک فایل‌های MANIFEST + dtype کارا + فهرست مفقودها.
     async function updateCacheInfo() {
         var el = document.querySelector('#ostt-panel #ostt-cacheinfo');
         if (!el) return;
-        var info = { count: 0, hasOnnx: false };
-        try { info = await checkCacheFiles(); } catch(e) {}
+        var st = { count: 0, names: [], missing: AUX_FILES.concat(ONNX_FILES.fp16), complete: false, dtype: null };
+        try { st = await manifestStatus(); } catch(e) {}
         var ver = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : '?';
-        var onnxPart = info.hasOnnx
-            ? '✓ فایل ONNX موجود است'
-            : '✗ فایل ONNX موجود نیست (از پوشهٔ onnx دانلود کنید)';
-        el.textContent = 'نسخهٔ برنامه: ' + ver + ' — فایل‌های مدل در حافظه: ' + info.count + ' — ' + onnxPart;
+        var namesSet = {};
+        for (var i = 0; i < st.names.length; i++) namesSet[st.names[i]] = true;
+        var files = AUX_FILES.concat(ONNX_FILES[st.dtype || 'fp16']);
+        var rows = '';
+        for (var j = 0; j < files.length; j++) {
+            var ok = !!namesSet[files[j]];
+            rows += '<div style="' + (ok ? 'color:#188038;' : 'color:#c5221f;') + '">' + (ok ? '✓' : '✗') + ' ' + files[j] + '</div>';
+        }
+        var tail = st.complete
+            ? '<div style="color:#188038;">✓ همهٔ فایل‌های لازم موجود است — گروه: ' + st.dtype + '</div>'
+            : '<div style="color:#c5221f;">✗ این فایل‌ها هنوز کم است: <b>' + st.missing.join('، ') + '</b></div>';
+        el.innerHTML = 'نسخهٔ برنامه: ' + ver + ' — فایل‌های ذخیره‌شده: ' + st.count + '<br>' + rows + tail;
     }
 
     // 🔧 v226: انتخاب فایل‌های مدل توسط کاربر — ذخیره در Cache Storage.
     // 🔧 v227: READY_KEY بلافاصله پس از ذخیره فایل‌ها تنظیم می‌شود.
     // 🔧 v228: بهبود خطا‌ها — اگر cache.put شکست بخورد (quota و غیره)، پیام
     // واضح نشان داده می‌شود و READY_KEY تنظیم نمی‌شود.
+    // 🔧 v229: نام فایل نرمال می‌شود (« (1)» مرورگر حذف)؛ READY_KEY فقط وقتی
+    // تنظیم می‌شود که MANIFEST کامل باشد؛ فایل‌های مفقود نام‌به‌نام نشان داده
+    // می‌شوند («آماده» دیگر هرگز دروغ نمی‌گوید).
     async function selectModelFiles(ev) {
         var files = ev.target.files;
         if (!files || files.length === 0) return;
@@ -10522,7 +10684,7 @@ window.OfflineSTT = (function() {
             var stored = 0, lastError = null;
             for (var i = 0; i < files.length; i++) {
                 var file = files[i];
-                var filename = file.name;
+                var filename = normalizeFilename(file.name);
                 var filepath = filename.endsWith('.onnx') ? ('onnx/' + filename) : filename;
                 var url = 'https://huggingface.co/' + model + '/resolve/main/' + filepath;
                 console.log('[OfflineSTT] storing: ' + filename + ' → ' + url + ' (' + file.size + ' bytes)');
@@ -10541,23 +10703,30 @@ window.OfflineSTT = (function() {
             }
             console.log('[OfflineSTT] stored ' + stored + ' of ' + files.length + ' files');
             if (stored > 0) {
-                // READY_KEY را بلافاصله تنظیم کن — حداقل یک فایل ذخیره شده است.
-                try { localStorage.setItem(READY_KEY, readyKey()); } catch(e) {}
-                setEngine('offline');
-                if (lastError) {
-                    showToast(stored + ' فایل ذخیره شد، اما برخی خطا دادند: ' + lastError);
-                    if (statusEl) statusEl.innerHTML = '⚠ ' + stored + ' فایل ذخیره شد — برخی فایل‌ها خطا دادند: ' + lastError;
+                var st = await manifestStatus(); // 🔧 v229: کامل‌بودن MANIFEST را بسنج
+                if (st.complete) {
+                    // MANIFEST کامل — «آماده» واقعی است
+                    try { localStorage.setItem(READY_KEY, readyKey()); } catch(e) {}
+                    setEngine('offline');
+                    showToast(stored + ' فایل ذخیره شد ✓ — مدل آماده است (' + st.dtype + ')');
                 } else {
-                    showToast(stored + ' فایل ذخیره شد ✓ — مدل آماده است');
+                    // ذخیره شد ولی ناقص — READY حذف می‌شود (اگر از قبل بود)؛
+                    // دقیقاً بگو چه کم است. ضبط با بررسی کش از پنل/میک محافظت می‌شود.
+                    try { localStorage.removeItem(READY_KEY); } catch(e) {}
+                    setEngine('offline');
+                    showToast(stored + ' فایل ذخیره شد — این فایل‌ها هنوز کم است: ' + st.missing.join('، '));
+                    if (statusEl) statusEl.innerHTML = '⚠ ' + stored + ' فایل ذخیره شد — این فایل‌ها هنوز کم است: <b>' + st.missing.join('، ') + '</b>';
                 }
                 refreshPanel();
                 updateCacheInfo(); // 🔧 v228: نمایش تعداد فایل‌های واقعی ذخیره‌شده
-                // تلاش برای پیش‌بارگذاری مدل (اختیاری)
-                loadModel().then(function() {
-                    console.log('[OfflineSTT] model pre-loaded successfully');
-                }).catch(function(err) {
-                    console.warn('[OfflineSTT] pre-load failed (will retry on first recording):', err);
-                });
+                // تلاش برای پیش‌بارگذاری مدل (اختیاری) — فقط وقتی MANIFEST کامل است
+                if (st.complete) {
+                    loadModel().then(function() {
+                        console.log('[OfflineSTT] model pre-loaded successfully');
+                    }).catch(function(err) {
+                        console.warn('[OfflineSTT] pre-load failed (will retry on first recording):', err);
+                    });
+                }
             } else {
                 showToast('هیچ فایلی ذخیره نشد — خطا: ' + (lastError || 'نامشخص'));
                 if (statusEl) statusEl.innerHTML = '✗ هیچ فایلی ذخیره نشد: ' + (lastError || 'نامشخص');
@@ -10626,23 +10795,24 @@ window.OfflineSTT = (function() {
     // ══════════ هوک‌های ۴ میکروفون برنامه ══════════
 
     // 🔧 v228: به‌جای بلاک‌کردن ضبط با پیام «اول مدل را دانلود کنید»، اول
-    // Cache Storage واقعاً بررسی می‌شود. اگر فایل‌های مدل در کش باشند
-    // (حتی اگر READY_KEY از دست رفته باشد — مثلاً معرفی فایل‌ها در نسخهٔ
-    // قدیمی، localStorage معیوب، یا تغییر مدل در نسخه‌های قبل) — ضبط همان‌جا
-    // شروع می‌شود. فقط اگر واقعاً هیچ فایلی در کش نیست، پنل + پیام راهنما.
+    // Cache Storage واقعاً بررسی می‌شود.
+    // 🔧 v229: ملاک، کامل‌بودن MANIFEST است نه صرفاً ≥۲ فایل. اگر فایل‌ها ناقص
+    // باشد (مثلاً راهنمای قدیمی فایل ناموجود model_fp16.onnx را می‌خواست)،
+    // ضبط شروع نمی‌شود — دقیقاً فهرست فایل‌های کم‌شده نام‌به‌نام نشان داده
+    // می‌شود تا تبدیل در زمان توقف ضبط شکست نخورد.
     async function selfHealThenStart(flow) {
         if (_verifying) { showToast('کمی صبر کنید — در حال بررسی فایل‌های مدل…'); return; }
         _verifying = true;
         try {
-            var info = await checkCacheFiles();
-            if (info.count >= 2) {
+            var st = await manifestStatus();
+            if (st.complete) {
                 try { localStorage.setItem(READY_KEY, readyKey()); } catch(e) {}
-                showToast('فایل‌های مدل در حافظه پیدا شد ✓ — ضبط آفلاین شروع می‌شود');
+                showToast('فایل‌های مدل کامل است ✓ — ضبط آفلاین شروع می‌شود');
                 if (flow === 'main') startMain(); else startField(flow);
                 return;
             }
             openPanel();
-            showToast('برای ضبط آفلاین، اول فایل‌های مدل را دانلود و با «📂 انتخاب فایل‌های مدل» معرفی کنید');
+            showToast('فایل‌های مدل ناقص است — این فایل‌ها را هم دانلود و معرفی کنید: ' + st.missing.join('، '));
         } finally {
             _verifying = false;
         }
@@ -10659,8 +10829,10 @@ window.OfflineSTT = (function() {
         if (_verifying) { showToast('کمی صبر کنید — در حال بررسی فایل‌های مدل…'); return true; }
         if (flow === 'main') {
             if (_activeFlow === 'main') { finalizeMain(); return true; } // لمس دوباره = پایان
-            if (!isReady()) { selfHealThenStart(flow); return true; }
-            startMain();
+            // 🔧 v229: همیشه از کش تأیید کن (READY_KEY قدیمیِ ثبت‌شده در v228 با
+            // فایل‌های ناقص ممکن است هنوز «آماده» بگوید) — هزینهٔ cache.keys()
+            // چند میلی‌ثانیه است و جلوی ضبطِ محکوم‌به‌شکست را می‌گیرد.
+            selfHealThenStart(flow);
             return true;
         }
         if (_activeFlow && _activeFlow !== flow) {
@@ -10668,8 +10840,7 @@ window.OfflineSTT = (function() {
             return true;
         }
         if (_activeFlow === flow) { finalizeField(flow); return true; } // لمس دوباره = پایان
-        if (!isReady()) { selfHealThenStart(flow); return true; }
-        startField(flow);
+        selfHealThenStart(flow);
         return true;
     }
 
@@ -10738,7 +10909,7 @@ window.OfflineSTT = (function() {
         } catch(err) {
             hideBusy(); _busy = false;
             console.error('[OfflineSTT] transcribe failed:', err);
-            showToast('خطا در تبدیل آفلاین: ' + ((err && err.message) || 'نامشخص') + ' — مدل را در تنظیمات دوباره دانلود کنید');
+            showToast('خطا در تبدیل آفلاین: ' + ((err && err.message) || 'نامشخص') + ' — پنل 🎙 صوت را باز کنید تا فایل‌های مدل بررسی شود');
         }
     }
 
@@ -10794,7 +10965,9 @@ window.OfflineSTT = (function() {
             } catch(err) {
                 hideBusy(); _busy = false;
                 console.error('[OfflineSTT] main transcribe failed:', err);
-                showToast('خطا در تبدیل آفلاین — می‌توانید متن را تایپ کنید');
+                // 🔧 v229: پیام واقعی خطا دیگر حذف نمی‌شود — کاربر باید ببیند
+                // چه چیز شکسته (فایل مفقود / WebGPU / حافظه) بلافاصله بعد از توقف ضبط
+                showToast('خطا در تبدیل آفلاین: ' + ((err && err.message) || 'نامشخص') + ' — می‌توانید متن را تایپ کنید یا پنل 🎙 صوت را باز کنید');
             }
         } else {
             showToast('صدایی ضبط نشد — «تست میکروفون» را در پنل موتور صوت (دکمهٔ 🎙) بزنید');
@@ -10827,7 +11000,7 @@ window.OfflineSTT = (function() {
 
     // وضعیت داخلی — برای تست‌ها و اشکال‌زدایی
     function state() {
-        return { engine: getEngine(), model: getModel(), webgpuSupported: webgpuSupported(), ready: isReady(), activeFlow: _activeFlow, busy: _busy };
+        return { engine: getEngine(), model: getModel(), webgpuSupported: webgpuSupported(), ready: isReady(), activeFlow: _activeFlow, busy: _busy, dtype: _dtype };
     }
 
         // 🔧 v228: راه‌اندازی خودترمیمی — اگر فایل‌های مدل در کش هستند ولی
