@@ -34,7 +34,7 @@
 // + pagehide wake-up full set (KEEPALIVE/CHECK_DEADLINES/SCHEDULE_TRIGGERS/sync).
 // 🔧 v205: fresh audit — ممیزی کامل دوباره؛ تنها تغییر: اصلاح نویسهٔ چینی در کامنت بخش ۳.
 // 🔧 v208: گارد حذف شخصِ دارای ارجاع در تسک‌ها (یکپارچگی داده) — تغییر فقط در HTML.
-const CACHE_NAME = 'yadavar-cache-v235';
+const CACHE_NAME = 'yadavar-cache-v236';
 
 // نام پایگاه دادهٔ IndexedDB. این پایگاه داده بین سرویس ورکر و صفحهٔ
 // HTML مشترک است و یادآورها + تاریخچهٔ اعلان‌ها را در خود نگه می‌دارد.

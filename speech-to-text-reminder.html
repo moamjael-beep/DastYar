@@ -858,6 +858,40 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     text-align: center;
     font-weight: 700;
 }
+/* 🔧 v236: دکمهٔ میکروفون inline — به‌جای صفحهٔ واسط ضبط. آیکون 🎤 بزرگ‌تر،
+   در حالت ضبط قرمز و چشمک‌زن می‌شود. */
+.btn-mic {
+    font-size: 18px;
+    line-height: 1;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary, #f5f5f5);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+}
+.btn-mic:active { transform: scale(0.94); }
+.btn-mic.recording {
+    background: var(--red, #d32f2f);
+    color: #fff;
+    border-color: var(--red, #d32f2f);
+    animation: mic-blink 1s infinite;
+}
+@keyframes mic-blink {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.12); }
+}
+/* 🔧 v236: hint زندهٔ عبارت موقت — بالای textarea داخل فرم. */
+.recording-hint-inline {
+    font-size: 12px;
+    color: var(--text-light, #888);
+    background: rgba(211, 47, 47, 0.06);
+    border-right: 3px solid var(--red, #d32f2f);
+    padding: 6px 10px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    min-height: 14px;
+}
 .recording-section {
     text-align: center;
     padding: 30px 10px;
@@ -4531,27 +4565,24 @@ body.locked .header-actions button {
     <div class="modal">
         <h2 id="modalTitle">یادآور جدید</h2>
 
-        <!-- 🔧 دکمه‌های انصراف / ضبط دوباره / ذخیره — در بالای فرم (همیشه قابل مشاهده)
-             در حالت ضبط: فقط انصراف نمایش داده می‌شود
-             در حالت فرم: هر سه دکمه نمایش داده می‌شود -->
+        <!-- 🔧 v236: دکمه‌های بالای فرم — کاربر خواست سبک ضبط تغییر کند:
+             ❌ صفحهٔ واسط ضبط (با «در حال ضبط صوت...» + بوق + انصراف/توقف) حذف شد.
+             ✅ به‌جای «ضبط دوباره»، یک دکمهٔ آیکون میکروفون 🎤 گذاشتیم که ضبط
+                را inline داخل همین فرم toggle می‌کند — هنگام ضبط، آیکون قرمز
+                چشمک‌زن می‌شود و hint زنده زیر textarea نشان داده می‌شود.
+             سه دکمه: انصراف | 🎤 (میکروفون) | ذخیره. -->
         <div class="modal-buttons" id="formButtons" style="margin-bottom:14px;">
             <button class="btn btn-secondary" onclick="cancelModal()">انصراف</button>
-            <button class="btn btn-secondary" id="reRecordBtn" onclick="startRecording()" style="display:none;">ضبط دوباره</button>
+            <button class="btn btn-mic" id="reRecordBtn" onclick="toggleRecording()" title="ضبط صوت" style="display:none;">🎤</button>
             <button class="btn btn-primary" id="saveBtn" onclick="saveItem()" style="display:none;">ذخیره</button>
         </div>
 
-        <div id="recordingSection" class="recording-section" style="display:none;">
-            <div class="recording-text">
-                <span class="recording-indicator"></span>
-                در حال ضبط صوت...
-            </div>
-            <div class="recording-hint" id="interimText">صحبت کنید...</div>
-            <div class="recording-buttons">
-                <button class="btn btn-danger" onclick="stopRecording()">توقف ضبط</button>
-            </div>
-        </div>
-
+        <!-- 🔧 v236: recordingSection حذف شد — صفحهٔ واسط ضبط دیگر وجود ندارد.
+             hint زندهٔ عبارت موقت به داخل formSection منتقل شد تا هنگام ضبط
+             inline زیر textarea دیده شود. -->
         <div id="formSection" style="display:none;">
+            <!-- 🔧 v236: hint زندهٔ عبارت موقت — بالای textarea، فقط هنگام ضبط دیده می‌شود. -->
+            <div class="recording-hint-inline" id="interimText" style="display:none;">صحبت کنید...</div>
             <label class="modal-label">متن یادآور <span style="font-weight:400;color:#999;">(می‌توانید ویرایش یا تایپ کنید)</span></label>
             <textarea class="modal-textarea" id="itemText" placeholder="اگر ضبط صوت کار نکرد، متن را اینجا تایپ کنید..."></textarea>
 
@@ -7003,6 +7034,33 @@ body.locked .header-actions button {
 //               ~۷۵۰MB-۱.۵GB) — فقط با WebGPU توصیه می‌شود.
 //            dtype: WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده).
 //            تست: test_offline_stt_v222.mjs — ۱۴ تست Y1-Y14، پورت ۸۲۰۲.
+//         🔧 v236 (۱۴۰۵ آبان ۲۶) — الزام کاربر: «به جای کلید ضبط دوباره همان
+//               میکروفون را بگذار وقتی کلیک میشود صفحه ضبط نمیخواهد بیاید.
+//               و قتی ایجاد یک تسک جدید هم میزنیم مستقیم در صفحه یادآور جدید
+//               باشیم و آن صفحه واسط که بوق های متوالی میزنند و کلید انصراف و
+//               توقف ضبط دارد کلا حذف شود». بازطراحی کامل UI ضبط تسک:
+//               ۱) recordingSection (صفحهٔ واسط با «در حال ضبط...» + indicator
+//                  چشمک‌زن + hint + دکمهٔ «توقف ضبط») حذف شد.
+//               ۲) دکمهٔ «ضبط دوباره» به آیکون میکروفون 🎤 تبدیل شد (btn-mic)
+//                  که با toggleRecording() ضبط را inline داخل همان فرم toggle
+//                  می‌کند — هنگام ضبط قرمز چشمک‌زن و ⏹ می‌شود.
+//               ۳) hint زنده (interimText) از recordingSection به داخل formSection
+//                  منتقل شد تا زیر textarea دیده شود (recording-hint-inline).
+//               ۴) startAdding مستقیم به فرم می‌رود (نه صفحهٔ ضبط) و سپس
+//                  startRecording به‌صورت inline در همان فرم شروع می‌شود.
+//               ۵) startRecording/stopRecording دیگر recordingSection/formSection
+//                  را toggle نمی‌کنند — در فرم می‌مانند، فقط آیکون و hint را
+//                  به‌روز می‌کنند.
+//               ۶) showManualMode بازنویسی شد (بدون recordingSection) — مستقیم
+//                  فرم + toast هشدار.
+//               ۷) بوق‌های متوالی که کاربر می‌شنید در واقع playShortBeeps /
+//                  playNotificationSound (صدای اعلان) بود — اکنون هنگام
+//                  isRecording ساکت می‌شوند (gate روی !isRecording).
+//               ۸) رفع leak: cancelModal اکنون silent-audio loop، worker،
+//                  WakeLock، MediaSession و keepalive interval را هم آزاد
+//                  می‌کند (قبلاً فقط recognition.stop می‌شد).
+//               نمایش لحظه‌ای کلمات + تبدیل زندهٔ اعداد (v235) و میکروفون
+//               باز تا قطع (v203) دست‌نخورده باقی ماند.
 //         🔧 v235 (۱۴۰۵ آبان ۲۶) — الزام کاربر: «بسیار عالی همین سبک را برای
 //               ضبط صدا و تبدیل به متن در تسک‌ها کپی کن». کاوش نشان داد فلوی
 //               تسک‌ها از قبل میکروفون تا قطع باز نگه می‌داشت (onend با ۳۰۰ms
@@ -7159,7 +7217,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v235-2026-11-14-tasks-live';
+const APP_VERSION = 'v236-2026-11-14-inline-rec';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -9644,6 +9702,8 @@ function initRecognition() {
         if (hintEl) {
             // 🔧 v235: عبارت موقتی هم با تبدیل نشان داده شود — کاربر همان چیزی را
             // می‌بیند که پس از قطع دریافت خواهد کرد.
+            // 🔧 v236: hint اکنون داخل فرم است — هنگام ضبط حتماً نمایش داده شود.
+            hintEl.style.display = '';
             hintEl.textContent = addNumericAfterWords(interim) || (currentSessionText ? 'در حال پردازش...' : 'صحبت کنید...');
         }
     };
@@ -10122,7 +10182,6 @@ function startRecording() {
     // اگر آفلاین است → فرم تایپ دستی نمایش بده
     if (!navigator.onLine) {
         document.getElementById('modalOverlay').classList.add('active');
-        document.getElementById('recordingSection').style.display = 'none';
         document.getElementById('formSection').style.display = 'block';
         const isEditing = !!editTaskId;
         document.getElementById('modalTitle').textContent = isEditing ? 'ویرایش یادآور' : 'یادآور جدید';
@@ -10144,12 +10203,12 @@ function startRecording() {
     currentSessionText = '';
     document.getElementById('itemText').value = '';
     isRecording = true;
-    document.getElementById('recordingSection').style.display = 'block';
-    document.getElementById('formSection').style.display = 'none';
-    document.getElementById('modalTitle').textContent = 'در حال ضبط صوت';
-    // 🔧 پنهان کردن دکمه‌های «ضبط دوباره» و «ذخیره» در حالت ضبط (فقط انصراف نمایش داده شود)
-    document.getElementById('reRecordBtn').style.display = 'none';
-    document.getElementById('saveBtn').style.display = 'none';
+    // 🔧 v236: صفحهٔ واسط ضبط حذف شد — در همان فرم می‌مانیم. hint زنده و
+    // آیکون میکروفون چشمک‌زن بازخورد بصری را می‌دهند؛ عنوان و فیلدها ثابت.
+    const hintEl = document.getElementById('interimText');
+    if (hintEl) { hintEl.textContent = 'صحبت کنید...'; hintEl.style.display = ''; }
+    const micBtn = document.getElementById('reRecordBtn');
+    if (micBtn) { micBtn.classList.add('recording'); micBtn.textContent = '⏹'; micBtn.title = 'توقف ضبط'; }
     document.getElementById('addBtn').classList.add('recording');
     // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
     const fab2 = document.getElementById('floatingAddBtn');
@@ -10183,6 +10242,11 @@ function startRecording() {
         // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
         const fab3 = document.getElementById('floatingAddBtn');
         if (fab3) fab3.classList.remove('recording');
+        // 🔧 v236: بازنشانی آیکون میکروفون و hint به حالت آماده
+        const micBtnErr = document.getElementById('reRecordBtn');
+        if (micBtnErr) { micBtnErr.classList.remove('recording'); micBtnErr.textContent = '🎤'; micBtnErr.title = 'ضبط صوت'; }
+        const hintErr = document.getElementById('interimText');
+        if (hintErr) hintErr.style.display = 'none';
         showFormSection();
     }
 }
@@ -10196,6 +10260,11 @@ function stopRecording() {
     // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
     const fabStop = document.getElementById('floatingAddBtn');
     if (fabStop) fabStop.classList.remove('recording');
+    // 🔧 v236: بازنشانی دکمهٔ میکروفون به حالت آماده و پنهان کردن hint زنده
+    const micBtnStop = document.getElementById('reRecordBtn');
+    if (micBtnStop) { micBtnStop.classList.remove('recording'); micBtnStop.textContent = '🎤'; micBtnStop.title = 'ضبط صوت'; }
+    const hintStop = document.getElementById('interimText');
+    if (hintStop) hintStop.style.display = 'none';
     if (recognition) { try { recognition.stop(); } catch(e) {} }
     // 🔧 v198: ابزارهای ماندگاری — آزادسازی
     releaseRecordingWakeLock();
@@ -10864,11 +10933,10 @@ function startAdding(prefilledDeadline, prefilledText) {
     if (saveBtn) saveBtn.textContent = isEditing ? 'ثبت ویرایش' : 'ذخیره';
 
     // When editing: go directly to form section with pre-filled text (NO auto-recording)
-    // The user can manually click "ضبط دوباره" if they want to re-record
+    // The user can manually click the 🎤 mic button if they want to re-record
     if (isEditing) {
-        document.getElementById('recordingSection').style.display = 'none';
         document.getElementById('formSection').style.display = 'block';
-        // 🔧 نمایش دکمه‌های «ضبط دوباره» و «ذخیره» در حالت ویرایش
+        // 🔧 نمایش دکمه‌های میکروفون 🎤 و «ذخیره» در حالت ویرایش
         // (بدون این خط، فقط دکمهٔ «انصراف» دیده می‌شد)
         document.getElementById('reRecordBtn').style.display = '';
         document.getElementById('saveBtn').style.display = '';
@@ -10886,10 +10954,9 @@ function startAdding(prefilledDeadline, prefilledText) {
 
     // Normal flow (new task): check if speech is supported & viable
     if (!isSpeechSupported()) {
-        // Direct manual mode
-        document.getElementById('recordingSection').style.display = 'none';
+        // Direct manual mode — فرم مستقیم، بدون صفحهٔ واسط ضبط
         document.getElementById('formSection').style.display = 'block';
-        // 🔧 نمایش دکمهٔ «ذخیره» (و پنهان کردن «ضبط دوباره» چون ضبط پشتیبانی نمی‌شود)
+        // 🔧 نمایش دکمهٔ «ذخیره» (و پنهان کردن میکروفون چون ضبط پشتیبانی نمی‌شود)
         document.getElementById('reRecordBtn').style.display = 'none';
         document.getElementById('saveBtn').style.display = '';
         if (!prefilledDeadline) setQuickDeadline(1);
@@ -10903,9 +10970,8 @@ function startAdding(prefilledDeadline, prefilledText) {
     // میک اصلی) — اگر مرورگر آنلاین بگوید، ضبط خودکار شروع می‌شود حتی اگر
     // هدر چشمک بزند. اگر واقعاً آفلاین باشد، فرم تایپ نمایش داده می‌شود.
     if (!navigator.onLine) {
-        document.getElementById('recordingSection').style.display = 'none';
         document.getElementById('formSection').style.display = 'block';
-        // 🔧 نمایش همهٔ دکمه‌ها در حالت آفلاین
+        // 🔧 نمایش همهٔ دکمه‌ها در حالت آفلاین (میکروفون هم دیده شود — شاید آنلاین شد)
         document.getElementById('reRecordBtn').style.display = '';
         document.getElementById('saveBtn').style.display = '';
         if (!prefilledDeadline) setQuickDeadline(1);
@@ -10920,8 +10986,28 @@ function startAdding(prefilledDeadline, prefilledText) {
             : 'ضبط صوت روی فایل محلی ممکن است کار نکند. می‌توانید متن را تایپ کنید یا ضبط را امتحان کنید.');
         return;
     }
-    // small delay for modal to appear
+    // 🔧 v236: مستقیم به فرم برو (نه صفحهٔ واسط ضبط) و دکمه‌های میکروفون و
+    // ذخیره را نمایش بده. سپس ضبط inline داخل همان فرم شروع می‌شود —
+    // کاربر فوراً textarea، سررسید، و آیکون میکروفون را می‌بیند و کلمات
+    // لحظه‌ای در textarea و hint زیر آن ظاهر می‌شوند.
+    document.getElementById('formSection').style.display = 'block';
+    document.getElementById('reRecordBtn').style.display = '';
+    document.getElementById('saveBtn').style.display = '';
+    if (!prefilledDeadline) setQuickDeadline(1);
+    else updateDeadlineDisplay(prefilledDeadline);
+    // small delay for modal to appear, then start inline recording
     setTimeout(startRecording, 250);
+}
+
+// 🔧 v236: toggle ضبط — دکمهٔ میکروفون 🎤 این تابع را صدا می‌زند. اگر در حال
+// ضبط است، متوقف می‌کند؛ اگر نه، شروع می‌کند. این جایگزین «ضبط دوباره» شد.
+function toggleRecording() {
+    if (isRecording) {
+        stopRecording();
+    } else {
+        // اگر متن قبلی هست، قبل از ضبط جدید پاکش کن (مانند رفتار قدیم startRecording)
+        startRecording();
+    }
 }
 
 // Edit an existing task: opens the new-task modal pre-filled with the task's data.
@@ -11054,33 +11140,35 @@ function addTaskForSelectedDay() {
 }
 
 function showManualMode(message) {
-    document.getElementById('recordingSection').style.display = 'block';
-    document.getElementById('formSection').style.display = 'none';
+    // 🔧 v236: recordingSection حذف شد. به‌جای صفحهٔ واسط با دو دکمه، مستقیم
+    // به فرم می‌رویم؛ هشدار به‌صورت toast نمایش داده می‌شود و کاربر می‌تواند
+    // با دکمهٔ میکروفون 🎤 ضبط را امتحان کند یا متن را تایپ کند.
+    document.getElementById('formSection').style.display = 'block';
     document.getElementById('modalTitle').textContent = 'یادآور جدید';
-    // 🔧 پنهان کردن دکمه‌های «ضبط دوباره» و «ذخیره» در حالت manual mode
-    document.getElementById('reRecordBtn').style.display = 'none';
-    document.getElementById('saveBtn').style.display = 'none';
-    const recSection = document.getElementById('recordingSection');
-    recSection.innerHTML = `
-        <div style="color:#666;font-size:13px;padding:8px 4px 18px;line-height:1.7;text-align:right;">${message}</div>
-        <div class="recording-buttons" style="flex-direction:column;gap:8px;">
-            <button class="btn btn-primary" onclick="startRecording()">شروع ضبط صوت</button>
-            <button class="btn btn-secondary" onclick="showFormSection()">تایپ دستی متن</button>
-        </div>
-    `;
+    document.getElementById('reRecordBtn').style.display = '';
+    document.getElementById('saveBtn').style.display = '';
+    const hintWarn = document.getElementById('interimText');
+    if (hintWarn) { hintWarn.style.display = ''; hintWarn.textContent = message; }
+    if (!document.getElementById('itemDeadline').value) setQuickDeadline(1);
+    showToast(message);
+    setTimeout(() => document.getElementById('itemText').focus(), 100);
 }
 
 function showFormSection(forceFocus) {
-    document.getElementById('recordingSection').style.display = 'none';
+    // 🔧 v236: recordingSection حذف شد — فرم همیشه نمایش داده می‌شود. اگر
+    // هنوز در حال ضبط بودیم، آیکون میکروفون و hint به حالت آماده بازگردانده شوند.
     document.getElementById('formSection').style.display = 'block';
     // 🔧 حفظ عنوان و متن دکمهٔ ذخیره در حالت ویرایش
     const isEditing = !!editTaskId;
     document.getElementById('modalTitle').textContent = isEditing ? 'ویرایش یادآور' : 'یادآور جدید';
     const saveBtn = document.getElementById('saveBtn');
     if (saveBtn) saveBtn.textContent = isEditing ? 'ثبت ویرایش' : 'ذخیره';
-    // 🔧 نمایش دکمه‌های «ضبط دوباره» و «ذخیره» (در حالت فرم)
-    document.getElementById('reRecordBtn').style.display = '';
+    // 🔧 نمایش دکمهٔ میکروفون 🎤 و «ذخیره» (در حالت فرم)
+    const micBtnForm = document.getElementById('reRecordBtn');
+    if (micBtnForm) { micBtnForm.classList.remove('recording'); micBtnForm.textContent = '🎤'; micBtnForm.title = 'ضبط صوت'; micBtnForm.style.display = ''; }
     document.getElementById('saveBtn').style.display = '';
+    const hintForm = document.getElementById('interimText');
+    if (hintForm) hintForm.style.display = 'none';
     // Only set default deadline if not already set (e.g., when coming from calendar)
     if (!document.getElementById('itemDeadline').value) {
         setQuickDeadline(1);
@@ -11096,11 +11184,34 @@ function showFormSection(forceFocus) {
 
 function cancelModal() {
     if (isRecording) {
+        // 🔧 v236: رفع leak — قبلاً فقط recognition.stop و کلاس recording
+        // پاک می‌شد ولی silent-audio loop، worker، WakeLock، MediaSession و
+        // keepalive interval روشن می‌ماندند. اکنون همه را آزاد می‌کنیم.
         isRecording = false;
         document.getElementById('addBtn').classList.remove('recording');
         const fabCancel = document.getElementById('floatingAddBtn');
         if (fabCancel) fabCancel.classList.remove('recording');
+        const micCancel = document.getElementById('reRecordBtn');
+        if (micCancel) { micCancel.classList.remove('recording'); micCancel.textContent = '🎤'; micCancel.title = 'ضبط صوت'; }
+        const hintCancel = document.getElementById('interimText');
+        if (hintCancel) hintCancel.style.display = 'none';
         if (recognition) { try { recognition.stop(); } catch(e) {} }
+        try { releaseRecordingWakeLock(); } catch(e) {}
+        try { clearRecordingMediaSession(); } catch(e) {}
+        try { stopSilentAudioLoop(); } catch(e) {}
+        try { stopRecordingWorker(); } catch(e) {}
+        try {
+            if (_bgMediaRecorder) {
+                _bgMediaRecorder.stop();
+                if (_bgAudioStream) _bgAudioStream.getTracks().forEach(function(t) { t.stop(); });
+                _bgMediaRecorder = null; _bgAudioStream = null;
+                _bgAudioChunks = []; _bgAudioStartTime = null;
+            }
+        } catch(e) {}
+        if (_recordingKeepaliveInterval) {
+            clearInterval(_recordingKeepaliveInterval);
+            _recordingKeepaliveInterval = null;
+        }
     }
     closeModalByType('taskForm');
     unlockBodyScroll();
@@ -14289,6 +14400,13 @@ function closeBellSettings() {
 
 // 🔧 v148: پخش ۵ بوق کوتاه
 function playShortBeeps() {
+    // 🔧 v236: هنگام ضبط صوت (مودال باز)، بوق نزن — کاربر «بوق‌های متوالی»
+    // را در حالی که داشت تسک ضبط می‌کرد می‌شنید و گمان می‌کرد بوقِ صفحهٔ ضبط
+    // است. در واقع این بوقِ اعلان‌هاست. تا مودال ضبط باز است، آن را ساکت کن.
+    if (typeof isRecording !== 'undefined' && isRecording) {
+        console.log('[NotifSound] Suppressed during recording');
+        return;
+    }
     var ctx = getNotifAudioContext();
     if (!ctx) return;
     try {
@@ -21698,6 +21816,11 @@ function playBellNote(ctx, freq, startTime, duration, gainVal) {
 
 // پخش صدای کامل اعلان: ۳ نت × ۳ بار تکرار = ~۸ ثانیه
 function playNotificationSound() {
+    // 🔧 v236: هنگام ضبط صوت، صدای اعلان پخش نشود — مزاحم ضبط است.
+    if (typeof isRecording !== 'undefined' && isRecording) {
+        console.log('[NotifSound] Bell suppressed during recording');
+        return;
+    }
     const ctx = getNotifAudioContext();
     if (!ctx) return;
     try {
