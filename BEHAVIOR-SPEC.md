@@ -11,11 +11,11 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v236 — ۱۴۰۵ آبان ۲۶ (بازطراحی UI ضبط تسک: حذف صفحهٔ واسط،
-#                   دکمهٔ میکروفون inline + ساکت‌سازی بوق‌های اعلان هنگام ضبط)
-#  نسخهٔ فعلی کد:  APP_VERSION = v236-2026-11-14-inline-rec
-#                  CACHE_NAME  = yadavar-cache-v236
-#                  version.txt = v236-2026-11-14-inline-rec
+#  آخرین به‌روزرسانی: v237 — ۱۴۰۵ آبان ۲۶ (ضبط تسک عین حسابداری: حذف پنج
+#                   مکانیزم رقابتی restart که منشأ «قطع و وصل + بوق‌های متوالی» بودند)
+#  نسخهٔ فعلی کد:  APP_VERSION = v237-2026-11-14-rec-like-acc
+#                  CACHE_NAME  = yadavar-cache-v237
+#                  version.txt = v237-2026-11-14-rec-like-acc
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -1080,6 +1080,35 @@
 #          بدون leftover.
 #          نسخهٔ سه‌گانه: APP_VERSION / version.txt =
 #          v236-2026-11-14-inline-rec؛ CACHE_NAME = yadavar-cache-v236.
+#   BA-139 (v237 — الزام کاربر؛ کپی کامل از حسابداری) «هنوز میکرفون در حال
+#          قطع و وصل با بوق های متوالی داریم. مکانیزم کاملا کپی از نوع ضبط
+#          تیتر سند حسابداری باشد». تحلیل نشان داد منشأ «بوق‌های متوالی» پنج
+#          مکانیزم رقابتی restart بود که در حسابداری وجود ندارد:
+#          ۱) handleRecordingVisibilityChange در هر toggle visibility یک
+#             getUserMedia({audio}) + track.stop می‌زد → میکروفون فیزیکی
+#             قطع/وصل → بوق سخت‌افزار اندروید (منشأ اصلی بوق‌ها).
+#          ۲) startRecordingWorker هر ۱s یک recognition.start تیراژ می‌زد.
+#          ۳) _recordingKeepaliveInterval هر ۱۰s recognition.start می‌زد.
+#          ۴) initRecognition.onend با retry cascade ۳۰۰ms + ۱۰۰۰ms.
+#          ۵) startSilentAudioLoop + acquireRecordingWakeLock +
+#             setRecordingMediaSession + MediaRecorder پس‌زمینه.
+#          راه‌حل: ضبط تسک اکنون عین حسابداری (accDocStartRec/accRecStartRec)
+#          است — یک restart ساده ۲۰۰ms داخل onend، بدون beep، بدون toast،
+#          بدون worker، بدون keepalive، بدون MediaSession/WakeLock/silentAudio،
+#          بدون MediaRecorder پس‌زمینه. visibilitychange اکنون فقط WakeLock را
+#          reacquire می‌کند (نه restart، نه getUserMedia). startRecording فقط
+#          recognition.start می‌زند؛ stopRecording فقط recognition.stop (مثل
+#          accDocStopRec). cancelModal هم فقط recognition.stop + commit متن.
+#          v236 (inline UI ضبط) و v235 (نمایش لحظه‌ای + تبدیل زندهٔ اعداد)
+#          دست‌نخورده ماند.
+#          بررسی‌ها (پروب مستقل ۷ بخش / ۲۵ سناریو): startRecording بدون
+#          machinery (A)، stopRecording بدون teardown (B)، visibilitychange
+#          بدون getUserMedia (C)، _bgMediaRecorder null می‌ماند (D)، onend
+#          با ۲۰۰ms (E)، ضبط هنوز کار می‌کند + toggle تمیز (F)، بوق‌ها ساکت (G).
+#          رگرسیون کامل ۱۱/۱۱ سوئیت سبز (۱۴۰+ تست). بازبینی بصری PDF: ۷
+#          صفحه، بدون leftover.
+#          نسخهٔ سه‌گانه: APP_VERSION / version.txt =
+#          v237-2026-11-14-rec-like-acc؛ CACHE_NAME = yadavar-cache-v237.
 #
 # ── ۴.۹) آفلاین و ماندگاری حافظه ──────────────────────────────────
 #   BA-080 همهٔ عملیات داده آفلاین کار کنند؛ فقط ضبط آنلاین است.
@@ -1380,6 +1409,40 @@
 #     «امروز» برخورد می‌کرد و سورت تساوی مبهم می‌شد)؛ ③ N6 انتظارش از
 #     دیتابیسِ همان سندِ درختِ باز محاسبه می‌شود (N4/N5 سندِ باز را عوض
 #     می‌کنند؛ جمع ردیف درخت «جمع همین سند» است — BA-105 الگوی درست).
+#
+### v237 (۱۴۰۵ آبان ۲۶) — ضبط تسک عین حسابداری: حذف پنج مکانیزم رقابتی restart که منشأ «قطع و وصل + بوق‌های متوالی» بودند
+#   کاربر: «هنوز میکرفون در حال قطع و وصل با بوق های متوالی داریم. مکانیزم
+#   کاملا کپی از نوع ضبط تیتر سند حسابداری باشد».
+#   تحلیل: «بوق‌های متوالی» در واقع بوق سخت‌افزار اندروید بود که از قطع/وصل
+#   فیزیکی میکروفون ناشی می‌شد. منشأ آن handleRecordingVisibilityChange بود
+#   که در هر toggle visibility یک getUserMedia({audio}) + track.stop می‌زد. علاوه
+#   بر آن، چهار مکانیزم restart رقابتی دیگر همزمان recognition.start می‌زدند:
+#   worker هر ۱s، keepalive هر ۱۰s، onend cascade ۳۰۰ms + ۱۰۰۰ms، و
+#   visibilitychange خودش. حسابداری (accDocStartRec/accRecStartRec) هیچ‌کدام
+#   را ندارد — فقط یک restart ساده ۲۰۰ms داخل onend.
+#   تغییرات (کپی کامل از حسابداری):
+#     ۱) startRecording: حذف acquireRecordingWakeLock + setRecordingMediaSession
+#        + startSilentAudioLoop + startRecordingWorker + _recordingKeepaliveInterval.
+#        اکنون فقط isRecording=true + کلاس‌ها + recognition.start (مثل accDocStartRec).
+#     ۲) stopRecording: حذف releaseRecordingWakeLock + clearRecordingMediaSession
+#        + stopSilentAudioLoop + stopRecordingWorker + _bgMediaRecorder teardown +
+#        keepalive clear. اکنون فقط recognition.stop + commit متن (مثل accDocStopRec).
+#     ۳) visibilitychange: دیگر handleRecordingVisibilityChange را صدا نمی‌زند —
+#        فقط WakeLock را reacquire می‌کند (نه restart، نه getUserMedia).
+#        handleRecordingVisibilityChange اکنون dead code است.
+#     ۴) initRecognition.onend: ساده‌سازی از cascade ۳۰۰ms + ۱۰۰۰ms retry +
+#        toast به یک restart ۲۰۰ms (عین accDocStartRec.onend) — بدون beep،
+#        بدون toast.
+#     ۵) cancelModal: ساده‌سازی به recognition.stop + commit (مثل accDocStopRec).
+#   v236 (inline UI ضبط: دکمهٔ میکروفون 🎤، hint داخل فرم) و v235 (نمایش
+#   لحظه‌ای + تبدیل زندهٔ اعداد) دست‌نخورده ماند.
+#   پروب مستقل ۷ بخش / ۲۵ سناریو سبز: startRecording بدون machinery (A)，
+#   stopRecording بدون teardown (B)，visibilitychange بدون getUserMedia (C)，
+#   _bgMediaRecorder null می‌ماند (D)，onend با ۲۰۰ms (E)，ضبط هنوز کار می‌کند
+#   + toggle تمیز (F)，بوق‌ها ساکت (G). رگرسیون کامل ۱۱/۱۱ سوئیت سبز
+#   (۱۴۰+ تست). بازبینی بصری PDF: ۷ صفحه، بدون leftover.
+#   فایل‌های نسخه: APP_VERSION / version.txt → v237-2026-11-14-rec-like-acc؛
+#   CACHE_NAME → yadavar-cache-v237.
 #
 ### v236 (۱۴۰۵ آبان ۲۶) — بازطراحی UI ضبط تسک: حذف صفحهٔ واسط، دکمهٔ میکروفون inline + ساکت‌سازی بوق‌های اعلان
 #   کاربر: «به جای کلید ضبط دوباره همان میکروفون را بگذار وقتی کلیک میشود
