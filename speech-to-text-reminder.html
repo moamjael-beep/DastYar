@@ -7005,7 +7005,7 @@ body.locked .header-actions button {
 //               ~۷۵۰MB-۱.۵GB) — فقط با WebGPU توصیه می‌شود.
 //            dtype: WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده).
 //            تست: test_offline_stt_v222.mjs — ۱۴ تست Y1-Y14، پورت ۸۲۰۲.
-const APP_VERSION = 'v226-2026-11-12-remove-wasm-manual-files';
+const APP_VERSION = 'v227-2026-11-13-ready-key-immediate-no-sizes';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -9986,10 +9986,10 @@ window.OfflineSTT = (function() {
     var CDN = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/transformers.min.js';
     // 🔧 v226: WASM حذف شد — فقط WebGPU. مدل‌ها فقط با WebGPU کار می‌کنند.
     var MODELS = {
-        'onnx-community/whisper-tiny':  { label: 'سریع (tiny, ~۴۳MB)',        mb: 43  },
-        'onnx-community/whisper-base':  { label: 'متعادل (base, ~۸۰MB)',      mb: 80  },
-        'onnx-community/whisper-small': { label: 'دقیق (small, ~۲۵۰MB)',      mb: 250 },
-        'onnx-community/whisper-large-v3-turbo': { label: 'حرفه‌ای (large-v3-turbo, ~۱.۵GB)', mb: 1500 }
+        'onnx-community/whisper-tiny':  { label: 'سریع (tiny)' },
+        'onnx-community/whisper-base':  { label: 'متعادل (base)' },
+        'onnx-community/whisper-small': { label: 'دقیق (small)' },
+        'onnx-community/whisper-large-v3-turbo': { label: 'حرفه‌ای (large-v3-turbo)' }
     };
     // 🔧 v226: فایل‌های مورد نیاز هر مدل — برای نمایش لینک‌های دانلود به کاربر.
     // کاربر این فایل‌ها را دستی از هوفینگ‌فیس دانلود می‌کند و با دکمهٔ «انتخاب فایل‌ها»
@@ -10435,9 +10435,9 @@ window.OfflineSTT = (function() {
         var linksEl = panel.querySelector('#ostt-links');
         if (linksEl) {
             var html = '<div style="font-weight:bold;margin-bottom:4px;">دانلود فایل‌های مدل از این آدرس‌ها:</div>';
-            html += '<div style="margin-bottom:4px;"><a href="https://huggingface.co/' + model + '/tree/main" target="_blank" style="color:#1a73e8;">📋 صفحهٔ فایل‌ها (همه فایل‌ها)</a></div>';
+            html += '<div style="margin-bottom:4px;"><a href="https://huggingface.co/' + model + '/tree/main" target="_blank" style="color:#1a73e8;">📋 صفحهٔ فایل‌ها</a></div>';
             html += '<div style="margin-bottom:4px;"><a href="https://huggingface.co/' + model + '/tree/main/onnx" target="_blank" style="color:#1a73e8;">📁 پوشهٔ onnx (model_fp16.onnx)</a></div>';
-            html += '<div style="font-size:11px;color:#888;">همه فایل‌های config.json, tokenizer.json, preprocessor_config.json, ... و onnx/model_fp16.onnx را دانلود کنید.</div>';
+            html += '<div style="font-size:11px;color:#888;">همه فایل‌ها را از لینک‌های بالا دانلود کنید، سپس با دکمهٔ «انتخاب فایل‌های مدل» به برنامه بدهید.</div>';
             linksEl.innerHTML = html;
         }
         // وضعیت آماده‌بودن
@@ -10456,8 +10456,8 @@ window.OfflineSTT = (function() {
     }
 
     // 🔧 v226: انتخاب فایل‌های مدل توسط کاربر — ذخیره در Cache Storage.
-    // کاربر فایل‌ها را از هوفینگ‌فیس دانلود کرده، سپس با file picker انتخاب می‌کند.
-    // فایل‌ها در Cache Storage با URL متناظر ذخیره می‌شوند تا Worker آنها را پیدا کند.
+    // 🔧 v227: READY_KEY بلافاصله پس از ذخیره فایل‌ها تنظیم می‌شود — نیازی به
+    // موفقیت loadModel نیست. مدل در اولین ضبط به‌صورت تنبل بارگذاری می‌شود.
     async function selectModelFiles(ev) {
         var files = ev.target.files;
         if (!files || files.length === 0) return;
@@ -10470,30 +10470,28 @@ window.OfflineSTT = (function() {
             for (var i = 0; i < files.length; i++) {
                 var file = files[i];
                 var filename = file.name;
-                // فایل‌های ONNX در onnx/ زیرپوشه هستند
                 var filepath = filename.endsWith('.onnx') ? ('onnx/' + filename) : filename;
                 var url = 'https://huggingface.co/' + model + '/resolve/main/' + filepath;
                 var response = new Response(file);
                 await cache.put(url, response);
                 stored++;
             }
-            // مدل را آماده ثبت کن و سعی کن بارگذاری شود
+            // 🔧 v227: READY_KEY را بلافاصله تنظیم کن — فایل‌ها ذخیره شده‌اند.
+            // مدل در اولین ضبط به‌صورت تنبل بارگذاری می‌شود (ensure در Worker).
+            try { localStorage.setItem(READY_KEY, readyKey()); } catch(e) {}
+            setEngine('offline');
+            showToast(stored + ' فایل ذخیره شد ✓ — مدل آماده است');
+            refreshPanel();
+            // تلاش برای پیش‌بارگذاری مدل (اختیاری — برای سرعت بیشتر در اولین ضبط)
             loadModel().then(function() {
-                try { localStorage.setItem(READY_KEY, readyKey()); } catch(e) {}
-                setEngine('offline');
-                showToast(stored + ' فایل ذخیره شد ✓ — مدل آماده است');
-                refreshPanel();
+                console.log('[OfflineSTT] model pre-loaded successfully');
             }).catch(function(err) {
-                console.error('[OfflineSTT] load after file select failed:', err);
-                var msg = (err && err.message) ? err.message : 'نامشخص';
-                showToast('فایل‌ها ذخیره شدند ولی بارگذاری مدل خطا داد: ' + msg + ' — ممکن است فایلی کم باشد');
-                if (statusEl) statusEl.innerHTML = '⚠ خطا در بارگذاری: ' + msg + ' — همه فایل‌ها را دانلود کرده‌اید؟';
+                console.warn('[OfflineSTT] pre-load failed (will retry on first recording):', err);
             });
         } catch(err) {
             console.error('[OfflineSTT] selectModelFiles failed:', err);
             showToast('خطا در ذخیره فایل‌ها: ' + ((err && err.message) || 'نامشخص'));
         }
-        // reset input تا همان فایل دوباره قابل انتخاب باشد
         ev.target.value = '';
     }
 
