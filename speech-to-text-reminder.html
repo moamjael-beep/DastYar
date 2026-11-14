@@ -7003,6 +7003,19 @@ body.locked .header-actions button {
 //               ~۷۵۰MB-۱.۵GB) — فقط با WebGPU توصیه می‌شود.
 //            dtype: WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده).
 //            تست: test_offline_stt_v222.mjs — ۱۴ تست Y1-Y14، پورت ۸۲۰۲.
+//         🔧 v234 (۱۴۰۵ آبان ۲۶) — الزام کاربر: «مکانیزم باز بودن میکرفون تا
+//               قطع و یادداشت کلمات تشخیص داده شده در لحظه در بخش تیتر اسناد
+//               حسابداری که بسیار مورد قبول من است را برای تمام بخش یادداشت‌ها
+//               بکار بگیر». مکانیزم تیتر حسابداری هر عبارت نهایی را به‌محض رسیدن
+//               زنده در فیلد می‌نویسد و onend با ۲۰۰ms سیکل را ری‌استارت می‌کند
+//               (میکروفون تا قطع باز). یادداشت‌ها از v180 روی بازماندن میکروفون
+//               هم‌تراز بودند اما عبارات را بافر می‌کردند و تنها هنگام توقف
+//               می‌نوشتند — نمایشی در حین ضبط نبود. راه‌حل: مفهوم «لنگر» —
+//               _notesComputeLiveAnchor در شروع ضبط لنگر را محاسبه می‌کند
+//               (cursor/dateEnd/dateNew) و _notesAppendLivePhrase هر عبارت نهایی
+//               را زنده در محل لنگر می‌نویسد + localStorage را هم‌زمان persist
+//               می‌کند. توقف فقط persist نهایی + ریست لنگر است. تست‌های G15-G16
+//               سبز + رگرسیون G11-G14 (BA-135) سبز.
 //         🔧 v233 (۱۴۰۵ آبان ۲۶) — الزام کاربر: «مکانیزم اضافه کردن خطوط جدید
 //               در کل یادداشت‌ها بهم خورده. باید هر خط جدید که ضبط صدا میشود
 //               اگر در تاریخ امروز یادداشتی از قبل داشتیم زیر آخرین خط امروز
@@ -7134,7 +7147,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v233-2026-11-14-notes-order';
+const APP_VERSION = 'v234-2026-11-14-notes-live';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20532,6 +20545,123 @@ let _notesAddedIndices = new Set();  // 🔧 ایندکس‌های پردازش�
 let _notesSavedRange = null;        // 🔧 آخرین موقعیت کرسر در محتوا (به‌طور پیوسته به‌روز می‌شود)
 let _notesInsertionRange = null;    // 🔧 موقعیت کرسر در شروع ضبط (فریز شده — برای درج در پایان ضبط)
 
+// 🔧 v234: نمایش زندهٔ کلمات در حین ضبط (مانند تیتر اسناد حسابداری)
+// هر عبارت نهایی به‌محض رسیدن، در محل «لنگر» به محتوا اضافه می‌شود — کاربر
+// می‌بیند چه شنیده می‌شود، بی‌آنکه تا پایان ضبط صبر کند.
+//
+// لنگر در شروع هر ضبط یک‌بار محاسبه می‌شود و در طول همان ضبط ثابت می‌ماند:
+//   - انتخاب واقعی کاربر (کلیک وسط یک خط قدیمی): لنگر همان محل کرسر است
+//     (ویرایش درون‌خطی، ترتیب زیرهم).
+//   - وگرنه اگر امروز یادداشت دارد: لنگر انتهای بلوک امروز (زیر آخرین خط
+//     امروز) — مطابق الزام BA-135.
+//   - وگرنه (روز جدید): بلوک تاریخ امروز در بالا ساخته می‌شود و لنگر بعد
+//     از آن قرار می‌گیرد.
+let _notesLiveMode = 'dateEnd';     // 'dateEnd' | 'cursor' | 'dateNew' — حالت لنگر فعلی
+let _notesLiveCursorRange = null;   // در حالت 'cursor': کرسر فریز‌شده برای درج در همان نقطه
+let _notesLiveAnchorBefore = null;  // گره‌ای که متن زنده قبل از آن اضافه می‌شود (null = انتهای محتوا)
+let _notesLiveFirstPhrase = true;   // اولین عبارت این ضبط؟ (برای درج <br> جداکنندهٔ اول)
+
+// 🔧 v234: محاسبهٔ لنگر در شروع ضبط — یک‌بار اجرا می‌شود و _notesLiveMode
+// و گره‌های لازم را تنظیم می‌کند. _notesAccumulatedText همچنان برای سازگاری
+// با منطق قدیمی به‌روز می‌شود (در توقف فقط persist می‌کنیم، نه درج دوباره).
+function _notesComputeLiveAnchor() {
+    var content = document.getElementById('notesContent');
+    if (!content) { _notesLiveMode = 'dateEnd'; _notesLiveAnchorBefore = null; return; }
+    var todayDate = toPersianDigits(toJalaliDateOnly(new Date()));
+    // 🔧 حالت cursor: کاربر انتخاب واقعی در وسط یک خط گذشته داشته (v233 touch).
+    // اگر _notesInsertionRange معتبر است و در وسط محتواست (نه انتها)، لنگر همان نقطه.
+    if (_notesInsertionRange &&
+        content.contains(_notesInsertionRange.commonAncestorContainer) &&
+        !_isRangeAtContentEnd(_notesInsertionRange, content)) {
+        _notesLiveMode = 'cursor';
+        _notesLiveCursorRange = _notesInsertionRange.cloneRange();
+        _notesLiveAnchorBefore = null;  // در حالت cursor از range استفاده می‌کنیم
+        _notesLiveFirstPhrase = false;  // درج در وسط خط: <br> جداکنندهٔ اول لازم نیست
+        return;
+    }
+    var dateSpans = content.querySelectorAll('.notes-date');
+    var firstDateSpan = dateSpans.length > 0 ? dateSpans[0] : null;
+    var sameDay = firstDateSpan && firstDateSpan.textContent.trim() === todayDate;
+    if (sameDay) {
+        // 🔧 بلوک امروز وجود دارد — لنگر = انتهای بلوک امروز (قبل از تاریخ روز بعدی).
+        // اگر تاریخ روز بعدی هست، قبل از آن درج می‌کنیم (anchorBefore = dateSpans[1]).
+        // وگرنه در انتهای محتوا اضافه می‌شود.
+        _notesLiveMode = 'dateEnd';
+        _notesLiveAnchorBefore = (dateSpans.length > 1) ? dateSpans[1] : null;
+        _notesLiveFirstPhrase = true;  // اولین عبارت: نیاز به <br> جداکننده با خط قبلی
+    } else {
+        // 🔧 روز جدید — بلوک تاریخ امروز را در بالا بساز و لنگر را بعد از آن قرار بده.
+        var dateSpan = document.createElement('span');
+        dateSpan.className = 'notes-date';
+        dateSpan.textContent = todayDate;
+        var br1 = document.createElement('br');
+        // یک <br> هم بعد از متن زنده می‌خواهیم (تا روز قبلی از متن زندهٔ امروز جدا بماند)
+        var br2 = document.createElement('br');
+        if (content.firstChild) {
+            content.insertBefore(br2, content.firstChild);
+            content.insertBefore(br1, br2);
+            content.insertBefore(dateSpan, br1);
+        } else {
+            content.appendChild(dateSpan);
+            content.appendChild(br1);
+            content.appendChild(br2);  // آخرین عنصر — متن زنده قبل از این اضافه می‌شود
+        }
+        // لنگر: متن زنده قبل از br2 اضافه می‌شود (br2 = جداکنندهٔ پایانی بلوک امروز)
+        _notesLiveMode = 'dateNew';
+        _notesLiveAnchorBefore = br2;
+        _notesLiveFirstPhrase = true;
+    }
+}
+
+// 🔧 v234: افزودن یک عبارت نهایی به‌صورت زنده در محل لنگر.
+// مراقب جداکنندهٔ <br> اول هستیم: اولین عبارت پس از آخرین خط بلوک، یک <br>
+// می‌خواهد تا روی خط جدید بیفتد. عبارت‌های بعدی همان‌طور به خط می‌چسبند.
+function _notesAppendLivePhrase(rawText) {
+    var content = document.getElementById('notesContent');
+    if (!content) return;
+    var text = addNumericAfterWords(rawText);
+    if (_notesLiveMode === 'cursor' && _notesLiveCursorRange) {
+        // 🔧 درج در محل کرسر (ویرایش درون‌خطی) — مثل _insertTextAtCursor اما
+        // برای چندین عبارت پشت‌سرهم: هر عبارت را در انتهای محدودهٔ زنده اضافه
+        // می‌کنیم و محدوده را بعد از آن گسترش می‌دهیم.
+        var textNode = document.createTextNode(text + ' ');
+        var br = document.createElement('br');
+        _notesLiveCursorRange.insertNode(textNode);
+        if (textNode.nextSibling) {
+            textNode.parentNode.insertBefore(br, textNode.nextSibling);
+        } else {
+            textNode.parentNode.appendChild(br);
+        }
+        // گسترش محدودهٔ زنده به بعد از <br> تازه (عبارت بعدی زیر این درج)
+        _notesLiveCursorRange = document.createRange();
+        _notesLiveCursorRange.setStartAfter(br);
+        _notesLiveCursorRange.collapse(true);
+        return;
+    }
+    // حالت‌های dateEnd / dateNew — اضافه‌کردن در انتهای بلوک امروز
+    if (_notesLiveFirstPhrase) {
+        // اولین عبارت: یک <br> جداکنندهٔ ابتدایی اضافه کن تا روی خط جدید بیفتد
+        var sepBr = document.createElement('br');
+        if (_notesLiveAnchorBefore) {
+            content.insertBefore(sepBr, _notesLiveAnchorBefore);
+        } else {
+            // انتهای محتوا — اگر آخرین عنصر <br> نیست، جداکننده اضافه کن
+            var lastChild = content.lastChild;
+            if (!lastChild || lastChild.nodeName !== 'BR') {
+                content.appendChild(sepBr);
+            }
+        }
+        _notesLiveFirstPhrase = false;
+    }
+    var node = document.createTextNode(text + ' ');
+    if (_notesLiveAnchorBefore) {
+        content.insertBefore(node, _notesLiveAnchorBefore);
+    } else {
+        content.appendChild(node);
+    }
+}
+
+
 // 🔧 تابع کمکی: آیا کرسر در انتهای محتواست؟
 // اگر کرسر در انتها باشد، از منطق تاریخ استفاده می‌کنیم (رفتار قبلی).
 // اگر کرسر در وسط باشد، متن را در محل کرسر درج می‌کنیم (رفتار جدید v180).
@@ -20607,84 +20737,25 @@ function toggleNotesRecording() {
         if (_notesRecognition) {
             try { _notesRecognition.stop(); } catch(e) {}
         }
-        // 🔧 اگر متنی جمع‌آوری شده، آن را طبق قوانین زیر بنویس:
-        //   - اولین ضبط هر روز: خط تاریخ (بدون ساعت) → خط بعد متن
-        //   - ضبط‌های بعدی همان روز: فقط متن (خط به خط اضافه شود)
-        //   - اعداد فارسی گفتاری به دیجیت تبدیل می‌شوند (مثل تسک‌ها)
-        //   - جدیدترین روز همیشه در بالای صفحه، روزهای قبل به پایین شیفت می‌شوند
-        //   🔧 v180: اگر کرسر در وسط محتواست (کاربر روی یک خط گذشته کلیک کرده)،
-        //   متن در محل کرسر درج می‌شود (نه در بالا با منطق تاریخ). ضبط‌های بعدی،
-        //   زیر درج قبلی قرار می‌گیرند (ترتیب زیر هم).
-        if (_notesAccumulatedText.trim()) {
-            // 🔧 تبدیل اعداد فارسی گفتاری به دیجیت (مانند تسک‌ها)
-            var text = addNumericAfterWords(_notesAccumulatedText.trim());
-            var todayDate = toPersianDigits(toJalaliDateOnly(new Date()));
-            var content = document.getElementById('notesContent');
-            var notesBody = document.querySelector('.notes-body');
-            // 🔧 v180: ذخیره اسکرول قبل از تغییر محتوا — برای بازگردانی بعد از درج
-            var savedScroll = notesBody ? notesBody.scrollTop : 0;
-
-            // 🔧 v180: اگر کرسر در وسط محتواست، متن را در محل کرسر درج کن (بدون منطق تاریخ)
-            var insertedAtCursor = false;
-            if (_notesInsertionRange &&
-                content.contains(_notesInsertionRange.commonAncestorContainer) &&
-                !_isRangeAtContentEnd(_notesInsertionRange, content)) {
-                _insertTextAtCursor(content, text, _notesInsertionRange);
-                insertedAtCursor = true;
-            }
-
-            if (!insertedAtCursor) {
-                // منطق تاریخ (رفتار قبلی) — وقتی کرسر در انتهاست یا محتوا خالی است
-                // بررسی: آیا اولین تاریخ موجود با امروز یکی است؟
-                var dateSpans = content.querySelectorAll('.notes-date');
-                var firstDateSpan = dateSpans.length > 0 ? dateSpans[0] : null;
-                var sameDay = firstDateSpan && firstDateSpan.textContent.trim() === todayDate;
-
-                if (sameDay) {
-                    // همان روز — متن را در خط جدید اضافه کن
-                    var insertBefore = (dateSpans.length > 1) ? dateSpans[1] : null;
-                    var textNode = document.createTextNode(text);
-                    if (insertBefore) {
-                        // قبل از تاریخ روز بعدی: <br> + متن + <br> قبل از تاریخ درج کن
-                        var br = document.createElement('br');
-                        content.insertBefore(br, insertBefore);
-                        content.insertBefore(textNode, br);
-                    } else {
-                        // انتهای محتوا: اگر آخرین عنصر <br> نیست، یک <br> اضافه کن
-                        var lastChild = content.lastChild;
-                        if (!lastChild || lastChild.nodeName !== 'BR') {
-                            content.appendChild(document.createElement('br'));
-                        }
-                        content.appendChild(textNode);
-                    }
-                } else {
-                    // روز جدید — تاریخ در خط اول، متن در خط بعد
-                    var dateSpan = document.createElement('span');
-                    dateSpan.className = 'notes-date';
-                    dateSpan.textContent = todayDate;
-                    var br1 = document.createElement('br');
-                    var textNode = document.createTextNode(text);
-                    var br2 = document.createElement('br');
-                    if (content.firstChild) {
-                        content.insertBefore(br2, content.firstChild);
-                        content.insertBefore(textNode, br2);
-                        content.insertBefore(br1, textNode);
-                        content.insertBefore(dateSpan, br1);
-                    } else {
-                        content.appendChild(dateSpan);
-                        content.appendChild(br1);
-                        content.appendChild(textNode);
-                    }
-                }
-            }
-
+        // 🔧 v234: متن در حین ضبط به‌صورت زنده در محتوا نوشته شده (مثل تیتر
+        // اسناد حسابداری). در اینجا فقط کارهای پایانی را انجام می‌دهیم:
+        // persist نهایی، ریست لنگر، بازگردانی اسکرول، و Toast.
+        var content = document.getElementById('notesContent');
+        var notesBody = document.querySelector('.notes-body');
+        var savedScroll = notesBody ? notesBody.scrollTop : 0;
+        if (_notesAccumulatedText.trim() && content) {
+            // 🔧 persist نهایی — متن از قبل در DOM است، فقط localStorage را هم‌گام کن.
             localStorage.setItem(getNotesKey(_notesTargetGroup), content.innerHTML);
-            _notesAccumulatedText = '';
             showToast('یادداشت ثبت شد ✓');
-
-            // 🔧 v180: بازگردانی اسکرول به محل قبلی — صفحه نپرد، میکروفون همان‌جا بماند
-            if (notesBody) notesBody.scrollTop = savedScroll;
         }
+        // 🔧 ریست حالت لنگر برای ضبط بعدی
+        _notesAccumulatedText = '';
+        _notesLiveMode = 'dateEnd';
+        _notesLiveAnchorBefore = null;
+        _notesLiveCursorRange = null;
+        _notesLiveFirstPhrase = true;
+        // 🔧 بازگردانی اسکرول به محل قبلی — صفحه نپرد، میکروفون همان‌جا بماند
+        if (notesBody) notesBody.scrollTop = savedScroll;
         return;
     }
     // شروع ضبط
@@ -20709,10 +20780,13 @@ function toggleNotesRecording() {
     // 🔧 ریست متن جمع‌آوری‌شده و ایندکس‌ها
     _notesAccumulatedText = '';
     _notesAddedIndices = new Set();
+    // 🔧 v234: محاسبهٔ لنگر برای نمایش زنده (قبل از شروع سیکل تشخیص صوت).
+    // اگر روز جدید است، بلوک تاریخ اینجا ساخته می‌شود و لنگر بعد از آن.
+    _notesComputeLiveAnchor();
     _notesStartRecognitionCycle();
     _notesRecording = true;
     document.getElementById('notesMicBtn').classList.add('recording');
-    showToast('ضبط شروع شد — صحبت کنید (برای پایان دوباره میکروفون را بزنید)');
+    showToast('ضبط شروع شد — صحبت کنید (کلمات لحظه‌ای نمایش داده می‌شوند، برای پایان دوباره میکروفون را بزنید)');
 }
 
 // 🔧 یک سیکل تشخیص صوت را شروع می‌کند.
@@ -20728,12 +20802,27 @@ function _notesStartRecognitionCycle() {
     _notesAddedIndices = new Set();
 
     _notesRecognition.onresult = function(event) {
-        // 🔧 فقط نتایج نهایی را پردازش کن — و فقط یک‌بار برای هر ایندکس
-        // (با استفاده از Set برای جلوگیری از تکرار)
+        // 🔧 v234: نمایش زنده — هر عبارت نهایی به‌محض رسیدن، در محل لنگر به
+        // محتوا اضافه می‌شود (مانند تیتر اسناد حسابداری). _notesAccumulatedText
+        // هم برای سازگاری به‌روز می‌شود. فقط یک‌بار برای هر ایندکس (جلوگیری از تکرار).
+        var wroteLive = false;
         for (let i = 0; i < event.results.length; i++) {
             if (event.results[i].isFinal && !_notesAddedIndices.has(i)) {
-                _notesAccumulatedText += event.results[i][0].transcript + ' ';
+                var phrase = event.results[i][0].transcript;
+                _notesAccumulatedText += phrase + ' ';
                 _notesAddedIndices.add(i);
+                if (_notesRecording) {
+                    _notesAppendLivePhrase(phrase);
+                    wroteLive = true;
+                }
+            }
+        }
+        // 🔧 persist زنده — همانند تیتر حسابداری، هر بار که متن زنده می‌نویسیم،
+        // localStorage را هم به‌روز می‌کنیم تا اگر ضبط به‌زور بسته شد، متن حفظ شود.
+        if (wroteLive) {
+            var content = document.getElementById('notesContent');
+            if (content) {
+                localStorage.setItem(getNotesKey(_notesTargetGroup), content.innerHTML);
             }
         }
     };
