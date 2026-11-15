@@ -1260,7 +1260,7 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
     display: none;
     direction: rtl;
 }
-.hamburger-overlay.active { display: flex; align-items: flex-start; justify-content: flex-start; padding: 64px 10px 0 0; }
+.hamburger-overlay.active { display: flex; align-items: flex-start; justify-content: flex-start; /* 🔧 v244 (BA-154): تراز زیر هدر اصلی */ padding: calc(var(--header-h, 58px) + 6px) 10px 0 0; }
 .hamburger-card {
     background: #fff;
     border-radius: 14px;
@@ -1289,7 +1289,13 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
    🔧 v238: ضبط جلسه کاری + فایل‌های PDF — دو صفحهٔ جدید
    ════════════════════════════════════════════════════════════════ */
 .meeting-overlay {
-    position: fixed; inset: 0;
+    /* 🔧 v244 (BA-154 — الزام کاربر): «هر صفحه ای و منو در هنگام باز شدن و
+       نمایش بالای آن با زیر هدر اصلی برنامه تراز و فیکس میشود و قابل
+       اسکرول هم باشد» — بالای صفحه دقیقاً زیر هدر اصلی فیکس می‌شود
+       (top = --header-h که هنگام باز شدن اندازه‌گیری زنده می‌شود) و بدنه
+       صفحه با flex + overflow-y قابل اسکرول می‌ماند. */
+    position: fixed; left: 0; right: 0; bottom: 0;
+    top: var(--header-h, 58px);
     background: #f0f2f5; z-index: 10100;
     display: none; flex-direction: column; direction: rtl;
 }
@@ -1352,7 +1358,9 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 
 /* صفحهٔ فایل‌های PDF */
 .pdffiles-overlay {
-    position: fixed; inset: 0;
+    /* 🔧 v244 (BA-154): تراز زیر هدر اصلی — توضیح در .meeting-overlay */
+    position: fixed; left: 0; right: 0; bottom: 0;
+    top: var(--header-h, 58px);
     background: #f0f2f5; z-index: 10100;
     display: none; flex-direction: column; direction: rtl;
 }
@@ -1398,7 +1406,9 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 
 /* 🔧 v239: صفحهٔ دانلود از یوتیوب */
 .yt-overlay {
-    position: fixed; inset: 0;
+    /* 🔧 v244 (BA-154): تراز زیر هدر اصلی — توضیح در .meeting-overlay */
+    position: fixed; left: 0; right: 0; bottom: 0;
+    top: var(--header-h, 58px);
     background: #f0f2f5; z-index: 10100;
     display: none; flex-direction: column; direction: rtl;
 }
@@ -7397,6 +7407,25 @@ body.locked .header-actions button {
 //               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
 //               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
 //               آن از یک اپ استاتیک وجود ندارد.
+//         🔧 v244 (۱۴۰۵ آبان ۲۷) — سه الزام کاربر:
+//           (۱) «هر صفحه ای و منو در هنگام باز شدن و نمایش بالای آن با زیر
+//               هدر اصلی برنامه تراز و فیکس میشود و قابل اسکرول هم باشد» —
+//               BA-154: applyHeaderAlignedTop() ارتفاع هدر را در --header-h
+//               می‌گذارد؛ صفحات ضبط جلسه/فایل‌های PDF/یوتیوب (top: var) و
+//               منوی همبرگری دیگر پشت هدر پنهان نمی‌شوند؛ بدنه اسکرول‌پذیر.
+//           (۲) «هنوز ضبط صدا در جلسات و تسک ها با مکث طولانی تر و بعد
+//               ادامه صحبت چیزی تایپ نمیکنه» — BA-155: ریشه: نمونهٔ کهنهٔ
+//               SpeechRecognition بعد از سکوت طولانی هنگ می‌کند (نه نتیجه
+//               نه onend). رفع در هر چهار رکوردر: restart با نمونهٔ تازه
+//               (buildXSR) + نگهبان مؤدبانه (۲۰ثانیه بی‌رخداد → stop؛ ۳۲ثانیه
+//               → نمونهٔ تازه) — در سکوت عادی هرگز فعال نمی‌شود (بوق ندارد).
+//           (۳) «صفحه یوتیوب... هنوز میزند دریافت اطلاعات از یوتیوب ناموق
+//               بود... بدون اینکه مرورگر بفهمد... در پس زمینه دانلود کن» —
+//               BA-156: استخراج‌گر ۴مسیره (Piped → Invidious — سرورهای
+//               CORS-باز مخصوص مرورگر — بعد InnerTube/WatchPage با پروکسی)
+//               + پیام پیشرفت هر مرحله + timeout + نوار درصد دانلود +
+//               نگهبان رکود ۳۰ثانیه‌ای. دیکودر داخلی yt-dlp پابرجاست.
+//
 //         🔧 v243 (۱۴۰۵ آبان ۲۷) — چهار الزام کاربر:
 //           (۱) «ضبط جلسه/تسک بعد از یک سکوت نسبتا بلند جمله قبلی را پاک
 //               میکند و جمله جدید را مینویسد یا اصلا چیزی نمینویسد — هیچوقت
@@ -7732,7 +7761,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v243-2026-11-15-rec-never-lose-yt-auto';
+const APP_VERSION = 'v244-2026-11-15-align-keepalive-yt-multi';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -10197,38 +10226,34 @@ function isSpeechSupported() {
     return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 }
 
-function startRecording() {
-    if (!isSpeechSupported()) {
-        showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. لطفاً از Chrome یا Edge استفاده کنید.');
-        return;
-    }
-    // 🔧 v166: اگر آفلاین است → فرم تایپ دستی نمایش بده (رفتار ثابت)
-    if (!navigator.onLine) {
-        document.getElementById('modalOverlay').classList.add('active');
-        document.getElementById('formSection').style.display = 'block';
-        const isEditing = !!editTaskId;
-        document.getElementById('modalTitle').textContent = isEditing ? 'ویرایش یادآور' : 'یادآور جدید';
-        const saveBtn = document.getElementById('saveBtn');
-        if (saveBtn) saveBtn.textContent = isEditing ? 'ثبت ویرایش' : 'ذخیره';
-        document.getElementById('reRecordBtn').style.display = '';
-        document.getElementById('saveBtn').style.display = '';
-        if (!document.getElementById('itemDeadline').value) setQuickDeadline(1);
-        else updateDeadlineDisplay(document.getElementById('itemDeadline').value);
-        showToast('اینترنت در دسترس نیست. ضبط صوت کار نمی‌کند. متن را تایپ کنید.');
-        setTimeout(() => document.getElementById('itemText').focus(), 100);
-        return;
-    }
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v244 (BA-155 — الزام کاربر: «هنوز ضبط صدا در جلسات و تسک ها با مکث
+// طولانی تر و بعد ادامه صحبت چیزی تایپ نمیکنه») — دو رفع ریشه‌ای، در هر
+// چهار رکوردر (تسک/جلسه/شرح سند/متن رکورد) با کدهای یکسان:
+//   ۱) restart با نمونهٔ تازهٔ SpeechRecognition — نمونهٔ کهنهٔ Chrome بعد از
+//      سکوت طولانی گاهی هنگ می‌کند (نه onresult می‌دهد نه onend) و «چیزی
+//      تایپ نمی‌شود». نمونهٔ تازه در هر restart این را حذف می‌کند.
+//   ۲) watchdog مؤدبانه (تیک ۵ ثانیه‌ای): فقط وقتی ۲۰ ثانیه هیچ رخدادی
+//      نباشد (نه نتیجه، نه onend — یعنی موتور هنگ کرده) یک stop() مؤدبانه
+//      می‌زند تا onend رستارت را اجرا کند؛ اگر تا ۳۲ ثانیه هیچ رخدادی
+//      نیامد، نمونه را رها و نمونهٔ تازه می‌سازد. در سکوت عادی Chrome تا
+//      ~۱۰ ثانیه onend می‌دهد → watchdog هرگز فعال نمی‌شود → هیچ بوق /
+//      قطع‌ووصل اضافه‌ای ندارد (BA-141/148 پابرجاست).
+// ════════════════════════════════════════════════════════════════════
+let taskRecLastEventAt = 0;
+let taskRecWatchdogTimer = null;
+function buildTaskSR() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    taskRecAccum = '';
-    taskRecIndices = new Set();
-    taskRecObj = new SR();
-    taskRecObj.lang = 'fa-IR';
-    taskRecObj.continuous = true;
+    const rec = new SR();
+    rec.lang = 'fa-IR';
+    rec.continuous = true;
     // 🔧 v240 (الزام کاربر): interimResults=true — بازخورد زندهٔ کلمات در
     //    حال گفتن. continuous=true همچنان میکروفون را باز نگه می‌دارد
     //    (بدون بوق) — این دو مستقل‌اند. عین accDocStartRec.
-    taskRecObj.interimResults = true;
-    taskRecObj.onresult = function(ev) {
+    rec.interimResults = true;
+    rec.onstart = function() { taskRecLastEventAt = Date.now(); };   // 🔧 v244
+    rec.onresult = function(ev) {
+        taskRecLastEventAt = Date.now();   // 🔧 v244
         let interim = '';
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
             const r = ev.results[i];
@@ -10250,7 +10275,7 @@ function startRecording() {
             hintEl.textContent = interim ? addNumericAfterWords(interim) : 'در حال شنیدن...';
         }
     };
-    taskRecObj.onerror = function(ev) {
+    rec.onerror = function(ev) {
         console.error('[TaskMic] error:', ev.error);
         if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
             stopRecording();
@@ -10259,7 +10284,8 @@ function startRecording() {
         // خطاهای گذرا (no-speech و امثال آن) — سیکل بعدی (onend → 200ms)
         // ادامه می‌دهد. عین accDocStartRec.
     };
-    taskRecObj.onend = function() {
+    rec.onend = function() {
+        taskRecLastEventAt = Date.now();   // 🔧 v244
         // 🔧 v243: تعهد آخرین interim قبل از restart — اگر Chrome بعد از سکوت
         //    طولانی session را ببندد و جمله هنوز final نشده باشد، بدون این
         //    آن جمله گم می‌شد (= «بعد از سکوت جمله قبلی را پاک میکند»).
@@ -10275,14 +10301,52 @@ function startRecording() {
         //    شکایت «بعد از چند جمله دیگر چیزی تایپ نمی‌کند»). در onend پاک
         //    می‌کنیم تا شنیدن و تایپ بعد از هر restart کامل ادامه یابد.
         taskRecIndices = new Set();
-        if (taskRecActive && taskRecObj) {
+        if (taskRecActive) {
             setTimeout(function() {
-                if (taskRecActive && taskRecObj) {
-                    try { taskRecObj.start(); } catch(e) {}
+                if (taskRecActive) {
+                    // 🔧 v244 (BA-155): restart با نمونهٔ تازه — نمونهٔ کهنه بعد
+                    //     از سکوت طولانی گاهی نتایج نمی‌دهد
+                    try { taskRecObj = buildTaskSR(); taskRecObj.start(); } catch(e) {}
                 }
             }, 200);
         }
     };
+    return rec;
+}
+function taskRecWatchdog() {
+    if (!taskRecActive) return;
+    const idle = Date.now() - (taskRecLastEventAt || 0);
+    if (idle > 32000) {
+        console.warn('[TaskMic] watchdog: hung >32s — recreating SR instance');
+        taskRecObj = null;
+        try { taskRecObj = buildTaskSR(); taskRecObj.start(); taskRecLastEventAt = Date.now(); } catch(e) {}
+    } else if (idle > 20000) {
+        console.warn('[TaskMic] watchdog: no events ' + Math.round(idle / 1000) + 's — graceful stop');
+        try { if (taskRecObj) taskRecObj.stop(); } catch(e) {}
+    }
+}
+function startRecording() {
+    if (!isSpeechSupported()) {
+        showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. لطفاً از Chrome یا Edge استفاده کنید.');
+        return;
+    }
+    // 🔧 v166: اگر آفلاین است → فرم تایپ دستی نمایش بده (رفتار ثابت)
+    if (!navigator.onLine) {
+        document.getElementById('modalOverlay').classList.add('active');
+        document.getElementById('formSection').style.display = 'block';
+        const isEditing = !!editTaskId;
+        document.getElementById('modalTitle').textContent = isEditing ? 'ویرایش یادآور' : 'یادآور جدید';
+        const saveBtn = document.getElementById('saveBtn');
+        if (saveBtn) saveBtn.textContent = isEditing ? 'ثبت ویرایش' : 'ذخیره';
+        document.getElementById('reRecordBtn').style.display = '';
+        document.getElementById('saveBtn').style.display = '';
+        if (!document.getElementById('itemDeadline').value) setQuickDeadline(1);
+        else updateDeadlineDisplay(document.getElementById('itemDeadline').value);
+        showToast('اینترنت در دسترس نیست. ضبط صوت کار نمی‌کند. متن را تایپ کنید.');
+        setTimeout(() => document.getElementById('itemText').focus(), 100);
+        return;
+    }
+    taskRecIndices = new Set();
     taskRecActive = true;
     isRecording = true;
     // 🔧 v243 (الزام کاربر: «هیچوقت جملات قبل را پاک نکند»): متن موجود
@@ -10297,6 +10361,10 @@ function startRecording() {
     document.getElementById('addBtn').classList.add('recording');
     const fab2 = document.getElementById('floatingAddBtn');
     if (fab2) fab2.classList.add('recording');
+    // 🔧 v244 (BA-155): نمونهٔ تازه + watchdog
+    taskRecObj = buildTaskSR();
+    taskRecLastEventAt = Date.now();
+    if (!taskRecWatchdogTimer) taskRecWatchdogTimer = setInterval(taskRecWatchdog, 5000);
     try { taskRecObj.start(); } catch(e) {
         console.error('[TaskMic] start failed', e);
         stopRecording();
@@ -10306,6 +10374,8 @@ function startRecording() {
 function stopRecording() {
     taskRecActive = false;
     isRecording = false;
+    // 🔧 v244: توقف watchdog
+    if (taskRecWatchdogTimer) { clearInterval(taskRecWatchdogTimer); taskRecWatchdogTimer = null; }
     document.getElementById('addBtn').classList.remove('recording');
     const fabStop = document.getElementById('floatingAddBtn');
     if (fabStop) fabStop.classList.remove('recording');
@@ -17786,27 +17856,35 @@ function accDocToggleMic() {
     else accDocStartRec();
 }
 
-function accDocStartRec() {
-    if (!isSpeechSupported()) {
-        showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. لطفاً از Chrome یا Edge استفاده کنید.');
-        return;
-    }
-    if (!navigator.onLine) {
-        showToast('اینترنت در دسترس نیست — شرح سند را تایپ کنید');
-        return;
-    }
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v244 (BA-155 — الزام کاربر: «هنوز ضبط صدا در جلسات و تسک ها با مکث
+// طولانی تر و بعد ادامه صحبت چیزی تایپ نمیکنه») — دو رفع ریشه‌ای، در هر
+// چهار رکوردر (تسک/جلسه/شرح سند/متن رکورد) با کدهای یکسان:
+//   ۱) restart با نمونهٔ تازهٔ SpeechRecognition — نمونهٔ کهنهٔ Chrome بعد از
+//      سکوت طولانی گاهی هنگ می‌کند (نه onresult می‌دهد نه onend) و «چیزی
+//      تایپ نمی‌شود». نمونهٔ تازه در هر restart این را حذف می‌کند.
+//   ۲) watchdog مؤدبانه (تیک ۵ ثانیه‌ای): فقط وقتی ۲۰ ثانیه هیچ رخدادی
+//      نباشد (نه نتیجه، نه onend — یعنی موتور هنگ کرده) یک stop() مؤدبانه
+//      می‌زند تا onend رستارت را اجرا کند؛ اگر تا ۳۲ ثانیه هیچ رخدادی
+//      نیامد، نمونه را رها و نمونهٔ تازه می‌سازد. در سکوت عادی Chrome تا
+//      ~۱۰ ثانیه onend می‌دهد → watchdog هرگز فعال نمی‌شود → هیچ بوق /
+//      قطع‌ووصل اضافه‌ای ندارد (BA-141/148 پابرجاست).
+// ════════════════════════════════════════════════════════════════════
+let accDocRecLastEventAt = 0;
+let accDocWatchdogTimer = null;
+function buildAccDocSR() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    accDocRecAccum = '';
-    accDocRecIndices = new Set();
-    accDocRecObj = new SR();
-    accDocRecObj.lang = 'fa-IR';
-    accDocRecObj.continuous = true;
+    const rec = new SR();
+    rec.lang = 'fa-IR';
+    rec.continuous = true;
     // 🔧 v240 (الزام کاربر): interimResults=true برای بازخورد زندهٔ کلمات در
     //    حال گفتن. قبلاً false بود که باعث می‌شد متن فقط با مکث طولانی (۱۰–۱۵
     //    ثانیه در فارسی) ظاهر شود. continuous=true همچنان میکروفون را باز نگه
     //    می‌دارد (بدون بوق) — این دو مستقل‌اند.
-    accDocRecObj.interimResults = true;
-    accDocRecObj.onresult = function(ev) {
+    rec.interimResults = true;
+    rec.onstart = function() { accDocRecLastEventAt = Date.now(); };   // 🔧 v244
+    rec.onresult = function(ev) {
+        accDocRecLastEventAt = Date.now();   // 🔧 v244
         let interim = '';
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
             const r = ev.results[i];
@@ -17823,7 +17901,7 @@ function accDocStartRec() {
         const el = document.getElementById('accDocDesc');
         if (el) el.value = addNumericAfterWords((accDocRecAccum + ' ' + interim).trim()).trim();
     };
-    accDocRecObj.onerror = function(ev) {
+    rec.onerror = function(ev) {
         console.error('[AccDocMic] error:', ev.error);
         if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
             accDocStopRec();
@@ -17831,7 +17909,8 @@ function accDocStartRec() {
         }
         // خطاهای گذرا (no-speech و امثال آن) — سیکل بعدی ادامه می‌دهد
     };
-    accDocRecObj.onend = function() {
+    rec.onend = function() {
+        accDocRecLastEventAt = Date.now();   // 🔧 v244
         // 🔧 v243: تعهد آخرین interim + ریست ایندکس‌ها (توضیح در taskRecObj.onend)
         if (accDocLastInterim && accDocLastInterim.trim()) {
             accDocRecAccum += accDocLastInterim.trim() + ' ';
@@ -17840,17 +17919,50 @@ function accDocStartRec() {
         }
         accDocLastInterim = '';
         accDocRecIndices = new Set();
-        if (accDocRecActive && accDocRecObj) {
+        if (accDocRecActive) {
             setTimeout(function() {
-                if (accDocRecActive && accDocRecObj) {
-                    try { accDocRecObj.start(); } catch(e) {}
+                if (accDocRecActive) {
+                    // 🔧 v244 (BA-155): restart با نمونهٔ تازه (توضیح در buildTaskSR)
+                    try { accDocRecObj = buildAccDocSR(); accDocRecObj.start(); } catch(e) {}
                 }
             }, 200);
         }
     };
+    return rec;
+}
+function accDocWatchdog() {
+    if (!accDocRecActive) return;
+    const idle = Date.now() - (accDocRecLastEventAt || 0);
+    if (idle > 32000) {
+        console.warn('[AccDocMic] watchdog: hung >32s — recreating SR instance');
+        accDocRecObj = null;
+        try { accDocRecObj = buildAccDocSR(); accDocRecObj.start(); accDocRecLastEventAt = Date.now(); } catch(e) {}
+    } else if (idle > 20000) {
+        console.warn('[AccDocMic] watchdog: no events ' + Math.round(idle / 1000) + 's — graceful stop');
+        try { if (accDocRecObj) accDocRecObj.stop(); } catch(e) {}
+    }
+}
+function accDocStartRec() {
+    if (!isSpeechSupported()) {
+        showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. لطفاً از Chrome یا Edge استفاده کنید.');
+        return;
+    }
+    if (!navigator.onLine) {
+        showToast('اینترنت در دسترس نیست — شرح سند را تایپ کنید');
+        return;
+    }
+    // 🔧 v244 (الزام کاربر: «هیچوقت جملات قبل را پاک نکند»): seed از متن
+    // موجود — هم‌تراز با سه رکوردر دیگر (تسک/جلسه/متن رکورد)
+    accDocRecAccum = (document.getElementById('accDocDesc').value || '').trim();
+    if (accDocRecAccum && !accDocRecAccum.endsWith(' ')) accDocRecAccum += ' ';
+    accDocRecIndices = new Set();
+    accDocRecObj = buildAccDocSR();   // 🔧 v244: نمونهٔ تازه در هر شروع
     accDocRecActive = true;
     document.getElementById('accDocMicBtn').classList.add('recording');
     showToast('ضبط شرح سند شروع شد — صحبت کنید (دوباره 🎤 را بزنید تا پایان)');
+    // 🔧 v244: watchdog
+    accDocRecLastEventAt = Date.now();
+    if (!accDocWatchdogTimer) accDocWatchdogTimer = setInterval(accDocWatchdog, 5000);
     try { accDocRecObj.start(); } catch(e) {
         console.error('[AccDocMic] start failed', e);
     }
@@ -17858,6 +17970,8 @@ function accDocStartRec() {
 
 function accDocStopRec() {
     accDocRecActive = false;
+    // 🔧 v244: توقف watchdog
+    if (accDocWatchdogTimer) { clearInterval(accDocWatchdogTimer); accDocWatchdogTimer = null; }
     const btn = document.getElementById('accDocMicBtn');
     if (btn) btn.classList.remove('recording');
     if (accDocRecObj) {
@@ -17884,25 +17998,22 @@ function accRecToggleMic() {
     else accRecStartRec();
 }
 
-function accRecStartRec() {
-    if (!isSpeechSupported()) {
-        showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. لطفاً از Chrome یا Edge استفاده کنید.');
-        return;
-    }
-    if (!navigator.onLine) {
-        showToast('اینترنت در دسترس نیست — متن رکورد را تایپ کنید');
-        return;
-    }
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v244 (BA-155): نمونهٔ تازهٔ SR در هر restart + watchdog مؤدبانه
+// (توضیح کامل در buildTaskSR — کدهای یکسان در هر چهار رکوردر)
+// ════════════════════════════════════════════════════════════════════
+let accRecRecLastEventAt = 0;
+let accRecWatchdogTimer = null;
+function buildAccRecSR() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    accRecRecAccum = document.getElementById('accRecText').value || '';
-    if (accRecRecAccum && !accRecRecAccum.endsWith(' ')) accRecRecAccum += ' ';
-    accRecRecIndices = new Set();
-    accRecRecObj = new SR();
-    accRecRecObj.lang = 'fa-IR';
-    accRecRecObj.continuous = true;
+    const rec = new SR();
+    rec.lang = 'fa-IR';
+    rec.continuous = true;
     // 🔧 v240 (الزام کاربر): interimResults=true برای بازخورد زنده.
-    accRecRecObj.interimResults = true;
-    accRecRecObj.onresult = function(ev) {
+    rec.interimResults = true;
+    rec.onstart = function() { accRecRecLastEventAt = Date.now(); };   // 🔧 v244
+    rec.onresult = function(ev) {
+        accRecRecLastEventAt = Date.now();   // 🔧 v244
         let interim = '';
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
             const r = ev.results[i];
@@ -17919,14 +18030,15 @@ function accRecStartRec() {
         const el = document.getElementById('accRecText');
         if (el) el.value = addNumericAfterWords((accRecRecAccum + ' ' + interim).trim()).trim();
     };
-    accRecRecObj.onerror = function(ev) {
+    rec.onerror = function(ev) {
         console.error('[AccRecMic] error:', ev.error);
         if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
             accRecStopRec();
             showToast('دسترسی به میکروفون رد شد. در تنظیمات مرورگر اجازه دهید.');
         }
     };
-    accRecRecObj.onend = function() {
+    rec.onend = function() {
+        accRecRecLastEventAt = Date.now();   // 🔧 v244
         // 🔧 v243: تعهد آخرین interim + ریست ایندکس‌ها (توضیح در taskRecObj.onend)
         if (accRecLastInterim && accRecLastInterim.trim()) {
             accRecRecAccum += accRecLastInterim.trim() + ' ';
@@ -17935,18 +18047,49 @@ function accRecStartRec() {
         }
         accRecLastInterim = '';
         accRecRecIndices = new Set();
-        if (accRecRecActive && accRecRecObj) {
+        if (accRecRecActive) {
             setTimeout(function() {
-                if (accRecRecActive && accRecRecObj) {
-                    try { accRecRecObj.start(); } catch(e) {}
+                if (accRecRecActive) {
+                    // 🔧 v244 (BA-155): restart با نمونهٔ تازه (توضیح در buildTaskSR)
+                    try { accRecRecObj = buildAccRecSR(); accRecRecObj.start(); } catch(e) {}
                 }
             }, 200);
         }
     };
+    return rec;
+}
+function accRecWatchdog() {
+    if (!accRecRecActive) return;
+    const idle = Date.now() - (accRecRecLastEventAt || 0);
+    if (idle > 32000) {
+        console.warn('[AccRecMic] watchdog: hung >32s — recreating SR instance');
+        accRecRecObj = null;
+        try { accRecRecObj = buildAccRecSR(); accRecRecObj.start(); accRecRecLastEventAt = Date.now(); } catch(e) {}
+    } else if (idle > 20000) {
+        console.warn('[AccRecMic] watchdog: no events ' + Math.round(idle / 1000) + 's — graceful stop');
+        try { if (accRecRecObj) accRecRecObj.stop(); } catch(e) {}
+    }
+}
+function accRecStartRec() {
+    if (!isSpeechSupported()) {
+        showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. لطفاً از Chrome یا Edge استفاده کنید.');
+        return;
+    }
+    if (!navigator.onLine) {
+        showToast('اینترنت در دسترس نیست — متن رکورد را تایپ کنید');
+        return;
+    }
+    accRecRecAccum = document.getElementById('accRecText').value || '';
+    if (accRecRecAccum && !accRecRecAccum.endsWith(' ')) accRecRecAccum += ' ';
+    accRecRecIndices = new Set();
+    accRecRecObj = buildAccRecSR();   // 🔧 v244: نمونهٔ تازه در هر شروع
     accRecRecActive = true;
     const btn = document.getElementById('accRecMicBtn');
     if (btn) btn.classList.add('recording');
     showToast('ضبط متن رکورد شروع شد — صحبت کنید (دوباره 🎤 را بزنید تا پایان)');
+    // 🔧 v244: watchdog
+    accRecRecLastEventAt = Date.now();
+    if (!accRecWatchdogTimer) accRecWatchdogTimer = setInterval(accRecWatchdog, 5000);
     try { accRecRecObj.start(); } catch(e) {
         console.error('[AccRecMic] start failed', e);
     }
@@ -17954,6 +18097,8 @@ function accRecStartRec() {
 
 function accRecStopRec() {
     accRecRecActive = false;
+    // 🔧 v244: توقف watchdog
+    if (accRecWatchdogTimer) { clearInterval(accRecWatchdogTimer); accRecWatchdogTimer = null; }
     const btn = document.getElementById('accRecMicBtn');
     if (btn) btn.classList.remove('recording');
     if (accRecRecObj) {
@@ -20157,6 +20302,7 @@ function printAccReport() {
 
 // 🔧 v210 (الزام کاربر): لمس دوبارهٔ ☰ در هدر اصلی، منوی باز را «می‌بندد»
 function toggleHamburgerMenu() {
+    applyHeaderAlignedTop();   // 🔧 v244 (BA-154)
     const ov = document.getElementById('hamburgerMenuOverlay');
     if (ov && ov.classList.contains('active')) {
         closeHamburgerMenu();
@@ -20233,7 +20379,26 @@ let meetRecActive = false;
 let meetRecAccum = '';
 let meetRecIndices = null;
 let meetLastInterim = '';   // 🔧 v243: آخرین interim برای تعهد در onend
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v244 (BA-154 — الزام کاربر): «هر صفحه ای و منو در هنگام باز شدن و
+// نمایش بالای آن با زیر هدر اصلی برنامه تراز و فیکس میشود و قابل اسکرول
+// هم باشد» — ارتفاع هدر اصلی اندازه‌گیری و به --header-h داده می‌شود؛
+// صفحه‌های تمام‌صفحه (ضبط جلسه/فایل‌های PDF/یوتیوب) و منوی همبرگری از
+// همین متغیر استفاده می‌کنند. هنگام تغییر اندازه هم به‌روز می‌شود.
+// قانون برای صفحات آینده: هر صفحهٔ تمام‌صفحه باید top: var(--header-h)
+// بگیرد و بدنه‌اش با flex + overflow-y اسکرول‌پذیر باشد.
+// ════════════════════════════════════════════════════════════════════
+function applyHeaderAlignedTop() {
+    try {
+        const h = document.querySelector('.header');
+        if (h) document.documentElement.style.setProperty('--header-h', h.offsetHeight + 'px');
+    } catch(e) {}
+}
+window.addEventListener('resize', applyHeaderAlignedTop);
+window.addEventListener('orientationchange', function(){ setTimeout(applyHeaderAlignedTop, 250); });
+
 function openMeetingRecorder(fromMenu) {
+    applyHeaderAlignedTop();   // 🔧 v244 (BA-154)
     const ov = document.getElementById('meetingOverlay');
     if (!ov) return;
     // اگر ضبط حسابداری/تسک فعال است، متوقف کن (هیچ‌گاه دو SR هم‌زمان نباشند)
@@ -20283,31 +20448,22 @@ function meetingToggleMic() {
 
 // کپی عینی accDocStartRec — تفاوت: continuous=true (پیوسته برای جلسه طولانی)
 // و هدف textarea + دکمهٔ meetingMicBtn.
-function meetingStartRec() {
-    if (!isSpeechSupported()) {
-        showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. از Chrome یا Edge استفاده کنید.');
-        return;
-    }
-    if (!navigator.onLine) {
-        showToast('اینترنت در دسترس نیست — متن جلسه را تایپ کنید');
-        return;
-    }
-    // متن تایپ‌شدهٔ قبلی را حفظ کن
-    const existing = document.getElementById('meetingText').value || '';
-    meetRecAccum = existing.trim();
-    if (meetRecAccum && !meetRecAccum.endsWith(' ')) meetRecAccum += ' ';
-    meetRecIndices = new Set();
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v244 (BA-155): نمونهٔ تازهٔ SR در هر restart + watchdog مؤدبانه
+// (توضیح کامل در buildTaskSR — کدهای یکسان در هر چهار رکوردر)
+// ════════════════════════════════════════════════════════════════════
+let meetRecLastEventAt = 0;
+let meetWatchdogTimer = null;
+function buildMeetSR() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    meetRecObj = new SR();
-    meetRecObj.lang = 'fa-IR';
-    meetRecObj.continuous = true;
-    // 🔧 v240 (الزام کاربر): interimResults=true — قبلاً false بود که باعث می‌شد
-    //    کاربر ۱۰–۱۵ ثانیه صبر کند تا چیزی تایپ شود (متن فقط هنگام final
-    //    شدن با مکث طولانی ظاهر می‌شد). اکنون کلمات در حال گفتن زنده نمایش
-    //    داده می‌شوند. continuous=true همچنان میکروفون را باز نگه می‌دارد (بوق
-    //    ندارد) — این دو مستقل‌اند.
-    meetRecObj.interimResults = true;
-    meetRecObj.onresult = function(ev) {
+    const rec = new SR();
+    rec.lang = 'fa-IR';
+    rec.continuous = true;
+    // 🔧 v240 (الزام کاربر): interimResults=true — بازخورد زندهٔ کلمات (بوق ندارد).
+    rec.interimResults = true;
+    rec.onstart = function() { meetRecLastEventAt = Date.now(); };   // 🔧 v244
+    rec.onresult = function(ev) {
+        meetRecLastEventAt = Date.now();   // 🔧 v244
         // 🔧 v240: تفکیک interim و final — نمایش زندهٔ کلمات در حال گفتن.
         let interim = '';
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
@@ -20330,7 +20486,7 @@ function meetingStartRec() {
             st.textContent = interim ? 'در حال شنیدن: ' + interim.slice(-30) : 'در حال ضبط... صحبت کنید';
         }
     };
-    meetRecObj.onerror = function(ev) {
+    rec.onerror = function(ev) {
         console.error('[MeetingMic] error:', ev.error);
         if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
             meetingStopRec();
@@ -20338,7 +20494,8 @@ function meetingStartRec() {
         }
         // خطاهای گذرا — سیکل بعدی (onend → 200ms restart) ادامه می‌دهد
     };
-    meetRecObj.onend = function() {
+    rec.onend = function() {
+        meetRecLastEventAt = Date.now();   // 🔧 v244
         // 🔧 v243: تعهد آخرین interim قبل از restart (توضیح در taskRecObj.onend) —
         //    جملهٔ شنیده‌شدهٔ نافینال‌شده هرگز گم نمی‌شود.
         if (meetLastInterim && meetLastInterim.trim()) {
@@ -20349,21 +20506,52 @@ function meetingStartRec() {
         meetLastInterim = '';
         // 🔧 v242: پاک‌کردن ایندکس‌ها بعد از restart (توضیح در taskRecObj.onend)
         meetRecIndices = new Set();
-        // عین accDocRecObj.onend — restart سادهٔ ۲۰۰ms. (v241 آبشار+watchdog
-        // بود که روی دستگاه واقعی باعث قطع‌ووصل و بوق می‌شد — حذف شد)
-        if (meetRecActive && meetRecObj) {
+        if (meetRecActive) {
             setTimeout(function() {
-                if (meetRecActive && meetRecObj) {
-                    try { meetRecObj.start(); } catch(e) {}
+                if (meetRecActive) {
+                    // 🔧 v244 (BA-155): restart با نمونهٔ تازه (توضیح در buildTaskSR)
+                    try { meetRecObj = buildMeetSR(); meetRecObj.start(); } catch(e) {}
                 }
             }, 200);
         }
     };
+    return rec;
+}
+function meetWatchdog() {
+    if (!meetRecActive) return;
+    const idle = Date.now() - (meetRecLastEventAt || 0);
+    if (idle > 32000) {
+        console.warn('[MeetingMic] watchdog: hung >32s — recreating SR instance');
+        meetRecObj = null;
+        try { meetRecObj = buildMeetSR(); meetRecObj.start(); meetRecLastEventAt = Date.now(); } catch(e) {}
+    } else if (idle > 20000) {
+        console.warn('[MeetingMic] watchdog: no events ' + Math.round(idle / 1000) + 's — graceful stop');
+        try { if (meetRecObj) meetRecObj.stop(); } catch(e) {}
+    }
+}
+function meetingStartRec() {
+    if (!isSpeechSupported()) {
+        showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. از Chrome یا Edge استفاده کنید.');
+        return;
+    }
+    if (!navigator.onLine) {
+        showToast('اینترنت در دسترس نیست — متن جلسه را تایپ کنید');
+        return;
+    }
+    // متن تایپ‌شدهٔ قبلی را حفظ کن
+    const existing = document.getElementById('meetingText').value || '';
+    meetRecAccum = existing.trim();
+    if (meetRecAccum && !meetRecAccum.endsWith(' ')) meetRecAccum += ' ';
+    meetRecIndices = new Set();
+    meetRecObj = buildMeetSR();   // 🔧 v244: نمونهٔ تازه در هر شروع
     meetRecActive = true;
     const btn = document.getElementById('meetingMicBtn');
     if (btn) { btn.classList.add('recording'); btn.textContent = '⏹'; }
     const st = document.getElementById('meetingStatus');
     if (st) { st.textContent = 'در حال ضبط... صحبت کنید'; st.classList.add('recording'); }
+    // 🔧 v244: watchdog
+    meetRecLastEventAt = Date.now();
+    if (!meetWatchdogTimer) meetWatchdogTimer = setInterval(meetWatchdog, 5000);
     try { meetRecObj.start(); } catch(e) {
         console.error('[MeetingMic] start failed', e);
         showToast('خطا در شروع ضبط');
@@ -20375,6 +20563,8 @@ function meetingStartRec() {
 
 function meetingStopRec() {
     meetRecActive = false;
+    // 🔧 v244: توقف watchdog
+    if (meetWatchdogTimer) { clearInterval(meetWatchdogTimer); meetWatchdogTimer = null; }
     const btn = document.getElementById('meetingMicBtn');
     if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
     if (meetRecObj) {
@@ -20543,6 +20733,7 @@ async function meetDeletePdfRecord(id) {
 
 // ─── صفحهٔ فایل‌های PDF ───
 function openPdfFilesPage(fromMenu) {
+    applyHeaderAlignedTop();   // 🔧 v244 (BA-154)
     const ov = document.getElementById('pdffilesOverlay');
     if (!ov) return;
     ov.classList.add('active');
@@ -20669,6 +20860,7 @@ function ytSelectMethod(method) {
 }
 
 function openYouTubeDownloader(fromMenu) {
+    applyHeaderAlignedTop();   // 🔧 v244 (BA-154)
     const ov = document.getElementById('ytOverlay');
     if (!ov) return;
     // اگر در حال ضبط جلسه/تسک/حسابداری است، متوقف کن (میکروفون آزاد شود)
@@ -20944,8 +21136,9 @@ async function ytDecipherUrl(sc) {
 }
 
 async function ytFetchText(url) {
-    const r = await ytFetchWithFallback(url);
-    return { text: await r.resp.text(), via: r.via };
+    // 🔧 v244: با timeout (پلیر ~۲ مگابایت — ۲۵ ثانیه)
+    const resp = await ytFetchT(url, {}, 25000, false);
+    return { text: await resp.text(), via: 'fallback' };
 }
 
 // ─── دانلود و ذخیرهٔ فایل داخل برنامه ───
@@ -20956,8 +21149,12 @@ async function ytDownloadAndSave(url, filename) {
     // مستقیم کار می‌کند)، بعد پروکسی‌ها
     const attempts = [{ u: url }].concat(YT_PROXIES.map(function(p){ return { u: p(url) }; }));
     for (const att of attempts) {
+        // 🔧 v244: نگهبان رکود — اگر ۳۰ ثانیه هیچ بایتی نرسید، مسیر بعدی
+        const ctrl = new AbortController();
+        let lastData = Date.now();
+        const stall = setInterval(function(){ if (Date.now() - lastData > 30000) { try { ctrl.abort(); } catch(e) {} } }, 5000);
         try {
-            const resp = await fetch(att.u);
+            const resp = await fetch(att.u, { signal: ctrl.signal });
             if (!resp.ok) throw new Error('HTTP ' + resp.status);
             const total = parseInt(resp.headers.get('content-length') || '0', 10);
             const reader = resp.body && resp.body.getReader ? resp.body.getReader() : null;
@@ -20968,12 +21165,18 @@ async function ytDownloadAndSave(url, filename) {
                     if (r.done) break;
                     chunks.push(r.value);
                     got += r.value.length;
-                    if (total && bar) { if (wrap) wrap.style.display = 'block'; bar.style.width = Math.round(got / total * 100) + '%'; }
-                    if (total) ytShowStatus('info', '⬇️ در حال دانلود... ' + Math.round(got / 1048576) + ' از ' + Math.round(total / 1048576) + ' مگابایت');
+                    lastData = Date.now();
+                    if (total) {
+                        const pct = Math.round(got / total * 100);
+                        if (wrap) wrap.style.display = 'block';
+                        if (bar) bar.style.width = pct + '%';
+                        ytShowStatus('info', '⬇️ در حال دانلود... ' + toPersianNumber(pct) + '٪ (' + toPersianNumber(Math.round(got / 1048576)) + ' از ' + toPersianNumber(Math.round(total / 1048576)) + ' مگابایت)');
+                    }
                 }
             } else {
                 chunks = [await resp.arrayBuffer()];
             }
+            clearInterval(stall);
             const blob = new Blob(chunks, { type: resp.headers.get('content-type') || 'application/octet-stream' });
             chunks = null;
             const a = document.createElement('a');
@@ -20986,7 +21189,7 @@ async function ytDownloadAndSave(url, filename) {
             if (wrap) wrap.style.display = 'none';
             ytShowStatus('success', '✅ ذخیره شد: ' + ytEscape(filename) + (total ? ' (' + Math.round(total / 1048576) + ' مگابایت)' : ''));
             return true;
-        } catch(e) { console.warn('[YT] download attempt failed:', e.message); }
+        } catch(e) { clearInterval(stall); console.warn('[YT] download attempt failed:', e.message); }
     }
     if (wrap) wrap.style.display = 'none';
     // آخرین راه: دانلود نیتیو مرورگر (بدون Blob)
@@ -20998,9 +21201,156 @@ async function ytDownloadAndSave(url, filename) {
     return true;
 }
 
-// ─── پایپ‌لاین کامل: InnerTube ← انتخاب فرمت ← (دیکودر) ← دانلود ───
-async function ytRunPipeline(videoId, btn) {
-    ytState._lastVideoId = videoId;
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v244 (BA-156 — الزام کاربر: «هنوز میزند دریافت اطلاعات از یوتیوب
+// ناموفق بود... بدون اینکه مرورگر بفهمد... در پس زمینه دانلود کن»)
+// استخراج‌گر چندمسیره — ریشهٔ خطا: youtube.com به‌دلیل CORS همیشه پاسخ
+// مرورگر را مسدود می‌کند و پروکسی‌های عمومی هم ناپایدارند. راه‌حل:
+// سرورهایی که مخصوص دسترسی مرورگر طراحی شده‌اند (CORS *):
+//   ۱) Piped API — چند سرور مستقل؛  ۲) Invidious API — چند سرور؛
+//   ۳) InnerTube با زنجیرهٔ پروکسی؛ ۴) صفحهٔ watch با پروکسی + دیکودر
+//   داخلی (پورت yt-dlp). هر مرحله پیام پیشرفت؛ هر درخواست timeout؛
+//   دانلود در پس‌زمینه با نوار درصد و نگهبان رکود (مسیر بعدی خودکار).
+// ════════════════════════════════════════════════════════════════════
+
+// اولی تأییدشده: 200 + Access-Control-Allow-Origin: *
+const YT_PIPED_INSTANCES = [
+    'https://api.piped.private.coffee',
+    'https://pipedapi.kavin.rocks',
+    'https://pipedapi.leptons.xyz',
+    'https://pipedapi.ducks.party',
+    'https://pipedapi.drgns.space',
+    'https://api.piped.yt'
+];
+const YT_INVIDIOUS_INSTANCES = [
+    'https://inv.nadeko.net',
+    'https://yewtu.be',
+    'https://invidious.nerdvpn.de',
+    'https://iv.ggtyler.dev',
+    'https://invidious.f5.si',
+    'https://iv.melmac.space'
+];
+
+// fetch با timeout و زنجیرهٔ انتقال (مستقیم ← پروکسی‌ها) — noProxy برای
+// سرورهای CORS-باز که مستقیم جواب می‌دهند
+async function ytFetchT(url, opts, timeoutMs, noProxy) {
+    const transports = noProxy
+        ? [{ url: url }]
+        : [{ url: url }].concat(YT_PROXIES.map(function(p){ return { url: p(url) }; }));
+    let lastErr = null;
+    for (const att of transports) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(function(){ try { ctrl.abort(); } catch(e) {} }, timeoutMs || 10000);
+        try {
+            const resp = await fetch(att.url, Object.assign({}, opts || {}, { signal: ctrl.signal }));
+            clearTimeout(timer);
+            if (!resp.ok) { lastErr = new Error('HTTP ' + resp.status); continue; }
+            return resp;
+        } catch(e) { clearTimeout(timer); lastErr = e; }
+    }
+    throw lastErr || new Error('fetch failed');
+}
+
+// استخراج JSON تو در تو از HTML (ytInitialPlayerResponse)
+function ytExtractJsonAfter(html, marker) {
+    const mi = html.indexOf(marker);
+    if (mi < 0) return null;
+    const start = html.indexOf('{', mi);
+    if (start < 0) return null;
+    let depth = 0, inStr = false, esc = false;
+    for (let p = start; p < html.length; p++) {
+        const c = html[p];
+        if (inStr) {
+            if (esc) esc = false;
+            else if (c === '\\') esc = true;
+            else if (c === '"') inStr = false;
+            continue;
+        }
+        if (c === '"') inStr = true;
+        else if (c === '{') depth++;
+        else if (c === '}') { depth--; if (depth === 0) return html.slice(start, p + 1); }
+    }
+    return null;
+}
+
+// ─── مسیر ۱: Piped ───
+async function ytExtractPiped(videoId, step) {
+    for (const base of YT_PIPED_INSTANCES) {
+        try {
+            step('سرور Piped «' + base.replace('https://', '') + '»');
+            const resp = await ytFetchT(base + '/streams/' + videoId, {}, 9000, true);
+            const d = await resp.json();
+            if (!d || (!d.videoStreams && !d.audioStreams)) continue;
+            const streams = [];
+            (d.videoStreams || []).forEach(function(s){
+                if (!s.url || String(s.url).indexOf('http') !== 0) return;
+                if (String(s.format) === 'HLS' || String(s.url).indexOf('m3u8') >= 0) return; // پخش زنده/پلی‌لیست — قابل دانلود نیست
+                const isWebm = String(s.format).indexOf('WEBM') >= 0;
+                streams.push({ url: s.url, mime: isWebm ? 'video/webm' : 'video/mp4',
+                    height: parseInt(String(s.quality || '').replace(/[^0-9]/g, ''), 10) || 0,
+                    bitrate: s.bitrate || 0, hasAudio: !s.videoOnly,
+                    ext: isWebm ? 'webm' : 'mp4', label: s.quality || '' });
+            });
+            (d.audioStreams || []).forEach(function(s){
+                if (!s.url || String(s.url).indexOf('http') !== 0) return;
+                const isOpus = String(s.format).indexOf('OPUS') >= 0 || String(s.format).indexOf('WEBM') >= 0;
+                streams.push({ url: s.url, mime: isOpus ? 'audio/webm' : 'audio/mp4',
+                    height: 0, bitrate: s.bitrate || 0, hasAudio: true,
+                    ext: isOpus ? 'opus' : 'm4a', label: s.quality || '' });
+            });
+            if (streams.length) return { backend: 'Piped («' + base.replace('https://', '') + '»)', title: d.title || '', streams: streams };
+        } catch(e) { console.warn('[YT-Piped]', base, e.message); }
+    }
+    return null;
+}
+
+// ─── مسیر ۲: Invidious (دانلود از latest_version با local=true — پروکسی خود سرور، CORS باز) ───
+async function ytExtractInvidious(videoId, step) {
+    for (const base of YT_INVIDIOUS_INSTANCES) {
+        try {
+            step('سرور Invidious «' + base.replace('https://', '') + '»');
+            const resp = await ytFetchT(base + '/api/v1/videos/' + videoId, {}, 9000, true);
+            const d = await resp.json();
+            if (!d || (!d.formatStreams && !d.adaptiveFormats)) continue;
+            const streams = [];
+            const lv = function(itag){ return base + '/latest_version?id=' + videoId + '&itag=' + itag + '&local=true'; };
+            (d.formatStreams || []).forEach(function(s){
+                streams.push({ url: lv(s.itag), mime: s.type || 'video/mp4',
+                    height: parseInt(String(s.resolution || '').replace(/[^0-9]/g, ''), 10) || 0,
+                    bitrate: 0, hasAudio: true,
+                    ext: String(s.type || '').indexOf('webm') >= 0 ? 'webm' : 'mp4', label: s.resolution || '' });
+            });
+            (d.adaptiveFormats || []).forEach(function(s){
+                const isAudio = String(s.type || '').indexOf('audio') === 0;
+                streams.push({ url: lv(s.itag), mime: s.type || '',
+                    height: isAudio ? 0 : (parseInt(String(s.resolution || '').replace(/[^0-9]/g, ''), 10) || 0),
+                    bitrate: s.bitrate || 0, hasAudio: isAudio,
+                    ext: String(s.type || '').indexOf('webm') >= 0 ? 'webm' : (isAudio ? 'm4a' : 'mp4'),
+                    label: s.resolution || s.quality || '' });
+            });
+            if (streams.length) return { backend: 'Invidious («' + base.replace('https://', '') + '»)', title: d.title || '', streams: streams };
+        } catch(e) { console.warn('[YT-Invidious]', base, e.message); }
+    }
+    return null;
+}
+
+// نگاشت فرمت‌های InnerTube/WatchPage به فرمت نرمال
+function ytNormTubeFormats(sd) {
+    const streams = [];
+    ((sd.formats || []).concat(sd.adaptiveFormats || [])).forEach(function(f){
+        const isWebm = String(f.mimeType || '').indexOf('webm') >= 0;
+        const isAudio = String(f.mimeType || '').indexOf('audio') === 0;
+        streams.push({ url: (f.url && !f.signatureCipher && !f.cipher) ? f.url : null,
+            mime: f.mimeType || '', height: f.height || 0,
+            bitrate: f.bitrate || 0, hasAudio: f.hasAudio !== false,
+            ext: isWebm ? 'webm' : (isAudio ? 'm4a' : 'mp4'),
+            label: f.qualityLabel || '', cipher: f.signatureCipher || f.cipher || null });
+    });
+    return streams;
+}
+
+// ─── مسیر ۳: InnerTube با زنجیرهٔ پروکسی ───
+async function ytExtractInnerTube(videoId, step) {
     const clients = [
         { name: 'ANDROID', apiKey: 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8',
           ctx: { client: { clientName: 'ANDROID', clientVersion: '19.09.37', androidSdkVersion: 34, hl: 'fa', gl: 'IR' } } },
@@ -21009,85 +21359,135 @@ async function ytRunPipeline(videoId, btn) {
         { name: 'WEB', apiKey: 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8',
           ctx: { client: { clientName: 'WEB', clientVersion: '2.20240101.00.00', hl: 'fa', gl: 'IR' } } }
     ];
-    let streamingData = null, videoDetails = null;
     for (const c of clients) {
-        ytShowStatus('info', '🔄 دریافت اطلاعات ویدیو (کلاینت ' + c.name + ')...');
         try {
-            // Content-Type ساده ← درخواست بدون preflight؛ CORS مسدود کرد ← پروکسی‌ها
-            const got = await ytFetchWithFallback('https://www.youtube.com/youtubei/v1/player?key=' + c.apiKey, {
+            step('کلاینت ' + c.name + ' از YouTube');
+            // Content-Type ساده ← بدون preflight؛ CORS مسدود کرد ← پروکسی‌ها
+            const resp = await ytFetchT('https://www.youtube.com/youtubei/v1/player?key=' + c.apiKey, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
                 body: JSON.stringify({ context: c.ctx, videoId: videoId, contentCheckOk: true, racyCheckOk: true })
-            });
-            const data = await got.resp.json();
-            if (!data.playabilityStatus || data.playabilityStatus.status !== 'OK') { console.warn('[YT]', c.name, 'playability', data.playabilityStatus && data.playabilityStatus.status); continue; }
-            if (!data.streamingData || (!data.streamingData.formats && !data.streamingData.adaptiveFormats)) { console.warn('[YT]', c.name, 'no streamingData'); continue; }
-            streamingData = data.streamingData;
-            videoDetails = data.videoDetails || {};
-            ytState._fetchedDirect = (got.via === 'direct');
-            console.log('[YT] client OK:', c.name, 'via', got.via);
-            break;
-        } catch(e) { console.warn('[YT]', c.name, 'failed:', e.message); }
+            }, 12000, false);
+            const data = await resp.json();
+            if (!data.playabilityStatus || data.playabilityStatus.status !== 'OK') { console.warn('[YT-InnerTube]', c.name, 'playability', data.playabilityStatus && data.playabilityStatus.status); continue; }
+            const sd = data.streamingData;
+            if (!sd || (!sd.formats && !sd.adaptiveFormats)) { console.warn('[YT-InnerTube]', c.name, 'no streamingData'); continue; }
+            const streams = ytNormTubeFormats(sd);
+            if (streams.length) return { backend: 'YouTube (' + c.name + ')', title: (data.videoDetails || {}).title || '', streams: streams };
+        } catch(e) { console.warn('[YT-InnerTube]', c.name, e.message); }
     }
-    if (!streamingData) {
-        ytShowStatus('error', '❌ دریافت اطلاعات از YouTube ناموفق بود (CORS/فیلترینگ). اتصال اینترنت یا VPN را بررسی کنید و دوباره تلاش کنید.');
+    return null;
+}
+
+// ─── مسیر ۴: صفحهٔ watch با پروکسی + دیکودر داخلی ───
+async function ytExtractWatchPage(videoId, step) {
+    try {
+        step('خواندن صفحهٔ ویدیو با پروکسی');
+        const resp = await ytFetchT('https://www.youtube.com/watch?v=' + videoId + '&hl=en', {}, 15000, false);
+        const text = await resp.text();
+        const json = ytExtractJsonAfter(text, 'ytInitialPlayerResponse');
+        if (!json) return null;
+        let d;
+        try { d = JSON.parse(json); } catch(e) { return null; }
+        const sd = d.streamingData;
+        if (!sd || (!sd.formats && !sd.adaptiveFormats)) return null;
+        const streams = ytNormTubeFormats(sd);
+        if (!streams.length) return null;
+        // آدرس پلیر برای دیکودر (اگر امضا آلوده بود)
+        const pm = text.match(/\/s\/player\/([A-Za-z0-9_$-]+)\/base\.js/);
+        if (pm && !_ytDecipherCache.ops) {
+            try {
+                step('بازکردن امضا با دیکودر داخلی (الگوریتم yt-dlp)');
+                const pcode = await ytFetchT('https://www.youtube.com/s/player/' + pm[1] + '/base.js', {}, 20000, false);
+                const ops = ytParseDecipherOps(await pcode.text());
+                if (ops) { _ytDecipherCache = { player: pm[1], ops: ops }; console.log('[YT] decipher ops:', ops.length); }
+            } catch(e) { console.warn('[YT] player fetch failed', e.message); }
+        }
+        return { backend: 'صفحهٔ YouTube + دیکودر', title: (d.videoDetails || {}).title || '', streams: streams };
+    } catch(e) { console.warn('[YT-WatchPage]', e.message); return null; }
+}
+
+// حل نهایی آدرس — URL آماده یا امضای آلوده با دیکودر
+async function ytResolveStreamUrl(st) {
+    if (st.url) return st.url;
+    if (st.cipher) return await ytDecipherUrl(st.cipher);
+    return null;
+}
+
+// ─── پایپ‌لاین: چندمسیره ← انتخاب فرمت ← دانلود با پیشرفت ───
+async function ytRunPipeline(videoId, btn) {
+    ytState._lastVideoId = videoId;
+    const backends = [
+        ['سرورهای Piped', ytExtractPiped],
+        ['سرورهای Invidious', ytExtractInvidious],
+        ['YouTube (کلاینت‌های موبایل)', ytExtractInnerTube],
+        ['صفحهٔ YouTube + دیکودر', ytExtractWatchPage]
+    ];
+    let ext = null;
+    for (let bi = 0; bi < backends.length; bi++) {
+        const stepMsg = function(m){ ytShowStatus('info', '🔄 مرحلهٔ ' + toPersianNumber(bi + 1) + ' از ' + toPersianNumber(backends.length) + ' — ' + ytEscape(m) + '...'); };
+        stepMsg('شروع');
+        try { ext = await backends[bi][1](videoId, stepMsg); }
+        catch(e) { console.warn('[YT] backend', backends[bi][0], 'error', e.message); ext = null; }
+        if (ext && ext.streams && ext.streams.length) { console.log('[YT] backend OK:', ext.backend); break; }
+        ext = null;
+    }
+    if (!ext) {
+        ytShowStatus('error', '❌ دریافت اطلاعات از همهٔ مسیرها ناموفق بود.<br>' +
+            'اگر یوتیوب در شبکهٔ شما فیلتر است، <b>VPN</b> را روشن کنید و دوباره «شروع دانلود» را بزنید.');
         return false;
     }
+    ytShowStatus('info', '✅ اطلاعات از ' + ytEscape(ext.backend) + ' گرفته شد — انتخاب کیفیت...');
+    const title = ((ext.title || ('youtube_' + videoId)).replace(/[\\/:*?"<>|]/g, '_')).slice(0, 60);
+    const q = ytState.quality;
+    const qNum = (q === 'max') ? 99999 : parseInt(q, 10);
+    let mainStream = null, mainUrl = null, audioPick = null;
 
-    const all = (streamingData.formats || []).concat(streamingData.adaptiveFormats || []);
-    const title = ((videoDetails.title || ('youtube_' + videoId)).replace(/[\\/:*?"<>|]/g, '_')).slice(0, 60);
-    const resolveUrl = async function(f) {
-        if (f.url && !f.signatureCipher && !f.cipher) return f.url;
-        const sc = f.signatureCipher || f.cipher;
-        if (!sc) return null;
-        return await ytDecipherUrl(sc);
-    };
-
-    let chosen = null, finalUrl = null, ext = 'mp4';
     if (ytState.mode === 'audio') {
-        // 🔊 بهترین صدا (itag 140 m4a یا 251 opus)
-        const audioOnly = all.filter(function(f){ return (f.mimeType || '').indexOf('audio/') === 0; })
-                             .sort(function(a,b){ return (b.bitrate || 0) - (a.bitrate || 0); });
-        for (const f of audioOnly) {
-            const u = await resolveUrl(f);
-            if (u) { chosen = f; finalUrl = u; ext = (f.mimeType.indexOf('webm') >= 0 ? 'opus' : 'm4a'); break; }
+        // 🔊 بهترین صدا
+        const auds = ext.streams.filter(function(s){ return (s.mime || '').indexOf('audio/') === 0; })
+                                 .sort(function(a,b){ return (b.bitrate || 0) - (a.bitrate || 0); });
+        for (const s of auds) {
+            const u = await ytResolveStreamUrl(s);
+            if (u) { mainStream = s; mainUrl = u; break; }
         }
     } else {
-        // 🎬 ویدئو: اول muxed (صدا+تصویر در یک فایل)، بعد adaptive
-        const q = ytState.quality;
-        const qNum = (q === 'max') ? 99999 : parseInt(q, 10);
-        const videos = all.filter(function(f){ return (f.mimeType || '').indexOf('video/') === 0; });
-        const muxed = videos.filter(function(f){ return f.hasAudio !== false && f.audioQuality; });
-        const pool = muxed.length ? muxed : videos;
-        pool.sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
+        // 🎬 ویدئو: اول muxed (صدا+تصویر)، بعد adaptive
+        const vids = ext.streams.filter(function(s){ return (s.mime || '').indexOf('video/') === 0; });
+        const muxed = vids.filter(function(s){ return s.hasAudio; })
+                          .sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
+        const only = vids.filter(function(s){ return !s.hasAudio; })
+                         .sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
+        const pool = muxed.length ? muxed : only;
         let pick = null;
         if (q === 'max') pick = pool[0] || null;
-        else {
-            pick = pool.find(function(f){ return (f.height || 0) === qNum; })
-                || pool.find(function(f){ return (f.height || 0) <= qNum; })
-                || pool[pool.length - 1] || null;
-        }
+        else pick = pool.find(function(s){ return (s.height || 0) === qNum; })
+                  || pool.find(function(s){ return (s.height || 0) <= qNum && (s.height || 0) > 0; })
+                  || pool[pool.length - 1] || null;
         if (pick) {
-            const u = await resolveUrl(pick);
-            if (u) { chosen = pick; finalUrl = u; ext = (pick.mimeType.indexOf('webm') >= 0 ? 'webm' : 'mp4'); }
+            const u = await ytResolveStreamUrl(pick);
+            if (u) { mainStream = pick; mainUrl = u; }
+        }
+        // adaptive بدون صدا → فایل صدا هم خودکار
+        if (mainStream && !mainStream.hasAudio) {
+            const auds = ext.streams.filter(function(s){ return (s.mime || '').indexOf('audio/') === 0; })
+                                     .sort(function(a,b){ return (b.bitrate || 0) - (a.bitrate || 0); });
+            for (const s of auds) {
+                const u = await ytResolveStreamUrl(s);
+                if (u) { audioPick = { s: s, u: u }; break; }
+            }
         }
     }
-    if (!finalUrl) {
+    if (!mainUrl) {
         ytShowStatus('error', '❌ هیچ فرمت قابل دانلودی پیدا نشد. (ویدیو ممکن است محدودیت سنی/منطقه‌ای داشته باشد.)');
         return false;
     }
-    const qLabel = chosen.qualityLabel || chosen.audioQuality || '';
-    ytShowStatus('info', '⬇️ دانلود: ' + ytEscape(title) + (qLabel ? ' — ' + ytEscape(String(qLabel)) : ''));
-    const ok = await ytDownloadAndSave(finalUrl, title + '.' + ext);
-    // اگر ویدئو adaptive بود (بدون صدا)، فایل صدا را هم خودکار بگیر
-    if (ok && ytState.mode !== 'audio' && chosen && !chosen.audioQuality && chosen.hasAudio === false) {
+    const qLabel = mainStream.label || '';
+    ytShowStatus('info', '⬇️ شروع دانلود: ' + ytEscape(title) + (qLabel ? ' — ' + ytEscape(String(qLabel)) : ''));
+    const ok = await ytDownloadAndSave(mainUrl, title + '.' + mainStream.ext);
+    if (ok && audioPick) {
         ytShowStatus('info', '🔊 فایل صدا هم دانلود می‌شود (فرمت جدا)...');
-        const audioOnly = all.filter(function(f){ return (f.mimeType || '').indexOf('audio/') === 0; })
-                             .sort(function(a,b){ return (b.bitrate || 0) - (a.bitrate || 0); });
-        for (const f of audioOnly) {
-            const u = await resolveUrl(f);
-            if (u) { await ytDownloadAndSave(u, title + '_صدا.' + (f.mimeType.indexOf('webm') >= 0 ? 'opus' : 'm4a')); break; }
-        }
+        await ytDownloadAndSave(audioPick.u, title + '_صدا.' + audioPick.s.ext);
     }
     return ok;
 }
