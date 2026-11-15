@@ -5488,10 +5488,10 @@ body.locked .header-actions button {
     </div>
     <div class="yt-scroll">
         <div class="yt-section">
-            <h3>🔗 آدرس ویدیو</h3>
-            <input type="url" class="yt-input" id="ytUrl" placeholder="https://www.youtube.com/watch?v=..." dir="ltr" />
-            <button class="yt-paste-btn" onclick="ytPasteFromClipboard()">📋 از کلیپ‌بورد</button>
-            <div class="yt-help">آدرس صفحهٔ ویدیو را پیست کنید (youtube.com یا youtu.be یا shorts).</div>
+            <h3>🔗 لینک — کاملاً خودکار</h3>
+            <div class="yt-help">نیازی به تایپ لینک نیست! دو راه:<br>
+            ۱) در برنامهٔ یوتیوب: <b>اشتراک‌گذاری ← یادآور صوتی</b> — برنامه خودش باز می‌شود و دانلود را شروع می‌کند.<br>
+            ۲) لینک ویدیو را کپی کنید (Share ← Copy link) و این صفحه را باز کنید — لینک خودکار از کلیپ‌بورد خوانده می‌شود.</div>
         </div>
 
         <div class="yt-section">
@@ -5531,32 +5531,11 @@ body.locked .header-actions button {
             </div>
         </div>
 
-        <div class="yt-section">
-            <h3>⚙️ روش دانلود</h3>
-            <div class="yt-chip-group" id="ytMethodGroup">
-                <button class="yt-chip selected" data-method="direct" onclick="ytSelectMethod('direct')">🔴 مستقیم (کد خودم)</button>
-                <button class="yt-chip" data-method="cobalt" onclick="ytSelectMethod('cobalt')">🟢 سرور cobalt</button>
-            </div>
-            <div id="ytMethodDirectHelp" class="yt-help" style="margin-top:8px;">
-                روش مستقیم: کد داخل همین برنامه مستقیماً به YouTube InnerTube API درخواست می‌زند و لینک ویدیو را استخراج می‌کند — بدون هیچ سرور واسطه‌ای. (یادداشت فنی: مرورگر موبایل به‌دلیل سیاست CORS ممکن است این درخواست را مسدود کند؛ در آن صورت خودکار به روش cobalt سوییچ می‌شود.)
-            </div>
-            <div id="ytMethodCobaltHelp" style="display:none; margin-top:8px;">
-                <div class="yt-instance-row">
-                    <select id="ytInstance">
-                        <option value="https://api.cobalt.tools">cobalt.tools (رسمی)</option>
-                        <option value="https://co.eepy.today">co.eepy.today</option>
-                        <option value="https://cobalt-api.kwiatekmiki.com">cobalt-api.kwiatekmiki</option>
-                        <option value="custom">سفارشی…</option>
-                    </select>
-                </div>
-                <input type="url" class="yt-input" id="ytCustomInstance" placeholder="https://your-cobalt-instance.tld" dir="ltr" style="display:none; margin-top:8px;" />
-                <div class="yt-help" style="margin-top:6px;">اگر یک سرور خطا داد، سرور دیگر را امتحان کنید.</div>
-            </div>
-        </div>
 
         <div class="yt-section">
-            <button class="yt-download-btn" id="ytDownloadBtn" onclick="ytStartDownload()">⬇️ دریافت لینک دانلود</button>
+            <button class="yt-download-btn" id="ytDownloadBtn" onclick="ytStartDownload()">⬇️ شروع دانلود</button>
             <div class="yt-status" id="ytStatus"></div>
+            <div style="display:none; margin-top:10px; background:#e3ecf5; border-radius:6px; padding:3px;" id="ytProgressWrap"><div id="ytProgressBar" style="height:8px; background:#1976D2; width:0%; border-radius:6px; transition:width .25s;"></div></div>
             <div class="yt-result" id="ytResult"></div>
         </div>
 
@@ -7418,6 +7397,31 @@ body.locked .header-actions button {
 //               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
 //               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
 //               آن از یک اپ استاتیک وجود ندارد.
+//         🔧 v243 (۱۴۰۵ آبان ۲۷) — چهار الزام کاربر:
+//           (۱) «ضبط جلسه/تسک بعد از یک سکوت نسبتا بلند جمله قبلی را پاک
+//               میکند و جمله جدید را مینویسد یا اصلا چیزی نمینویسد — هیچوقت
+//               جملات قبل را پاک نکند و هیچ وقت جمله ای که شنیده شده بدون
+//               تایپ نماند» — رفع (BA-151): علت واقعی: Chrome بعد از سکوت
+//               session را می‌بندد و جملهٔ نافینال‌شدهٔ آخر (که فقط در
+//               textarea بود، نه در accum) با restart گم می‌شد. اکنون در
+//               هر چهار رکوردر: آخرین interim در onend به accum تعهد می‌شود
+//               (commit-on-end) + شروع ضبط از متن موجود seed می‌کند (ضبط =
+//               ادامه، نه جایگزین) + پیش‌نویس جلسه هنگام باز شدن صفحه پاک
+//               نمی‌شود. هیچ watchdog/poke اضافه نشد (بوق ندارد — BA-141/148).
+//           (۲) «صفحه فایل های pdf هیچ چیزی نمایش نمیدهد» — رفع (BA-152):
+//               علت ریشه‌ای: استور pdf_meetings در v238 بدون bump نسخهٔ
+//               IndexedDB اضافه شده بود → روی دستگاه‌های با DB موجود هرگز
+//               ساخته نمی‌شد → ذخیرهٔ جلسات بی‌صدا شکست می‌خورد و لیست همیشه
+//               خالی بود. IDB_VERSION=3 + گاردها + UI خطا با «تلاش دوباره».
+//           (۳) «صفحه یوتیوب هیچ لینکی نمیخواهم باید کد برنامه خودش شروع به
+//               دانلود کند با دیکودر خودش از کتابخانه های پایتون» — رفع
+//               (BA-153): فیلد لینک حذف؛ لینک خودکار از share_target
+//               (اشتراک‌گذاری ← یادآور صوتی در یوتیوب) یا کلیپ‌بورد؛ دانلود
+//               کامل داخل برنامه با نوار پیشرفت؛ دیکودر داخلی = پورت
+//               الگوریتم decipher کتابخانهٔ پایتونی yt-dlp (استخراج
+//               splice/reverse/swap از base.js و بازکردن امضای signatureCipher).
+//           (۴) manifest.json: share_target اضافه شد.
+//
 //         🔧 v242 (۱۴۰۵ آبان ۲۷) — سه الزام کاربر:
 //           (۱) «برنامه را خراب کردی اتوماتیک و بار رفرش آپدیت نمیشود مگر
 //               در مرورگر باز کنم» — رفع: تابع checkAppVersionFresh اضافه
@@ -7728,7 +7732,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v242-2026-11-15-acc-style-task-rec';
+const APP_VERSION = 'v243-2026-11-15-rec-never-lose-yt-auto';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -8425,7 +8429,13 @@ function addNumericAfterWords(text) {
 // ============ Database (localStorage + IndexedDB mirror for SW) ============
 const DB_KEY = 'persian_voice_reminders_v1';
 const IDB_NAME = 'yadavar_db';
-const IDB_VERSION = 2;  // bumped to v2 for the new STORE_BACKUP store
+// 🔧 v243: نسخهٔ ۳ — STORE_PDF_MEETINGS در v238 اضافه شده بود ولی نسخهٔ DB
+// بالا نرفته بود! روی دستگاه‌هایی که پایگاه‌داده‌شان از قبل نسخهٔ ۲ بود،
+// onupgradeneeded دیگر اجرا نمی‌شد → استور PDF هرگز ساخته نمی‌شد → ذخیرهٔ
+// جلسات بی‌صدا شکست می‌خورد و صفحهٔ فایل‌های PDF همیشه خالی می‌ماند
+// («هیچ چیزی نمایش نمیدهد»). با ۳، آپگرید روی همهٔ دستگاه‌ها اجرا و استور
+// (و هر استور گمشدهٔ دیگر) ساخته می‌شود.
+const IDB_VERSION = 3;
 const STORE_REMINDERS = 'reminders';
 const STORE_NOTIF_LOG = 'notif_log';
 const STORE_BACKUP = 'backup';  // NEW: full-DB backup store (key = 'main')
@@ -10181,6 +10191,7 @@ let taskRecActive = false;
 let taskRecAccum = '';
 let taskRecIndices = null;
 let taskRecObj = null;
+let taskLastInterim = '';   // 🔧 v243: آخرین interim برای تعهد در onend
 
 function isSpeechSupported() {
     return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -10230,6 +10241,7 @@ function startRecording() {
                 interim += r[0].transcript;
             }
         }
+        taskLastInterim = interim;   // 🔧 v243
         const el = document.getElementById('itemText');
         if (el) el.value = addNumericAfterWords((taskRecAccum + ' ' + interim).trim()).trim();
         const hintEl = document.getElementById('interimText');
@@ -10248,6 +10260,16 @@ function startRecording() {
         // ادامه می‌دهد. عین accDocStartRec.
     };
     taskRecObj.onend = function() {
+        // 🔧 v243: تعهد آخرین interim قبل از restart — اگر Chrome بعد از سکوت
+        //    طولانی session را ببندد و جمله هنوز final نشده باشد، بدون این
+        //    آن جمله گم می‌شد (= «بعد از سکوت جمله قبلی را پاک میکند»).
+        //    اکنون هر جملهٔ شنیده‌شده همیشه تایپ می‌ماند.
+        if (taskLastInterim && taskLastInterim.trim()) {
+            taskRecAccum += taskLastInterim.trim() + ' ';
+            const elC = document.getElementById('itemText');
+            if (elC) elC.value = addNumericAfterWords(taskRecAccum.trim()).trim();
+        }
+        taskLastInterim = '';
         // 🔧 v242: بعد از restart، ایندکس نتایج از صفر شروع می‌شود؛ اگر Set
         //    پاک نشود اولین جملهٔ بعد از restart فیلتر dedup می‌شد (= عین
         //    شکایت «بعد از چند جمله دیگر چیزی تایپ نمی‌کند»). در onend پاک
@@ -10263,8 +10285,11 @@ function startRecording() {
     };
     taskRecActive = true;
     isRecording = true;
-    // ضبط تازه = متن تازه (رفتار «ضبط اولیه/ضبط مجدد» فرم تسک — ثابت)
-    document.getElementById('itemText').value = '';
+    // 🔧 v243 (الزام کاربر: «هیچوقت جملات قبل را پاک نکند»): متن موجود
+    // (تایپی یا ضبط قبلی) حفظ می‌شود و ضبط جدید ادامهٔ آن را می‌گیرد —
+    // عین الگوی meetingStartRec/accRecStartRec.
+    taskRecAccum = (document.getElementById('itemText').value || '').trim();
+    if (taskRecAccum && !taskRecAccum.endsWith(' ')) taskRecAccum += ' ';
     const hintEl = document.getElementById('interimText');
     if (hintEl) { hintEl.textContent = 'صحبت کنید...'; hintEl.style.display = ''; }
     const micBtn = document.getElementById('reRecordBtn');
@@ -17754,6 +17779,7 @@ let accDocRecActive = false;
 let accDocRecAccum = '';
 let accDocRecIndices = null;
 let accDocRecObj = null;
+let accDocLastInterim = '';   // 🔧 v243: آخرین interim برای تعهد در onend
 
 function accDocToggleMic() {
     if (accDocRecActive) accDocStopRec();
@@ -17793,6 +17819,7 @@ function accDocStartRec() {
                 interim += r[0].transcript;
             }
         }
+        accDocLastInterim = interim;   // 🔧 v243
         const el = document.getElementById('accDocDesc');
         if (el) el.value = addNumericAfterWords((accDocRecAccum + ' ' + interim).trim()).trim();
     };
@@ -17805,6 +17832,14 @@ function accDocStartRec() {
         // خطاهای گذرا (no-speech و امثال آن) — سیکل بعدی ادامه می‌دهد
     };
     accDocRecObj.onend = function() {
+        // 🔧 v243: تعهد آخرین interim + ریست ایندکس‌ها (توضیح در taskRecObj.onend)
+        if (accDocLastInterim && accDocLastInterim.trim()) {
+            accDocRecAccum += accDocLastInterim.trim() + ' ';
+            const elC = document.getElementById('accDocDesc');
+            if (elC) elC.value = addNumericAfterWords(accDocRecAccum.trim()).trim();
+        }
+        accDocLastInterim = '';
+        accDocRecIndices = new Set();
         if (accDocRecActive && accDocRecObj) {
             setTimeout(function() {
                 if (accDocRecActive && accDocRecObj) {
@@ -17841,6 +17876,7 @@ function accDocStopRec() {
 let accRecRecActive = false;
 let accRecRecAccum = '';
 let accRecRecIndices = null;
+let accRecLastInterim = '';   // 🔧 v243: آخرین interim برای تعهد در onend
 let accRecRecObj = null;
 
 function accRecToggleMic() {
@@ -17879,6 +17915,7 @@ function accRecStartRec() {
                 interim += r[0].transcript;
             }
         }
+        accRecLastInterim = interim;   // 🔧 v243
         const el = document.getElementById('accRecText');
         if (el) el.value = addNumericAfterWords((accRecRecAccum + ' ' + interim).trim()).trim();
     };
@@ -17890,6 +17927,14 @@ function accRecStartRec() {
         }
     };
     accRecRecObj.onend = function() {
+        // 🔧 v243: تعهد آخرین interim + ریست ایندکس‌ها (توضیح در taskRecObj.onend)
+        if (accRecLastInterim && accRecLastInterim.trim()) {
+            accRecRecAccum += accRecLastInterim.trim() + ' ';
+            const elC = document.getElementById('accRecText');
+            if (elC) elC.value = addNumericAfterWords(accRecRecAccum.trim()).trim();
+        }
+        accRecLastInterim = '';
+        accRecRecIndices = new Set();
         if (accRecRecActive && accRecRecObj) {
             setTimeout(function() {
                 if (accRecRecActive && accRecRecObj) {
@@ -20187,6 +20232,7 @@ let meetRecObj = null;
 let meetRecActive = false;
 let meetRecAccum = '';
 let meetRecIndices = null;
+let meetLastInterim = '';   // 🔧 v243: آخرین interim برای تعهد در onend
 function openMeetingRecorder(fromMenu) {
     const ov = document.getElementById('meetingOverlay');
     if (!ov) return;
@@ -20194,9 +20240,11 @@ function openMeetingRecorder(fromMenu) {
     try { if (typeof accDocStopRec === 'function') accDocStopRec(); } catch(e) {}
     try { if (typeof accRecStopRec === 'function') accRecStopRec(); } catch(e) {}
     try { if (typeof stopRecording === 'function' && typeof isRecording !== 'undefined' && isRecording) stopRecording(); } catch(e) {}
-    // بازنشانی state ضبط جلسه
+    // 🔧 v243 (الزام کاربر: «هیچوقت جملات قبل را پاک نکند»): متن جلسه هنگام
+    // باز شدن صفحه پاک نمی‌شود — پیش‌نویس حفظ می‌ماند و ضبط جدید ادامهٔ آن
+    // را می‌گیرد (meetingStartRec از textarea seed می‌کند). پاک‌سازی فقط با
+    // دکمهٔ حذف (meetingClearText با تأیید) است.
     meetRecObj = null; meetRecActive = false; meetRecAccum = ''; meetRecIndices = null;
-    document.getElementById('meetingText').value = '';
     const btn = document.getElementById('meetingMicBtn');
     if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
     document.getElementById('meetingStatus').textContent = 'آمادهٔ ضبط — دکمهٔ میکروفون را بزنید';
@@ -20273,6 +20321,7 @@ function meetingStartRec() {
                 interim += r[0].transcript;
             }
         }
+        meetLastInterim = interim;   // 🔧 v243
         const el = document.getElementById('meetingText');
         if (el) el.value = addNumericAfterWords((meetRecAccum + ' ' + interim).trim()).trim() + (interim ? '' : '');
         // به‌روزرسانی وضعیت برای بازخورد بصری زنده
@@ -20290,6 +20339,14 @@ function meetingStartRec() {
         // خطاهای گذرا — سیکل بعدی (onend → 200ms restart) ادامه می‌دهد
     };
     meetRecObj.onend = function() {
+        // 🔧 v243: تعهد آخرین interim قبل از restart (توضیح در taskRecObj.onend) —
+        //    جملهٔ شنیده‌شدهٔ نافینال‌شده هرگز گم نمی‌شود.
+        if (meetLastInterim && meetLastInterim.trim()) {
+            meetRecAccum += meetLastInterim.trim() + ' ';
+            const elC = document.getElementById('meetingText');
+            if (elC) elC.value = addNumericAfterWords(meetRecAccum.trim()).trim();
+        }
+        meetLastInterim = '';
         // 🔧 v242: پاک‌کردن ایندکس‌ها بعد از restart (توضیح در taskRecObj.onend)
         meetRecIndices = new Set();
         // عین accDocRecObj.onend — restart سادهٔ ۲۰۰ms. (v241 آبشار+watchdog
@@ -20439,14 +20496,23 @@ function escapeHtmlMeeting(s) {
 
 // ─── IndexedDB برای PDF جلسات ───
 async function meetSavePdfRecord(record) {
-    if (!idbAvailable()) return;
-    const db = await openIDB();
-    await new Promise(function(resolve, reject) {
-        const tx = db.transaction([STORE_PDF_MEETINGS], 'readwrite');
-        tx.objectStore(STORE_PDF_MEETINGS).put(record);
-        tx.oncomplete = resolve;
-        tx.onerror = function() { reject(tx.error); };
-    });
+    if (!idbAvailable()) { showToast('ذخیره ممکن نیست: IndexedDB در دسترس نیست'); return false; }
+    try {
+        const db = await openIDB();
+        await new Promise(function(resolve, reject) {
+            let tx;
+            try { tx = db.transaction([STORE_PDF_MEETINGS], 'readwrite'); }
+            catch(e) {
+                // 🔧 v243: استور در DB قدیمی نبود — با IDB_VERSION=3 ساخته می‌شود
+                showToast('خطای ذخیرهٔ PDF: نسخهٔ پایگاه‌داده قدیمی است — برنامه را یک‌بار ببندید و باز کنید');
+                return reject(e);
+            }
+            tx.objectStore(STORE_PDF_MEETINGS).put(record);
+            tx.oncomplete = resolve;
+            tx.onerror = function() { reject(tx.error); };
+        });
+        return true;
+    } catch(e) { console.warn('[MeetingPDF] save failed', e); showToast('ذخیرهٔ فایل ناموفق بود'); return false; }
 }
 
 async function meetGetAllPdfRecords() {
@@ -20464,13 +20530,15 @@ async function meetGetAllPdfRecords() {
 
 async function meetDeletePdfRecord(id) {
     if (!idbAvailable()) return;
-    const db = await openIDB();
-    await new Promise(function(resolve, reject) {
-        const tx = db.transaction([STORE_PDF_MEETINGS], 'readwrite');
-        tx.objectStore(STORE_PDF_MEETINGS).delete(id);
-        tx.oncomplete = resolve;
-        tx.onerror = function() { reject(tx.error); };
-    });
+    try {
+        const db = await openIDB();
+        await new Promise(function(resolve, reject) {
+            const tx = db.transaction([STORE_PDF_MEETINGS], 'readwrite');
+            tx.objectStore(STORE_PDF_MEETINGS).delete(id);
+            tx.oncomplete = resolve;
+            tx.onerror = function() { reject(tx.error); };
+        });
+    } catch(e) { console.warn('[MeetingPDF] delete failed', e); showToast('حذف ناموفق بود'); }
 }
 
 // ─── صفحهٔ فایل‌های PDF ───
@@ -20499,7 +20567,15 @@ async function renderPdfFilesList() {
     const listEl = document.getElementById('pdffilesList');
     if (!listEl) return;
     listEl.innerHTML = '<div class="pdffiles-empty">در حال بارگذاری...</div>';
-    const records = await meetGetAllPdfRecords();
+    let records = null;
+    try {
+        records = await meetGetAllPdfRecords();
+    } catch(e) {
+        // 🔧 v243: خطا همیشه دیده شود + تلاش دوباره — نه صفحهٔ خالی
+        listEl.innerHTML = '<div class="pdffiles-empty">⚠️ خطا در خواندن فایل‌ها: ' + escapeHtmlMeeting(String(e && e.message || e)) +
+            '<br><button class="pdffile-btn open" onclick="renderPdfFilesList()">تلاش دوباره</button></div>';
+        return;
+    }
     records.sort(function(a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
     if (records.length === 0) {
         listEl.innerHTML = '' +
@@ -20577,7 +20653,10 @@ let ytState = {
     quality: '720',        // 144/240/360/480/720/1080/1440/2160/max
     audioFmt: 'mp3',       // mp3/ogg/opus/best
     bitrate: '128',        // 128/256/320 kbps
-    method: 'direct'       // 'direct' (کد مستقیم InnerTube) یا 'cobalt' (سرور)
+    method: 'direct',      // 🔧 v243: فقط کد داخلی (dickodر خود برنامه) — سرور cobalt حذف شد
+    pendingUrl: '',        // 🔧 v243: لینک خودکار (share_target یا کلیپ‌بورد)
+    _lastVideoId: null,    // 🔧 v243: برای دیکودر امضا
+    _fetchedDirect: false  // 🔧 v243: InnerTube مستقیم بود؟ (قفل IP لینک)
 };
 
 function ytSelectMethod(method) {
@@ -20607,7 +20686,17 @@ function openYouTubeDownloader(fromMenu) {
     const result = document.getElementById('ytResult');
     if (result) { result.className = 'yt-result'; result.innerHTML = ''; }
     const btn = document.getElementById('ytDownloadBtn');
-    if (btn) { btn.disabled = false; btn.textContent = '⬇️ دریافت لینک دانلود'; }
+    if (btn) { btn.disabled = false; btn.textContent = '⬇️ شروع دانلود'; }
+    // 🔧 v243: اگر لینک اشتراک‌شده یا کلیپ‌بورد موجود است، خودکار شروع کن
+    setTimeout(async function(){
+        try {
+            let u = ytState.pendingUrl || '';
+            if (!u && navigator.clipboard && navigator.clipboard.readText) {
+                try { const t = await navigator.clipboard.readText(); if (t) u = t.trim(); } catch(e) {}
+            }
+            if (u && ytExtractVideoId(u)) { ytState.pendingUrl = u; ytStartDownload(); }
+        } catch(e) {}
+    }, 400);
 }
 
 function closeYouTubeDownloader() {
@@ -20746,77 +20835,288 @@ function ytShareLink(url) {
     }
 }
 
-async function ytStartDownload() {
-    const urlInp = document.getElementById('ytUrl');
-    const url = (urlInp ? urlInp.value : '').trim();
-    if (!ytValidateUrl(url)) {
-        ytShowStatus('error', '❌ آدرس ویدیو معتبر نیست. مثال: <span dir="ltr">https://www.youtube.com/watch?v=...</span>');
-        return;
-    }
-    const btn = document.getElementById('ytDownloadBtn');
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ در حال دریافت...'; }
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v243 (الزام کاربر): «هیچ لینکی نمیخواهم — کد برنامه خودش شروع به
+// دانلود کند با دیکودر خودش از کتابخانه‌های پایتون»
+//   • لینک خودکار: share_target (اشتراک از یوتیوب) ← کلیپ‌بورد
+//   • دانلود کامل داخل برنامه: Blob + نوار پیشرفت ← a[download]
+//   • دیکودر: پورت الگوریتم decipher کتابخانهٔ پایتونی yt-dlp — امضای
+//     آلودهٔ پلیر با سه عملیات splice/reverse/swap باز می‌شود.
+//     کلاینت‌های ANDROID/IOS معمولاً URL آماده می‌دهند؛ اگر فقط WEB با
+//     signatureCipher بود، همین دیکودر امضا را می‌سازد.
+//   • CORS مرورگر youtube.com را نمی‌پذیرد ← زنجیرهٔ پروکسی عمومی fallback.
+// ════════════════════════════════════════════════════════════════════
 
-    // 🔧 v240 (الزام کاربر: «خودت کد بنویس که دانلود کنی نه با سرورهای خارجی»):
-    // روش پیش‌فرض = مستقیم. کد داخل همین برنامه مستقیماً به YouTube InnerTube
-    // API درخواست می‌زند و لینک ویدیو/صدا را استخراج می‌کند — بدون سرور واسطه.
-    // اگر مرورگر به‌دلیل CORS مسدود کرد، خودکار به cobalt سوییچ می‌کند.
-    if (ytState.method === 'direct') {
-        const directResult = await ytTryDirect(url, btn);
-        if (directResult) {
-            return; // موفقیت — لینک مستقیم آماده شد
+// پروکسی‌های CORS عمومی — به‌ترتیب امتحان می‌شوند (اول مستقیم، بعد پروکسی‌ها)
+const YT_PROXIES = [
+    function(u){ return 'https://corsproxy.io/?url=' + encodeURIComponent(u); },
+    function(u){ return 'https://test.cors.workers.dev/?' + u; },
+    function(u){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
+    function(u){ return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u); }
+];
+
+async function ytFetchWithFallback(url, opts) {
+    const attempts = [{ url: url, via: 'direct' }].concat(YT_PROXIES.map(function(p, i){ return { url: p(url), via: 'proxy' + i }; }));
+    let lastErr = null;
+    for (const att of attempts) {
+        try {
+            const resp = await fetch(att.url, opts || {});
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return { resp: resp, via: att.via };
+        } catch(e) { lastErr = e; console.warn('[YT] attempt failed (' + att.via + '):', e.message); }
+    }
+    throw lastErr || new Error('همهٔ مسیرها شکست خوردند');
+}
+
+// ─── دیکودر داخلی: پورت الگوریتم yt-dlp ───
+let _ytDecipherCache = { player: null, ops: null };
+
+function ytParseDecipherOps(playerCode) {
+    // بدنهٔ تابع decipher — همان چیزی که yt-dlp با JSInterp تفسیر می‌کند
+    const bodyM = playerCode.match(/a=a\.split\(""\);([\s\S]*?)return a\.join\(""\)/);
+    if (!bodyM) return null;
+    const body = bodyM[1];
+    // آبجکت کمکی سه‌متدی — نام‌ها در هر نسخهٔ پلیر عوض می‌شوند؛ با محتوای
+    // بدنه تشخیص می‌دهیم (splice/reverse/swap) — همان روش yt-dlp
+    const helperM = playerCode.match(/var\s+([a-zA-Z0-9_$]+)=\{([\s\S]{0,1500}?)\};/);
+    const opsByName = {};
+    if (helperM) {
+        const re = /([a-zA-Z0-9_$]+):function\((?:[a-z],\s*[a-z]|[a-z])\)\{([^{}]*)\}/g;
+        let m;
+        while ((m = re.exec(helperM[2])) !== null) {
+            const bsrc = m[2];
+            if (bsrc.indexOf('splice') >= 0) opsByName[m[1]] = 'splice';
+            else if (bsrc.indexOf('reverse') >= 0) opsByName[m[1]] = 'reverse';
+            else if (bsrc.indexOf('[0]=') >= 0) opsByName[m[1]] = 'swap';
         }
-        // مستقیم شکست خورد — به‌صورت خودکار به cobalt سوییچ کن
-        ytShowStatus('info', '🔄 روش مستقیم مسدود شد (CORS مرورگر). سوییچ خودکار به سرور cobalt...');
-        // اگر کاربر هنوز روی «مستقیم» بود، یک لحظه صبر کن تا پیام را ببیند
-        await new Promise(function(r){ setTimeout(r, 600); });
     }
-
-    // مسیر cobalt
-    const instance = ytGetInstance();
-    if (!instance) {
-        if (btn) { btn.disabled = false; btn.textContent = '⬇️ دریافت لینک دانلود'; }
-        return;
+    // توالی عملیات‌ها به‌ترتیب اجرا — دو آرگومانه (splice/swap) و
+    // تک‌آرگومانه (reverse از هلپر) و inline reverse
+    const ops = [];
+    const stmtRe = /([a-zA-Z0-9_$]+)\(\s*a\s*,\s*(\d+)\s*\)|([a-zA-Z0-9_$]+)\(\s*a\s*\)|a=a\.reverse\(\)/g;
+    let c;
+    while ((c = stmtRe.exec(body)) !== null) {
+        if (c[2] !== undefined) {
+            const op = opsByName[c[1]];
+            if (op) ops.push({ t: op, p: parseInt(c[2], 10) });
+        } else if (c[3] !== undefined) {
+            const op = opsByName[c[3]];
+            if (op) ops.push({ t: op, p: 0 });
+        } else {
+            ops.push({ t: 'reverse', p: 0 });
+        }
     }
-    ytShowStatus('info', '🔄 در حال تماس با سرور cobalt...');
+    return ops.length ? ops : null;
+}
 
-    // ساخت payload طبق cobalt API v10
-    const payload = { url: url };
-    if (ytState.mode === 'audio') {
-        payload.downloadMode = 'audio';
-        payload.audioFormat = ytState.audioFmt;   // mp3/ogg/opus/best
-        payload.audioBitrate = parseInt(ytState.bitrate, 10); // 128/256/320
-    } else {
-        payload.downloadMode = 'auto';
-        payload.videoQuality = ytState.quality;  // 720/1080/...
-        payload.youtubeVideoCodec = 'h264';       // سازگارترین کدک
-        payload.youtubeVideoContainer = 'mp4';    // mp4 بهترین پشتیبانی
+function ytApplyDecipher(sig, ops) {
+    let a = sig.split('');
+    for (const op of ops) {
+        if (op.t === 'splice') a = a.slice(op.p);
+        else if (op.t === 'reverse') a.reverse();
+        else if (op.t === 'swap') { const j = op.p % a.length; const t = a[0]; a[0] = a[j]; a[j] = t; }
     }
+    return a.join('');
+}
 
-    // تلاش با instance انتخاب‌شده؛ اگر خطا داد، fallback به cobalt.tools web UI
+async function ytDecipherUrl(sc) {
+    // sc = مقدار signatureCipher (s=..&sp=sig&url=..)
     try {
-        const resp = await fetch(instance + '/', {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
-        if (!resp.ok) {
-            throw new Error('HTTP ' + resp.status);
+        const params = new URLSearchParams(sc);
+        const sig = params.get('s');
+        const sp = params.get('sp') || 'signature';
+        const base = params.get('url');
+        if (!sig || !base) return null;
+        let ops = _ytDecipherCache.ops;
+        if (!ops) {
+            ytShowStatus('info', '🔓 دریافت پلیر برای دیکودر داخلی (الگوریتم yt-dlp)...');
+            const page = await ytFetchText('https://www.youtube.com/watch?v=' + ytState._lastVideoId + '&hl=en');
+            const pm = page.text.match(/\/s\/player\/([A-Za-z0-9_$-]+)\/base\.js/);
+            if (!pm) return null;
+            const pcode = await ytFetchText('https://www.youtube.com/s/player/' + pm[1] + '/base.js');
+            ops = ytParseDecipherOps(pcode.text);
+            if (!ops) { console.warn('[YT] decipher ops not parsed'); return null; }
+            _ytDecipherCache = { player: pm[1], ops: ops };
+            console.log('[YT] decipher ops extracted:', ops.length, 'operations');
         }
-        const data = await resp.json();
-        ytHandleCobaltResponse(data, url, btn);
-    } catch(e) {
-        console.warn('[YT] cobalt API failed:', e.message);
-        // fallback: باز کردن cobalt.tools با آدرس ویدیو
-        ytShowStatus('error',
-            '⚠️ سرور دانلود پاسخ نداد (' + ytEscape(e.message) + '). ' +
-            'می‌توانید سرور دیگری انتخاب کنید یا مستقیماً از وب‌سایت رسمی دانلود کنید.'
-        );
-        ytShowFallbackResult(url);
-        if (btn) { btn.disabled = false; btn.textContent = '⬇️ دریافت لینک دانلود'; }
+        return base + '&' + sp + '=' + encodeURIComponent(ytApplyDecipher(sig, ops));
+    } catch(e) { console.warn('[YT] decipher failed:', e.message); return null; }
+}
+
+async function ytFetchText(url) {
+    const r = await ytFetchWithFallback(url);
+    return { text: await r.resp.text(), via: r.via };
+}
+
+// ─── دانلود و ذخیرهٔ فایل داخل برنامه ───
+async function ytDownloadAndSave(url, filename) {
+    const wrap = document.getElementById('ytProgressWrap');
+    const bar = document.getElementById('ytProgressBar');
+    // اول مستقیم (اگر InnerTube مستقیم بود، لینک به IP مرورگر قفل است و
+    // مستقیم کار می‌کند)، بعد پروکسی‌ها
+    const attempts = [{ u: url }].concat(YT_PROXIES.map(function(p){ return { u: p(url) }; }));
+    for (const att of attempts) {
+        try {
+            const resp = await fetch(att.u);
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const total = parseInt(resp.headers.get('content-length') || '0', 10);
+            const reader = resp.body && resp.body.getReader ? resp.body.getReader() : null;
+            let chunks = [], got = 0;
+            if (reader) {
+                while (true) {
+                    const r = await reader.read();
+                    if (r.done) break;
+                    chunks.push(r.value);
+                    got += r.value.length;
+                    if (total && bar) { if (wrap) wrap.style.display = 'block'; bar.style.width = Math.round(got / total * 100) + '%'; }
+                    if (total) ytShowStatus('info', '⬇️ در حال دانلود... ' + Math.round(got / 1048576) + ' از ' + Math.round(total / 1048576) + ' مگابایت');
+                }
+            } else {
+                chunks = [await resp.arrayBuffer()];
+            }
+            const blob = new Blob(chunks, { type: resp.headers.get('content-type') || 'application/octet-stream' });
+            chunks = null;
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 8000);
+            if (wrap) wrap.style.display = 'none';
+            ytShowStatus('success', '✅ ذخیره شد: ' + ytEscape(filename) + (total ? ' (' + Math.round(total / 1048576) + ' مگابایت)' : ''));
+            return true;
+        } catch(e) { console.warn('[YT] download attempt failed:', e.message); }
     }
+    if (wrap) wrap.style.display = 'none';
+    // آخرین راه: دانلود نیتیو مرورگر (بدون Blob)
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.target = '_blank'; a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a); a.click(); a.remove();
+    ytShowStatus('info', '⚠️ دانلود به مرورگر سپرده شد — اگر شروع نشد، اتصال (VPN/پروکسی) را بررسی کنید و دوباره تلاش کنید.');
+    return true;
+}
+
+// ─── پایپ‌لاین کامل: InnerTube ← انتخاب فرمت ← (دیکودر) ← دانلود ───
+async function ytRunPipeline(videoId, btn) {
+    ytState._lastVideoId = videoId;
+    const clients = [
+        { name: 'ANDROID', apiKey: 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8',
+          ctx: { client: { clientName: 'ANDROID', clientVersion: '19.09.37', androidSdkVersion: 34, hl: 'fa', gl: 'IR' } } },
+        { name: 'IOS', apiKey: 'AIzaSyB-63vPrdThhKuerbB2N_l7Kww9Yr0pksM',
+          ctx: { client: { clientName: 'IOS', clientVersion: '19.09.3', deviceMake: 'Apple', deviceModel: 'iPhone16,2', hl: 'fa', gl: 'IR' } } },
+        { name: 'WEB', apiKey: 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8',
+          ctx: { client: { clientName: 'WEB', clientVersion: '2.20240101.00.00', hl: 'fa', gl: 'IR' } } }
+    ];
+    let streamingData = null, videoDetails = null;
+    for (const c of clients) {
+        ytShowStatus('info', '🔄 دریافت اطلاعات ویدیو (کلاینت ' + c.name + ')...');
+        try {
+            // Content-Type ساده ← درخواست بدون preflight؛ CORS مسدود کرد ← پروکسی‌ها
+            const got = await ytFetchWithFallback('https://www.youtube.com/youtubei/v1/player?key=' + c.apiKey, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+                body: JSON.stringify({ context: c.ctx, videoId: videoId, contentCheckOk: true, racyCheckOk: true })
+            });
+            const data = await got.resp.json();
+            if (!data.playabilityStatus || data.playabilityStatus.status !== 'OK') { console.warn('[YT]', c.name, 'playability', data.playabilityStatus && data.playabilityStatus.status); continue; }
+            if (!data.streamingData || (!data.streamingData.formats && !data.streamingData.adaptiveFormats)) { console.warn('[YT]', c.name, 'no streamingData'); continue; }
+            streamingData = data.streamingData;
+            videoDetails = data.videoDetails || {};
+            ytState._fetchedDirect = (got.via === 'direct');
+            console.log('[YT] client OK:', c.name, 'via', got.via);
+            break;
+        } catch(e) { console.warn('[YT]', c.name, 'failed:', e.message); }
+    }
+    if (!streamingData) {
+        ytShowStatus('error', '❌ دریافت اطلاعات از YouTube ناموفق بود (CORS/فیلترینگ). اتصال اینترنت یا VPN را بررسی کنید و دوباره تلاش کنید.');
+        return false;
+    }
+
+    const all = (streamingData.formats || []).concat(streamingData.adaptiveFormats || []);
+    const title = ((videoDetails.title || ('youtube_' + videoId)).replace(/[\\/:*?"<>|]/g, '_')).slice(0, 60);
+    const resolveUrl = async function(f) {
+        if (f.url && !f.signatureCipher && !f.cipher) return f.url;
+        const sc = f.signatureCipher || f.cipher;
+        if (!sc) return null;
+        return await ytDecipherUrl(sc);
+    };
+
+    let chosen = null, finalUrl = null, ext = 'mp4';
+    if (ytState.mode === 'audio') {
+        // 🔊 بهترین صدا (itag 140 m4a یا 251 opus)
+        const audioOnly = all.filter(function(f){ return (f.mimeType || '').indexOf('audio/') === 0; })
+                             .sort(function(a,b){ return (b.bitrate || 0) - (a.bitrate || 0); });
+        for (const f of audioOnly) {
+            const u = await resolveUrl(f);
+            if (u) { chosen = f; finalUrl = u; ext = (f.mimeType.indexOf('webm') >= 0 ? 'opus' : 'm4a'); break; }
+        }
+    } else {
+        // 🎬 ویدئو: اول muxed (صدا+تصویر در یک فایل)، بعد adaptive
+        const q = ytState.quality;
+        const qNum = (q === 'max') ? 99999 : parseInt(q, 10);
+        const videos = all.filter(function(f){ return (f.mimeType || '').indexOf('video/') === 0; });
+        const muxed = videos.filter(function(f){ return f.hasAudio !== false && f.audioQuality; });
+        const pool = muxed.length ? muxed : videos;
+        pool.sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
+        let pick = null;
+        if (q === 'max') pick = pool[0] || null;
+        else {
+            pick = pool.find(function(f){ return (f.height || 0) === qNum; })
+                || pool.find(function(f){ return (f.height || 0) <= qNum; })
+                || pool[pool.length - 1] || null;
+        }
+        if (pick) {
+            const u = await resolveUrl(pick);
+            if (u) { chosen = pick; finalUrl = u; ext = (pick.mimeType.indexOf('webm') >= 0 ? 'webm' : 'mp4'); }
+        }
+    }
+    if (!finalUrl) {
+        ytShowStatus('error', '❌ هیچ فرمت قابل دانلودی پیدا نشد. (ویدیو ممکن است محدودیت سنی/منطقه‌ای داشته باشد.)');
+        return false;
+    }
+    const qLabel = chosen.qualityLabel || chosen.audioQuality || '';
+    ytShowStatus('info', '⬇️ دانلود: ' + ytEscape(title) + (qLabel ? ' — ' + ytEscape(String(qLabel)) : ''));
+    const ok = await ytDownloadAndSave(finalUrl, title + '.' + ext);
+    // اگر ویدئو adaptive بود (بدون صدا)، فایل صدا را هم خودکار بگیر
+    if (ok && ytState.mode !== 'audio' && chosen && !chosen.audioQuality && chosen.hasAudio === false) {
+        ytShowStatus('info', '🔊 فایل صدا هم دانلود می‌شود (فرمت جدا)...');
+        const audioOnly = all.filter(function(f){ return (f.mimeType || '').indexOf('audio/') === 0; })
+                             .sort(function(a,b){ return (b.bitrate || 0) - (a.bitrate || 0); });
+        for (const f of audioOnly) {
+            const u = await resolveUrl(f);
+            if (u) { await ytDownloadAndSave(u, title + '_صدا.' + (f.mimeType.indexOf('webm') >= 0 ? 'opus' : 'm4a')); break; }
+        }
+    }
+    return ok;
+}
+
+async function ytStartDownload() {
+    const btn = document.getElementById('ytDownloadBtn');
+    // ۱) لینک خودکار: share_target ← کلیپ‌بورد — هیچ فیلدی وجود ندارد
+    let url = ytState.pendingUrl || '';
+    if (!url) {
+        try {
+            if (navigator.clipboard && navigator.clipboard.readText) {
+                const t = await navigator.clipboard.readText();
+                if (t) url = t.trim();
+            }
+        } catch(e) { /* مجوز کلیپ‌بورد نبود — نادیده */ }
+    }
+    const videoId = ytExtractVideoId(url);
+    if (!videoId) {
+        ytShowStatus('error',
+            'لینکی پیدا نشد. دو راه:<br>۱) در برنامهٔ یوتیوب: «اشتراک‌گذاری ← یادآور صوتی»<br>۲) لینک ویدیو را کپی کنید (Share ← Copy link) و بعد «شروع دانلود» را بزنید.');
+        if (btn) { btn.disabled = false; btn.textContent = '⬇️ شروع دانلود'; }
+        return;
+    }
+    ytState.pendingUrl = url;
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ در حال دریافت اطلاعات...'; }
+    let ok = false;
+    try { ok = await ytRunPipeline(videoId, btn); }
+    catch(e) { console.error('[YT] pipeline error', e); ytShowStatus('error', '❌ خطا: ' + ytEscape(e.message || e)); }
+    if (btn) { btn.disabled = false; btn.textContent = ok ? '✅ تمام شد — دانلود دیگر' : '⬇️ شروع دانلود'; }
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -23691,6 +23991,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 5000);
     // 🔧 v242: چک مستقیم نسخه هنگام بارگذاری (بعد از UPDATE_CACHE پنج‌ثانیه‌ای)
     setTimeout(function() { checkAppVersionFresh(); }, 8000);
+    // 🔧 v243: share_target — «اشتراک‌گذاری ← یادآور صوتی» از برنامهٔ یوتیوب.
+    // لینک از پارامترهای URL خوانده و دانلود خودکار شروع می‌شود.
+    (function(){
+        try {
+            const q = new URLSearchParams(location.search);
+            const raw = (q.get('url') || q.get('text') || q.get('title') || '').trim();
+            if (raw && typeof ytExtractVideoId === 'function' && ytExtractVideoId(raw)) {
+                if (typeof ytState !== 'undefined') ytState.pendingUrl = raw;
+                setTimeout(function(){
+                    try {
+                        openYouTubeDownloader();
+                        setTimeout(function(){ try { ytStartDownload(); } catch(e) {} }, 700);
+                    } catch(e) {}
+                }, 1200);
+            }
+        } catch(e) {}
+    })();
     // 🔧 v196: هر ۲ دقیقه چک کن — navigator.onLine حذف شد (گیر می‌کرد)
     setInterval(function() {
         if (navigator.serviceWorker.controller) {
