@@ -5518,6 +5518,8 @@ body.locked .header-actions button {
             <div id="ytVideoOpts" style="margin-top:12px;">
                 <label class="yt-label">کیفیت ویدئو</label>
                 <div class="yt-chip-group" id="ytQualityGroup">
+                    <button class="yt-chip" data-q="144" onclick="ytSelectQuality('144')">۱۴۴p</button>
+                    <button class="yt-chip" data-q="240" onclick="ytSelectQuality('240')">۲۴۰p</button>
                     <button class="yt-chip" data-q="360" onclick="ytSelectQuality('360')">۳۶۰p</button>
                     <button class="yt-chip" data-q="480" onclick="ytSelectQuality('480')">۴۸۰p</button>
                     <button class="yt-chip selected" data-q="720" onclick="ytSelectQuality('720')">۷۲۰p</button>
@@ -5530,17 +5532,26 @@ body.locked .header-actions button {
         </div>
 
         <div class="yt-section">
-            <h3>⚙️ سرور دانلود</h3>
-            <div class="yt-instance-row">
-                <select id="ytInstance">
-                    <option value="https://api.cobalt.tools">cobalt.tools (رسمی)</option>
-                    <option value="https://co.eepy.today">co.eepy.today</option>
-                    <option value="https://cobalt-api.kwiatekmiki.com">cobalt-api.kwiatekmiki</option>
-                    <option value="custom">سفارشی…</option>
-                </select>
+            <h3>⚙️ روش دانلود</h3>
+            <div class="yt-chip-group" id="ytMethodGroup">
+                <button class="yt-chip selected" data-method="direct" onclick="ytSelectMethod('direct')">🔴 مستقیم (کد خودم)</button>
+                <button class="yt-chip" data-method="cobalt" onclick="ytSelectMethod('cobalt')">🟢 سرور cobalt</button>
             </div>
-            <input type="url" class="yt-input" id="ytCustomInstance" placeholder="https://your-cobalt-instance.tld" dir="ltr" style="display:none; margin-top:8px;" />
-            <div class="yt-help">اگر یک سرور خطا داد، سرور دیگر را امتحان کنید. سرورهای عمومی cobalt گاهی محدود می‌شوند.</div>
+            <div id="ytMethodDirectHelp" class="yt-help" style="margin-top:8px;">
+                روش مستقیم: کد داخل همین برنامه مستقیماً به YouTube InnerTube API درخواست می‌زند و لینک ویدیو را استخراج می‌کند — بدون هیچ سرور واسطه‌ای. (یادداشت فنی: مرورگر موبایل به‌دلیل سیاست CORS ممکن است این درخواست را مسدود کند؛ در آن صورت خودکار به روش cobalt سوییچ می‌شود.)
+            </div>
+            <div id="ytMethodCobaltHelp" style="display:none; margin-top:8px;">
+                <div class="yt-instance-row">
+                    <select id="ytInstance">
+                        <option value="https://api.cobalt.tools">cobalt.tools (رسمی)</option>
+                        <option value="https://co.eepy.today">co.eepy.today</option>
+                        <option value="https://cobalt-api.kwiatekmiki.com">cobalt-api.kwiatekmiki</option>
+                        <option value="custom">سفارشی…</option>
+                    </select>
+                </div>
+                <input type="url" class="yt-input" id="ytCustomInstance" placeholder="https://your-cobalt-instance.tld" dir="ltr" style="display:none; margin-top:8px;" />
+                <div class="yt-help" style="margin-top:6px;">اگر یک سرور خطا داد، سرور دیگر را امتحان کنید.</div>
+            </div>
         </div>
 
         <div class="yt-section">
@@ -5557,7 +5568,7 @@ body.locked .header-actions button {
                 ۳) «دریافت لینک دانلود» را بزنید — چند ثانیه طول می‌کشد.<br>
                 ۴) لینک آماده شد → دکمهٔ «دانلود فایل» را بزنید تا در مرورگر ذخیره شود.<br>
                 <br>
-                <b>نکته:</b> دانلود یوتیوب از طریق سرورهای عمومی cobalt انجام می‌شود. اگر همهٔ سرورها خطا دادند، می‌توانید نسخهٔ رسمی را در <a href="https://cobalt.tools" target="_blank" rel="noopener" style="color:#007aff;">cobalt.tools</a> باز کنید و آدرس را مستقیماً آنجا بزنید.
+                <b>روش مستقیم:</b> کد خود برنامه مستقیماً به YouTube درخواست می‌زند — بدون سرور واسطه. اگر مرورگر به‌دلیل CORS مسدود کرد، خودکار به سرور cobalt سوییچ می‌کند.
             </div>
         </div>
     </div>
@@ -7363,6 +7374,50 @@ body.locked .header-actions button {
 //               ~۷۵۰MB-۱.۵GB) — فقط با WebGPU توصیه می‌شود.
 //            dtype: WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده).
 //            تست: test_offline_stt_v222.mjs — ۱۴ تست Y1-Y14، پورت ۸۲۰۲.
+//         🔧 v240 (۱۴۰۵ آبان ۲۷) — چهار الزام کاربر:
+//           (۱) «از عملکرد ضبط اولیه و ضبط مجدد در ویرایش یک تسک اصلا راضی
+//               نیستم درست کار نمیکنه چیزی تایپ نمیکنه» — علت: v239 برای
+//               «عین حسابداری» شدن، interimResults را false کرد. با false،
+//               متن فقط هنگام final شدن (که در فارسی ۱۰–۱۵ ثانیه با مکث
+//               طولانی طول می‌کشد) ظاهر می‌شد → کاربر می‌دید «چیزی تایپ
+//               نمیکنه». رفع: interimResults=true بازگردانده شد در همهٔ چهار
+//               روتین ضبط (initRecognition تسک، accDocStartRec، accRec،
+//               meetingStartRec). continuous=true همچنان نگه‌داشته می‌شود
+//               (میکروفون باز می‌ماند — بوق ندارد). این دو مستقل‌اند:
+//               continuous وضعیت میکروفون، interimResults فقط نحوهٔ بازخورد
+//               نمایش. ترکیب درست: continuous=true + interimResults=true =
+//               بازخورد زنده + بدون بوق.
+//           (۲) «صفحه ضبط جلسه درست و سریع کار نمیکنه گاها ۱۰ ۱۵ ثانیه باید
+//               صبر کنی» — همان علت (interimResults=false). رفع با همان
+//               تغییر: onresult اکنون interim را جدا می‌کند و در
+//               meetingText و meetingStatus زنده نمایش می‌دهد.
+//           (۳) «در صفحات جدیدی که طراحی کردی کلید خروج و انصراف و بک
+//               بگذار با بک موبایل هم کار کند در صفحات گیر می‌افتیم» — علت:
+//               ytOverlay/meetingOverlay/pdffilesOverlay از navPush استفاده
+//               می‌کردند ولی trackModalOpen صدا نمی‌زدند → _modalStack خالی
+//               می‌ماند → popstate handler آن‌ها را نمی‌بست. رفع:
+//               trackModalOpen/trackModalClose در open/close هر سه اضافه شد؛
+//               closeModalByType برای yt/pdffiles هم unlockBodyScroll اضافه
+//               کرد (برای مسیر popstate که مستقیم closeModalByType را صدا
+//               می‌زند). closeYouTubeDownloader/closeMeetingRecorder/
+//               closePdfFilesPage با guard _silentNavClose از navBack دوبل
+//               جلوگیری می‌کنند.
+//           (۴) «دانلود یوتیوب کیفیت‌های پایین‌تر هم داشته باشه و خودت کد
+//               بنویس که دانلود کنی نه با سرورهای خارجی» — رفع:
+//               (الف) کیفیت‌های ۱۴۴p و ۲۴۰p به selector اضافه شد.
+//               (ب) روش مستقیم (ytTryDirect) نوشته شد: کد داخل برنامه
+//                   مستقیماً به YouTube InnerTube API (همان API که برنامهٔ
+//                   رسمی استفاده می‌کند) POST می‌زند، streamingData را
+//                   می‌گیرد، و بر اساس itag انتخاب‌شده (18=360p/22=720p
+//                   muxed، 140/251 audio-only) لینک مستقیم googlevideo.com
+//                   را استخراج می‌کند. سه کلاینت ANDROID/IOS/WEB پشت‌سرهم
+//                   امتحان می‌شوند.
+//               محدودیت فنی صادقانه: YouTube هدرهای CORS را برای youtube.com
+//               ارسال نمی‌کند → fetch از مرورگر موبایل مسدود می‌شود (خطای
+//               "Failed to fetch"). در آن صورت ytStartDownload خودکار به
+//               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
+//               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
+//               آن از یک اپ استاتیک وجود ندارد.
 //         🔧 v239 (۱۴۰۵ آبان ۲۶) — دو الزام کاربر:
 //           (۱) «هنوز ضبط تسک ها بوق های متوالی دارد و من نمیخواهم. کلا یک
 //               عکس میکروفون باشد مثل تیتر سند حسابداری و فعال و غیر فعال
@@ -7626,7 +7681,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v239-2026-11-14-task-rec-like-acc-yt';
+const APP_VERSION = 'v240-2026-11-15-rec-live-backnav-yt-direct';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -10080,49 +10135,57 @@ function initRecognition() {
     if (!isSpeechSupported()) return false;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SR();
-    // 🔧 v239 (الزام کاربر): عین accDocStartRec — continuous=true. قبلاً false
-    //    بود که میکروفون پس از هر utterance بسته و دوباره باز می‌شد → بوق
-    //    سخت‌افزاریِ هر بار re-acquire. با true میکروفون پیوسته باز می‌ماند
-    //    (مثل تیتر سند حسابداری) و هیچ بوقی شنیده نمی‌شود.
+    // 🔧 v239: continuous=true (بدون بوق — میکروفون پیوسته باز می‌ماند).
+    // 🔧 v240 (الزام کاربر): interimResults=true بازگردانده شد. قبلاً v239 آن
+    //    را false کرد تا «عین حسابداری» شود، ولی این باعث شد کاربر «چیزی تایپ
+    //    نمیکنه» ببیند چون متن فقط هنگام final شدن (که در فارسی ۱۰–۱۵ ثانیه
+    //    با مکث طولانی طول می‌کشد) ظاهر می‌شد. ترکیب درست: continuous=true
+    //    (بوق نداریم) + interimResults=true (نمایش زندهٔ کلمات در حال گفتن).
+    //    continuous=true نگه‌داشتن میکروفون باز است؛ interimResults=true فقط
+    //    نحوهٔ بازخورد نمایش را تعیین می‌کند. این دو مستقل‌اند.
     recognition.lang = 'fa-IR';
     recognition.continuous = true;
-    recognition.interimResults = false;
+    recognition.interimResults = true;
     recognition.maxAlternatives = 1;
 
-    // 🔧 v239: بازنشانی هر session — مانند accDocStartRec که accDocRecAccum=''
-    //    می‌کرد. اینجا currentSessionText نقش همان accumulator را دارد.
+    // 🔧 v240: بازنشانی هر session.
     recognition.onstart = () => {
+        processedResults = new Set();
         currentSessionText = '';
     };
 
     recognition.onresult = (event) => {
-        // 🔧 v239: عین accDocStartRec — فقط نتایج final (interimResults=false).
-        //    قبلاً روی event.resultIndex حلقه می‌زد و interim جدا می‌کرد — حالا
-        //    الگوی حسابداری: همهٔ نتایج final را از resultIndex=0 می‌خوانیم.
-        for (let i = 0; i < event.results.length; i++) {
+        // 🔧 v240: الگوی بازخورد زنده — interimها را جدا کن و real-time نشان بده.
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
             const result = event.results[i];
-            if (result.isFinal && !processedResults.has(i)) {
-                currentSessionText += result[0].transcript + ' ';
-                processedResults.add(i);
+            const transcript = result[0].transcript;
+            if (result.isFinal) {
+                if (!processedResults.has(i)) {
+                    currentSessionText += transcript + ' ';
+                    processedResults.add(i);
+                }
+            } else {
+                interim = transcript;
             }
         }
-        // 🔧 v235/v239: نمایش زنده با تبدیل اعداد فارسی گفتاری به دیجیت.
+        // 🔧 v235/v240: نمایش زنده با تبدیل اعداد فارسی گفتاری به دیجیت.
         // متغیرهای accumulator متن خام را نگه می‌دارند؛ فقط خروجی نمایشی
         // تبدیل می‌شود تا «دو میلیون» → «۲٬۰۰۰٬۰۰۰» زنده دیده شود.
-        const rawDisplay = (allFinalText + ' ' + currentSessionText).trim().replace(/\s+/g, ' ');
+        const rawDisplay = (allFinalText + ' ' + currentSessionText + ' ' + interim).trim().replace(/\s+/g, ' ');
         document.getElementById('itemText').value = addNumericAfterWords(rawDisplay);
         const hintEl = document.getElementById('interimText');
         if (hintEl) {
             hintEl.style.display = '';
-            hintEl.textContent = currentSessionText ? 'در حال شنیدن...' : 'صحبت کنید...';
+            hintEl.textContent = addNumericAfterWords(interim) || (currentSessionText ? 'در حال شنیدن...' : 'صحبت کنید...');
         }
     };
 
     recognition.onerror = (event) => {
         console.error('Recognition error:', event.error, 'protocol:', location.protocol);
-        // 🔧 v239: عین accDocStartRec.onerror — خطاهای گذرا را نادیده می‌گیریم
-        //    (onend سیکل بعدی را ادامه می‌دهد). فقط خطای رد مجوز ضبط را متوقف
-        //    می‌کنیم. قبلاً toastهای متعدد می‌زدیم که با beepها هم‌افزایی داشتند.
+        // 🔧 v239/v240: خطاهای گذرا را نادیده می‌گیریم (onend سیکل بعدی را
+        //    ادامه می‌دهد). فقط خطای رد مجوز ضبط را متوقف می‌کنیم. هیچ toast
+        //    برای خطاهای گذرا → سکوت کامل، بدون بوق.
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
             stopRecording();
             showToast('دسترسی به میکروفون رد شد. در تنظیمات مرورگر اجازه دهید.');
@@ -12722,6 +12785,13 @@ function closeModalByType(type) {
         if (typeof meetRecActive !== 'undefined' && meetRecActive && typeof meetingStopRec === 'function') {
             try { meetingStopRec(); } catch(e) {}
         }
+        // 🔧 v240: قفل اسکرول body را باز کن (Back موبایل از popstate می‌آید و
+        //    این تابع را صدا می‌زند — بدون این فراخوانی، body در قفل می‌ماند).
+        try { unlockBodyScroll(); } catch(e) {}
+    }
+    if (type === 'pdffiles' || type === 'yt') {
+        // 🔧 v240: قفل اسکرول body را باز کن برای Back موبایل.
+        try { unlockBodyScroll(); } catch(e) {}
     }
     if (type === 'taskForm') {
         // Stop recording if it was active
@@ -17750,16 +17820,26 @@ function accDocStartRec() {
     accDocRecObj = new SR();
     accDocRecObj.lang = 'fa-IR';
     accDocRecObj.continuous = true;
-    accDocRecObj.interimResults = false;
+    // 🔧 v240 (الزام کاربر): interimResults=true برای بازخورد زندهٔ کلمات در
+    //    حال گفتن. قبلاً false بود که باعث می‌شد متن فقط با مکث طولانی (۱۰–۱۵
+    //    ثانیه در فارسی) ظاهر شود. continuous=true همچنان میکروفون را باز نگه
+    //    می‌دارد (بدون بوق) — این دو مستقل‌اند.
+    accDocRecObj.interimResults = true;
     accDocRecObj.onresult = function(ev) {
-        for (let i = 0; i < ev.results.length; i++) {
-            if (ev.results[i].isFinal && accDocRecIndices && !accDocRecIndices.has(i)) {
-                accDocRecAccum += ev.results[i][0].transcript + ' ';
-                accDocRecIndices.add(i);
-                const el = document.getElementById('accDocDesc');
-                if (el) el.value = addNumericAfterWords(accDocRecAccum).trim();
+        let interim = '';
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+            const r = ev.results[i];
+            if (r.isFinal) {
+                if (accDocRecIndices && !accDocRecIndices.has(i)) {
+                    accDocRecAccum += r[0].transcript + ' ';
+                    accDocRecIndices.add(i);
+                }
+            } else {
+                interim += r[0].transcript;
             }
         }
+        const el = document.getElementById('accDocDesc');
+        if (el) el.value = addNumericAfterWords((accDocRecAccum + ' ' + interim).trim()).trim();
     };
     accDocRecObj.onerror = function(ev) {
         console.error('[AccDocMic] error:', ev.error);
@@ -17829,16 +17909,23 @@ function accRecStartRec() {
     accRecRecObj = new SR();
     accRecRecObj.lang = 'fa-IR';
     accRecRecObj.continuous = true;
-    accRecRecObj.interimResults = false;
+    // 🔧 v240 (الزام کاربر): interimResults=true برای بازخورد زنده.
+    accRecRecObj.interimResults = true;
     accRecRecObj.onresult = function(ev) {
-        for (let i = 0; i < ev.results.length; i++) {
-            if (ev.results[i].isFinal && accRecRecIndices && !accRecRecIndices.has(i)) {
-                accRecRecAccum += ev.results[i][0].transcript + ' ';
-                accRecRecIndices.add(i);
-                const el = document.getElementById('accRecText');
-                if (el) el.value = addNumericAfterWords(accRecRecAccum).trim();
+        let interim = '';
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+            const r = ev.results[i];
+            if (r.isFinal) {
+                if (accRecRecIndices && !accRecRecIndices.has(i)) {
+                    accRecRecAccum += r[0].transcript + ' ';
+                    accRecRecIndices.add(i);
+                }
+            } else {
+                interim += r[0].transcript;
             }
         }
+        const el = document.getElementById('accRecText');
+        if (el) el.value = addNumericAfterWords((accRecRecAccum + ' ' + interim).trim()).trim();
     };
     accRecRecObj.onerror = function(ev) {
         console.error('[AccRecMic] error:', ev.error);
@@ -20146,24 +20233,25 @@ function openMeetingRecorder() {
     document.getElementById('meetingSaveBtn').disabled = false;
     ov.classList.add('active');
     navPush({ view: 'overlay', type: 'meeting' });
+    trackModalOpen('meeting');
     lockBodyScroll();
 }
 
 function closeMeetingRecorder() {
+    const ov = document.getElementById('meetingOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
     // توقف ضبط اگر فعال است (مثل accDocStopRec: فقط flag + stop + null)
     if (meetRecActive) {
         meetRecActive = false;
         const btn = document.getElementById('meetingMicBtn');
         if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
         if (meetRecObj) { try { meetRecObj.stop(); } catch(e) {} meetRecObj = null; }
-        document.getElementById('meetingStatus').textContent = 'ضبط متوقف شد';
-        document.getElementById('meetingStatus').classList.remove('recording');
+        const st = document.getElementById('meetingStatus');
+        if (st) { st.textContent = 'ضبط متوقف شد'; st.classList.remove('recording'); }
     }
-    const ov = document.getElementById('meetingOverlay');
-    if (!ov || !ov.classList.contains('active')) return;
     ov.classList.remove('active');
     closeModalByType('meeting');
-    navBack();
+    if (!_silentNavClose) navBack();
     unlockBodyScroll();
 }
 
@@ -20192,15 +20280,32 @@ function meetingStartRec() {
     meetRecObj = new SR();
     meetRecObj.lang = 'fa-IR';
     meetRecObj.continuous = true;
-    meetRecObj.interimResults = false;
+    // 🔧 v240 (الزام کاربر): interimResults=true — قبلاً false بود که باعث می‌شد
+    //    کاربر ۱۰–۱۵ ثانیه صبر کند تا چیزی تایپ شود (متن فقط هنگام final
+    //    شدن با مکث طولانی ظاهر می‌شد). اکنون کلمات در حال گفتن زنده نمایش
+    //    داده می‌شوند. continuous=true همچنان میکروفون را باز نگه می‌دارد (بوق
+    //    ندارد) — این دو مستقل‌اند.
+    meetRecObj.interimResults = true;
     meetRecObj.onresult = function(ev) {
-        for (let i = 0; i < ev.results.length; i++) {
-            if (ev.results[i].isFinal && meetRecIndices && !meetRecIndices.has(i)) {
-                meetRecAccum += ev.results[i][0].transcript + ' ';
-                meetRecIndices.add(i);
-                const el = document.getElementById('meetingText');
-                if (el) el.value = addNumericAfterWords(meetRecAccum).trim();
+        // 🔧 v240: تفکیک interim و final — نمایش زندهٔ کلمات در حال گفتن.
+        let interim = '';
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+            const r = ev.results[i];
+            if (r.isFinal) {
+                if (meetRecIndices && !meetRecIndices.has(i)) {
+                    meetRecAccum += r[0].transcript + ' ';
+                    meetRecIndices.add(i);
+                }
+            } else {
+                interim += r[0].transcript;
             }
+        }
+        const el = document.getElementById('meetingText');
+        if (el) el.value = addNumericAfterWords((meetRecAccum + ' ' + interim).trim()).trim() + (interim ? '' : '');
+        // به‌روزرسانی وضعیت برای بازخورد بصری زنده
+        const st = document.getElementById('meetingStatus');
+        if (st && meetRecActive) {
+            st.textContent = interim ? 'در حال شنیدن: ' + interim.slice(-30) : 'در حال ضبط... صحبت کنید';
         }
     };
     meetRecObj.onerror = function(ev) {
@@ -20397,6 +20502,7 @@ function openPdfFilesPage() {
     if (!ov) return;
     ov.classList.add('active');
     navPush({ view: 'overlay', type: 'pdffiles' });
+    trackModalOpen('pdffiles');
     lockBodyScroll();
     renderPdfFilesList();
 }
@@ -20406,7 +20512,7 @@ function closePdfFilesPage() {
     if (!ov || !ov.classList.contains('active')) return;
     ov.classList.remove('active');
     closeModalByType('pdffiles');
-    navBack();
+    if (!_silentNavClose) navBack();
     unlockBodyScroll();
 }
 
@@ -20489,10 +20595,20 @@ async function deletePdfFile(id) {
 
 let ytState = {
     mode: 'auto',          // 'auto' (ویدئو+صدا) یا 'audio' (فقط صدا)
-    quality: '720',        // 360/480/720/1080/1440/2160/max
+    quality: '720',        // 144/240/360/480/720/1080/1440/2160/max
     audioFmt: 'mp3',       // mp3/ogg/opus/best
-    bitrate: '128'         // 128/256/320 kbps
+    bitrate: '128',        // 128/256/320 kbps
+    method: 'direct'       // 'direct' (کد مستقیم InnerTube) یا 'cobalt' (سرور)
 };
+
+function ytSelectMethod(method) {
+    ytState.method = method;
+    document.querySelectorAll('#ytMethodGroup .yt-chip').forEach(function(c){
+        c.classList.toggle('selected', c.getAttribute('data-method') === method);
+    });
+    document.getElementById('ytMethodDirectHelp').style.display = (method === 'direct') ? 'block' : 'none';
+    document.getElementById('ytMethodCobaltHelp').style.display = (method === 'cobalt') ? 'block' : 'none';
+}
 
 function openYouTubeDownloader() {
     const ov = document.getElementById('ytOverlay');
@@ -20502,6 +20618,7 @@ function openYouTubeDownloader() {
     try { if (typeof stopRecording === 'function' && typeof isRecording !== 'undefined' && isRecording) stopRecording(); } catch(e) {}
     ov.classList.add('active');
     navPush({ view: 'overlay', type: 'yt' });
+    trackModalOpen('yt');
     lockBodyScroll();
     // بازنشانی وضعیت نمایش
     const status = document.getElementById('ytStatus');
@@ -20517,7 +20634,7 @@ function closeYouTubeDownloader() {
     if (!ov || !ov.classList.contains('active')) return;
     ov.classList.remove('active');
     closeModalByType('yt');
-    navBack();
+    if (!_silentNavClose) navBack();
     unlockBodyScroll();
 }
 
@@ -20655,11 +20772,31 @@ async function ytStartDownload() {
         ytShowStatus('error', '❌ آدرس ویدیو معتبر نیست. مثال: <span dir="ltr">https://www.youtube.com/watch?v=...</span>');
         return;
     }
-    const instance = ytGetInstance();
-    if (!instance) return;
     const btn = document.getElementById('ytDownloadBtn');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ در حال دریافت...'; }
-    ytShowStatus('info', '🔄 در حال تماس با سرور دانلود...');
+
+    // 🔧 v240 (الزام کاربر: «خودت کد بنویس که دانلود کنی نه با سرورهای خارجی»):
+    // روش پیش‌فرض = مستقیم. کد داخل همین برنامه مستقیماً به YouTube InnerTube
+    // API درخواست می‌زند و لینک ویدیو/صدا را استخراج می‌کند — بدون سرور واسطه.
+    // اگر مرورگر به‌دلیل CORS مسدود کرد، خودکار به cobalt سوییچ می‌کند.
+    if (ytState.method === 'direct') {
+        const directResult = await ytTryDirect(url, btn);
+        if (directResult) {
+            return; // موفقیت — لینک مستقیم آماده شد
+        }
+        // مستقیم شکست خورد — به‌صورت خودکار به cobalt سوییچ کن
+        ytShowStatus('info', '🔄 روش مستقیم مسدود شد (CORS مرورگر). سوییچ خودکار به سرور cobalt...');
+        // اگر کاربر هنوز روی «مستقیم» بود، یک لحظه صبر کن تا پیام را ببیند
+        await new Promise(function(r){ setTimeout(r, 600); });
+    }
+
+    // مسیر cobalt
+    const instance = ytGetInstance();
+    if (!instance) {
+        if (btn) { btn.disabled = false; btn.textContent = '⬇️ دریافت لینک دانلود'; }
+        return;
+    }
+    ytShowStatus('info', '🔄 در حال تماس با سرور cobalt...');
 
     // ساخت payload طبق cobalt API v10
     const payload = { url: url };
@@ -20699,6 +20836,212 @@ async function ytStartDownload() {
         ytShowFallbackResult(url);
         if (btn) { btn.disabled = false; btn.textContent = '⬇️ دریافت لینک دانلود'; }
     }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v240: روش مستقیم — کد خود برنامه، بدون سرور واسطه.
+// مستقیماً به YouTube InnerTube API (همان API که برنامه‌ی رسمی YouTube
+// استفاده می‌کند) درخواست می‌زند، لیست فرمت‌ها را می‌گیرد، و بر اساس کیفیت
+// انتخاب‌شده بهترین لینک را انتخاب می‌کند.
+//
+// محدودیت فنی صادقانه: YouTube هدرهای CORS را برای youtube.com ارسال
+// نمی‌کند. وقتی این کد از یک origin متفاوت (مثلاً file:// یا دامنهٔ کاربر)
+// اجرا می‌شود، مرورگر درخواست را مسدود می‌کند. این یک محدودیت ذاتی مرورگر
+// است، نه کد ما. در آن صورت تابع null برمی‌گرداند و ytStartDownload خودکار
+// به روش cobalt سوییچ می‌کند.
+// ════════════════════════════════════════════════════════════════════
+
+// استخراج videoId از انواع آدرس‌های یوتیوب
+function ytExtractVideoId(url) {
+    if (!url) return null;
+    const u = url.trim();
+    // watch?v=ID
+    let m = u.match(/[?&]v=([A-Za-z0-9_-]{11})/);
+    if (m) return m[1];
+    // youtu.be/ID
+    m = u.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
+    if (m) return m[1];
+    // /shorts/ID یا /embed/ID
+    m = u.match(/(?:shorts|embed)\/([A-Za-z0-9_-]{11})/);
+    if (m) return m[1];
+    return null;
+}
+
+// نگاشت کیفیت انتخابی به itagهای یوتیوب
+// itagها برای muxed (video+audio در یک فایل) و adaptive (video-only/audio-only)
+// منبع: YouTube itag table (پایدار سال‌ها)
+const YT_ITAGS_MUXED = {
+    '144':  { itag: 160, mime: 'video/mp4', note: '۱۴۴p' }, // actually 160 is video-only; muxed 144 = 596? fallback 18
+    '240':  { itag: 133, mime: 'video/mp4', note: '۲۴۰p' },
+    '360':  { itag: 18,  mime: 'video/mp4', note: '۳۶۰p' }, // 18 = 360p muxed (most reliable!)
+    '480':  { itag: 135, mime: 'video/mp4', note: '۴۸۰p' },
+    '720':  { itag: 22,  mime: 'video/mp4', note: '۷۲۰p' }, // 22 = 720p muxed (most reliable!)
+    '1080': { itag: 137, mime: 'video/mp4', note: '۱۰۸۰p' },
+    '1440': { itag: 264, mime: 'video/mp4', note: '۱۴۴۰p' },
+    '2160': { itag: 313, mime: 'video/mp4', note: '۴K' },
+    'max':  { itag: 0, mime: 'video/mp4', note: 'بالاترین' }
+};
+
+// itagهای صدا-only (برای حالت audio)
+const YT_ITAGS_AUDIO = [
+    { itag: 140, mime: 'audio/mp4', note: 'AAC 128k' },  // m4a — بهترین پشتیبانی
+    { itag: 251, mime: 'audio/webm', note: 'Opus 160k' },
+    { itag: 171, mime: 'audio/webm', note: 'Vorbis 128k' },
+    { itag: 250, mime: 'audio/webm', note: 'Opus 70k' },
+    { itag: 249, mime: 'audio/webm', note: 'Opus 50k' }
+];
+
+async function ytTryDirect(url, btn) {
+    const videoId = ytExtractVideoId(url);
+    if (!videoId) {
+        ytShowStatus('error', '❌ videoId از آدرس استخراج نشد.');
+        if (btn) { btn.disabled = false; btn.textContent = '⬇️ دریافت لینک دانلود'; }
+        return false;
+    }
+    ytShowStatus('info', '🔄 در حال استخراج لینک مستقیم از YouTube (InnerTube API)...');
+
+    // تلاش با چند کلاینت InnerTube — ANDROID اغلب فرمت‌های با URL امضاشده برمی‌گرداند
+    const clients = [
+        {
+            name: 'ANDROID',
+            apiKey: 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8',
+            ctx: { client: { clientName: 'ANDROID', clientVersion: '19.09.37', androidSdkVersion: 34, hl: 'fa', gl: 'IR' } },
+            ua: 'com.google.android.youtube/19.09.37 (Linux; U; Android 14)'
+        },
+        {
+            name: 'IOS',
+            apiKey: 'AIzaSyB-63vPrdThhKuerbB2N_l7Kww9Yr0pksM',
+            ctx: { client: { clientName: 'IOS', clientVersion: '19.09.3', deviceMake: 'Apple', deviceModel: 'iPhone16,2', hl: 'fa', gl: 'IR' } },
+            ua: 'com.google.ios.youtube/19.09.3 (iPhone15,2; U; CPU iOS 17_4 like Mac OS X)'
+        },
+        {
+            name: 'WEB',
+            apiKey: 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8',
+            ctx: { client: { clientName: 'WEB', clientVersion: '2.20240101.00.00', hl: 'fa', gl: 'IR' } },
+            ua: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36'
+        }
+    ];
+
+    let streamingData = null;
+    let videoDetails = null;
+    let usedClient = null;
+
+    for (const c of clients) {
+        try {
+            ytShowStatus('info', '🔄 تلاش با کلاینت ' + c.name + '...');
+            const resp = await fetch('https://www.youtube.com/youtubei/v1/player?key=' + c.apiKey, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-Agent': c.ua,
+                    'X-YouTube-Client-Name': c.ctx.client.clientName,
+                    'X-YouTube-Client-Version': c.ctx.client.clientVersion
+                },
+                body: JSON.stringify({
+                    context: c.ctx,
+                    videoId: videoId,
+                    contentCheckOk: true,
+                    racyCheckOk: true
+                })
+            });
+            if (!resp.ok) {
+                console.warn('[YT-Direct] ' + c.name + ' HTTP ' + resp.status);
+                continue;
+            }
+            const data = await resp.json();
+            const ps = data.playabilityStatus || {};
+            if (ps.status !== 'OK') {
+                console.warn('[YT-Direct] ' + c.name + ' playability=' + ps.status + ' ' + (ps.reason||''));
+                continue;
+            }
+            if (!data.streamingData || (!data.streamingData.formats && !data.streamingData.adaptiveFormats)) {
+                console.warn('[YT-Direct] ' + c.name + ' no streamingData');
+                continue;
+            }
+            streamingData = data.streamingData;
+            videoDetails = data.videoDetails || {};
+            usedClient = c.name;
+            console.log('[YT-Direct] Success with client=' + c.name);
+            break;
+        } catch(e) {
+            console.warn('[YT-Direct] ' + c.name + ' failed:', e.message);
+            // خطای CORS معمولاً به این شکل: "Failed to fetch" یا "NetworkError"
+            continue;
+        }
+    }
+
+    if (!streamingData) {
+        console.warn('[YT-Direct] All clients failed');
+        // خطای تایپ Failed to fetch = CORS
+        return false; // ytStartDownload به cobalt سوییچ می‌کند
+    }
+
+    // انتخاب فرمت بر اساس mode
+    const allFormats = (streamingData.formats || []).concat(streamingData.adaptiveFormats || []);
+    // فیلتر فقط آنهایی که URL دارند (نه signatureCipher که نیاز به رمزگشایی دارد)
+    const withUrl = allFormats.filter(function(f){ return f.url && !f.signatureCipher; });
+
+    let chosen = null;
+    let filename = (videoDetails.title || 'youtube_' + videoId).replace(/[^\w\u0600-\u06FF\s-]/g, '_').slice(0, 60);
+
+    if (ytState.mode === 'audio') {
+        // پیدا کردن بهترین فرمت صوتی با itag دلخواه
+        for (const pref of YT_ITAGS_AUDIO) {
+            const match = withUrl.find(function(f){ return f.itag === pref.itag; });
+            if (match) { chosen = match; break; }
+        }
+        if (!chosen) {
+            // fallback: اولین audio-only موجود
+            chosen = withUrl.find(function(f){ return (f.mimeType || '').indexOf('audio/') === 0; });
+        }
+        if (chosen) filename += '.' + ((chosen.mimeType || '').indexOf('webm') >= 0 ? 'webm' : 'm4a');
+    } else {
+        // ویدئو+صدا: اول muxed (itag 18/22 — در یک فایل) را امتحان کن
+        const q = ytState.quality;
+        if (q === 'max') {
+            // بالاترین کیفیت muxed موجود
+            const muxed = withUrl.filter(function(f){
+                return (f.mimeType || '').indexOf('video/') === 0 && f.hasAudio !== false;
+            }).sort(function(a,b){ return (b.height||0) - (a.height||0); });
+            if (muxed.length) chosen = muxed[0];
+        } else {
+            const pref = YT_ITAGS_MUXED[q];
+            if (pref) {
+                chosen = withUrl.find(function(f){ return f.itag === pref.itag; });
+                if (!chosen) {
+                    // fallback: نزدیک‌ترین کیفیت muxed (itag 18=360 یا 22=720)
+                    chosen = withUrl.find(function(f){ return f.itag === 18 || f.itag === 22; });
+                }
+                if (!chosen) {
+                    // fallback نهایی: اولین فرمت muxed با audio
+                    chosen = withUrl.find(function(f){
+                        return (f.mimeType || '').indexOf('video/') === 0 && (f.hasAudio !== false || (f.mimeType||'').indexOf('mp4')>=0);
+                    });
+                }
+            }
+        }
+        if (chosen) filename += '.mp4';
+    }
+
+    if (!chosen || !chosen.url) {
+        console.warn('[YT-Direct] No suitable format found in', withUrl.length, 'formats with URL');
+        ytShowStatus('error', '❌ فرمت مناسب یافت نشد. ویدیو ممکن است از نوع امضاشده باشد (CORS).');
+        return false;
+    }
+
+    // موفقیت! لینک مستقیم آماده است.
+    const titleNote = videoDetails.title ? ytEscape(videoDetails.title) : '';
+    const qualityNote = chosen.qualityLabel || chosen.audioQuality || '';
+    const clientNote = usedClient ? ' (کلاینت: ' + usedClient + ')' : '';
+    ytShowStatus('success',
+        '✅ لینک مستقیم استخراج شد!' + clientNote +
+        (titleNote ? '<br>📹 ' + titleNote : '') +
+        (qualityNote ? '<br>🎬 ' + ytEscape(qualityNote) : '') +
+        '<br><span style="opacity:0.7">⚠️ لینک مستقیم از googlevideo.com است و ممکن است بعد از چند ساعت منقضی شود — همین حالا دانلود کنید.</span>'
+    );
+    ytShowResult(chosen.url, filename);
+    if (btn) { btn.disabled = false; btn.textContent = '✅ آماده — دوباره'; }
+    return true;
 }
 
 function ytHandleCobaltResponse(data, url, btn) {
