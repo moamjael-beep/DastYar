@@ -5550,14 +5550,24 @@ body.locked .header-actions button {
         </div>
 
         <div class="yt-section">
+            <h3>🔧 سرور سفارشی (اختیاری — برای حالت بحرانی)</h3>
+            <div class="yt-help" style="font-size:12px; margin-bottom:8px;">
+            اگر دریافت اطلاعات ناموفق بود، یک سرور Invidious یا Piped با CORS باز (مثل <code>https://yt.chocolatemoo53.com</code>) را اینجا وارد کنید. چند سرور را با کاما جدا کنید.
+            </div>
+            <input type="text" id="ytCustomInstanceField" placeholder="https://yt.chocolatemoo53.com, https://invidious.example.com"
+                   style="width:100%; padding:8px 10px; border:1px solid #ccc; border-radius:6px; font-size:13px; direction:ltr; text-align:left;"
+                   oninput="ytState.customInstances = this.value; localStorage.setItem('yt_custom_instances', this.value);">
+        </div>
+
+        <div class="yt-section">
             <h3>ℹ️ راهنما</h3>
             <div class="yt-help" style="font-size:12px;">
-                ۱) آدرس ویدیو یوتیوب را در فیلد بالا پیست کنید.<br>
+                ۱) لینک ویدیو را کپی کنید (Share ← Copy link) و این صفحه را باز کنید — لینک خودکار خوانده می‌شود.<br>
                 ۲) نوع دانلود (ویدئو+صدا یا فقط صدا) و کیفیت را انتخاب کنید.<br>
-                ۳) «دریافت لینک دانلود» را بزنید — چند ثانیه طول می‌کشد.<br>
-                ۴) لینک آماده شد → دکمهٔ «دانلود فایل» را بزنید تا در مرورگر ذخیره شود.<br>
+                ۳) «شروع دانلود» را بزنید — چند ثانیه طول می‌کشد.<br>
+                ۴) فایل خودکار در مرورگر ذخیره می‌شود.<br>
                 <br>
-                <b>روش مستقیم:</b> کد خود برنامه مستقیماً به YouTube درخواست می‌زند — بدون سرور واسطه. اگر مرورگر به‌دلیل CORS مسدود کرد، خودکار به سرور cobalt سوییچ می‌کند.
+                <b>روش کار:</b> برنامه مستقیماً به سرورهای عمومی یوتیوب (Piped/Invidious) وصل می‌شود — بدون سرور واسطهٔ خودمان. اگر همهٔ سرورها ناموفق شدند، یک سرور سفارشی با CORS باز در فیلد بالا وارد کنید.
             </div>
         </div>
     </div>
@@ -7407,6 +7417,17 @@ body.locked .header-actions button {
 //               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
 //               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
 //               آن از یک اپ استاتیک وجود ندارد.
+//         🔧 v246 (۱۴۰۵ آبان ۲۷) — الزام کاربر:
+//           «یوتیوب اشکال دریافت اطلاعات میگیرد و من از فیلتر شکن خود راضی
+//           ام پس مشکل هر چی هست مرورگر یا هرچی جستجو کن و آن را کامل حل کن»
+//           — BA-159: ریشهٔ خطا = لیست نمونه‌های ثابت مُرده بود؛ از ۱۰
+//           Invidious زنده فقط yt.chocolatemoo53.com CORS باز دارد و VPN
+//           نمی‌تواند CORS مرورگر را دور بزند (این اشتباه کاربر نبود).
+//           راه‌حل: (۱) لیست بذر به‌روز؛ (۲) واکشی زنده از api.invidious.io
+//           در زمان اجرا (کش ۱۰دقیقه‌ای)؛ (۳) ثبت دلیل شکست هر سرور در
+//           پیام خطا (CORS/Net/down)؛ (۴) فیلد سرور سفارشی با ذخیره؛
+//           (۵) حذف بقایای cobalt.
+//
 //         🔧 v245 (۱۴۰۵ آبان ۲۷) — دو الزام کاربر:
 //           (۱) «در دانلود یوتیوب در آخر از پروکسی استفاده نکن من فیلتر شکن
 //               روشن میکنم. الان در انتها در یافت اطلاعات ناموفق میزند» —
@@ -7542,7 +7563,7 @@ body.locked .header-actions button {
 //           کیفیت ویدئو (۳۶۰p–۴K + بالاترین)، فرمت صدا (MP3/OGG/OPUS/بهترین)
 //           + بیت‌ریت (۱۲۸/۲۵۶/۳۲۰)، سرور cobalt (رسمی + ۳ عمومی + سفارشی).
 //           مکانیزم: POST cobalt API v10 → پاسخ tunnel/redirect → لینک مستقیم
-//           → «دانلود فایل» + «اشتراک». fallback: باز کردن cobalt.tools/?u=URL.
+//           → «دانلود فایل» + «اشتراک». fallback: باز کردن وب‌سایت دستی y2mate.
 //           دلیل: اپ استاتیک است، بک‌اند ندارد؛ yt-dlp روی سرور لازم است؛
 //           cobalt عمومی ممکن است محدود شود → چند سرور + fallback.
 //         🔧 v238 (۱۴۰۵ آبان ۲۶) — الزام کاربر: «در منوی همبرگری تیتر اصلی یک
@@ -7775,7 +7796,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v245-2026-11-15-no-proxy-rec-retry';
+const APP_VERSION = 'v246-2026-11-15-yt-live-instances';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20929,7 +20950,7 @@ async function deletePdfFile(id) {
 // سرور لازم است؛ ما از APIهای عمومی cobalt استفاده می‌کنیم که REST API
 // با POST { url, ... } می‌پذیرند و لینک مستقیم دانلود برمی‌گردانند. اگر یک
 // سرور محدود شد، کاربر می‌تواند سرور دیگری انتخاب کند یا از طریق لینک
-// cobalt.tools مستقیماً دانلود کند.
+// (مسیر قدیمی cobalt حذف شد — اکنون Piped/Invidious زنده.)
 // ════════════════════════════════════════════════════════════════════
 
 let ytState = {
@@ -21039,26 +21060,7 @@ async function ytPasteFromClipboard() {
     inp.focus();
 }
 
-// انتخاب سرور سفارشی
-document.addEventListener('change', function(e){
-    if (e.target && e.target.id === 'ytInstance') {
-        const customInp = document.getElementById('ytCustomInstance');
-        if (customInp) customInp.style.display = (e.target.value === 'custom') ? 'block' : 'none';
-    }
-});
-
-function ytGetInstance() {
-    const sel = document.getElementById('ytInstance');
-    let v = sel ? sel.value : 'https://api.cobalt.tools';
-    if (v === 'custom') {
-        const ci = document.getElementById('ytCustomInstance');
-        v = ci ? (ci.value || '').trim() : '';
-        if (!v) { showToast('آدرس سرور سفارشی را وارد کنید'); return null; }
-        // حذف اسلش انتهایی
-        v = v.replace(/\/+$/, '');
-    }
-    return v;
-}
+// 🔧 v246: ytGetInstance/ytInstance (cobalt) حذف شد — اکنون ytGetCustomInstances از فیلد ytCustomInstanceField می‌خواند
 
 function ytValidateUrl(url) {
     if (!url) return false;
@@ -21299,28 +21301,62 @@ async function ytDownloadAndSave(url, filename) {
 // ════════════════════════════════════════════════════════════════════
 
 // اولی تأییدشده: 200 + Access-Control-Allow-Origin: *
+// 🔧 v246 (BA-159): لیست بذر — فقط نمونه‌هایی که آزمایشگاه ما تأیید کرد
+//   CORS باز دارند. در زمان اجرا، فهرست زنده از api.invidious.io (که خودش
+//   CORS باز دارد) واکشی می‌شود و با این لیست ادغام می‌گردد (نبض زنده).
+//   مرجع: api.invidious.io فقط ۱۰ نمونهٔ زنده دارد و تنها yt.chocolatemoo53.com
+//   هم api و هم cors=true دارد — بقیه مرورگر را CORS-block می‌کنند (VPN بی‌اثر).
 const YT_PIPED_INSTANCES = [
-    'https://api.piped.private.coffee',   // ✅ تأییدشده: 200 + CORS *
+    // 🔧 v246: سرورهای Piped کثیراً ناپایدارند؛ فقط چند کاندیدای شناخته‌شده.
     'https://pipedapi.kavin.rocks',
     'https://pipedapi.leptons.xyz',
-    'https://pipedapi.ducks.party',
-    'https://pipedapi.drgns.space',
-    'https://api.piped.yt',
     'https://pipedapi.reallyaweso.me',
-    'https://piped-api.lunar.icu',
-    'https://pipedapi.nosebs.ru'
+    'https://api.piped.private.coffee'
 ];
 const YT_INVIDIOUS_INSTANCES = [
-    'https://inv.nadeko.net',
-    'https://yewtu.be',
+    // 🔧 v246: تنها نمونهٔ Invidious با api:true + cors:true (تأییدشدهٔ زنده).
+    'https://yt.chocolatemoo53.com',
+    // کاندیداهای ثانویه (ممکن است CORS-block شوند — در لاگ دلیل داده می‌شود):
     'https://invidious.nerdvpn.de',
-    'https://iv.ggtyler.dev',
-    'https://invidious.f5.si',
-    'https://iv.melmac.space',
-    'https://invidious.privacyredirect.com',
-    'https://inv.tux.pizza',
-    'https://invidious.jing.rocks'
+    'https://inv.nadeko.net',
+    'https://invidious.tiekoetter.com'
 ];
+
+// واکشی زندهٔ فهرست نمونه‌های Invidious از api.invidious.io (CORS *)
+let YT_INVI_LIVE_CACHE = null;
+let YT_INVI_LIVE_TS = 0;
+async function ytFetchInvidiousLiveList() {
+    // کش ۱۰ دقیقه‌ای
+    if (YT_INVI_LIVE_CACHE && (Date.now() - YT_INVI_LIVE_TS) < 600000) return YT_INVI_LIVE_CACHE;
+    try {
+        const resp = await ytFetchT('https://api.invidious.io/instances.json?pretty=1&sort_by=health', {}, 6000);
+        const arr = await resp.json();
+        const live = [];
+        for (const entry of arr) {
+            const name = entry[0]; const info = entry[1] || {};
+            // فقط نمونه‌های https با api و cors فعال
+            if (info.type !== 'https') continue;
+            if (info.api !== true) continue;
+            const cors = info.cors;
+            const corsOpen = (cors === true) || (Array.isArray(cors) && cors.length === 0);
+            if (!corsOpen) continue;
+            live.push(info.uri || ('https://' + name));
+        }
+        YT_INVI_LIVE_CACHE = live;
+        YT_INVI_LIVE_TS = Date.now();
+        console.log('[YT] live Invidious list:', live.length, 'instances');
+        return live;
+    } catch(e) { console.warn('[YT] live list fetch failed:', e.message); return []; }
+}
+
+// فیلد سرور سفارشی (در صورت بحران — کاربر سرور شخص ثالث خودش را وارد می‌کند)
+function ytGetCustomInstances() {
+    try {
+        const raw = (ytState.customInstances || '').trim();
+        if (!raw) return [];
+        return raw.split(/[\s,;\n]+/).map(function(s){ return s.trim().replace(/\/+$/, ''); }).filter(Boolean);
+    } catch(e) { return []; }
+}
 
 // 🔧 v245 (BA-157): fetch با timeout — فقط مستقیم، بدون هیچ پروکسی
 // (پارامتر چهارم دیگر استفاده نمی‌شود؛ برای سازگاری تماس‌ها حفظ شده)
@@ -21357,67 +21393,89 @@ function ytExtractJsonAfter(html, marker) {
     return null;
 }
 
-// ─── مسیر ۱: Piped — همهٔ سرورها همزمان مسابقه می‌دهند (اولین جواب سالم) ───
+// ─── مسیر ۱: Piped — مسابقهٔ همزمان + ثبت دلیل شکست هر سرور ───
 async function ytExtractPiped(videoId, step) {
-    const jobs = YT_PIPED_INSTANCES.map(function(base){
+    const bases = YT_PIPED_INSTANCES.concat(ytGetCustomInstances().filter(function(u){ return u.indexOf('pipedapi') >= 0 || u.indexOf('/streams/') < 0; }));
+    const failLog = [];
+    const jobs = bases.map(function(base){
         return (async function(){
-            const resp = await ytFetchT(base + '/streams/' + videoId, {}, 9000);
-            const d = await resp.json();
-            if (!d || (!d.videoStreams && !d.audioStreams)) throw new Error('no data');
-            const streams = [];
-            (d.videoStreams || []).forEach(function(s){
-                if (!s.url || String(s.url).indexOf('http') !== 0) return;
-                if (String(s.format) === 'HLS' || String(s.url).indexOf('m3u8') >= 0) return; // پلی‌لیست — قابل دانلود نیست
-                const isWebm = String(s.format).indexOf('WEBM') >= 0;
-                streams.push({ url: s.url, mime: isWebm ? 'video/webm' : 'video/mp4',
-                    height: parseInt(String(s.quality || '').replace(/[^0-9]/g, ''), 10) || 0,
-                    bitrate: s.bitrate || 0, hasAudio: !s.videoOnly,
-                    ext: isWebm ? 'webm' : 'mp4', label: s.quality || '' });
-            });
-            (d.audioStreams || []).forEach(function(s){
-                if (!s.url || String(s.url).indexOf('http') !== 0) return;
-                const isOpus = String(s.format).indexOf('OPUS') >= 0 || String(s.format).indexOf('WEBM') >= 0;
-                streams.push({ url: s.url, mime: isOpus ? 'audio/webm' : 'audio/mp4',
-                    height: 0, bitrate: s.bitrate || 0, hasAudio: true,
-                    ext: isOpus ? 'opus' : 'm4a', label: s.quality || '' });
-            });
-            if (!streams.length) throw new Error('empty');
-            return { backend: 'Piped («' + base.replace('https://', '') + '»)', title: d.title || '', streams: streams };
+            try {
+                const resp = await ytFetchT(base + '/streams/' + videoId, {}, 9000);
+                const d = await resp.json();
+                if (!d || (!d.videoStreams && !d.audioStreams)) { failLog.push(base + ': empty'); throw new Error('no data'); }
+                const streams = [];
+                (d.videoStreams || []).forEach(function(s){
+                    if (!s.url || String(s.url).indexOf('http') !== 0) return;
+                    if (String(s.format) === 'HLS' || String(s.url).indexOf('m3u8') >= 0) return;
+                    const isWebm = String(s.format).indexOf('WEBM') >= 0;
+                    streams.push({ url: s.url, mime: isWebm ? 'video/webm' : 'video/mp4',
+                        height: parseInt(String(s.quality || '').replace(/[^0-9]/g, ''), 10) || 0,
+                        bitrate: s.bitrate || 0, hasAudio: !s.videoOnly,
+                        ext: isWebm ? 'webm' : 'mp4', label: s.quality || '' });
+                });
+                (d.audioStreams || []).forEach(function(s){
+                    if (!s.url || String(s.url).indexOf('http') !== 0) return;
+                    const isOpus = String(s.format).indexOf('OPUS') >= 0 || String(s.format).indexOf('WEBM') >= 0;
+                    streams.push({ url: s.url, mime: isOpus ? 'audio/webm' : 'audio/mp4',
+                        height: 0, bitrate: s.bitrate || 0, hasAudio: true,
+                        ext: isOpus ? 'opus' : 'm4a', label: s.quality || '' });
+                });
+                if (!streams.length) { failLog.push(base + ': empty'); throw new Error('empty'); }
+                return { backend: 'Piped («' + base.replace('https://', '') + '»)', title: d.title || '', streams: streams };
+            } catch(e) {
+                const m = String(e.message || e);
+                failLog.push(base + ': ' + (m === 'Failed to fetch' ? 'CORS/Net' : m));
+                throw e;
+            }
         })();
     });
     try { return await Promise.any(jobs); }
-    catch(e) { console.warn('[YT-Piped] همهٔ سرورهای Piped ناموفق'); return null; }
+    catch(e) { console.warn('[YT-Piped] همهٔ سرورهای Piped ناموفق:', failLog.join('; ')); ytState._lastFailLog = (ytState._lastFailLog || '') + 'Piped: ' + failLog.join('; ') + '\n'; return null; }
 }
 
-// ─── مسیر ۲: Invidious — همزمان؛ دانلود از latest_version?local=true (پروکسی خود سرور با CORS باز) ───
+// ─── مسیر ۲: Invidious — لیست زنده + مسابقه + ثبت دلیل ───
 async function ytExtractInvidious(videoId, step) {
-    const jobs = YT_INVIDIOUS_INSTANCES.map(function(base){
+    const liveList = await ytFetchInvidiousLiveList();
+    // ادغام لیست زنده با بذر؛ نمونه‌های بذر اولویت دارند (شناخته‌شده)
+    const seen = {};
+    let bases = YT_INVIDIOUS_INSTANCES.concat(ytGetCustomInstances());
+    bases.forEach(function(b){ seen[b] = true; });
+    liveList.forEach(function(b){ if (!seen[b]) { bases.push(b); seen[b] = true; } });
+    step('تلاش با ' + bases.length + ' سرور زندهٔ Invidious');
+    const failLog = [];
+    const jobs = bases.map(function(base){
         return (async function(){
-            const resp = await ytFetchT(base + '/api/v1/videos/' + videoId, {}, 9000);
-            const d = await resp.json();
-            if (!d || (!d.formatStreams && !d.adaptiveFormats)) throw new Error('no data');
-            const streams = [];
-            const lv = function(itag){ return base + '/latest_version?id=' + videoId + '&itag=' + itag + '&local=true'; };
-            (d.formatStreams || []).forEach(function(s){
-                streams.push({ url: lv(s.itag), mime: s.type || 'video/mp4',
-                    height: parseInt(String(s.resolution || '').replace(/[^0-9]/g, ''), 10) || 0,
-                    bitrate: 0, hasAudio: true,
-                    ext: String(s.type || '').indexOf('webm') >= 0 ? 'webm' : 'mp4', label: s.resolution || '' });
-            });
-            (d.adaptiveFormats || []).forEach(function(s){
-                const isAudio = String(s.type || '').indexOf('audio') === 0;
-                streams.push({ url: lv(s.itag), mime: s.type || '',
-                    height: isAudio ? 0 : (parseInt(String(s.resolution || '').replace(/[^0-9]/g, ''), 10) || 0),
-                    bitrate: s.bitrate || 0, hasAudio: isAudio,
-                    ext: String(s.type || '').indexOf('webm') >= 0 ? 'webm' : (isAudio ? 'm4a' : 'mp4'),
-                    label: s.resolution || s.quality || '' });
-            });
-            if (!streams.length) throw new Error('empty');
-            return { backend: 'Invidious («' + base.replace('https://', '') + '»)', title: d.title || '', streams: streams };
+            try {
+                const resp = await ytFetchT(base + '/api/v1/videos/' + videoId, {}, 9000);
+                const d = await resp.json();
+                if (!d || (!d.formatStreams && !d.adaptiveFormats)) { failLog.push(base + ': empty'); throw new Error('no data'); }
+                const streams = [];
+                const lv = function(itag){ return base + '/latest_version?id=' + videoId + '&itag=' + itag + '&local=true'; };
+                (d.formatStreams || []).forEach(function(s){
+                    streams.push({ url: lv(s.itag), mime: s.type || 'video/mp4',
+                        height: parseInt(String(s.resolution || '').replace(/[^0-9]/g, ''), 10) || 0,
+                        bitrate: 0, hasAudio: true,
+                        ext: String(s.type || '').indexOf('webm') >= 0 ? 'webm' : 'mp4', label: s.resolution || '' });
+                });
+                (d.adaptiveFormats || []).forEach(function(s){
+                    const isAudio = String(s.type || '').indexOf('audio') === 0;
+                    streams.push({ url: lv(s.itag), mime: s.type || '',
+                        height: isAudio ? 0 : (parseInt(String(s.resolution || '').replace(/[^0-9]/g, ''), 10) || 0),
+                        bitrate: s.bitrate || 0, hasAudio: isAudio,
+                        ext: String(s.type || '').indexOf('webm') >= 0 ? 'webm' : (isAudio ? 'm4a' : 'mp4'),
+                        label: s.resolution || s.quality || '' });
+                });
+                if (!streams.length) { failLog.push(base + ': empty'); throw new Error('empty'); }
+                return { backend: 'Invidious («' + base.replace('https://', '') + '»)', title: d.title || '', streams: streams };
+            } catch(e) {
+                const m = String(e.message || e);
+                failLog.push(base + ': ' + (m === 'Failed to fetch' ? 'CORS/Net' : m));
+                throw e;
+            }
         })();
     });
     try { return await Promise.any(jobs); }
-    catch(e) { console.warn('[YT-Invidious] همهٔ سرورهای Invidious ناموفق'); return null; }
+    catch(e) { console.warn('[YT-Invidious] همهٔ سرورهای Invidious ناموفق:', failLog.join('; ')); ytState._lastFailLog = (ytState._lastFailLog || '') + 'Invidious: ' + failLog.join('; ') + '\n'; return null; }
 }
 
 // نگاشت فرمت‌های InnerTube/WatchPage به فرمت نرمال
@@ -21502,7 +21560,13 @@ async function ytResolveStreamUrl(st) {
 
 // ─── پایپ‌لاین: چندمسیره ← انتخاب فرمت ← دانلود با پیشرفت ───
 async function ytRunPipeline(videoId, btn) {
-    ytState._lastVideoId = videoId;
+        ytState._lastVideoId = videoId;
+    // 🔧 v246: بارگذاری سرور سفارشی ذخیره‌شده
+    if (!ytState.customInstances) {
+        try { ytState.customInstances = localStorage.getItem('yt_custom_instances') || ''; } catch(e) { ytState.customInstances = ''; }
+        const f = document.getElementById('ytCustomInstanceField');
+        if (f && ytState.customInstances) f.value = ytState.customInstances;
+    }
     const backends = [
         ['سرورهای Piped', ytExtractPiped],
         ['سرورهای Invidious', ytExtractInvidious],
@@ -21519,8 +21583,14 @@ async function ytRunPipeline(videoId, btn) {
         ext = null;
     }
     if (!ext) {
-        ytShowStatus('error', '❌ دریافت اطلاعات از همهٔ مسیرها ناموفق بود (همهٔ درخواست‌ها مستقیم و بدون پروکسی ارسال شد).<br>' +
-            '<b>فیلترشکن (VPN) را روشن کنید</b> و دوباره «شروع دانلود» را بزنید.');
+        // 🔧 v246 (BA-159): پیام صادقانه با گزارش تعداد و دلیل شکست سرورها
+        const flog = ytState._lastFailLog || '';
+        ytState._lastFailLog = '';
+        ytShowStatus('error', '❌ دریافت اطلاعات ناموفق بود.<br>' +
+            '<b>دلیل:</b> سرورهای عمومی یوتیوب این روزها ناپایدار و مسدود (CORS) شده‌اند — VPN نمی‌تواند CORS مرورگر را دور بزند.<br>' +
+            '<b>راه‌حل ۱:</b> چند لحظه صبر کنید و دوباره «شروع دانلود» را بزنید (سرورها پشت‌سرهم زنده/مرده می‌شوند).<br>' +
+            '<b>راه‌حل ۲ (پایدار):</b> یک سرور Invidious شخص ثالث با CORS باز در فیلد «سرور سفارشی» (پایین) وارد کنید.<br>' +
+            '<details style="margin-top:6px; font-size:11px;"><summary>گزارش فنی</summary><pre style="white-space:pre-wrap; direction:ltr; text-align:left;">' + ytEscape(flog) + '</pre></details>');
         return false;
     }
     ytShowStatus('info', '✅ اطلاعات از ' + ytEscape(ext.backend) + ' گرفته شد — انتخاب کیفیت...');
@@ -21863,11 +21933,13 @@ function ytShowFallbackResult(url) {
     const el = document.getElementById('ytResult');
     if (!el) return;
     el.className = 'yt-result show';
-    const webUrl = 'https://cobalt.tools/?u=' + encodeURIComponent(url);
+    // 🔧 v246: cobalt.tools API عمومی ندارد — به وب‌سایت‌های دستی معتبر ارجاع
+    const vid = (url.match(/v=([^&]+)/)||[])[1] || '';
+    const y2 = 'https://www.y2mate.com/youtube/' + encodeURIComponent(vid);
     el.innerHTML =
-        '<div style="font-weight:600; margin-bottom:6px;">💡 راه‌حل جایگزین:</div>' +
-        '<div style="color:#666; line-height:1.7;">اگر API کار نکرد، وب‌سایت رسمی cobalt را باز کنید و آدرس ویدیو را آنجا پیست کنید:</div>' +
-        '<button class="open-btn" style="margin-top:8px;" onclick="window.open(\'' + webUrl.replace(/'/g, "\\'") + '\', \'_blank\', \'noopener\')">🌐 باز کردن cobalt.tools</button>';
+        '<div style="font-weight:600; margin-bottom:6px;">💡 راه‌حل دستی جایگزین:</div>' +
+        '<div style="color:#666; line-height:1.7;">اگر سرورهای مستقیم ناموفق بودند، می‌توانید از یکی از وب‌سایت‌های آنلاین دانلود یوتیوب استفاده کنید. آدرس ویدیو را آنجا پیست کنید:</div>' +
+        '<button class="open-btn" style="margin-top:8px;" onclick="window.open(\'' + y2.replace(/'/g, "\\'") + '\', \'_blank\', \'noopener\')">🌐 باز کردن y2mate</button>';
 }
 
 // ════════════════════════════════════════════════════════════════════
