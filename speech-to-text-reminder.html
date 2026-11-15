@@ -7418,6 +7418,23 @@ body.locked .header-actions button {
 //               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
 //               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
 //               آن از یک اپ استاتیک وجود ندارد.
+//         🔧 v241 (۱۴۰۵ آبان ۲۷) — الزام کاربر: «در ضبط تسک بعد از چند جمله
+//               دیگر چیزی تشخیص نمیدهد تا زمانیکه کاربر خدش قطع نکرده باید
+//               شنیدن و تایپ ادامه یابد»
+//           علت (BA-147): restart تکیِ ۲۰۰ms در onend (v237/v239) در مسابقهٔ
+//               InvalidStateError می‌بازد — Chrome اندروید بلافاصله بعد از
+//               onend گاهی start() را نمی‌پذیرد → موتور SR مرده، آیکون
+//               میکروفون روشن، هیچ متنی تایپ نمی‌شود.
+//           رفع (دو لایه، در هر دو ضبط تسک و ضبط جلسه):
+//             • آبشار restart در onend: چهار تلاش ۲۰۰→۶۰۰→۱۵۰۰→۳۰۰۰ms
+//               (همگی با گارد فلگ فعال).
+//             • watchdog قلبی بی‌صدا (taskRecWatchdogStart/meetRecWatchdogStart):
+//               هر ۳ ثانیه سلامت موتور را چک می‌کند (ضربان onstart/onresult/
+//               onend)؛ موتورِ بدون-onend-مرده یا بی‌نشانهٔ >۱۰ ثانیه را با
+//               start() بیدار می‌کند — start روی موتور زنده فقط
+//               InvalidStateError بی‌ضرر می‌دهد. بدون بوق و toast — UX عین
+//               قبل (BA-141 حفظ). watchdog در همهٔ مسیرهای پایان ضبط خاموش
+//               می‌شود و خودش هم self-terminate است.
 //         🔧 v239 (۱۴۰۵ آبان ۲۶) — دو الزام کاربر:
 //           (۱) «هنوز ضبط تسک ها بوق های متوالی دارد و من نمیخواهم. کلا یک
 //               عکس میکروفون باشد مثل تیتر سند حسابداری و فعال و غیر فعال
@@ -7681,7 +7698,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v240-2026-11-15-rec-live-backnav-yt-direct';
+const APP_VERSION = 'v241-2026-11-15-rec-keepalive-cascade';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -10126,6 +10143,54 @@ let isRecording = false;
 let allFinalText = '';
 let currentSessionText = '';
 let processedResults = new Set();
+// 🔧 v241: ماندگاری شنیدن — تا کاربر خودش قطع نکرده، شنیدن و تایپ باید
+//    ادامه یابد («بعد از چند جمله دیگر چیزی تشخیص نمی‌دهد» = موتور SR بعد از
+//    پایان session داخلی Chrome (~۶۰ ثانیه) در مسابقهٔ restart می‌میرد و
+//    میکروفون روشن می‌ماند ولی هیچ چیزی تشخیص داده نمی‌شود). دو لایهٔ دفاعی:
+//    (۱) آبشار restart در onend: ۲۰۰→۶۰۰→۱۵۰۰→۳۰۰۰ms — چهار تلاش پشت‌سرهم.
+//    (۲) watchdog قلبی: هر ۳ ثانیه سلامت موتور را چک می‌کند؛ اگر موتور بدون
+//        onend مرده باشد (zombie) آن را دوباره بیدار می‌کند. کاملاً بی‌صدا —
+//        هیچ بوق و toast‌ای ندارد (start() روی موتورِ زنده فقط
+//        InvalidStateError می‌دهد که بی‌ضرر است و session جاری را قطع نمی‌کند).
+let _taskRecLastEvent = 0;        // آخرین بار که onstart/onresult/onerror/onend دیدیم
+let _taskRecEngineRunning = false; // true بین onstart تا onend
+let _taskRecRestartPending = false; // آبشار restart در جریان است؟
+let _taskRecWatchdogTimer = null;
+
+function taskRecWatchdogStart() {
+    if (_taskRecWatchdogTimer) return;
+    _taskRecLastEvent = Date.now();
+    _taskRecWatchdogTimer = setInterval(function() {
+        if (!isRecording || !recognition) {
+            // session تمام شده — watchdog خودش را خاموش می‌کند
+            clearInterval(_taskRecWatchdogTimer);
+            _taskRecWatchdogTimer = null;
+            return;
+        }
+        if (_taskRecRestartPending) return;          // آبشار onend در جریان است
+        const stale = (Date.now() - _taskRecLastEvent) > 10000;
+        if (_taskRecEngineRunning && !stale) return; // موتور سالم و فعال
+        // موتور مرده (بدون onend) یا بیش از ۱۰ ثانیه بی‌نشانه — بیدارش کن
+        try {
+            recognition.start();
+            _taskRecEngineRunning = true;
+            _taskRecLastEvent = Date.now();
+        } catch(e) {
+            // InvalidStateError = موتور زنده است (start هم‌زمان مجاز نیست) —
+            // فقط ضربان را تازه کن؛ هیچ کاری دیگر لازم نیست.
+            _taskRecLastEvent = Date.now();
+        }
+    }, 3000);
+}
+
+function taskRecWatchdogStop() {
+    if (_taskRecWatchdogTimer) {
+        clearInterval(_taskRecWatchdogTimer);
+        _taskRecWatchdogTimer = null;
+    }
+    _taskRecEngineRunning = false;
+    _taskRecRestartPending = false;
+}
 
 function isSpeechSupported() {
     return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -10152,9 +10217,14 @@ function initRecognition() {
     recognition.onstart = () => {
         processedResults = new Set();
         currentSessionText = '';
+        // 🔧 v241: ضربان قلبی + علامت «موتور زنده»
+        _taskRecEngineRunning = true;
+        _taskRecLastEvent = Date.now();
     };
 
     recognition.onresult = (event) => {
+        // 🔧 v241: هر رویداد = ضربان تازه برای watchdog
+        _taskRecLastEvent = Date.now();
         // 🔧 v240: الگوی بازخورد زنده — interimها را جدا کن و real-time نشان بده.
         let interim = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -10196,6 +10266,9 @@ function initRecognition() {
     };
 
     recognition.onend = () => {
+        // 🔧 v241: موتور تا این لحظه زنده بود — از این پس مرده تا restart موفق
+        _taskRecEngineRunning = false;
+        _taskRecLastEvent = Date.now();
         // Commit current session to allFinalText — عین accDocRecAccum
         if (currentSessionText.trim()) {
             allFinalText = (allFinalText + ' ' + currentSessionText).trim().replace(/\s+/g, ' ');
@@ -10203,15 +10276,33 @@ function initRecognition() {
         }
 
         if (isRecording) {
-            // 🔧 v237/v239: عین accDocStartRec.onend — یک restart ساده با ۲۰۰ms
-            //    تأخیر، بدون retry cascade، بدون toast، بدون بوق. این تنها
-            //    مکانیزم ماندگاری است که باقی می‌ماند.
-            setTimeout(function() {
-                if (!isRecording || !recognition) return;
-                try { recognition.start(); } catch(e) {
-                    console.warn('[Recording] restart onend:', e.message || e);
+            // 🔧 v241: آبشار restart — یک تلاش سادهٔ ۲۰۰ms (v237/v239) کافی نبود:
+            //    اگر start() در همان پنجره InvalidStateError بیندازد (مسابقهٔ
+            //    معروف Chrome اندروید بعد از onend)، catch قبلی فقط log می‌کرد
+            //    و موتور مرده باقی می‌ماند = «بعد از چند جمله دیگر چیزی تشخیص
+            //    نمی‌دهد». اکنون ۴ تلاش پشت‌سرهم (۲۰۰/۶۰۰/۱۵۰۰/۳۰۰۰ms) و اگر
+            //    همه شکست خوردند watchdog قلبی هر ۳ ثانیه دوباره تلاش می‌کند —
+            //    تا زمانی‌که کاربر خودش قطع نکرده، شنیدن و تایپ ادامه دارد.
+            //    کاملاً بی‌صدا: بدون بوق، بدون toast.
+            _taskRecRestartPending = true;
+            const delays = [200, 600, 1500, 3000];
+            let idx = 0;
+            const attempt = function() {
+                if (!isRecording || !recognition) { _taskRecRestartPending = false; return; }
+                try {
+                    recognition.start();
+                    _taskRecEngineRunning = true;
+                    _taskRecLastEvent = Date.now();
+                    _taskRecRestartPending = false;
+                } catch(e) {
+                    if (idx < delays.length) {
+                        setTimeout(attempt, delays[idx++]);
+                    } else {
+                        _taskRecRestartPending = false; // watchdog از اینجا نگهبانی می‌کند
+                    }
                 }
-            }, 200);
+            };
+            setTimeout(attempt, delays[idx++]);
         } else {
             document.getElementById('itemText').value = addNumericAfterWords(allFinalText);
             showFormSection();
@@ -10609,9 +10700,11 @@ function startRecording() {
     //    interval / visibilitychange-restart / MediaRecorder پس‌زمینه. این
     //    پنج مکانیزم رقابتی باعث «قطع و وصل میکروفون + بوق‌های متوالی» بودند
     //    (هر toggle visibility یک getUserMedia + track.stop می‌زد = بوق سخت‌افزار).
-    //    اکنون فقط یک onend با restart ۲۰۰ms (مانند accDocStartRec) — ساده و بی‌صدا.
+    // 🔧 v241: علاوه بر onend، یک watchdog بی‌صده (بدون بوق و toast) که فقط
+    //    سلامت موتور SR را نگهبانی می‌کند — تفاوتی در UX ندارد.
     try {
         recognition.start();
+        taskRecWatchdogStart();
     } catch(e) {
         console.error(e);
         showToast('خطا در شروع ضبط');
@@ -10634,6 +10727,8 @@ let _recordingKeepaliveInterval = null;
 
 function stopRecording() {
     isRecording = false;
+    // 🔧 v241: watchdog نگهبانی دیگر لازم نیست
+    taskRecWatchdogStop();
     document.getElementById('addBtn').classList.remove('recording');
     // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
     const fabStop = document.getElementById('floatingAddBtn');
@@ -12798,6 +12893,9 @@ function closeModalByType(type) {
         if (typeof isRecording !== 'undefined' && isRecording) {
             try {
                 isRecording = false;
+                // 🔧 v241: watchdog نگهبانی هم با بستن فرم خاموش شود (مسیر
+                //    Back موبایل از stopRecording نمی‌گذرد)
+                if (typeof taskRecWatchdogStop === 'function') taskRecWatchdogStop();
                 const addBtn = document.getElementById('addBtn');
                 if (addBtn) addBtn.classList.remove('recording');
                 // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
@@ -20215,6 +20313,46 @@ let meetRecObj = null;
 let meetRecActive = false;
 let meetRecAccum = '';
 let meetRecIndices = null;
+// 🔧 v241: ماندگاری شنیدن جلسه — عین مکانیزم ضبط تسک (آبشار restart در onend
+//    + watchdog قلبی بی‌صدا). جلسه‌های کاری طولانی‌اند و Chrome بعد از ~۶۰
+//    ثانیه session داخلی را می‌بندد؛ اگر restart در مسابقهٔ InvalidStateError
+//    بماند، میکروفون روشن می‌ماند ولی دیگر چیزی تشخیص داده نمی‌شود.
+let _meetRecLastEvent = 0;
+let _meetRecEngineRunning = false;
+let _meetRecRestartPending = false;
+let _meetRecWatchdogTimer = null;
+
+function meetRecWatchdogStart() {
+    if (_meetRecWatchdogTimer) return;
+    _meetRecLastEvent = Date.now();
+    _meetRecWatchdogTimer = setInterval(function() {
+        if (!meetRecActive || !meetRecObj) {
+            clearInterval(_meetRecWatchdogTimer);
+            _meetRecWatchdogTimer = null;
+            return;
+        }
+        if (_meetRecRestartPending) return;
+        const stale = (Date.now() - _meetRecLastEvent) > 10000;
+        if (_meetRecEngineRunning && !stale) return;
+        try {
+            meetRecObj.start();
+            _meetRecEngineRunning = true;
+            _meetRecLastEvent = Date.now();
+        } catch(e) {
+            // InvalidStateError = موتور زنده است — فقط ضربان را تازه کن
+            _meetRecLastEvent = Date.now();
+        }
+    }, 3000);
+}
+
+function meetRecWatchdogStop() {
+    if (_meetRecWatchdogTimer) {
+        clearInterval(_meetRecWatchdogTimer);
+        _meetRecWatchdogTimer = null;
+    }
+    _meetRecEngineRunning = false;
+    _meetRecRestartPending = false;
+}
 
 function openMeetingRecorder() {
     const ov = document.getElementById('meetingOverlay');
@@ -20243,6 +20381,7 @@ function closeMeetingRecorder() {
     // توقف ضبط اگر فعال است (مثل accDocStopRec: فقط flag + stop + null)
     if (meetRecActive) {
         meetRecActive = false;
+        meetRecWatchdogStop(); // 🔧 v241
         const btn = document.getElementById('meetingMicBtn');
         if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
         if (meetRecObj) { try { meetRecObj.stop(); } catch(e) {} meetRecObj = null; }
@@ -20287,6 +20426,8 @@ function meetingStartRec() {
     //    ندارد) — این دو مستقل‌اند.
     meetRecObj.interimResults = true;
     meetRecObj.onresult = function(ev) {
+        // 🔧 v241: هر رویداد = ضربان تازه برای watchdog
+        _meetRecLastEvent = Date.now();
         // 🔧 v240: تفکیک interim و final — نمایش زندهٔ کلمات در حال گفتن.
         let interim = '';
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
@@ -20317,12 +20458,32 @@ function meetingStartRec() {
         // خطاهای گذرا — سیکل بعدی (onend → 200ms restart) ادامه می‌دهد
     };
     meetRecObj.onend = function() {
+        // 🔧 v241: موتور تا این لحظه زنده بود — از این پس مرده تا restart موفق
+        _meetRecEngineRunning = false;
+        _meetRecLastEvent = Date.now();
         if (meetRecActive && meetRecObj) {
-            setTimeout(function() {
-                if (meetRecActive && meetRecObj) {
-                    try { meetRecObj.start(); } catch(e) {}
+            // 🔧 v241: آبشار restart — چهار تلاش (۲۰۰/۶۰۰/۱۵۰۰/۳۰۰۰ms)؛ اگر همه
+            //    شکست خوردند watchdog هر ۳ ثانیه دوباره تلاش می‌کند. تا زمانی‌که
+            //    کاربر خودش قطع نکرده، شنیدن و تایپ ادامه دارد — کاملاً بی‌صدا.
+            _meetRecRestartPending = true;
+            const delays = [200, 600, 1500, 3000];
+            let idx = 0;
+            const attempt = function() {
+                if (!meetRecActive || !meetRecObj) { _meetRecRestartPending = false; return; }
+                try {
+                    meetRecObj.start();
+                    _meetRecEngineRunning = true;
+                    _meetRecLastEvent = Date.now();
+                    _meetRecRestartPending = false;
+                } catch(e) {
+                    if (idx < delays.length) {
+                        setTimeout(attempt, delays[idx++]);
+                    } else {
+                        _meetRecRestartPending = false; // watchdog نگهبانی می‌کند
+                    }
                 }
-            }, 200);
+            };
+            setTimeout(attempt, delays[idx++]);
         }
     };
     meetRecActive = true;
@@ -20330,7 +20491,7 @@ function meetingStartRec() {
     if (btn) { btn.classList.add('recording'); btn.textContent = '⏹'; }
     const st = document.getElementById('meetingStatus');
     if (st) { st.textContent = 'در حال ضبط... صحبت کنید'; st.classList.add('recording'); }
-    try { meetRecObj.start(); } catch(e) {
+    try { meetRecObj.start(); meetRecWatchdogStart(); } catch(e) {
         console.error('[MeetingMic] start failed', e);
         showToast('خطا در شروع ضبط');
         meetRecActive = false;
@@ -20341,6 +20502,8 @@ function meetingStartRec() {
 
 function meetingStopRec() {
     meetRecActive = false;
+    // 🔧 v241: watchdog نگهبانی دیگر لازم نیست
+    meetRecWatchdogStop();
     const btn = document.getElementById('meetingMicBtn');
     if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
     if (meetRecObj) {
