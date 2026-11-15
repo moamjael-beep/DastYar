@@ -5442,13 +5442,13 @@ body.locked .header-actions button {
         <div class="hamburger-item" onclick="closeHamburgerMenu(); toggleNotifications();">
             <span class="h-ico">🔔</span><span>اعلان‌ها (زنگوله)</span>
         </div>
-        <div class="hamburger-item" onclick="closeHamburgerMenu(); openMeetingRecorder();">
+        <div class="hamburger-item" onclick="menuOpenOverlay('meeting')">
             <span class="h-ico">🎙️</span><span>ضبط جلسه کاری</span>
         </div>
-        <div class="hamburger-item" onclick="closeHamburgerMenu(); openPdfFilesPage();">
+        <div class="hamburger-item" onclick="menuOpenOverlay('pdffiles')">
             <span class="h-ico">📄</span><span>فایل‌های PDF</span>
         </div>
-        <div class="hamburger-item" onclick="closeHamburgerMenu(); openYouTubeDownloader();">
+        <div class="hamburger-item" onclick="menuOpenOverlay('yt')">
             <span class="h-ico">⬇️</span><span>دانلود از یوتیوب</span>
         </div>
     </div>
@@ -7418,6 +7418,36 @@ body.locked .header-actions button {
 //               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
 //               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
 //               آن از یک اپ استاتیک وجود ندارد.
+//         🔧 v242 (۱۴۰۵ آبان ۲۷) — سه الزام کاربر:
+//           (۱) «برنامه را خراب کردی اتوماتیک و بار رفرش آپدیت نمیشود مگر
+//               در مرورگر باز کنم» — رفع: تابع checkAppVersionFresh اضافه
+//               شد؛ صفحه خودش هر ۲ دقیقه + هنگام بازگشت به برنامه + هنگام
+//               بارگذاری version.txt را مستقیم (با ?_rc=1 که از کش SW عبور
+//               می‌کند) چک می‌کند و اگر نسخهٔ سرور فرق داشت، UPDATE_CACHE
+//               به SW می‌زند و رفرش خودکار می‌کند (گارد ضدلوپ ۶۰ ثانیه).
+//               قبلاً صفحه فقط به پیام RELOAD_PLEASE از SW تکیه می‌کرد که
+//               در موبایل گاهی گم می‌شد → کاربر روی کد قدیمی می‌ماند.
+//               + checkPendingReload اکنون هنگام بازگشت به برنامه هم اجرا
+//               می‌شود تا رفرش معوقهٔ حین فرم باز گم نشود.
+//           (۲) «ضبط تسک را باز بوق دار و کوتاه کوتاه مثل قبل کردی و چیزی
+//               تایپ نمیکند. تماما سبک تایپ در هدر سند حسابداری باشد با
+//               همان کدها» — رفع: BA-147 کامل REVERT شد. machinery v241
+//               (آبشار restart + watchdog) روی دستگاه واقعی در سکوت،
+//               start() را پوک می‌کرد → قطع‌ووصل میکروفون + بوق. اکنون
+//               ضبط تسک کپی عینی accDocStartRec است: هر بار شروع = یک
+//               new SR() تازه + onend → restart سادهٔ ۲۰۰ms + بدون هیچ
+//               watchdog/آبشار/keepalive. ضبط جلسه هم به همان ۲۰۰ms ساده
+//               برگشت. (تفاوت ساختاری ریشه‌ای که پیدا شد: کد قبلی شیء
+//               سراسری recognition را بین sessionها استفادهٔ مجدد می‌کرد —
+//               حسابداری که کار می‌کند همیشه new SR() تازه می‌سازد.)
+//           (۳) «کلیدهایی که گفتم هنوز صفحات را باز نمیکند» — دو علت واقعی
+//               پیدا و رفع شد: (الف) کد قدیمی روی دستگاه (با (۱) حل می‌شود)
+//               و (ب) مسابقهٔ popstate در خود آیتم‌های منو: navBack صف‌شدهٔ
+//               closeHamburgerMenu بعد از navPush صفحه می‌رسید و صفحه را در
+//               <۵۰ms می‌بست. رفع (BA-150): menuOpenOverlay اتمی — ورودی
+//               history منو با ورودی صفحه navReplace می‌شود. تست کلیک واقعی
+//               هر سه صفحه + Back موبایل سبز است.
+//
 //         🔧 v241 (۱۴۰۵ آبان ۲۷) — الزام کاربر: «در ضبط تسک بعد از چند جمله
 //               دیگر چیزی تشخیص نمیدهد تا زمانیکه کاربر خدش قطع نکرده باید
 //               شنیدن و تایپ ادامه یابد»
@@ -7698,7 +7728,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v241-2026-11-15-rec-keepalive-cascade';
+const APP_VERSION = 'v242-2026-11-15-acc-style-task-rec';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -10135,181 +10165,134 @@ async function migrateLegacyData() {
 // اگر اینترنت قطع باشد یا مرورگر پشتیبانی نکند، کاربر می‌تواند
 // متن را به‌صورت دستی تایپ کند.
 // ============ Speech Recognition ============
-let recognition = null;
+// ════════════════════════════════════════════════════════════════════
+// 🎤 ضبط تسک — v242 (الزام کاربر): «تماما سبک تایپ در هدر سند حسابداری
+// باشد با همان کدها» — کپی عینی accDocStartRec/accDocStopRec (فقط عناصر
+// هدف فرق دارند: itemText به‌جای accDocDesc + همگام‌سازی دکمه‌های فرم تسک
+// + مسیر آفلاین v166). ساختار عین حسابداری:
+//   • هر بار شروع = یک new SR() تازه (بدون استفادهٔ مجدد از شیء قدیمی)
+//   • onend → restart سادهٔ ۲۰۰ms (بدون آبشار، بدون watchdog)
+//   • continuous=true + interimResults=true (بدون بوق + بازخورد زندهٔ v240)
+//   • بدون هیچ machinery اضافه — v241 کامل حذف شد (روی دستگاه واقعی،
+//     پوک‌کردن start() در سکوت باعث قطع‌ووصل و بوق می‌شد)
+// ════════════════════════════════════════════════════════════════════
 let isRecording = false;
-// Two-level tracking (same as the WORKING backup version):
-//   allFinalText: accumulated across sessions (committed in onend)
-//   currentSessionText: current session only (reset in onstart)
-let allFinalText = '';
-let currentSessionText = '';
-let processedResults = new Set();
-// 🔧 v241: ماندگاری شنیدن — تا کاربر خودش قطع نکرده، شنیدن و تایپ باید
-//    ادامه یابد («بعد از چند جمله دیگر چیزی تشخیص نمی‌دهد» = موتور SR بعد از
-//    پایان session داخلی Chrome (~۶۰ ثانیه) در مسابقهٔ restart می‌میرد و
-//    میکروفون روشن می‌ماند ولی هیچ چیزی تشخیص داده نمی‌شود). دو لایهٔ دفاعی:
-//    (۱) آبشار restart در onend: ۲۰۰→۶۰۰→۱۵۰۰→۳۰۰۰ms — چهار تلاش پشت‌سرهم.
-//    (۲) watchdog قلبی: هر ۳ ثانیه سلامت موتور را چک می‌کند؛ اگر موتور بدون
-//        onend مرده باشد (zombie) آن را دوباره بیدار می‌کند. کاملاً بی‌صدا —
-//        هیچ بوق و toast‌ای ندارد (start() روی موتورِ زنده فقط
-//        InvalidStateError می‌دهد که بی‌ضرر است و session جاری را قطع نمی‌کند).
-let _taskRecLastEvent = 0;        // آخرین بار که onstart/onresult/onerror/onend دیدیم
-let _taskRecEngineRunning = false; // true بین onstart تا onend
-let _taskRecRestartPending = false; // آبشار restart در جریان است؟
-let _taskRecWatchdogTimer = null;
-
-function taskRecWatchdogStart() {
-    if (_taskRecWatchdogTimer) return;
-    _taskRecLastEvent = Date.now();
-    _taskRecWatchdogTimer = setInterval(function() {
-        if (!isRecording || !recognition) {
-            // session تمام شده — watchdog خودش را خاموش می‌کند
-            clearInterval(_taskRecWatchdogTimer);
-            _taskRecWatchdogTimer = null;
-            return;
-        }
-        if (_taskRecRestartPending) return;          // آبشار onend در جریان است
-        const stale = (Date.now() - _taskRecLastEvent) > 10000;
-        if (_taskRecEngineRunning && !stale) return; // موتور سالم و فعال
-        // موتور مرده (بدون onend) یا بیش از ۱۰ ثانیه بی‌نشانه — بیدارش کن
-        try {
-            recognition.start();
-            _taskRecEngineRunning = true;
-            _taskRecLastEvent = Date.now();
-        } catch(e) {
-            // InvalidStateError = موتور زنده است (start هم‌زمان مجاز نیست) —
-            // فقط ضربان را تازه کن؛ هیچ کاری دیگر لازم نیست.
-            _taskRecLastEvent = Date.now();
-        }
-    }, 3000);
-}
-
-function taskRecWatchdogStop() {
-    if (_taskRecWatchdogTimer) {
-        clearInterval(_taskRecWatchdogTimer);
-        _taskRecWatchdogTimer = null;
-    }
-    _taskRecEngineRunning = false;
-    _taskRecRestartPending = false;
-}
+let taskRecActive = false;
+let taskRecAccum = '';
+let taskRecIndices = null;
+let taskRecObj = null;
 
 function isSpeechSupported() {
     return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 }
 
-function initRecognition() {
-    if (!isSpeechSupported()) return false;
+function startRecording() {
+    if (!isSpeechSupported()) {
+        showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. لطفاً از Chrome یا Edge استفاده کنید.');
+        return;
+    }
+    // 🔧 v166: اگر آفلاین است → فرم تایپ دستی نمایش بده (رفتار ثابت)
+    if (!navigator.onLine) {
+        document.getElementById('modalOverlay').classList.add('active');
+        document.getElementById('formSection').style.display = 'block';
+        const isEditing = !!editTaskId;
+        document.getElementById('modalTitle').textContent = isEditing ? 'ویرایش یادآور' : 'یادآور جدید';
+        const saveBtn = document.getElementById('saveBtn');
+        if (saveBtn) saveBtn.textContent = isEditing ? 'ثبت ویرایش' : 'ذخیره';
+        document.getElementById('reRecordBtn').style.display = '';
+        document.getElementById('saveBtn').style.display = '';
+        if (!document.getElementById('itemDeadline').value) setQuickDeadline(1);
+        else updateDeadlineDisplay(document.getElementById('itemDeadline').value);
+        showToast('اینترنت در دسترس نیست. ضبط صوت کار نمی‌کند. متن را تایپ کنید.');
+        setTimeout(() => document.getElementById('itemText').focus(), 100);
+        return;
+    }
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SR();
-    // 🔧 v239: continuous=true (بدون بوق — میکروفون پیوسته باز می‌ماند).
-    // 🔧 v240 (الزام کاربر): interimResults=true بازگردانده شد. قبلاً v239 آن
-    //    را false کرد تا «عین حسابداری» شود، ولی این باعث شد کاربر «چیزی تایپ
-    //    نمیکنه» ببیند چون متن فقط هنگام final شدن (که در فارسی ۱۰–۱۵ ثانیه
-    //    با مکث طولانی طول می‌کشد) ظاهر می‌شد. ترکیب درست: continuous=true
-    //    (بوق نداریم) + interimResults=true (نمایش زندهٔ کلمات در حال گفتن).
-    //    continuous=true نگه‌داشتن میکروفون باز است؛ interimResults=true فقط
-    //    نحوهٔ بازخورد نمایش را تعیین می‌کند. این دو مستقل‌اند.
-    recognition.lang = 'fa-IR';
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
-
-    // 🔧 v240: بازنشانی هر session.
-    recognition.onstart = () => {
-        processedResults = new Set();
-        currentSessionText = '';
-        // 🔧 v241: ضربان قلبی + علامت «موتور زنده»
-        _taskRecEngineRunning = true;
-        _taskRecLastEvent = Date.now();
-    };
-
-    recognition.onresult = (event) => {
-        // 🔧 v241: هر رویداد = ضربان تازه برای watchdog
-        _taskRecLastEvent = Date.now();
-        // 🔧 v240: الگوی بازخورد زنده — interimها را جدا کن و real-time نشان بده.
+    taskRecAccum = '';
+    taskRecIndices = new Set();
+    taskRecObj = new SR();
+    taskRecObj.lang = 'fa-IR';
+    taskRecObj.continuous = true;
+    // 🔧 v240 (الزام کاربر): interimResults=true — بازخورد زندهٔ کلمات در
+    //    حال گفتن. continuous=true همچنان میکروفون را باز نگه می‌دارد
+    //    (بدون بوق) — این دو مستقل‌اند. عین accDocStartRec.
+    taskRecObj.interimResults = true;
+    taskRecObj.onresult = function(ev) {
         let interim = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            const result = event.results[i];
-            const transcript = result[0].transcript;
-            if (result.isFinal) {
-                if (!processedResults.has(i)) {
-                    currentSessionText += transcript + ' ';
-                    processedResults.add(i);
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+            const r = ev.results[i];
+            if (r.isFinal) {
+                if (taskRecIndices && !taskRecIndices.has(i)) {
+                    taskRecAccum += r[0].transcript + ' ';
+                    taskRecIndices.add(i);
                 }
             } else {
-                interim = transcript;
+                interim += r[0].transcript;
             }
         }
-        // 🔧 v235/v240: نمایش زنده با تبدیل اعداد فارسی گفتاری به دیجیت.
-        // متغیرهای accumulator متن خام را نگه می‌دارند؛ فقط خروجی نمایشی
-        // تبدیل می‌شود تا «دو میلیون» → «۲٬۰۰۰٬۰۰۰» زنده دیده شود.
-        const rawDisplay = (allFinalText + ' ' + currentSessionText + ' ' + interim).trim().replace(/\s+/g, ' ');
-        document.getElementById('itemText').value = addNumericAfterWords(rawDisplay);
+        const el = document.getElementById('itemText');
+        if (el) el.value = addNumericAfterWords((taskRecAccum + ' ' + interim).trim()).trim();
         const hintEl = document.getElementById('interimText');
         if (hintEl) {
             hintEl.style.display = '';
-            hintEl.textContent = addNumericAfterWords(interim) || (currentSessionText ? 'در حال شنیدن...' : 'صحبت کنید...');
+            hintEl.textContent = interim ? addNumericAfterWords(interim) : 'در حال شنیدن...';
         }
     };
-
-    recognition.onerror = (event) => {
-        console.error('Recognition error:', event.error, 'protocol:', location.protocol);
-        // 🔧 v239/v240: خطاهای گذرا را نادیده می‌گیریم (onend سیکل بعدی را
-        //    ادامه می‌دهد). فقط خطای رد مجوز ضبط را متوقف می‌کنیم. هیچ toast
-        //    برای خطاهای گذرا → سکوت کامل، بدون بوق.
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+    taskRecObj.onerror = function(ev) {
+        console.error('[TaskMic] error:', ev.error);
+        if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
             stopRecording();
             showToast('دسترسی به میکروفون رد شد. در تنظیمات مرورگر اجازه دهید.');
-            return;
         }
-        // خطاهای گذرا (no-speech/network/aborted/audio-capture) — سکوت کامل،
-        // onend خودش ۲۰۰ms بعد restart می‌زند. هیچ toast و هیچ kick-out.
+        // خطاهای گذرا (no-speech و امثال آن) — سیکل بعدی (onend → 200ms)
+        // ادامه می‌دهد. عین accDocStartRec.
     };
-
-    recognition.onend = () => {
-        // 🔧 v241: موتور تا این لحظه زنده بود — از این پس مرده تا restart موفق
-        _taskRecEngineRunning = false;
-        _taskRecLastEvent = Date.now();
-        // Commit current session to allFinalText — عین accDocRecAccum
-        if (currentSessionText.trim()) {
-            allFinalText = (allFinalText + ' ' + currentSessionText).trim().replace(/\s+/g, ' ');
-            currentSessionText = '';
-        }
-
-        if (isRecording) {
-            // 🔧 v241: آبشار restart — یک تلاش سادهٔ ۲۰۰ms (v237/v239) کافی نبود:
-            //    اگر start() در همان پنجره InvalidStateError بیندازد (مسابقهٔ
-            //    معروف Chrome اندروید بعد از onend)، catch قبلی فقط log می‌کرد
-            //    و موتور مرده باقی می‌ماند = «بعد از چند جمله دیگر چیزی تشخیص
-            //    نمی‌دهد». اکنون ۴ تلاش پشت‌سرهم (۲۰۰/۶۰۰/۱۵۰۰/۳۰۰۰ms) و اگر
-            //    همه شکست خوردند watchdog قلبی هر ۳ ثانیه دوباره تلاش می‌کند —
-            //    تا زمانی‌که کاربر خودش قطع نکرده، شنیدن و تایپ ادامه دارد.
-            //    کاملاً بی‌صدا: بدون بوق، بدون toast.
-            _taskRecRestartPending = true;
-            const delays = [200, 600, 1500, 3000];
-            let idx = 0;
-            const attempt = function() {
-                if (!isRecording || !recognition) { _taskRecRestartPending = false; return; }
-                try {
-                    recognition.start();
-                    _taskRecEngineRunning = true;
-                    _taskRecLastEvent = Date.now();
-                    _taskRecRestartPending = false;
-                } catch(e) {
-                    if (idx < delays.length) {
-                        setTimeout(attempt, delays[idx++]);
-                    } else {
-                        _taskRecRestartPending = false; // watchdog از اینجا نگهبانی می‌کند
-                    }
+    taskRecObj.onend = function() {
+        // 🔧 v242: بعد از restart، ایندکس نتایج از صفر شروع می‌شود؛ اگر Set
+        //    پاک نشود اولین جملهٔ بعد از restart فیلتر dedup می‌شد (= عین
+        //    شکایت «بعد از چند جمله دیگر چیزی تایپ نمی‌کند»). در onend پاک
+        //    می‌کنیم تا شنیدن و تایپ بعد از هر restart کامل ادامه یابد.
+        taskRecIndices = new Set();
+        if (taskRecActive && taskRecObj) {
+            setTimeout(function() {
+                if (taskRecActive && taskRecObj) {
+                    try { taskRecObj.start(); } catch(e) {}
                 }
-            };
-            setTimeout(attempt, delays[idx++]);
-        } else {
-            document.getElementById('itemText').value = addNumericAfterWords(allFinalText);
-            showFormSection();
+            }, 200);
         }
     };
+    taskRecActive = true;
+    isRecording = true;
+    // ضبط تازه = متن تازه (رفتار «ضبط اولیه/ضبط مجدد» فرم تسک — ثابت)
+    document.getElementById('itemText').value = '';
+    const hintEl = document.getElementById('interimText');
+    if (hintEl) { hintEl.textContent = 'صحبت کنید...'; hintEl.style.display = ''; }
+    const micBtn = document.getElementById('reRecordBtn');
+    if (micBtn) { micBtn.classList.add('recording'); micBtn.textContent = '⏹'; micBtn.title = 'توقف ضبط'; }
+    document.getElementById('addBtn').classList.add('recording');
+    const fab2 = document.getElementById('floatingAddBtn');
+    if (fab2) fab2.classList.add('recording');
+    try { taskRecObj.start(); } catch(e) {
+        console.error('[TaskMic] start failed', e);
+        stopRecording();
+    }
+}
 
-    return true;
+function stopRecording() {
+    taskRecActive = false;
+    isRecording = false;
+    document.getElementById('addBtn').classList.remove('recording');
+    const fabStop = document.getElementById('floatingAddBtn');
+    if (fabStop) fabStop.classList.remove('recording');
+    const micBtnStop = document.getElementById('reRecordBtn');
+    if (micBtnStop) { micBtnStop.classList.remove('recording'); micBtnStop.textContent = '🎤'; micBtnStop.title = 'ضبط صوت'; }
+    const hintStop = document.getElementById('interimText');
+    if (hintStop) hintStop.style.display = 'none';
+    if (taskRecObj) {
+        try { taskRecObj.stop(); } catch(e) {}
+        taskRecObj = null;
+    }
+    setTimeout(() => { showFormSection(); checkPendingReload(); }, 250);
 }
 
 // 🔧 v198: ابزارهای ماندگاری در پس‌زمینه
@@ -10653,106 +10636,6 @@ async function handleRecordingVisibilityChange() {
         if (_captured) showBackgroundAudioNotice(_captured);
     } catch(e) { console.warn('[Recording] stopBgAudio failed:', e); }
 }
-
-function startRecording() {
-    if (!isSpeechSupported()) {
-        showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. لطفاً از Chrome یا Edge استفاده کنید.');
-        return;
-    }
-    // 🔧 v166: بررسی اینترنت فقط برای ضبط صدا — navigator.onLine کافی است
-    // اگر مرورگر آنلاین است → ضبط شروع کن (حتی اگر GitHub کند باشد)
-    // اگر آفلاین است → فرم تایپ دستی نمایش بده
-    if (!navigator.onLine) {
-        document.getElementById('modalOverlay').classList.add('active');
-        document.getElementById('formSection').style.display = 'block';
-        const isEditing = !!editTaskId;
-        document.getElementById('modalTitle').textContent = isEditing ? 'ویرایش یادآور' : 'یادآور جدید';
-        const saveBtn = document.getElementById('saveBtn');
-        if (saveBtn) saveBtn.textContent = isEditing ? 'ثبت ویرایش' : 'ذخیره';
-        document.getElementById('reRecordBtn').style.display = '';
-        document.getElementById('saveBtn').style.display = '';
-        if (!document.getElementById('itemDeadline').value) setQuickDeadline(1);
-        else updateDeadlineDisplay(document.getElementById('itemDeadline').value);
-        showToast('اینترنت در دسترس نیست. ضبط صوت کار نمی‌کند. متن را تایپ کنید.');
-        setTimeout(() => document.getElementById('itemText').focus(), 100);
-        return;
-    }
-    if (!recognition && !initRecognition()) {
-        showToast('امکان راه‌اندازی تشخیص صوت وجود ندارد');
-        return;
-    }
-    allFinalText = '';
-    currentSessionText = '';
-    document.getElementById('itemText').value = '';
-    isRecording = true;
-    // 🔧 v236: صفحهٔ واسط ضبط حذف شد — در همان فرم می‌مانیم. hint زنده و
-    // آیکون میکروفون چشمک‌زن بازخورد بصری را می‌دهند؛ عنوان و فیلدها ثابت.
-    const hintEl = document.getElementById('interimText');
-    if (hintEl) { hintEl.textContent = 'صحبت کنید...'; hintEl.style.display = ''; }
-    const micBtn = document.getElementById('reRecordBtn');
-    if (micBtn) { micBtn.classList.add('recording'); micBtn.textContent = '⏹'; micBtn.title = 'توقف ضبط'; }
-    document.getElementById('addBtn').classList.add('recording');
-    // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
-    const fab2 = document.getElementById('floatingAddBtn');
-    if (fab2) fab2.classList.add('recording');
-    // 🔧 v237 (BA-139): مکانیزم ضبط تسک اکنون عین مکانیزم حسابداری است —
-    //    بدون WakeLock / MediaSession / silentAudioLoop / Worker / keepalive
-    //    interval / visibilitychange-restart / MediaRecorder پس‌زمینه. این
-    //    پنج مکانیزم رقابتی باعث «قطع و وصل میکروفون + بوق‌های متوالی» بودند
-    //    (هر toggle visibility یک getUserMedia + track.stop می‌زد = بوق سخت‌افزار).
-    // 🔧 v241: علاوه بر onend، یک watchdog بی‌صده (بدون بوق و toast) که فقط
-    //    سلامت موتور SR را نگهبانی می‌کند — تفاوتی در UX ندارد.
-    try {
-        recognition.start();
-        taskRecWatchdogStart();
-    } catch(e) {
-        console.error(e);
-        showToast('خطا در شروع ضبط');
-        isRecording = false;
-        document.getElementById('addBtn').classList.remove('recording');
-        // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
-        const fab3 = document.getElementById('floatingAddBtn');
-        if (fab3) fab3.classList.remove('recording');
-        // 🔧 v236: بازنشانی آیکون میکروفون و hint به حالت آماده
-        const micBtnErr = document.getElementById('reRecordBtn');
-        if (micBtnErr) { micBtnErr.classList.remove('recording'); micBtnErr.textContent = '🎤'; micBtnErr.title = 'ضبط صوت'; }
-        const hintErr = document.getElementById('interimText');
-        if (hintErr) hintErr.style.display = 'none';
-        showFormSection();
-    }
-}
-
-// 🔧 v198: keepalive interval برای ضبط
-let _recordingKeepaliveInterval = null;
-
-function stopRecording() {
-    isRecording = false;
-    // 🔧 v241: watchdog نگهبانی دیگر لازم نیست
-    taskRecWatchdogStop();
-    document.getElementById('addBtn').classList.remove('recording');
-    // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
-    const fabStop = document.getElementById('floatingAddBtn');
-    if (fabStop) fabStop.classList.remove('recording');
-    // 🔧 v236: بازنشانی دکمهٔ میکروفون به حالت آماده و پنهان کردن hint زنده
-    const micBtnStop = document.getElementById('reRecordBtn');
-    if (micBtnStop) { micBtnStop.classList.remove('recording'); micBtnStop.textContent = '🎤'; micBtnStop.title = 'ضبط صوت'; }
-    const hintStop = document.getElementById('interimText');
-    if (hintStop) hintStop.style.display = 'none';
-    if (recognition) { try { recognition.stop(); } catch(e) {} }
-    // 🔧 v237 (BA-139): مکانیزم ضبط تسک عین حسابداری — دیگر WakeLock /
-    //    MediaSession / silentAudioLoop / Worker / keepalive / MediaRecorder
-    //    وجود ندارد که teardown شوند. فقط recognition.stop کافی است (مانند
-    //    accDocStopRec که فقط flag + button + obj را پاک می‌کند).
-    // Commit current session and apply number conversion on final text
-    if (currentSessionText.trim()) {
-        allFinalText = (allFinalText + ' ' + currentSessionText).trim().replace(/\s+/g, ' ');
-        currentSessionText = '';
-    }
-    document.getElementById('itemText').value = addNumericAfterWords(allFinalText);
-    setTimeout(() => { showFormSection(); checkPendingReload(); }, 250);
-}
-
-// (merged with the version above)
 
 // 🔧 تنظیم سررسید با کلیدهای میانبر
 // - hours: تعداد ساعت (برای ۱ ساعت تا ۱۵ روز)
@@ -11639,23 +11522,9 @@ function showFormSection(forceFocus) {
 
 function cancelModal() {
     if (isRecording) {
-        // 🔧 v237 (BA-139): مکانیزم ضبط تسک عین حسابداری — دیگر machinery
-        //    (WakeLock / MediaSession / silentAudio / worker / MediaRecorder /
-        //    keepalive) وجود ندارد. فقط recognition.stop کافی است، مثل accDocStopRec.
-        isRecording = false;
-        document.getElementById('addBtn').classList.remove('recording');
-        const fabCancel = document.getElementById('floatingAddBtn');
-        if (fabCancel) fabCancel.classList.remove('recording');
-        const micCancel = document.getElementById('reRecordBtn');
-        if (micCancel) { micCancel.classList.remove('recording'); micCancel.textContent = '🎤'; micCancel.title = 'ضبط صوت'; }
-        const hintCancel = document.getElementById('interimText');
-        if (hintCancel) hintCancel.style.display = 'none';
-        if (recognition) { try { recognition.stop(); } catch(e) {} }
-        // Commit any pending session text
-        if (currentSessionText.trim()) {
-            allFinalText = (allFinalText + ' ' + currentSessionText).trim().replace(/\s+/g, ' ');
-            currentSessionText = '';
-        }
+        // 🔧 v242: توقف با همان کد واحد stopRecording (عین accDoc — یک کد
+        // برای همهٔ مسیرها: toggle، انصراف، بستن فرم، Back موبایل)
+        stopRecording();
     }
     closeModalByType('taskForm');
     unlockBodyScroll();
@@ -12889,22 +12758,10 @@ function closeModalByType(type) {
         try { unlockBodyScroll(); } catch(e) {}
     }
     if (type === 'taskForm') {
-        // Stop recording if it was active
+        // 🔧 v242: توقف ضبط با همان کد واحد stopRecording (مسیر Back موبایل
+        // هم از اینجا می‌گذرد — عین حسابداری که همه‌جا accDocStopRec است)
         if (typeof isRecording !== 'undefined' && isRecording) {
-            try {
-                isRecording = false;
-                // 🔧 v241: watchdog نگهبانی هم با بستن فرم خاموش شود (مسیر
-                //    Back موبایل از stopRecording نمی‌گذرد)
-                if (typeof taskRecWatchdogStop === 'function') taskRecWatchdogStop();
-                const addBtn = document.getElementById('addBtn');
-                if (addBtn) addBtn.classList.remove('recording');
-                // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
-                const fabClose = document.getElementById('floatingAddBtn');
-                if (fabClose) fabClose.classList.remove('recording');
-                if (typeof recognition !== 'undefined' && recognition) {
-                    try { recognition.stop(); } catch(e) {}
-                }
-            } catch(e) {}
+            try { stopRecording(); } catch(e) {}
         }
         // Reset the edit-task flag (matches cancelModal behavior)
         if (typeof editTaskId !== 'undefined') editTaskId = null;
@@ -20284,6 +20141,23 @@ function closeHamburgerMenu() {
     navBack();
 }
 
+// 🔧 v242: انتقال اتمیک منو → صفحهٔ جدید (رفع «کلیدها صفحه‌ای باز نمیکند»)
+// الگوی قبلی «closeHamburgerMenu(); openX();» مسابقهٔ popstate داشت:
+// closeHamburgerMenu یک navBack در صف می‌گذاشت، openX یک pushState می‌زد و
+// سپس popstate صف‌شده می‌رسید و صفحهٔ تازه‌بازشده را می‌بست (تأییدشده با
+// تست کلیک واقعی: صفحه در <۵۰ms باز و بسته می‌شد). اکنون منو فقط بصری
+// بسته می‌شود و ورودی history منو با ورودی صفحه جایگزین (navReplace) می‌شود
+// — نه popstate صف می‌شود نه ورودی اضافه می‌ماند. Back موبایل از صفحهٔ
+// جدید مستقیم به حالت قبل از منو برمی‌گردد (رفتار درست حفظ شد).
+function menuOpenOverlay(type) {
+    const ov = document.getElementById('hamburgerMenuOverlay');
+    if (ov) ov.classList.remove('active');
+    closeModalByType('hamburger'); // فقط حذف از _modalStack — بدون navBack
+    if (type === 'meeting') openMeetingRecorder(true);
+    else if (type === 'pdffiles') openPdfFilesPage(true);
+    else if (type === 'yt') openYouTubeDownloader(true);
+}
+
 // ════════════════════════════════════════════════════════════════════
 // 🔧 v238: ضبط جلسه کاری + فایل‌های PDF
 // ════════════════════════════════════════════════════════════════════
@@ -20313,48 +20187,7 @@ let meetRecObj = null;
 let meetRecActive = false;
 let meetRecAccum = '';
 let meetRecIndices = null;
-// 🔧 v241: ماندگاری شنیدن جلسه — عین مکانیزم ضبط تسک (آبشار restart در onend
-//    + watchdog قلبی بی‌صدا). جلسه‌های کاری طولانی‌اند و Chrome بعد از ~۶۰
-//    ثانیه session داخلی را می‌بندد؛ اگر restart در مسابقهٔ InvalidStateError
-//    بماند، میکروفون روشن می‌ماند ولی دیگر چیزی تشخیص داده نمی‌شود.
-let _meetRecLastEvent = 0;
-let _meetRecEngineRunning = false;
-let _meetRecRestartPending = false;
-let _meetRecWatchdogTimer = null;
-
-function meetRecWatchdogStart() {
-    if (_meetRecWatchdogTimer) return;
-    _meetRecLastEvent = Date.now();
-    _meetRecWatchdogTimer = setInterval(function() {
-        if (!meetRecActive || !meetRecObj) {
-            clearInterval(_meetRecWatchdogTimer);
-            _meetRecWatchdogTimer = null;
-            return;
-        }
-        if (_meetRecRestartPending) return;
-        const stale = (Date.now() - _meetRecLastEvent) > 10000;
-        if (_meetRecEngineRunning && !stale) return;
-        try {
-            meetRecObj.start();
-            _meetRecEngineRunning = true;
-            _meetRecLastEvent = Date.now();
-        } catch(e) {
-            // InvalidStateError = موتور زنده است — فقط ضربان را تازه کن
-            _meetRecLastEvent = Date.now();
-        }
-    }, 3000);
-}
-
-function meetRecWatchdogStop() {
-    if (_meetRecWatchdogTimer) {
-        clearInterval(_meetRecWatchdogTimer);
-        _meetRecWatchdogTimer = null;
-    }
-    _meetRecEngineRunning = false;
-    _meetRecRestartPending = false;
-}
-
-function openMeetingRecorder() {
+function openMeetingRecorder(fromMenu) {
     const ov = document.getElementById('meetingOverlay');
     if (!ov) return;
     // اگر ضبط حسابداری/تسک فعال است، متوقف کن (هیچ‌گاه دو SR هم‌زمان نباشند)
@@ -20370,7 +20203,9 @@ function openMeetingRecorder() {
     document.getElementById('meetingStatus').classList.remove('recording');
     document.getElementById('meetingSaveBtn').disabled = false;
     ov.classList.add('active');
-    navPush({ view: 'overlay', type: 'meeting' });
+    // 🔧 v242: از منو = navReplace (انتقال اتمیک — بدون مسابقهٔ popstate)
+    if (fromMenu) navReplace({ view: 'overlay', type: 'meeting' });
+    else navPush({ view: 'overlay', type: 'meeting' });
     trackModalOpen('meeting');
     lockBodyScroll();
 }
@@ -20381,7 +20216,6 @@ function closeMeetingRecorder() {
     // توقف ضبط اگر فعال است (مثل accDocStopRec: فقط flag + stop + null)
     if (meetRecActive) {
         meetRecActive = false;
-        meetRecWatchdogStop(); // 🔧 v241
         const btn = document.getElementById('meetingMicBtn');
         if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
         if (meetRecObj) { try { meetRecObj.stop(); } catch(e) {} meetRecObj = null; }
@@ -20426,8 +20260,6 @@ function meetingStartRec() {
     //    ندارد) — این دو مستقل‌اند.
     meetRecObj.interimResults = true;
     meetRecObj.onresult = function(ev) {
-        // 🔧 v241: هر رویداد = ضربان تازه برای watchdog
-        _meetRecLastEvent = Date.now();
         // 🔧 v240: تفکیک interim و final — نمایش زندهٔ کلمات در حال گفتن.
         let interim = '';
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
@@ -20458,32 +20290,16 @@ function meetingStartRec() {
         // خطاهای گذرا — سیکل بعدی (onend → 200ms restart) ادامه می‌دهد
     };
     meetRecObj.onend = function() {
-        // 🔧 v241: موتور تا این لحظه زنده بود — از این پس مرده تا restart موفق
-        _meetRecEngineRunning = false;
-        _meetRecLastEvent = Date.now();
+        // 🔧 v242: پاک‌کردن ایندکس‌ها بعد از restart (توضیح در taskRecObj.onend)
+        meetRecIndices = new Set();
+        // عین accDocRecObj.onend — restart سادهٔ ۲۰۰ms. (v241 آبشار+watchdog
+        // بود که روی دستگاه واقعی باعث قطع‌ووصل و بوق می‌شد — حذف شد)
         if (meetRecActive && meetRecObj) {
-            // 🔧 v241: آبشار restart — چهار تلاش (۲۰۰/۶۰۰/۱۵۰۰/۳۰۰۰ms)؛ اگر همه
-            //    شکست خوردند watchdog هر ۳ ثانیه دوباره تلاش می‌کند. تا زمانی‌که
-            //    کاربر خودش قطع نکرده، شنیدن و تایپ ادامه دارد — کاملاً بی‌صدا.
-            _meetRecRestartPending = true;
-            const delays = [200, 600, 1500, 3000];
-            let idx = 0;
-            const attempt = function() {
-                if (!meetRecActive || !meetRecObj) { _meetRecRestartPending = false; return; }
-                try {
-                    meetRecObj.start();
-                    _meetRecEngineRunning = true;
-                    _meetRecLastEvent = Date.now();
-                    _meetRecRestartPending = false;
-                } catch(e) {
-                    if (idx < delays.length) {
-                        setTimeout(attempt, delays[idx++]);
-                    } else {
-                        _meetRecRestartPending = false; // watchdog نگهبانی می‌کند
-                    }
+            setTimeout(function() {
+                if (meetRecActive && meetRecObj) {
+                    try { meetRecObj.start(); } catch(e) {}
                 }
-            };
-            setTimeout(attempt, delays[idx++]);
+            }, 200);
         }
     };
     meetRecActive = true;
@@ -20491,7 +20307,7 @@ function meetingStartRec() {
     if (btn) { btn.classList.add('recording'); btn.textContent = '⏹'; }
     const st = document.getElementById('meetingStatus');
     if (st) { st.textContent = 'در حال ضبط... صحبت کنید'; st.classList.add('recording'); }
-    try { meetRecObj.start(); meetRecWatchdogStart(); } catch(e) {
+    try { meetRecObj.start(); } catch(e) {
         console.error('[MeetingMic] start failed', e);
         showToast('خطا در شروع ضبط');
         meetRecActive = false;
@@ -20502,8 +20318,6 @@ function meetingStartRec() {
 
 function meetingStopRec() {
     meetRecActive = false;
-    // 🔧 v241: watchdog نگهبانی دیگر لازم نیست
-    meetRecWatchdogStop();
     const btn = document.getElementById('meetingMicBtn');
     if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
     if (meetRecObj) {
@@ -20660,11 +20474,13 @@ async function meetDeletePdfRecord(id) {
 }
 
 // ─── صفحهٔ فایل‌های PDF ───
-function openPdfFilesPage() {
+function openPdfFilesPage(fromMenu) {
     const ov = document.getElementById('pdffilesOverlay');
     if (!ov) return;
     ov.classList.add('active');
-    navPush({ view: 'overlay', type: 'pdffiles' });
+    // 🔧 v242: از منو = navReplace (انتقال اتمیک — بدون مسابقهٔ popstate)
+    if (fromMenu) navReplace({ view: 'overlay', type: 'pdffiles' });
+    else navPush({ view: 'overlay', type: 'pdffiles' });
     trackModalOpen('pdffiles');
     lockBodyScroll();
     renderPdfFilesList();
@@ -20773,14 +20589,16 @@ function ytSelectMethod(method) {
     document.getElementById('ytMethodCobaltHelp').style.display = (method === 'cobalt') ? 'block' : 'none';
 }
 
-function openYouTubeDownloader() {
+function openYouTubeDownloader(fromMenu) {
     const ov = document.getElementById('ytOverlay');
     if (!ov) return;
     // اگر در حال ضبط جلسه/تسک/حسابداری است، متوقف کن (میکروفون آزاد شود)
     try { if (typeof meetRecActive !== 'undefined' && meetRecActive) closeMeetingRecorder(); } catch(e) {}
     try { if (typeof stopRecording === 'function' && typeof isRecording !== 'undefined' && isRecording) stopRecording(); } catch(e) {}
     ov.classList.add('active');
-    navPush({ view: 'overlay', type: 'yt' });
+    // 🔧 v242: از منو = navReplace (انتقال اتمیک — بدون مسابقهٔ popstate)
+    if (fromMenu) navReplace({ view: 'overlay', type: 'yt' });
+    else navPush({ view: 'overlay', type: 'yt' });
     trackModalOpen('yt');
     lockBodyScroll();
     // بازنشانی وضعیت نمایش
@@ -23374,6 +23192,44 @@ function checkPendingReload() {
     }
 }
 
+// 🔧 v242: تأیید مستقیم نسخه از سمت صفحه — حلقهٔ مفقود «آپدیت نمیشود مگر
+// در مرورگر باز کنم». تا الان صفحه فقط به پیام RELOAD_PLEASE از SW تکیه
+// می‌کرد؛ اگر آن پیام گم شود (صفحهٔ فریزشده، SW عوض‌شده هنگام claim،
+// موبایل پرخطر)، کاربر برای همیشه روی کد قدیمی می‌ماند. اکنون صفحه خودش
+// هر ۲ دقیقه + هنگام بازگشت به برنامه version.txt را مستقیم (با ?_rc=1
+// که SW آن را از کش عبور می‌دهد) چک می‌کند؛ اگر نسخهٔ سرور فرق داشت:
+// UPDATE_CACHE به SW (تا کش HTML را پر کند) + رفرش خودکار صفحه.
+// گارد ضدلوپ: حداکثر یک رفرش خودکار در هر ۶۰ ثانیه (sessionStorage).
+async function checkAppVersionFresh() {
+    if (window._vcheckBusy) return;
+    window._vcheckBusy = true;
+    try {
+        const res = await fetch('./version.txt?_rc=1', { cache: 'no-store' });
+        if (res && res.ok) {
+            const fresh = (await res.text()).trim();
+            if (fresh && fresh !== APP_VERSION) {
+                console.log('[Page] vcheck: server=' + fresh + ' running=' + APP_VERSION + ' — updating & reloading');
+                try {
+                    if (navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.controller.postMessage({ type: 'UPDATE_CACHE' });
+                    }
+                } catch(e) {}
+                const formOpen = (document.getElementById('modalOverlay') && document.getElementById('modalOverlay').classList.contains('active')) ||
+                                 (document.getElementById('contactFormOverlay') && document.getElementById('contactFormOverlay').classList.contains('active'));
+                if (isRecording || formOpen) { window._pendingReload = true; return; }
+                let last = 0;
+                try { last = parseInt(sessionStorage.getItem('_vcheckReloadAt') || '0', 10) || 0; } catch(e) {}
+                if (Date.now() - last < 60000) return; // از لوپ رفرش جلوگیری کن
+                try { sessionStorage.setItem('_vcheckReloadAt', String(Date.now())); } catch(e) {}
+                // ۲.۵ ثانیه به SW فرصت بده کش را پر کند؛ RELOAD_PLEASE اگر
+                // برسد زودتر رفرش می‌کند — این فقط تور نجات است.
+                setTimeout(function() { window.location.reload(); }, 2500);
+            }
+        }
+    } catch(e) { /* آفلاین — نادیده */ }
+    finally { window._vcheckBusy = false; }
+}
+
 // ────────────────────────────────────────────────────────────────────
 // تشخیص واقعی اتصال اینترنت (نه فقط navigator.onLine)
 // ────────────────────────────────────────────────────────────────────
@@ -23645,7 +23501,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // PHASE 1 — SYNCHRONOUS, FAST (< 50ms). The user sees the groups list
     // (همه کارها) immediately. No async work, no network, no IDB, no OPFS.
     // ─────────────────────────────────────────────────────────────────────
-    initRecognition();
+    // 🔧 v242: initRecognition حذف شد — ضبط تسک عین حسابداری است و هر بار
+    // شروع، خودش یک new SR() تازه می‌سازد (بدون شیء سراسری از قبل ساخته)
     updateHeaderDate();
     // 🔧 v156: همگام‌سازی ارتفاع هدر در بارگذاری اولیه
     syncHeaderHeight();
@@ -23812,6 +23669,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (navigator.serviceWorker.controller) {
                 navigator.serviceWorker.controller.postMessage({ type: 'UPDATE_CACHE' });
             }
+            // 🔧 v242: تأیید مستقیم نسخه + اجرای رفرش معوقه هنگام بازگشت
+            checkAppVersionFresh();
+            checkPendingReload();
         }
     });
 
@@ -23829,6 +23689,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             navigator.serviceWorker.controller.postMessage({ type: 'UPDATE_CACHE' });
         }
     }, 5000);
+    // 🔧 v242: چک مستقیم نسخه هنگام بارگذاری (بعد از UPDATE_CACHE پنج‌ثانیه‌ای)
+    setTimeout(function() { checkAppVersionFresh(); }, 8000);
     // 🔧 v196: هر ۲ دقیقه چک کن — navigator.onLine حذف شد (گیر می‌کرد)
     setInterval(function() {
         if (navigator.serviceWorker.controller) {
@@ -23838,6 +23700,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             navigator.serviceWorker.controller.postMessage({ type: 'CHECK_DEADLINES' });
             navigator.serviceWorker.controller.postMessage({ type: 'SCHEDULE_TRIGGERS' });
         }
+        // 🔧 v242: چک مستقیم نسخه (حتی بدون controller)
+        checkAppVersionFresh();
     }, 2 * 60 * 1000);
 
     // ─────────────────────────────────────────────────────────────────────
