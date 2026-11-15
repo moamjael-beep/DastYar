@@ -7407,6 +7407,20 @@ body.locked .header-actions button {
 //               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
 //               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
 //               آن از یک اپ استاتیک وجود ندارد.
+//         🔧 v245 (۱۴۰۵ آبان ۲۷) — دو الزام کاربر:
+//           (۱) «در دانلود یوتیوب در آخر از پروکسی استفاده نکن من فیلتر شکن
+//               روشن میکنم. الان در انتها در یافت اطلاعات ناموفق میزند» —
+//               BA-157: حذف کامل پروکسی‌های عمومی؛ همهٔ درخواست‌ها مستقیم؛
+//               ۹ سرور Piped + ۹ سرور Invidious همزمان مسابقه می‌دهند
+//               (Promise.any — اولین جواب سالم برنده)؛ پیام شکست: «فیلترشکن
+//               (VPN) را روشن کنید».
+//           (۲) «از ضبط صوت های جلسه و تسک ناراضی ام بعد چند دقیقه شنیدن
+//               قطع میشود و بوق میزند... باید دوباره کلید میکروفون را قطع و
+//               وصل کنم... چند ساعت هم وصل باشه... سکوت هم باعث اختلال نشود»
+//               — BA-158: پلکانهٔ تلاش مجدد start (۱ثانیه→۱۵ثانیه، بی‌نهایت
+//               تا ضبط فعال) — قطع/وصل دستی دیگر لازم نیست؛ نگهبان آرام‌تر
+//               ۴۵/۹۰ثانیه — سکوتِ سالم دیگر قطع و بوق ایجاد نمی‌کند.
+//
 //         🔧 v244 (۱۴۰۵ آبان ۲۷) — سه الزام کاربر:
 //           (۱) «هر صفحه ای و منو در هنگام باز شدن و نمایش بالای آن با زیر
 //               هدر اصلی برنامه تراز و فیکس میشود و قابل اسکرول هم باشد» —
@@ -7761,7 +7775,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v244-2026-11-15-align-keepalive-yt-multi';
+const APP_VERSION = 'v245-2026-11-15-no-proxy-rec-retry';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -10306,7 +10320,9 @@ function buildTaskSR() {
                 if (taskRecActive) {
                     // 🔧 v244 (BA-155): restart با نمونهٔ تازه — نمونهٔ کهنه بعد
                     //     از سکوت طولانی گاهی نتایج نمی‌دهد
-                    try { taskRecObj = buildTaskSR(); taskRecObj.start(); } catch(e) {}
+                    // 🔧 v244: restart با نمونهٔ تازه + 🔧 v245: پلکانهٔ تلاش مجدد
+                    taskRecObj = buildTaskSR();
+                    taskSafeStart(0);
                 }
             }, 200);
         }
@@ -10316,13 +10332,34 @@ function buildTaskSR() {
 function taskRecWatchdog() {
     if (!taskRecActive) return;
     const idle = Date.now() - (taskRecLastEventAt || 0);
-    if (idle > 32000) {
-        console.warn('[TaskMic] watchdog: hung >32s — recreating SR instance');
+    if (idle > 90000) {
+        console.warn('[TaskMic] watchdog: hung >90s — recreating SR instance');
         taskRecObj = null;
-        try { taskRecObj = buildTaskSR(); taskRecObj.start(); taskRecLastEventAt = Date.now(); } catch(e) {}
-    } else if (idle > 20000) {
+        taskRecObj = buildTaskSR();
+        taskRecLastEventAt = Date.now();
+        taskSafeStart(0);
+    } else if (idle > 45000) {
+        // 🔧 v245: آستانهٔ ۴۵ثانیه — در سکوت عادی Chrome تا ~۱۰ثانیه onend
+        //    می‌دهد؛ پس این شاخه فقط برای موتور واقعاً هنگ‌کرده است
         console.warn('[TaskMic] watchdog: no events ' + Math.round(idle / 1000) + 's — graceful stop');
         try { if (taskRecObj) taskRecObj.stop(); } catch(e) {}
+    }
+}
+// 🔧 v245 (BA-158 — الزام کاربر: «باید دوباره کلید میکروفون را قطع و وصل
+// کنم تا دوباره ادامه دهد»): پلکانهٔ تلاش مجدد start — اگر Chrome بعد از
+// جلسهٔ طولانی هنوز در حال تخلیه بود (InvalidStateError) یا میکروفون موقتاً
+// در دسترس نبود، خودکار با فاصلهٔ فزایندهٔ ۱ثانیه (سقف ۱۵ثانیه) دوباره تلاش
+// می‌کند تا وقتی ضبط فعال است — هیچ قطع/وصل دستی لازم نیست و ضبط ساعتها
+// ادامه می‌یابد. اگر نمونهٔ تازه‌ای جایگزین شد، تلاشِ کهنه خودبه‌خود می‌ایستد.
+function taskSafeStart(attempt) {
+    const myObj = taskRecObj;
+    if (!taskRecActive || !myObj) return;
+    try {
+        myObj.start();
+    } catch(e) {
+        const wait = Math.min(1000 * Math.pow(2, attempt || 0), 15000);
+        console.warn('[TaskMic] start failed — retry in ' + wait + 'ms');
+        setTimeout(function() { if (taskRecActive && taskRecObj === myObj) taskSafeStart((attempt || 0) + 1); }, wait);
     }
 }
 function startRecording() {
@@ -10365,10 +10402,7 @@ function startRecording() {
     taskRecObj = buildTaskSR();
     taskRecLastEventAt = Date.now();
     if (!taskRecWatchdogTimer) taskRecWatchdogTimer = setInterval(taskRecWatchdog, 5000);
-    try { taskRecObj.start(); } catch(e) {
-        console.error('[TaskMic] start failed', e);
-        stopRecording();
-    }
+    taskSafeStart(0);
 }
 
 function stopRecording() {
@@ -17923,7 +17957,9 @@ function buildAccDocSR() {
             setTimeout(function() {
                 if (accDocRecActive) {
                     // 🔧 v244 (BA-155): restart با نمونهٔ تازه (توضیح در buildTaskSR)
-                    try { accDocRecObj = buildAccDocSR(); accDocRecObj.start(); } catch(e) {}
+                    // 🔧 v244: restart با نمونهٔ تازه + 🔧 v245: پلکانهٔ تلاش مجدد
+                    accDocRecObj = buildAccDocSR();
+                    accDocSafeStart(0);
                 }
             }, 200);
         }
@@ -17933,13 +17969,34 @@ function buildAccDocSR() {
 function accDocWatchdog() {
     if (!accDocRecActive) return;
     const idle = Date.now() - (accDocRecLastEventAt || 0);
-    if (idle > 32000) {
-        console.warn('[AccDocMic] watchdog: hung >32s — recreating SR instance');
+    if (idle > 90000) {
+        console.warn('[AccDocMic] watchdog: hung >90s — recreating SR instance');
         accDocRecObj = null;
-        try { accDocRecObj = buildAccDocSR(); accDocRecObj.start(); accDocRecLastEventAt = Date.now(); } catch(e) {}
-    } else if (idle > 20000) {
+        accDocRecObj = buildAccDocSR();
+        accDocRecLastEventAt = Date.now();
+        accDocSafeStart(0);
+    } else if (idle > 45000) {
+        // 🔧 v245: آستانهٔ ۴۵ثانیه — در سکوت عادی Chrome تا ~۱۰ثانیه onend
+        //    می‌دهد؛ پس این شاخه فقط برای موتور واقعاً هنگ‌کرده است
         console.warn('[AccDocMic] watchdog: no events ' + Math.round(idle / 1000) + 's — graceful stop');
         try { if (accDocRecObj) accDocRecObj.stop(); } catch(e) {}
+    }
+}
+// 🔧 v245 (BA-158 — الزام کاربر: «باید دوباره کلید میکروفون را قطع و وصل
+// کنم تا دوباره ادامه دهد»): پلکانهٔ تلاش مجدد start — اگر Chrome بعد از
+// جلسهٔ طولانی هنوز در حال تخلیه بود (InvalidStateError) یا میکروفون موقتاً
+// در دسترس نبود، خودکار با فاصلهٔ فزایندهٔ ۱ثانیه (سقف ۱۵ثانیه) دوباره تلاش
+// می‌کند تا وقتی ضبط فعال است — هیچ قطع/وصل دستی لازم نیست و ضبط ساعتها
+// ادامه می‌یابد. اگر نمونهٔ تازه‌ای جایگزین شد، تلاشِ کهنه خودبه‌خود می‌ایستد.
+function accDocSafeStart(attempt) {
+    const myObj = accDocRecObj;
+    if (!accDocRecActive || !myObj) return;
+    try {
+        myObj.start();
+    } catch(e) {
+        const wait = Math.min(1000 * Math.pow(2, attempt || 0), 15000);
+        console.warn('[AccDocMic] start failed — retry in ' + wait + 'ms');
+        setTimeout(function() { if (accDocRecActive && accDocRecObj === myObj) accDocSafeStart((attempt || 0) + 1); }, wait);
     }
 }
 function accDocStartRec() {
@@ -17963,9 +18020,7 @@ function accDocStartRec() {
     // 🔧 v244: watchdog
     accDocRecLastEventAt = Date.now();
     if (!accDocWatchdogTimer) accDocWatchdogTimer = setInterval(accDocWatchdog, 5000);
-    try { accDocRecObj.start(); } catch(e) {
-        console.error('[AccDocMic] start failed', e);
-    }
+    accDocSafeStart(0);
 }
 
 function accDocStopRec() {
@@ -18051,7 +18106,9 @@ function buildAccRecSR() {
             setTimeout(function() {
                 if (accRecRecActive) {
                     // 🔧 v244 (BA-155): restart با نمونهٔ تازه (توضیح در buildTaskSR)
-                    try { accRecRecObj = buildAccRecSR(); accRecRecObj.start(); } catch(e) {}
+                    // 🔧 v244: restart با نمونهٔ تازه + 🔧 v245: پلکانهٔ تلاش مجدد
+                    accRecRecObj = buildAccRecSR();
+                    accRecSafeStart(0);
                 }
             }, 200);
         }
@@ -18061,13 +18118,34 @@ function buildAccRecSR() {
 function accRecWatchdog() {
     if (!accRecRecActive) return;
     const idle = Date.now() - (accRecRecLastEventAt || 0);
-    if (idle > 32000) {
-        console.warn('[AccRecMic] watchdog: hung >32s — recreating SR instance');
+    if (idle > 90000) {
+        console.warn('[AccRecMic] watchdog: hung >90s — recreating SR instance');
         accRecRecObj = null;
-        try { accRecRecObj = buildAccRecSR(); accRecRecObj.start(); accRecRecLastEventAt = Date.now(); } catch(e) {}
-    } else if (idle > 20000) {
+        accRecRecObj = buildAccRecSR();
+        accRecRecLastEventAt = Date.now();
+        accRecSafeStart(0);
+    } else if (idle > 45000) {
+        // 🔧 v245: آستانهٔ ۴۵ثانیه — در سکوت عادی Chrome تا ~۱۰ثانیه onend
+        //    می‌دهد؛ پس این شاخه فقط برای موتور واقعاً هنگ‌کرده است
         console.warn('[AccRecMic] watchdog: no events ' + Math.round(idle / 1000) + 's — graceful stop');
         try { if (accRecRecObj) accRecRecObj.stop(); } catch(e) {}
+    }
+}
+// 🔧 v245 (BA-158 — الزام کاربر: «باید دوباره کلید میکروفون را قطع و وصل
+// کنم تا دوباره ادامه دهد»): پلکانهٔ تلاش مجدد start — اگر Chrome بعد از
+// جلسهٔ طولانی هنوز در حال تخلیه بود (InvalidStateError) یا میکروفون موقتاً
+// در دسترس نبود، خودکار با فاصلهٔ فزایندهٔ ۱ثانیه (سقف ۱۵ثانیه) دوباره تلاش
+// می‌کند تا وقتی ضبط فعال است — هیچ قطع/وصل دستی لازم نیست و ضبط ساعتها
+// ادامه می‌یابد. اگر نمونهٔ تازه‌ای جایگزین شد، تلاشِ کهنه خودبه‌خود می‌ایستد.
+function accRecSafeStart(attempt) {
+    const myObj = accRecRecObj;
+    if (!accRecRecActive || !myObj) return;
+    try {
+        myObj.start();
+    } catch(e) {
+        const wait = Math.min(1000 * Math.pow(2, attempt || 0), 15000);
+        console.warn('[AccRecMic] start failed — retry in ' + wait + 'ms');
+        setTimeout(function() { if (accRecRecActive && accRecRecObj === myObj) accRecSafeStart((attempt || 0) + 1); }, wait);
     }
 }
 function accRecStartRec() {
@@ -18090,9 +18168,7 @@ function accRecStartRec() {
     // 🔧 v244: watchdog
     accRecRecLastEventAt = Date.now();
     if (!accRecWatchdogTimer) accRecWatchdogTimer = setInterval(accRecWatchdog, 5000);
-    try { accRecRecObj.start(); } catch(e) {
-        console.error('[AccRecMic] start failed', e);
-    }
+    accRecSafeStart(0);
 }
 
 function accRecStopRec() {
@@ -20510,7 +20586,9 @@ function buildMeetSR() {
             setTimeout(function() {
                 if (meetRecActive) {
                     // 🔧 v244 (BA-155): restart با نمونهٔ تازه (توضیح در buildTaskSR)
-                    try { meetRecObj = buildMeetSR(); meetRecObj.start(); } catch(e) {}
+                    // 🔧 v244: restart با نمونهٔ تازه + 🔧 v245: پلکانهٔ تلاش مجدد
+                    meetRecObj = buildMeetSR();
+                    meetSafeStart(0);
                 }
             }, 200);
         }
@@ -20520,13 +20598,34 @@ function buildMeetSR() {
 function meetWatchdog() {
     if (!meetRecActive) return;
     const idle = Date.now() - (meetRecLastEventAt || 0);
-    if (idle > 32000) {
-        console.warn('[MeetingMic] watchdog: hung >32s — recreating SR instance');
+    if (idle > 90000) {
+        console.warn('[MeetingMic] watchdog: hung >90s — recreating SR instance');
         meetRecObj = null;
-        try { meetRecObj = buildMeetSR(); meetRecObj.start(); meetRecLastEventAt = Date.now(); } catch(e) {}
-    } else if (idle > 20000) {
+        meetRecObj = buildMeetSR();
+        meetRecLastEventAt = Date.now();
+        meetSafeStart(0);
+    } else if (idle > 45000) {
+        // 🔧 v245: آستانهٔ ۴۵ثانیه — در سکوت عادی Chrome تا ~۱۰ثانیه onend
+        //    می‌دهد؛ پس این شاخه فقط برای موتور واقعاً هنگ‌کرده است
         console.warn('[MeetingMic] watchdog: no events ' + Math.round(idle / 1000) + 's — graceful stop');
         try { if (meetRecObj) meetRecObj.stop(); } catch(e) {}
+    }
+}
+// 🔧 v245 (BA-158 — الزام کاربر: «باید دوباره کلید میکروفون را قطع و وصل
+// کنم تا دوباره ادامه دهد»): پلکانهٔ تلاش مجدد start — اگر Chrome بعد از
+// جلسهٔ طولانی هنوز در حال تخلیه بود (InvalidStateError) یا میکروفون موقتاً
+// در دسترس نبود، خودکار با فاصلهٔ فزایندهٔ ۱ثانیه (سقف ۱۵ثانیه) دوباره تلاش
+// می‌کند تا وقتی ضبط فعال است — هیچ قطع/وصل دستی لازم نیست و ضبط ساعتها
+// ادامه می‌یابد. اگر نمونهٔ تازه‌ای جایگزین شد، تلاشِ کهنه خودبه‌خود می‌ایستد.
+function meetSafeStart(attempt) {
+    const myObj = meetRecObj;
+    if (!meetRecActive || !myObj) return;
+    try {
+        myObj.start();
+    } catch(e) {
+        const wait = Math.min(1000 * Math.pow(2, attempt || 0), 15000);
+        console.warn('[MeetingMic] start failed — retry in ' + wait + 'ms');
+        setTimeout(function() { if (meetRecActive && meetRecObj === myObj) meetSafeStart((attempt || 0) + 1); }, wait);
     }
 }
 function meetingStartRec() {
@@ -20552,13 +20651,7 @@ function meetingStartRec() {
     // 🔧 v244: watchdog
     meetRecLastEventAt = Date.now();
     if (!meetWatchdogTimer) meetWatchdogTimer = setInterval(meetWatchdog, 5000);
-    try { meetRecObj.start(); } catch(e) {
-        console.error('[MeetingMic] start failed', e);
-        showToast('خطا در شروع ضبط');
-        meetRecActive = false;
-        if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
-        if (st) { st.textContent = 'خطا در شروع ضبط'; st.classList.remove('recording'); }
-    }
+    meetSafeStart(0);
 }
 
 function meetingStopRec() {
@@ -21040,24 +21133,16 @@ function ytShareLink(url) {
 // ════════════════════════════════════════════════════════════════════
 
 // پروکسی‌های CORS عمومی — به‌ترتیب امتحان می‌شوند (اول مستقیم، بعد پروکسی‌ها)
-const YT_PROXIES = [
-    function(u){ return 'https://corsproxy.io/?url=' + encodeURIComponent(u); },
-    function(u){ return 'https://test.cors.workers.dev/?' + u; },
-    function(u){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
-    function(u){ return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u); }
-];
+// 🔧 v245 (BA-157 — الزام کاربر: «در دانلود یوتیوب در آخر از پروکسی استفاده
+// نکن من فیلتر شکن روشن میکنم»): پروکسی‌های عمومی کامل حذف شدند — هیچ
+// درخواستی از طریق پروکسی نمی‌رود؛ همه چیز مستقیم است و کاربر VPN خودش را
+// روشن می‌کند.
 
 async function ytFetchWithFallback(url, opts) {
-    const attempts = [{ url: url, via: 'direct' }].concat(YT_PROXIES.map(function(p, i){ return { url: p(url), via: 'proxy' + i }; }));
-    let lastErr = null;
-    for (const att of attempts) {
-        try {
-            const resp = await fetch(att.url, opts || {});
-            if (!resp.ok) throw new Error('HTTP ' + resp.status);
-            return { resp: resp, via: att.via };
-        } catch(e) { lastErr = e; console.warn('[YT] attempt failed (' + att.via + '):', e.message); }
-    }
-    throw lastErr || new Error('همهٔ مسیرها شکست خوردند');
+    // 🔧 v245 (BA-157): فقط مستقیم — بدون هیچ پروکسی
+    const resp = await fetch(url, opts || {});
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    return { resp: resp, via: 'direct' };
 }
 
 // ─── دیکودر داخلی: پورت الگوریتم yt-dlp ───
@@ -21145,9 +21230,9 @@ async function ytFetchText(url) {
 async function ytDownloadAndSave(url, filename) {
     const wrap = document.getElementById('ytProgressWrap');
     const bar = document.getElementById('ytProgressBar');
-    // اول مستقیم (اگر InnerTube مستقیم بود، لینک به IP مرورگر قفل است و
-    // مستقیم کار می‌کند)، بعد پروکسی‌ها
-    const attempts = [{ u: url }].concat(YT_PROXIES.map(function(p){ return { u: p(url) }; }));
+    // 🔧 v245 (BA-157 — الزام کاربر): فقط مستقیم، بدون هیچ پروکسی — کاربر
+    // فیلترشکن (VPN) خودش را روشن می‌کند
+    const attempts = [{ u: url }];
     for (const att of attempts) {
         // 🔧 v244: نگهبان رکود — اگر ۳۰ ثانیه هیچ بایتی نرسید، مسیر بعدی
         const ctrl = new AbortController();
@@ -21215,12 +21300,15 @@ async function ytDownloadAndSave(url, filename) {
 
 // اولی تأییدشده: 200 + Access-Control-Allow-Origin: *
 const YT_PIPED_INSTANCES = [
-    'https://api.piped.private.coffee',
+    'https://api.piped.private.coffee',   // ✅ تأییدشده: 200 + CORS *
     'https://pipedapi.kavin.rocks',
     'https://pipedapi.leptons.xyz',
     'https://pipedapi.ducks.party',
     'https://pipedapi.drgns.space',
-    'https://api.piped.yt'
+    'https://api.piped.yt',
+    'https://pipedapi.reallyaweso.me',
+    'https://piped-api.lunar.icu',
+    'https://pipedapi.nosebs.ru'
 ];
 const YT_INVIDIOUS_INSTANCES = [
     'https://inv.nadeko.net',
@@ -21228,27 +21316,23 @@ const YT_INVIDIOUS_INSTANCES = [
     'https://invidious.nerdvpn.de',
     'https://iv.ggtyler.dev',
     'https://invidious.f5.si',
-    'https://iv.melmac.space'
+    'https://iv.melmac.space',
+    'https://invidious.privacyredirect.com',
+    'https://inv.tux.pizza',
+    'https://invidious.jing.rocks'
 ];
 
-// fetch با timeout و زنجیرهٔ انتقال (مستقیم ← پروکسی‌ها) — noProxy برای
-// سرورهای CORS-باز که مستقیم جواب می‌دهند
-async function ytFetchT(url, opts, timeoutMs, noProxy) {
-    const transports = noProxy
-        ? [{ url: url }]
-        : [{ url: url }].concat(YT_PROXIES.map(function(p){ return { url: p(url) }; }));
-    let lastErr = null;
-    for (const att of transports) {
-        const ctrl = new AbortController();
-        const timer = setTimeout(function(){ try { ctrl.abort(); } catch(e) {} }, timeoutMs || 10000);
-        try {
-            const resp = await fetch(att.url, Object.assign({}, opts || {}, { signal: ctrl.signal }));
-            clearTimeout(timer);
-            if (!resp.ok) { lastErr = new Error('HTTP ' + resp.status); continue; }
-            return resp;
-        } catch(e) { clearTimeout(timer); lastErr = e; }
-    }
-    throw lastErr || new Error('fetch failed');
+// 🔧 v245 (BA-157): fetch با timeout — فقط مستقیم، بدون هیچ پروکسی
+// (پارامتر چهارم دیگر استفاده نمی‌شود؛ برای سازگاری تماس‌ها حفظ شده)
+async function ytFetchT(url, opts, timeoutMs) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(function(){ try { ctrl.abort(); } catch(e) {} }, timeoutMs || 10000);
+    try {
+        const resp = await fetch(url, Object.assign({}, opts || {}, { signal: ctrl.signal }));
+        clearTimeout(timer);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        return resp;
+    } catch(e) { clearTimeout(timer); throw e; }
 }
 
 // استخراج JSON تو در تو از HTML (ytInitialPlayerResponse)
@@ -21273,18 +21357,17 @@ function ytExtractJsonAfter(html, marker) {
     return null;
 }
 
-// ─── مسیر ۱: Piped ───
+// ─── مسیر ۱: Piped — همهٔ سرورها همزمان مسابقه می‌دهند (اولین جواب سالم) ───
 async function ytExtractPiped(videoId, step) {
-    for (const base of YT_PIPED_INSTANCES) {
-        try {
-            step('سرور Piped «' + base.replace('https://', '') + '»');
-            const resp = await ytFetchT(base + '/streams/' + videoId, {}, 9000, true);
+    const jobs = YT_PIPED_INSTANCES.map(function(base){
+        return (async function(){
+            const resp = await ytFetchT(base + '/streams/' + videoId, {}, 9000);
             const d = await resp.json();
-            if (!d || (!d.videoStreams && !d.audioStreams)) continue;
+            if (!d || (!d.videoStreams && !d.audioStreams)) throw new Error('no data');
             const streams = [];
             (d.videoStreams || []).forEach(function(s){
                 if (!s.url || String(s.url).indexOf('http') !== 0) return;
-                if (String(s.format) === 'HLS' || String(s.url).indexOf('m3u8') >= 0) return; // پخش زنده/پلی‌لیست — قابل دانلود نیست
+                if (String(s.format) === 'HLS' || String(s.url).indexOf('m3u8') >= 0) return; // پلی‌لیست — قابل دانلود نیست
                 const isWebm = String(s.format).indexOf('WEBM') >= 0;
                 streams.push({ url: s.url, mime: isWebm ? 'video/webm' : 'video/mp4',
                     height: parseInt(String(s.quality || '').replace(/[^0-9]/g, ''), 10) || 0,
@@ -21298,20 +21381,21 @@ async function ytExtractPiped(videoId, step) {
                     height: 0, bitrate: s.bitrate || 0, hasAudio: true,
                     ext: isOpus ? 'opus' : 'm4a', label: s.quality || '' });
             });
-            if (streams.length) return { backend: 'Piped («' + base.replace('https://', '') + '»)', title: d.title || '', streams: streams };
-        } catch(e) { console.warn('[YT-Piped]', base, e.message); }
-    }
-    return null;
+            if (!streams.length) throw new Error('empty');
+            return { backend: 'Piped («' + base.replace('https://', '') + '»)', title: d.title || '', streams: streams };
+        })();
+    });
+    try { return await Promise.any(jobs); }
+    catch(e) { console.warn('[YT-Piped] همهٔ سرورهای Piped ناموفق'); return null; }
 }
 
-// ─── مسیر ۲: Invidious (دانلود از latest_version با local=true — پروکسی خود سرور، CORS باز) ───
+// ─── مسیر ۲: Invidious — همزمان؛ دانلود از latest_version?local=true (پروکسی خود سرور با CORS باز) ───
 async function ytExtractInvidious(videoId, step) {
-    for (const base of YT_INVIDIOUS_INSTANCES) {
-        try {
-            step('سرور Invidious «' + base.replace('https://', '') + '»');
-            const resp = await ytFetchT(base + '/api/v1/videos/' + videoId, {}, 9000, true);
+    const jobs = YT_INVIDIOUS_INSTANCES.map(function(base){
+        return (async function(){
+            const resp = await ytFetchT(base + '/api/v1/videos/' + videoId, {}, 9000);
             const d = await resp.json();
-            if (!d || (!d.formatStreams && !d.adaptiveFormats)) continue;
+            if (!d || (!d.formatStreams && !d.adaptiveFormats)) throw new Error('no data');
             const streams = [];
             const lv = function(itag){ return base + '/latest_version?id=' + videoId + '&itag=' + itag + '&local=true'; };
             (d.formatStreams || []).forEach(function(s){
@@ -21328,10 +21412,12 @@ async function ytExtractInvidious(videoId, step) {
                     ext: String(s.type || '').indexOf('webm') >= 0 ? 'webm' : (isAudio ? 'm4a' : 'mp4'),
                     label: s.resolution || s.quality || '' });
             });
-            if (streams.length) return { backend: 'Invidious («' + base.replace('https://', '') + '»)', title: d.title || '', streams: streams };
-        } catch(e) { console.warn('[YT-Invidious]', base, e.message); }
-    }
-    return null;
+            if (!streams.length) throw new Error('empty');
+            return { backend: 'Invidious («' + base.replace('https://', '') + '»)', title: d.title || '', streams: streams };
+        })();
+    });
+    try { return await Promise.any(jobs); }
+    catch(e) { console.warn('[YT-Invidious] همهٔ سرورهای Invidious ناموفق'); return null; }
 }
 
 // نگاشت فرمت‌های InnerTube/WatchPage به فرمت نرمال
@@ -21433,8 +21519,8 @@ async function ytRunPipeline(videoId, btn) {
         ext = null;
     }
     if (!ext) {
-        ytShowStatus('error', '❌ دریافت اطلاعات از همهٔ مسیرها ناموفق بود.<br>' +
-            'اگر یوتیوب در شبکهٔ شما فیلتر است، <b>VPN</b> را روشن کنید و دوباره «شروع دانلود» را بزنید.');
+        ytShowStatus('error', '❌ دریافت اطلاعات از همهٔ مسیرها ناموفق بود (همهٔ درخواست‌ها مستقیم و بدون پروکسی ارسال شد).<br>' +
+            '<b>فیلترشکن (VPN) را روشن کنید</b> و دوباره «شروع دانلود» را بزنید.');
         return false;
     }
     ytShowStatus('info', '✅ اطلاعات از ' + ytEscape(ext.backend) + ' گرفته شد — انتخاب کیفیت...');
