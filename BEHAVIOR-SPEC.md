@@ -11,10 +11,10 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v238 — ۱۴۰۵ آبان ۲۶ (ضبط جلسه کاری + ذخیره PDF + صفحه فایل‌های PDF)
-#  نسخهٔ فعلی کد:  APP_VERSION = v238-2026-11-14-meeting-rec-pdf
-#                  CACHE_NAME  = yadavar-cache-v238
-#                  version.txt = v238-2026-11-14-meeting-rec-pdf
+#  آخرین به‌روزرسانی: v239 — ۱۴۰۵ آبان ۲۶ (ضبط تسک کاملاً عین حسابداری: continuous=true؛ کلید دانلود از یوتیوب)
+#  نسخهٔ فعلی کد:  APP_VERSION = v239-2026-11-14-task-rec-like-acc-yt
+#                  CACHE_NAME  = yadavar-cache-v239
+#                  version.txt = v239-2026-11-14-task-rec-like-acc-yt
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -1147,6 +1147,52 @@
 #             دارد). navPush/lockBodyScroll با الگوی موجود.
 #          فایل‌های نسخه: APP_VERSION / version.txt →
 #          v238-2026-11-14-meeting-rec-pdf؛ CACHE_NAME → yadavar-cache-v238.
+#   BA-141 (v239 — الزام کاربر؛ رفع بوق) «هنوز ضبط تسک ها بوق های متوالی دارد
+#          و من نمیخواهم. کلا یک عکس میکروفون باشد مثل تیتر سند حسابداری و
+#          فعال و غیر فعال شدنش شبیه آن و تایپ و تشخیص و ساکت بودنش مثل آن و
+#          قطع کردن و تمام شدنش مثل آن. تماما مثل آن باشد.».
+#          علت ریشه‌ای بوق: recognition.continuous=false بود. با false،
+#          SpeechRecognition پس از هر utterance/pause میکروفون را می‌بست و
+#          onend→restart ۲۰۰ms دوباره آن را باز می‌کرد. هر بار re-acquire
+#          میکروفون یک بوق سخت‌افزاری در اندروید تولید می‌کرد (هیچ ربطی به
+#          toast/worker/keepalive نداشت — علت اصلی continuous=false بود).
+#          رفع: initRecognition اکنون عین accDocStartRec است:
+#            • recognition.continuous = true  (میکروفون پیوسته باز می‌ماند — هیچ بوقی)
+#            • recognition.interimResults = false  (تنها نتایج final)
+#            • onresult: حلقه از i=0 تا event.results.length، فقط finalها را
+#              به currentSessionText اضافه می‌کند (الگوی accDocRecAccum).
+#            • onerror: فقط خطای رد مجوز ضبط را متوقف می‌کند (stopRecording +
+#              toast). خطاهای گذرا (no-speech/network/aborted/audio-capture)
+#              کاملاً بی‌صدا — onend سیکل بعدی را ادامه می‌دهد. قبلاً toastهای
+#              متعدد می‌زد (با بوق هم‌افزایی داشتند).
+#            • onend: ۲۰۰ms restart (یکسان با v237، اکنون با continuous=true
+#              به‌ندرت رخ می‌دهد چون میکروفون باز می‌ماند).
+#          پاک‌سازی machinery اضافی: listener visibilitychange مخصوص ضبط
+#          (که WakeLock re-acquire می‌زد) حذف شد. توابع dead machinery
+#          (acquireRecordingWakeLock / setRecordingMediaSession /
+#          startSilentAudioLoop / startRecordingWorker / startBackgroundAudioCapture)
+#          به‌صورت dead code باقی مانده‌اند چون هیچ کدام از startRecording /
+#          stopRecording / visibilitychange صدا زده نمی‌شوند — تأیید شده با
+#          grep. حسابداری هم هیچ‌کدام را ندارد.
+#   BA-142 (v239 — الزام کاربر؛ قابلیت جدید) «در منوی همبرگری بالای برنامه
+#          یک کلید دانلود از یوتیوب اضافه شود که آدرس صفحه ویدیو رو در آن
+#          پیست میکنیم و بتواند ویدویو های همراه صدا در کیفیت های مختلف و
+#          همینطور صدا تنها را انتخاب و دانلود کند.».
+#          پیاده‌سازی: آیتم «⬇️ دانلود از یوتیوب» به منوی همبرگری اضافه شد.
+#          صفحهٔ ytOverlay تمام‌صفحه با: فیلد URL + دکمهٔ «از کلیپ‌بورد»، انتخاب
+#          نوع (ویدئو+صدا / فقط صدا)، انتخاب کیفیت ویدئو (۳۶۰p تا ۴K + بالاترین)،
+#          انتخاب فرمت صدا (MP3/OGG/OPUS/بهترین) + بیت‌ریت (۱۲۸/۲۵۶/۳۲۰)،
+#          انتخاب سرور cobalt (رسمی + ۳ نمونهٔ عمومی + سفارشی)، و راهنما.
+#          مکانیزم: POST به API cobalt v10 با payload {url, downloadMode,
+#          videoQuality|audioFormat+audioBitrate, youtubeVideoCodec=h264,
+#          youtubeVideoContainer=mp4}. پاسخ tunnel/redirect → لینک مستقیم →
+#          دکمهٔ «دانلود فایل» + «اشتراک» (navigator.share). اگر API خطا داد،
+#          fallback به باز کردن cobalt.tools با ?u=URL در تب جدید. دلیل طراحی:
+#          اپ استاتیک HTML است و بک‌اند ندارد — yt-dlp روی سرور لازم است؛
+#          cobalt APIهای عمومی (با bot protection) ممکن است محدود شوند، لذا
+#          چند سرور + fallback به وب‌سایت رسمی.
+#          فایل‌های نسخه: APP_VERSION / version.txt →
+#          v239-2026-11-14-task-rec-like-acc-yt؛ CACHE_NAME → yadavar-cache-v239.
 #
 # ── ۴.۹) آفلاین و ماندگاری حافظه ──────────────────────────────────
 #   BA-080 همهٔ عملیات داده آفلاین کار کنند؛ فقط ضبط آنلاین است.
@@ -1447,6 +1493,41 @@
 #     «امروز» برخورد می‌کرد و سورت تساوی مبهم می‌شد)؛ ③ N6 انتظارش از
 #     دیتابیسِ همان سندِ درختِ باز محاسبه می‌شود (N4/N5 سندِ باز را عوض
 #     می‌کنند؛ جمع ردیف درخت «جمع همین سند» است — BA-105 الگوی درست).
+#
+### v239 (۱۴۰۵ آبان ۲۶) — ضبط تسک کاملاً عین حسابداری (رفع بوق) + کلید دانلود از یوتیوب
+#   کاربر: «هنوز ضبط تسک ها بوق های متوالی دارد و من نمیخواهم. کلا یک عکس
+#   میکروفون باشد مثل تیتر سند حسابداری و فعال و غیر فعال شدنش شبیه آن و
+#   تایپ و تشخیص و ساکت بودنش مثل آن و قطع کردن و تمام شدنش مثل آن. تماما
+#   مثل آن باشد. در منوی همبرگری بالای برنامه یک کلید دانلود از یوتیوب
+#   اضافه شود که آدرس صفحه ویدیو رو در آن پیست میکنیم و بتواند ویدویو های
+#   همراه صدا در کیفیت های مختلف و همینطور صدا تنها را انتخاب و دانلود کند.».
+#
+#   ریشهٔ بوق (BA-141): recognition.continuous=false بود. با false، SR پس از
+#   هر utterance میکروفون را می‌بست و onend→restart دوباره باز می‌کرد →
+#   هر re-acquire یک بوق سخت‌افزاری. (v237 machinery را حذف کرد ولی continuous
+#   را false گذاشت — علت اصلی اصلاً به آن ربط نداشت.)
+#   رفع: initRecognition اکنون عین accDocStartRec:
+#     • continuous = true (میکروفون پیوسته باز می‌ماند — هیچ بوقی)
+#     • interimResults = false
+#     • onresult: حلقه از i=0، فقط finalها → currentSessionText
+#     • onerror: فقط رد مجوز را متوقف می‌کند؛ گذراها کاملاً بی‌صدا
+#     • onend: ۲۰۰ms restart (با continuous=true به‌ندرت رخ می‌دهد)
+#   پاک‌سازی: listener visibilitychange مخصوص ضبط حذف شد (WakeLock re-acquire
+#   می‌زد). dead machinery (WakeLock/MediaSession/silentAudioLoop/Worker/
+#   BgAudio) به‌صورت dead code باقی مانده — هیچ‌کدام صدا زده نمی‌شوند (grep
+#   تأیید کرد). حسابداری هم هیچ‌کدام را ندارد.
+#
+#   YouTube (BA-142): آیتم «⬇️ دانلود از یوتیوب» به منوی همبرگری. صفحهٔ
+#   ytOverlay با: فیلد URL + «از کلیپ‌بورد»، نوع (ویدئو+صدا/فقط صدا)، کیفیت
+#   ویدئو (۳۶۰p–۴K + بالاترین)، فرمت صدا (MP3/OGG/OPUS/بهترین) + بیت‌ریت
+#   (۱۲۸/۲۵۶/۳۲۰)، سرور cobalt (رسمی + ۳ عمومی + سفارشی)، راهنما. مکانیزم:
+#   POST cobalt API v10 → پاسخ tunnel/redirect → لینک مستقیم → «دانلود فایل»
+#   + «اشتراک». fallback: باز کردن cobalt.tools/?u=URL. دلیل: اپ استاتیک است،
+#   بک‌اند ندارد؛ yt-dlp روی سرور لازم است؛ cobalt عمومی ممکن است محدود شود
+#   → چند سرور + fallback به وب‌سایت رسمی.
+#
+#   فایل‌های نسخه: APP_VERSION / version.txt →
+#   v239-2026-11-14-task-rec-like-acc-yt؛ CACHE_NAME → yadavar-cache-v239.
 #
 ### v238 (۱۴۰۵ آبان ۲۶) — ضبط جلسه کاری + ذخیره PDF + صفحه فایل‌های PDF
 #   کاربر: «در منوی همبرگری تیتر اصلی یک کلید برای ایجاد یک ضبط جلسه کاری و

@@ -1396,6 +1396,105 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .pdffile-btn.open { background: #007aff; color: #fff; }
 .pdffile-btn.del { background: #ffeaea; color: #ff3b30; }
 
+/* 🔧 v239: صفحهٔ دانلود از یوتیوب */
+.yt-overlay {
+    position: fixed; inset: 0;
+    background: #f0f2f5; z-index: 10100;
+    display: none; flex-direction: column; direction: rtl;
+}
+.yt-overlay.active { display: flex; }
+.yt-topbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px; background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12); flex-shrink: 0;
+}
+.yt-back-btn {
+    background: none; border: none; color: #007aff;
+    font-size: 15px; font-family: inherit; cursor: pointer; padding: 4px 6px;
+}
+.yt-title { font-size: 17px; font-weight: 700; color: #1a1a1a; flex: 1; }
+.yt-scroll {
+    flex: 1; overflow-y: auto; padding: 14px;
+    -webkit-overflow-scrolling: touch;
+}
+.yt-section {
+    background: #fff; border-radius: 12px; padding: 16px;
+    margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.yt-section h3 {
+    font-size: 14px; font-weight: 700; color: #1a1a1a;
+    margin: 0 0 12px; display: flex; align-items: center; gap: 6px;
+}
+.yt-input {
+    width: 100%; box-sizing: border-box; padding: 12px;
+    border: 1px solid #d1d5db; border-radius: 10px;
+    font-family: 'Vazirmatn',Tahoma,sans-serif; font-size: 14px;
+    direction: ltr; text-align: left; color: #1a1a1a;
+    background: #fafafa;
+}
+.yt-input:focus { outline: none; border-color: #007aff; background: #fff; }
+.yt-paste-btn {
+    margin-top: 8px; background: #e8f0fe; color: #007aff;
+    border: none; border-radius: 8px; padding: 8px 14px;
+    font-size: 12px; font-family: inherit; cursor: pointer; font-weight: 600;
+}
+.yt-paste-btn:active { background: #d0e2fc; }
+.yt-row {
+    display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;
+}
+.yt-row:last-child { margin-bottom: 0; }
+.yt-label {
+    font-size: 12px; color: #666; margin-bottom: 6px; display: block;
+}
+.yt-chip-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.yt-chip {
+    border: 1px solid #d1d5db; background: #fff; color: #444;
+    border-radius: 16px; padding: 7px 14px; font-size: 12px;
+    font-family: inherit; cursor: pointer; font-weight: 600;
+}
+.yt-chip.selected { background: #007aff; color: #fff; border-color: #007aff; }
+.yt-download-btn {
+    width: 100%; padding: 14px; border: none; border-radius: 12px;
+    background: #ff0033; color: #fff; font-size: 15px;
+    font-family: inherit; cursor: pointer; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 2px 8px rgba(255,0,51,0.3);
+}
+.yt-download-btn:active { background: #e6002e; }
+.yt-download-btn:disabled { background: #c7c7cc; box-shadow: none; }
+.yt-status {
+    margin-top: 10px; padding: 10px 12px; border-radius: 8px;
+    font-size: 12px; line-height: 1.6; display: none;
+}
+.yt-status.info { background: #e8f0fe; color: #007aff; display: block; }
+.yt-status.error { background: #ffeaea; color: #ff3b30; display: block; }
+.yt-status.success { background: #e8f9ee; color: #34c759; display: block; }
+.yt-result {
+    margin-top: 10px; padding: 12px; border-radius: 8px;
+    background: #f6f8fa; font-size: 12px; display: none;
+}
+.yt-result.show { display: block; }
+.yt-result a {
+    color: #007aff; text-decoration: none; font-weight: 600;
+    word-break: break-all;
+}
+.yt-result .open-btn {
+    display: inline-block; margin-top: 8px; background: #007aff; color: #fff;
+    border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px;
+    font-family: inherit; cursor: pointer; font-weight: 600;
+}
+.yt-help {
+    font-size: 11px; color: #999; line-height: 1.7; margin-top: 8px;
+}
+.yt-instance-row {
+    display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+}
+.yt-instance-row select {
+    flex: 1; min-width: 0; padding: 8px; border: 1px solid #d1d5db;
+    border-radius: 8px; font-family: inherit; font-size: 12px;
+    background: #fff; color: #1a1a1a;
+}
+
 /* ════════════════════════════════════════════════════════════════ */
 .accounting-overlay {
     position: fixed;
@@ -5349,6 +5448,9 @@ body.locked .header-actions button {
         <div class="hamburger-item" onclick="closeHamburgerMenu(); openPdfFilesPage();">
             <span class="h-ico">📄</span><span>فایل‌های PDF</span>
         </div>
+        <div class="hamburger-item" onclick="closeHamburgerMenu(); openYouTubeDownloader();">
+            <span class="h-ico">⬇️</span><span>دانلود از یوتیوب</span>
+        </div>
     </div>
 </div>
 
@@ -5376,6 +5478,89 @@ body.locked .header-actions button {
         <div class="pdffiles-title">📄 فایل‌های PDF</div>
     </div>
     <div class="pdffiles-list" id="pdffilesList"></div>
+</div>
+
+<!-- 🔧 v239: صفحهٔ دانلود از یوتیوب — پیست آدرس ویدیو + انتخاب کیفیت + صدا/ویدئو -->
+<div class="yt-overlay" id="ytOverlay">
+    <div class="yt-topbar">
+        <button class="yt-back-btn" onclick="closeYouTubeDownloader()">بازگشت ❯</button>
+        <div class="yt-title">⬇️ دانلود از یوتیوب</div>
+    </div>
+    <div class="yt-scroll">
+        <div class="yt-section">
+            <h3>🔗 آدرس ویدیو</h3>
+            <input type="url" class="yt-input" id="ytUrl" placeholder="https://www.youtube.com/watch?v=..." dir="ltr" />
+            <button class="yt-paste-btn" onclick="ytPasteFromClipboard()">📋 از کلیپ‌بورد</button>
+            <div class="yt-help">آدرس صفحهٔ ویدیو را پیست کنید (youtube.com یا youtu.be یا shorts).</div>
+        </div>
+
+        <div class="yt-section">
+            <h3>🎬 نوع دانلود</h3>
+            <div class="yt-chip-group" id="ytModeGroup">
+                <button class="yt-chip selected" data-mode="auto" onclick="ytSelectMode('auto')">ویدئو + صدا</button>
+                <button class="yt-chip" data-mode="audio" onclick="ytSelectMode('audio')">فقط صدا</button>
+            </div>
+            <div id="ytAudioOpts" style="display:none; margin-top:12px;">
+                <label class="yt-label">فرمت صدا</label>
+                <div class="yt-chip-group" id="ytAudioFmtGroup">
+                    <button class="yt-chip selected" data-afmt="mp3" onclick="ytSelectAudioFmt('mp3')">MP3</button>
+                    <button class="yt-chip" data-afmt="ogg" onclick="ytSelectAudioFmt('ogg')">OGG</button>
+                    <button class="yt-chip" data-afmt="opus" onclick="ytSelectAudioFmt('opus')">OPUS</button>
+                    <button class="yt-chip" data-afmt="best" onclick="ytSelectAudioFmt('best')">بهترین</button>
+                </div>
+                <label class="yt-label" style="margin-top:10px;">کیفیت صدا</label>
+                <div class="yt-chip-group" id="ytBitrateGroup">
+                    <button class="yt-chip selected" data-br="128" onclick="ytSelectBitrate('128')">۱۲۸</button>
+                    <button class="yt-chip" data-br="256" onclick="ytSelectBitrate('256')">۲۵۶</button>
+                    <button class="yt-chip" data-br="320" onclick="ytSelectBitrate('320')">۳۲۰ kbps</button>
+                </div>
+            </div>
+            <div id="ytVideoOpts" style="margin-top:12px;">
+                <label class="yt-label">کیفیت ویدئو</label>
+                <div class="yt-chip-group" id="ytQualityGroup">
+                    <button class="yt-chip" data-q="360" onclick="ytSelectQuality('360')">۳۶۰p</button>
+                    <button class="yt-chip" data-q="480" onclick="ytSelectQuality('480')">۴۸۰p</button>
+                    <button class="yt-chip selected" data-q="720" onclick="ytSelectQuality('720')">۷۲۰p</button>
+                    <button class="yt-chip" data-q="1080" onclick="ytSelectQuality('1080')">۱۰۸۰p</button>
+                    <button class="yt-chip" data-q="1440" onclick="ytSelectQuality('1440')">۱۴۴۰p</button>
+                    <button class="yt-chip" data-q="2160" onclick="ytSelectQuality('2160')">۴K</button>
+                    <button class="yt-chip" data-q="max" onclick="ytSelectQuality('max')">بالاترین</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="yt-section">
+            <h3>⚙️ سرور دانلود</h3>
+            <div class="yt-instance-row">
+                <select id="ytInstance">
+                    <option value="https://api.cobalt.tools">cobalt.tools (رسمی)</option>
+                    <option value="https://co.eepy.today">co.eepy.today</option>
+                    <option value="https://cobalt-api.kwiatekmiki.com">cobalt-api.kwiatekmiki</option>
+                    <option value="custom">سفارشی…</option>
+                </select>
+            </div>
+            <input type="url" class="yt-input" id="ytCustomInstance" placeholder="https://your-cobalt-instance.tld" dir="ltr" style="display:none; margin-top:8px;" />
+            <div class="yt-help">اگر یک سرور خطا داد، سرور دیگر را امتحان کنید. سرورهای عمومی cobalt گاهی محدود می‌شوند.</div>
+        </div>
+
+        <div class="yt-section">
+            <button class="yt-download-btn" id="ytDownloadBtn" onclick="ytStartDownload()">⬇️ دریافت لینک دانلود</button>
+            <div class="yt-status" id="ytStatus"></div>
+            <div class="yt-result" id="ytResult"></div>
+        </div>
+
+        <div class="yt-section">
+            <h3>ℹ️ راهنما</h3>
+            <div class="yt-help" style="font-size:12px;">
+                ۱) آدرس ویدیو یوتیوب را در فیلد بالا پیست کنید.<br>
+                ۲) نوع دانلود (ویدئو+صدا یا فقط صدا) و کیفیت را انتخاب کنید.<br>
+                ۳) «دریافت لینک دانلود» را بزنید — چند ثانیه طول می‌کشد.<br>
+                ۴) لینک آماده شد → دکمهٔ «دانلود فایل» را بزنید تا در مرورگر ذخیره شود.<br>
+                <br>
+                <b>نکته:</b> دانلود یوتیوب از طریق سرورهای عمومی cobalt انجام می‌شود. اگر همهٔ سرورها خطا دادند، می‌توانید نسخهٔ رسمی را در <a href="https://cobalt.tools" target="_blank" rel="noopener" style="color:#007aff;">cobalt.tools</a> باز کنید و آدرس را مستقیماً آنجا بزنید.
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- 🔧 v209 (بازنگری): بخش حسابداری — تمام‌صفحه. معادلهٔ اصلی: دارایی = بدهی + سرمایه.
@@ -7178,6 +7363,39 @@ body.locked .header-actions button {
 //               ~۷۵۰MB-۱.۵GB) — فقط با WebGPU توصیه می‌شود.
 //            dtype: WebGPU ⇒ fp16 (سریع‌ترین روی GPU)؛ WASM ⇒ q8 (فشرده).
 //            تست: test_offline_stt_v222.mjs — ۱۴ تست Y1-Y14، پورت ۸۲۰۲.
+//         🔧 v239 (۱۴۰۵ آبان ۲۶) — دو الزام کاربر:
+//           (۱) «هنوز ضبط تسک ها بوق های متوالی دارد و من نمیخواهم. کلا یک
+//               عکس میکروفون باشد مثل تیتر سند حسابداری و فعال و غیر فعال
+//               شدنش شبیه آن و تایپ و تشخیص و ساکت بودنش مثل آن و قطع کردن
+//               و تمام شدنش مثل آن. تماما مثل آن باشد.»
+//           (۲) «در منوی همبرگری بالای برنامه یک کلید دانلود از یوتیوب
+//               اضافه شود که آدرس صفحه ویدیو رو در آن پیست میکنیم و بتواند
+//               ویدویو های همراه صدا در کیفیت های مختلف و همینطور صدا تنها
+//               را انتخاب و دانلود کند.»
+//
+//           ریشهٔ بوق (۱): recognition.continuous=false بود. با false، SR پس
+//           از هر utterance میکروفون را می‌بست و onend→restart دوباره باز
+//           می‌کرد → هر re-acquire یک بوق سخت‌افزاری. (v237 machinery را حذف
+//           کرد ولی continuous را false گذاشت — علت اصلی به آن ربط نداشت.)
+//           رفع: initRecognition اکنون عین accDocStartRec:
+//             • continuous = true (میکروفون پیوسته باز می‌ماند — هیچ بوقی)
+//             • interimResults = false
+//             • onresult: حلقه از i=0، فقط finalها → currentSessionText
+//             • onerror: فقط رد مجوز را متوقف می‌کند؛ گذراها کاملاً بی‌صدا
+//             • onend: ۲۰۰ms restart (با continuous=true به‌ندرت رخ می‌دهد)
+//           پاک‌سازی: listener visibilitychange مخصوص ضبط حذف شد (WakeLock
+//           re-acquire می‌زد). dead machinery (WakeLock/MediaSession/
+//           silentAudioLoop/Worker/BgAudio) به‌صورت dead code باقی مانده —
+//           هیچ‌کدام صدا زده نمی‌شوند (grep تأیید کرد).
+//
+//           (۲) YouTube: آیتم «⬇️ دانلود از یوتیوب» به منوی همبرگری. صفحهٔ
+//           ytOverlay با فیلد URL + «از کلیپ‌بورد»، نوع (ویدئو+صدا/فقط صدا)،
+//           کیفیت ویدئو (۳۶۰p–۴K + بالاترین)، فرمت صدا (MP3/OGG/OPUS/بهترین)
+//           + بیت‌ریت (۱۲۸/۲۵۶/۳۲۰)، سرور cobalt (رسمی + ۳ عمومی + سفارشی).
+//           مکانیزم: POST cobalt API v10 → پاسخ tunnel/redirect → لینک مستقیم
+//           → «دانلود فایل» + «اشتراک». fallback: باز کردن cobalt.tools/?u=URL.
+//           دلیل: اپ استاتیک است، بک‌اند ندارد؛ yt-dlp روی سرور لازم است؛
+//           cobalt عمومی ممکن است محدود شود → چند سرور + fallback.
 //         🔧 v238 (۱۴۰۵ آبان ۲۶) — الزام کاربر: «در منوی همبرگری تیتر اصلی یک
 //               کلید برای ایجاد یک ضبط جلسه کاری و تبدیل آن به متن ایجاد کن
 //               که مثل صفحه یادداشت باشد میکرفونش را که فعال میکنیم شروع به
@@ -7408,7 +7626,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v238-2026-11-14-meeting-rec-pdf';
+const APP_VERSION = 'v239-2026-11-14-task-rec-like-acc-yt';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -9862,132 +10080,72 @@ function initRecognition() {
     if (!isSpeechSupported()) return false;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SR();
+    // 🔧 v239 (الزام کاربر): عین accDocStartRec — continuous=true. قبلاً false
+    //    بود که میکروفون پس از هر utterance بسته و دوباره باز می‌شد → بوق
+    //    سخت‌افزاریِ هر بار re-acquire. با true میکروفون پیوسته باز می‌ماند
+    //    (مثل تیتر سند حسابداری) و هیچ بوقی شنیده نمی‌شود.
     recognition.lang = 'fa-IR';
-    recognition.continuous = false;
-    recognition.interimResults = true;
+    recognition.continuous = true;
+    recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
+    // 🔧 v239: بازنشانی هر session — مانند accDocStartRec که accDocRecAccum=''
+    //    می‌کرد. اینجا currentSessionText نقش همان accumulator را دارد.
     recognition.onstart = () => {
-        // Reset per-session state when a new session begins
-        processedResults = new Set();
         currentSessionText = '';
     };
 
     recognition.onresult = (event) => {
-        let interim = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        // 🔧 v239: عین accDocStartRec — فقط نتایج final (interimResults=false).
+        //    قبلاً روی event.resultIndex حلقه می‌زد و interim جدا می‌کرد — حالا
+        //    الگوی حسابداری: همهٔ نتایج final را از resultIndex=0 می‌خوانیم.
+        for (let i = 0; i < event.results.length; i++) {
             const result = event.results[i];
-            const transcript = result[0].transcript;
-            if (result.isFinal) {
-                if (!processedResults.has(i)) {
-                    currentSessionText += transcript + ' ';
-                    processedResults.add(i);
-                }
-            } else {
-                interim = transcript;
+            if (result.isFinal && !processedResults.has(i)) {
+                currentSessionText += result[0].transcript + ' ';
+                processedResults.add(i);
             }
         }
-        // 🔧 v235: نمایش زنده با تبدیل اعداد فارسی گفتاری به دیجیت (مانند
-        // سبک یادداشت‌ها v234 و تیتر اسناد حسابداری). متغیرهای انباشتگر
-        // (allFinalText / currentSessionText) متن خام را نگه می‌دارند تا
-        // تبدیل دوباره رخ ندهد؛ تنها خروجیِ نمایشی تبدیل می‌شود. به این
-        // ترتیب کاربر در حین ضبط می‌بیند «دو میلیون» → «۲٬۰۰۰٬۰۰۰» و شمارهٔ
-        // تلفن «صفر نه یک...» → «۰۹۱...» می‌شود، بی‌آنکه تا قطع صبر کند.
-        const rawDisplay = (allFinalText + ' ' + currentSessionText + ' ' + interim).trim().replace(/\s+/g, ' ');
+        // 🔧 v235/v239: نمایش زنده با تبدیل اعداد فارسی گفتاری به دیجیت.
+        // متغیرهای accumulator متن خام را نگه می‌دارند؛ فقط خروجی نمایشی
+        // تبدیل می‌شود تا «دو میلیون» → «۲٬۰۰۰٬۰۰۰» زنده دیده شود.
+        const rawDisplay = (allFinalText + ' ' + currentSessionText).trim().replace(/\s+/g, ' ');
         document.getElementById('itemText').value = addNumericAfterWords(rawDisplay);
         const hintEl = document.getElementById('interimText');
         if (hintEl) {
-            // 🔧 v235: عبارت موقتی هم با تبدیل نشان داده شود — کاربر همان چیزی را
-            // می‌بیند که پس از قطع دریافت خواهد کرد.
-            // 🔧 v236: hint اکنون داخل فرم است — هنگام ضبط حتماً نمایش داده شود.
             hintEl.style.display = '';
-            hintEl.textContent = addNumericAfterWords(interim) || (currentSessionText ? 'در حال پردازش...' : 'صحبت کنید...');
+            hintEl.textContent = currentSessionText ? 'در حال شنیدن...' : 'صحبت کنید...';
         }
     };
 
     recognition.onerror = (event) => {
         console.error('Recognition error:', event.error, 'protocol:', location.protocol);
-        // 🔧 v200: خطاهای گذرا هنگام ضبط → ضبط را نمی‌رانیم؛ onend دوباره شروع می‌کند.
-        // در پس‌زمینه Chrome ضبط را با no-speech/aborted/network قطع می‌کند — اگر
-        // kick-out می‌کردیم «ادامهٔ ضبط پس از خروج» هرگز کار نمی‌کرد.
-        // kick-out فقط برای خطاهای فجیع (رد مجوز) انجام می‌شود.
-        var _fatal = (event.error === 'not-allowed' || event.error === 'service-not-allowed');
-        var _transient = ['no-speech', 'network', 'aborted', 'audio-capture'].indexOf(event.error) !== -1;
-        if (isRecording && _transient && !_fatal) {
-            // متن جلسهٔ فعلی حفظ شود
-            if (currentSessionText.trim()) {
-                allFinalText = (allFinalText + ' ' + currentSessionText).trim().replace(/\s+/g, ' ');
-                currentSessionText = '';
-            }
-            // اطلاع‌رسانی با محدودیت زمانی — نه اسپم در هر تلاش مجدد
-            if (event.error === 'network' || event.error === 'audio-capture') {
-                var _now = Date.now();
-                if (_now - (window._lastSpeechErrToast || 0) > 15000) {
-                    window._lastSpeechErrToast = _now;
-                    showToast(event.error === 'network'
-                        ? 'ارتباط سرور صوت قطع شد — تلاش مجدد خودکار...'
-                        : 'میکروفون در دسترس نیست — تلاش مجدد خودکار...');
-                }
-            }
-            return; // onend → restart خودکار
+        // 🔧 v239: عین accDocStartRec.onerror — خطاهای گذرا را نادیده می‌گیریم
+        //    (onend سیکل بعدی را ادامه می‌دهد). فقط خطای رد مجوز ضبط را متوقف
+        //    می‌کنیم. قبلاً toastهای متعدد می‌زدیم که با beepها هم‌افزایی داشتند.
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            stopRecording();
+            showToast('دسترسی به میکروفون رد شد. در تنظیمات مرورگر اجازه دهید.');
+            return;
         }
-        const errMsg = getSpeechErrorMessage(event.error);
-        if (errMsg) showToast(errMsg);
-        if (isRecording) {
-            isRecording = false;
-            document.getElementById('addBtn').classList.remove('recording');
-            // 🔧 همگام‌سازی حالت ضبط با دکمهٔ شناور
-            const fab = document.getElementById('floatingAddBtn');
-            if (fab) fab.classList.remove('recording');
-            if (currentSessionText.trim()) {
-                allFinalText = (allFinalText + ' ' + currentSessionText).trim().replace(/\s+/g, ' ');
-                currentSessionText = '';
-            }
-            document.getElementById('itemText').value = addNumericAfterWords(allFinalText);
-            showFormSection(true);
-        }
+        // خطاهای گذرا (no-speech/network/aborted/audio-capture) — سکوت کامل،
+        // onend خودش ۲۰۰ms بعد restart می‌زند. هیچ toast و هیچ kick-out.
     };
 
-    function getSpeechErrorMessage(error) {
-        switch(error) {
-            case 'no-speech':
-                return 'صدایی شنیده نشد. دوباره تلاش کنید یا متن را تایپ کنید.';
-            case 'not-allowed':
-            case 'service-not-allowed':
-                if (location.protocol === 'file:') {
-                    return 'برای ضبط صوت باید فایل روی سرور محلی باشد. فعلاً می‌توانید متن را تایپ کنید.';
-                }
-                return 'دسترسی به میکروفون رد شد. در تنظیمات مرورگر اجازه دهید.';
-            case 'network':
-                // 🔧 v166: خطای شبکه هنگام ضبط — فقط پیام بده، هدر را چشمک نزن
-                return 'اتصال اینترنت قطع شد. ضبط متوقف شد. می‌توانید متن را تایپ کنید.';
-            case 'audio-capture':
-                return 'میکروفون پیدا نشد. یک میکروفون وصل کنید.';
-            case 'language-not-supported':
-                return 'زبان فارسی پشتیبانی نمی‌شود. از Chrome یا Edge استفاده کنید.';
-            case 'aborted':
-                return null;
-            default:
-                return 'خطا در تشخیص صوت: ' + error + '. می‌توانید متن را تایپ کنید.';
-        }
-    }
-
     recognition.onend = () => {
-        // Commit current session to allFinalText
+        // Commit current session to allFinalText — عین accDocRecAccum
         if (currentSessionText.trim()) {
             allFinalText = (allFinalText + ' ' + currentSessionText).trim().replace(/\s+/g, ' ');
             currentSessionText = '';
         }
 
         if (isRecording) {
-            // 🔧 v237 (BA-139): عین مکانیزم حسابداری (accDocStartRec.onend) —
-            //    یک restart ساده با ۲۰۰ms تأخیر، بدون retry cascade، بدون toast،
-            //    بدون بوق. قبلاً ۳۰۰ms + ۱۰۰۰ms retry + worker + keepalive +
-            //    visibility restart رقابت می‌کردند → «قطع و وصل + بوق».
+            // 🔧 v237/v239: عین accDocStartRec.onend — یک restart ساده با ۲۰۰ms
+            //    تأخیر، بدون retry cascade، بدون toast، بدون بوق. این تنها
+            //    مکانیزم ماندگاری است که باقی می‌ماند.
             setTimeout(function() {
                 if (!isRecording || !recognition) return;
                 try { recognition.start(); } catch(e) {
-                    // already-running یا قطع قطع شده — onend بعدی ادامه می‌دهد
                     console.warn('[Recording] restart onend:', e.message || e);
                 }
             }, 200);
@@ -10025,20 +10183,13 @@ function releaseRecordingWakeLock() {
         try { _wakeLock.release(); _wakeLock = null; console.log('[WakeLock] Released'); } catch(e) {}
     }
 }
-// 🔧 v237 (BA-139): مکانیزم ضبط تسک عین حسابداری — visibilitychange دیگر
-//    handleRecordingVisibilityChange را صدا نمی‌زند. آن تابع در هر toggle
-//    visibility یک getUserMedia + track.stop می‌زد که میکروفون را فیزیکی
-//    قطع/وصل می‌کرد → بوق‌های متوالی سخت‌افزار. حسابداری چنین کاری نمی‌کند —
-//    فقط onend خودش ۲۰۰ms بعد restart می‌زند. اکنون تسک هم همین‌طور.
-document.addEventListener('visibilitychange', function() {
-    // 🔧 v237: فقط reacquire WakeLock (برای جلوگیری از خاموشی صفحه) — دیگر
-    //    recognition را restart نمی‌کنیم و getUserMedia/MediaRecorder نمی‌زنیم.
-    if (!document.hidden && isRecording && !_wakeLock) {
-        try { acquireRecordingWakeLock(); } catch(e) {}
-    }
-    // 🔧 v237: handleRecordingVisibilityChange عمداً حذف شد — restart خودکار
-    //    via onend (۲۰۰ms) کافی است، مثل accDocStartRec.
-});
+// 🔧 v239 (الزام کاربر): ضبط تسک اکنون کاملاً عین تیتر سند حسابداری است.
+//    هیچ listener مخصوص ضبط برای visibilitychange وجود ندارد — حسابداری هم
+//    چنین کاری نمی‌کند. restart فقط در onend (۲۰۰ms) رخ می‌دهد. قبلاً این
+//    listener در هر toggle visibility یک WakeLock re-acquire می‌زد که اگرچه
+//    مستقیماً بوق نمی‌زد، ولی نشانهٔ وجود machinery اضافی بود که کاربر
+//    نخواسته است. اکنون کاملاً حذف شد. (WakeLock خود به‌خودی در visibilitychange
+//    release و re-acquire می‌شد؛ این رفتار هم غیرضروری بود.)
 // 🔧 v202: هنگام pagehide هم تلاش کن یک restart نهایی بزن تا وقتی کاربر
 // برمی‌گردد، ضبط زودتر به‌خاطر بیاید. این listener در init هم ثبت می‌شود
 // اما اینجا هم اضافه می‌کنیم تا اطمینان حاصل شود حتی اگر init هنوز اجرا
@@ -12533,6 +12684,8 @@ function closeModalByType(type) {
         // 🔧 v238: ضبط جلسه کاری + فایل‌های PDF
         'meeting': 'meetingOverlay',
         'pdffiles': 'pdffilesOverlay',
+        // 🔧 v239: دانلود از یوتیوب
+        'yt': 'ytOverlay',
     }[type];
     if (overlayId) {
         const el = document.getElementById(overlayId);
@@ -12902,6 +13055,8 @@ function isAnyOverlayOpen() {
         // 🔧 v238: ضبط جلسه کاری + فایل‌های PDF
         'meetingOverlay',
         'pdffilesOverlay',
+        // 🔧 v239: دانلود از یوتیوب
+        'ytOverlay',
     ];
     for (var i = 0; i < staticOverlays.length; i++) {
         var el = document.getElementById(staticOverlays[i]);
@@ -20316,6 +20471,293 @@ async function deletePdfFile(id) {
     try { await meetDeletePdfRecord(id); } catch(e) {}
     renderPdfFilesList();
     showToast('حذف شد');
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v239: دانلود از یوتیوب — الگوی کاربری:
+//   • پیست آدرس ویدیو یوتیوب
+//   • انتخاب نوع (ویدئو+صدا / فقط صدا) + کیفیت
+//   • انتخاب سرور cobalt (عمومی / سفارشی)
+//   • فراخوانی POST به API cobalt → دریافت لینک مستقیم → باز کردن در تب جدید
+//
+// دلیل طراحی: این یک اپ استاتیک HTML است و بک‌اند ندارد. yt-dlp روی
+// سرور لازم است؛ ما از APIهای عمومی cobalt استفاده می‌کنیم که REST API
+// با POST { url, ... } می‌پذیرند و لینک مستقیم دانلود برمی‌گردانند. اگر یک
+// سرور محدود شد، کاربر می‌تواند سرور دیگری انتخاب کند یا از طریق لینک
+// cobalt.tools مستقیماً دانلود کند.
+// ════════════════════════════════════════════════════════════════════
+
+let ytState = {
+    mode: 'auto',          // 'auto' (ویدئو+صدا) یا 'audio' (فقط صدا)
+    quality: '720',        // 360/480/720/1080/1440/2160/max
+    audioFmt: 'mp3',       // mp3/ogg/opus/best
+    bitrate: '128'         // 128/256/320 kbps
+};
+
+function openYouTubeDownloader() {
+    const ov = document.getElementById('ytOverlay');
+    if (!ov) return;
+    // اگر در حال ضبط جلسه/تسک/حسابداری است، متوقف کن (میکروفون آزاد شود)
+    try { if (typeof meetRecActive !== 'undefined' && meetRecActive) closeMeetingRecorder(); } catch(e) {}
+    try { if (typeof stopRecording === 'function' && typeof isRecording !== 'undefined' && isRecording) stopRecording(); } catch(e) {}
+    ov.classList.add('active');
+    navPush({ view: 'overlay', type: 'yt' });
+    lockBodyScroll();
+    // بازنشانی وضعیت نمایش
+    const status = document.getElementById('ytStatus');
+    if (status) { status.className = 'yt-status'; status.textContent = ''; }
+    const result = document.getElementById('ytResult');
+    if (result) { result.className = 'yt-result'; result.innerHTML = ''; }
+    const btn = document.getElementById('ytDownloadBtn');
+    if (btn) { btn.disabled = false; btn.textContent = '⬇️ دریافت لینک دانلود'; }
+}
+
+function closeYouTubeDownloader() {
+    const ov = document.getElementById('ytOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    ov.classList.remove('active');
+    closeModalByType('yt');
+    navBack();
+    unlockBodyScroll();
+}
+
+function ytSelectMode(mode) {
+    ytState.mode = mode;
+    document.querySelectorAll('#ytModeGroup .yt-chip').forEach(function(c){
+        c.classList.toggle('selected', c.getAttribute('data-mode') === mode);
+    });
+    // نمایش/پنهان‌کردن گزینه‌های مربوطه
+    document.getElementById('ytAudioOpts').style.display = (mode === 'audio') ? 'block' : 'none';
+    document.getElementById('ytVideoOpts').style.display = (mode === 'audio') ? 'none' : 'block';
+}
+
+function ytSelectQuality(q) {
+    ytState.quality = q;
+    document.querySelectorAll('#ytQualityGroup .yt-chip').forEach(function(c){
+        c.classList.toggle('selected', c.getAttribute('data-q') === q);
+    });
+}
+
+function ytSelectAudioFmt(fmt) {
+    ytState.audioFmt = fmt;
+    document.querySelectorAll('#ytAudioFmtGroup .yt-chip').forEach(function(c){
+        c.classList.toggle('selected', c.getAttribute('data-afmt') === fmt);
+    });
+}
+
+function ytSelectBitrate(br) {
+    ytState.bitrate = br;
+    document.querySelectorAll('#ytBitrateGroup .yt-chip').forEach(function(c){
+        c.classList.toggle('selected', c.getAttribute('data-br') === br);
+    });
+}
+
+async function ytPasteFromClipboard() {
+    const inp = document.getElementById('ytUrl');
+    if (!inp) return;
+    try {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+            const text = await navigator.clipboard.readText();
+            if (text) { inp.value = text.trim(); showToast('از کلیپ‌بورد پیست شد ✓'); return; }
+        }
+    } catch(e) {
+        console.warn('[YT] clipboard read failed', e);
+    }
+    showToast('دسترسی به کلیپ‌بورد ممکن نشد — دستی پیست کنید');
+    inp.focus();
+}
+
+// انتخاب سرور سفارشی
+document.addEventListener('change', function(e){
+    if (e.target && e.target.id === 'ytInstance') {
+        const customInp = document.getElementById('ytCustomInstance');
+        if (customInp) customInp.style.display = (e.target.value === 'custom') ? 'block' : 'none';
+    }
+});
+
+function ytGetInstance() {
+    const sel = document.getElementById('ytInstance');
+    let v = sel ? sel.value : 'https://api.cobalt.tools';
+    if (v === 'custom') {
+        const ci = document.getElementById('ytCustomInstance');
+        v = ci ? (ci.value || '').trim() : '';
+        if (!v) { showToast('آدرس سرور سفارشی را وارد کنید'); return null; }
+        // حذف اسلش انتهایی
+        v = v.replace(/\/+$/, '');
+    }
+    return v;
+}
+
+function ytValidateUrl(url) {
+    if (!url) return false;
+    const u = url.trim();
+    // youtube.com/watch?v=, youtu.be/, youtube.com/shorts/, youtube.com/embed/
+    return /^https?:\/\/(www\.|m\.)?(youtube\.com\/(watch\?v=|shorts\/|embed\/)|youtu\.be\/)/i.test(u);
+}
+
+function ytShowStatus(type, msg) {
+    const el = document.getElementById('ytStatus');
+    if (!el) return;
+    el.className = 'yt-status ' + type;
+    el.innerHTML = msg;
+}
+
+function ytShowResult(url, filename) {
+    const el = document.getElementById('ytResult');
+    if (!el) return;
+    el.className = 'yt-result show';
+    const safeName = filename ? ytEscape(filename) : 'فایل دانلود';
+    const safeUrl = ytEscape(url);
+    el.innerHTML =
+        '<div style="font-weight:600; margin-bottom:6px;">✅ لینک آماده شد:</div>' +
+        '<div style="word-break:break-all; direction:ltr; text-align:left; color:#555; font-size:11px;">' + safeUrl + '</div>' +
+        '<div style="margin-top:6px; color:#666;">📁 نام: ' + safeName + '</div>' +
+        '<button class="open-btn" onclick="ytOpenLink(\'' + safeUrl.replace(/'/g, "\\'") + '\')">⬇️ دانلود فایل</button>' +
+        '<button class="open-btn" style="background:#34c759; margin-right:6px;" onclick="ytShareLink(\'' + safeUrl.replace(/'/g, "\\'") + '\')">📤 اشتراک</button>';
+}
+
+function ytEscape(s) {
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function ytOpenLink(url) {
+    const a = document.createElement('a');
+    a.href = url; a.download = '';
+    a.target = '_blank'; a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ document.body.removeChild(a); }, 1500);
+    showToast('در حال دانلود... اگر شروع نشد، لینک را در تب جدید باز کنید');
+}
+
+function ytShareLink(url) {
+    if (navigator.share) {
+        navigator.share({ title: 'فایل دانلود یوتیوب', url: url }).catch(function(){});
+    } else {
+        // fallback: کپی به کلیپ‌بورد
+        try {
+            navigator.clipboard.writeText(url).then(function(){
+                showToast('لینک کپی شد ✓');
+            }, function(){ showToast('کپی ممکن نشد — لینک را دستی کپی کنید'); });
+        } catch(e) { showToast('اشتراک پشتیبانی نمی‌شود'); }
+    }
+}
+
+async function ytStartDownload() {
+    const urlInp = document.getElementById('ytUrl');
+    const url = (urlInp ? urlInp.value : '').trim();
+    if (!ytValidateUrl(url)) {
+        ytShowStatus('error', '❌ آدرس ویدیو معتبر نیست. مثال: <span dir="ltr">https://www.youtube.com/watch?v=...</span>');
+        return;
+    }
+    const instance = ytGetInstance();
+    if (!instance) return;
+    const btn = document.getElementById('ytDownloadBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ در حال دریافت...'; }
+    ytShowStatus('info', '🔄 در حال تماس با سرور دانلود...');
+
+    // ساخت payload طبق cobalt API v10
+    const payload = { url: url };
+    if (ytState.mode === 'audio') {
+        payload.downloadMode = 'audio';
+        payload.audioFormat = ytState.audioFmt;   // mp3/ogg/opus/best
+        payload.audioBitrate = parseInt(ytState.bitrate, 10); // 128/256/320
+    } else {
+        payload.downloadMode = 'auto';
+        payload.videoQuality = ytState.quality;  // 720/1080/...
+        payload.youtubeVideoCodec = 'h264';       // سازگارترین کدک
+        payload.youtubeVideoContainer = 'mp4';    // mp4 بهترین پشتیبانی
+    }
+
+    // تلاش با instance انتخاب‌شده؛ اگر خطا داد، fallback به cobalt.tools web UI
+    try {
+        const resp = await fetch(instance + '/', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!resp.ok) {
+            throw new Error('HTTP ' + resp.status);
+        }
+        const data = await resp.json();
+        ytHandleCobaltResponse(data, url, btn);
+    } catch(e) {
+        console.warn('[YT] cobalt API failed:', e.message);
+        // fallback: باز کردن cobalt.tools با آدرس ویدیو
+        ytShowStatus('error',
+            '⚠️ سرور دانلود پاسخ نداد (' + ytEscape(e.message) + '). ' +
+            'می‌توانید سرور دیگری انتخاب کنید یا مستقیماً از وب‌سایت رسمی دانلود کنید.'
+        );
+        ytShowFallbackResult(url);
+        if (btn) { btn.disabled = false; btn.textContent = '⬇️ دریافت لینک دانلود'; }
+    }
+}
+
+function ytHandleCobaltResponse(data, url, btn) {
+    if (!data || !data.status) {
+        throw new Error('پاسخ نامعتبر');
+    }
+    if (data.status === 'tunnel' || data.status === 'redirect') {
+        // موفقیت — لینک مستقیم آماده است
+        const dlUrl = data.url;
+        const filename = data.filename || 'youtube_download';
+        ytShowStatus('success', '✅ فایل آمادهٔ دانلود است. دکمهٔ «دانلود فایل» را بزنید.');
+        ytShowResult(dlUrl, filename);
+        if (btn) { btn.disabled = false; btn.textContent = '✅ آماده — دوباره'; }
+        // باز کردن خودکار در تب جدید (همچنین دکمهٔ دانلود هم هست)
+        // (بعضی مرورگرها popup را مسدود می‌کنند — دکمهٔ دستی هم گذاشتیم)
+        return;
+    }
+    if (data.status === 'picker') {
+        // چند گزینه — اولی را نشان می‌دهیم
+        if (data.picker && data.picker.length > 0) {
+            const first = data.picker[0];
+            ytShowStatus('success', '✅ چند گزینه یافت شد. اولین گزینه نمایش داده شد.');
+            ytShowResult(first.url, data.audioFilename || 'youtube_download');
+            if (btn) { btn.disabled = false; btn.textContent = '✅ آماده — دوباره'; }
+            return;
+        }
+    }
+    if (data.status === 'local-processing') {
+        // cobalt باید tunnel را پردازش کند — لینک tunnel را نشان بده
+        if (data.tunnel && data.tunnel.length > 0) {
+            const tUrl = data.tunnel[0];
+            ytShowStatus('success', '✅ فایل در حال پردازش است. لینک آماده شد.');
+            ytShowResult(tUrl, (data.output && data.output.filename) || 'youtube_download');
+            if (btn) { btn.disabled = false; btn.textContent = '✅ آماده — دوباره'; }
+            return;
+        }
+    }
+    if (data.status === 'error') {
+        const code = (data.error && data.error.code) || 'unknown';
+        ytShowStatus('error', '❌ خطا از سرور: ' + ytEscape(code) + '. سرور دیگری را امتحان کنید یا از وب‌سایت رسمی استفاده کنید.');
+        ytShowFallbackResult(url);
+        if (btn) { btn.disabled = false; btn.textContent = '⬇️ دریافت لینک دانلود'; }
+        return;
+    }
+    // حالت ناشناخته
+    ytShowStatus('error', '❌ پاسخ ناشناخته از سرور. سرور دیگری را امتحان کنید.');
+    ytShowFallbackResult(url);
+    if (btn) { btn.disabled = false; btn.textContent = '⬇️ دریافت لینک دانلود'; }
+}
+
+function ytShowFallbackResult(url) {
+    const el = document.getElementById('ytResult');
+    if (!el) return;
+    el.className = 'yt-result show';
+    const webUrl = 'https://cobalt.tools/?u=' + encodeURIComponent(url);
+    el.innerHTML =
+        '<div style="font-weight:600; margin-bottom:6px;">💡 راه‌حل جایگزین:</div>' +
+        '<div style="color:#666; line-height:1.7;">اگر API کار نکرد، وب‌سایت رسمی cobalt را باز کنید و آدرس ویدیو را آنجا پیست کنید:</div>' +
+        '<button class="open-btn" style="margin-top:8px;" onclick="window.open(\'' + webUrl.replace(/'/g, "\\'") + '\', \'_blank\', \'noopener\')">🌐 باز کردن cobalt.tools</button>';
 }
 
 // ════════════════════════════════════════════════════════════════════
