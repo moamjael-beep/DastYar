@@ -5568,7 +5568,8 @@ body.locked .header-actions button {
                 ۴) فایل خودکار در مرورگر ذخیره می‌شود.<br>
                 <br>
                 <b>روش کار:</b> برنامه مستقیماً به سرورهای عمومی یوتیوب (Piped/Invidious) وصل می‌شود — بدون سرور واسطهٔ خودمان. اگر همهٔ سرورها ناموفق شدند، یک سرور سفارشی با CORS باز در فیلد بالا وارد کنید.<br>
-                <b>صدا:</b> کیفیت‌های ۱۰۸۰p و بالاتر به‌صورت ویدئو و صدای جداگانه گرفته شده و با موتور ffmpeg به <b>یک فایل واحد با صدا</b> ادغام می‌شوند (بار اول، دانلود موتور ~۲۵ مگابایت).
+                <b>صدا:</b> کیفیت‌های ۱۰۸۰p و بالاتر به‌صورت ویدئو و صدای جداگانه گرفته شده و با موتور ffmpeg به <b>یک فایل واحد با صدا</b> ادغام می‌شوند (بار اول، دانلود موتور ~۲۵ مگابایت).<br>
+                <b>پایداری:</b> اگر سرور وسط دانلود خطای موقت بدهد (۵۰۲/۵۰۳/۵۰۴) یا اتصال قطع شود، دانلود تا ۳ بار خودکار دوباره تلاش می‌کند و از همان‌جایی که قطع شده ادامه می‌یابد — از صفر شروع نمی‌شود.
             </div>
         </div>
     </div>
@@ -7418,6 +7419,12 @@ body.locked .header-actions button {
 //               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
 //               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
 //               آن از یک اپ استاتیک وجود ندارد.
+//         🔧 v248 (۱۴۰۵ آبان ۲۷) — گزارش کاربر: «خطا HTTP 504»
+//           — BA-161: ریشه = دانلود رسانه تک‌تلاش بود؛ خطای موقت سرور
+//           واسطه/VPN کل دانلود را می‌انداخت. راه‌حل (سبک yt-dlp): ۳ تلاش
+//           خودکار + ادامه از محل قطع با هدر Range (۲۰۶→الحاق، ۲۰۰→از صفر)
+//           + تشخیص دانلود ناقص + پیام فارسی «تلاش مجدد خودکار».
+//
 //         🔧 v247 (۱۴۰۵ آبان ۲۷) — الزام کاربر:
 //           «ویدیو بدون صدا برای دانلود لود میشود من ویدیو با صدا میخواهم»
 //           — BA-160: ریشه = ویدئوی video-only دانلود و صدا جداگانه ذخیره
@@ -7805,7 +7812,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v247-2026-11-15-yt-mux-ffmpeg';
+const APP_VERSION = 'v248-2026-11-15-yt-retry-resume';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -21240,42 +21247,71 @@ async function ytFetchText(url) {
 // ─── دانلود و ذخیرهٔ فایل داخل برنامه ───
 // 🔧 v247 (BA-160): دانلود → Blob (با نگهبان رکود v244 و نوار درصد) و
 // ذخیرهٔ Blob — تفکیک‌شده تا مسیر ادغام ffmpeg هم بتواند Blob بگیرد.
+// 🔧 v248 (BA-161): مقاوم در برابر خطاهای موقت سرور/VPN (۵۰۲/۵۰۳/۵۰۴ و
+// قطع وسط استریم) — ۳ تلاش خودکار؛ اگر بخشی رسیده بود، با هدر Range از
+// محل قطع ادامه می‌یابد (سبک yt-dlp). سرور ۲۰۰ بدهد یعنی Range را نشناخته
+// → از صفر شروع می‌شود. دانلود ناقص هم شکست است → ادامه.
 async function ytFetchBlob(url, onProgress) {
     const wrap = document.getElementById('ytProgressWrap');
     const bar = document.getElementById('ytProgressBar');
     // فقط مستقیم، بدون هیچ پروکسی (v245) + نگهبان رکود ۳۰ثانیه‌ای (v244)
-    const ctrl = new AbortController();
-    let lastData = Date.now();
-    const stall = setInterval(function(){ if (Date.now() - lastData > 30000) { try { ctrl.abort(); } catch(e) {} } }, 5000);
-    try {
-        const resp = await fetch(url, { signal: ctrl.signal });
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        const total = parseInt(resp.headers.get('content-length') || '0', 10);
-        const reader = resp.body && resp.body.getReader ? resp.body.getReader() : null;
-        let chunks = [], got = 0;
-        if (reader) {
-            while (true) {
-                const r = await reader.read();
-                if (r.done) break;
-                chunks.push(r.value);
-                got += r.value.length;
-                lastData = Date.now();
-                if (total) {
-                    const pct = Math.round(got / total * 100);
-                    if (wrap) wrap.style.display = 'block';
-                    if (bar) bar.style.width = pct + '%';
-                    if (onProgress) onProgress(pct, got, total);
-                    else ytShowStatus('info', '⬇️ در حال دانلود... ' + toPersianNumber(pct) + '٪ (' + toPersianNumber(Math.round(got / 1048576)) + ' از ' + toPersianNumber(Math.round(total / 1048576)) + ' مگابایت)');
-                }
+    let chunks = [], got = 0, total = 0, ct = 'application/octet-stream', lastErr = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        const ctrl = new AbortController();
+        let lastData = Date.now();
+        const stall = setInterval(function(){ if (Date.now() - lastData > 30000) { try { ctrl.abort(); } catch(e) {} } }, 5000);
+        try {
+            const headers = {};
+            if (got > 0) headers['Range'] = 'bytes=' + got + '-';
+            const resp = await fetch(url, { signal: ctrl.signal, headers: headers });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            ct = resp.headers.get('content-type') || ct;
+            if (resp.status === 206) {
+                // ادامهٔ موفق از محل قطع — طول کل از Content-Range
+                const cr = resp.headers.get('content-range') || '';
+                const mtot = cr.match(/\/(\d+)\s*$/);
+                if (mtot) total = parseInt(mtot[1], 10);
+            } else {
+                total = parseInt(resp.headers.get('content-length') || '0', 10);
+                if (got > 0) { chunks = []; got = 0; } // سرور Range را نشناخت — از صفر
             }
-        } else {
-            chunks = [await resp.arrayBuffer()];
+            const reader = resp.body && resp.body.getReader ? resp.body.getReader() : null;
+            if (reader) {
+                while (true) {
+                    const r = await reader.read();
+                    if (r.done) break;
+                    chunks.push(r.value);
+                    got += r.value.length;
+                    lastData = Date.now();
+                    if (total) {
+                        const pct = Math.round(got / total * 100);
+                        if (wrap) wrap.style.display = 'block';
+                        if (bar) bar.style.width = pct + '%';
+                        if (onProgress) onProgress(pct, got, total);
+                        else ytShowStatus('info', '⬇️ در حال دانلود... ' + toPersianNumber(pct) + '٪ (' + toPersianNumber(Math.round(got / 1048576)) + ' از ' + toPersianNumber(Math.round(total / 1048576)) + ' مگابایت)');
+                    }
+                }
+            } else {
+                const buf = await resp.arrayBuffer();
+                chunks.push(new Uint8Array(buf));
+                got += buf.byteLength;
+            }
+            clearInterval(stall);
+            if (total && got < total) throw new Error('دانلود ناقص (' + got + ' از ' + total + ' بایت)');
+            const blob = new Blob(chunks, { type: ct });
+            chunks = null;
+            return blob;
+        } catch(e) {
+            clearInterval(stall);
+            lastErr = e;
+            console.warn('[YT] fetch attempt ' + attempt + '/3 failed at ' + got + ' bytes:', e.message);
+            if (attempt < 3) {
+                ytShowStatus('info', '🔄 خطای موقت (' + ytEscape(e.message) + ') — تلاش مجدد خودکار ' + toPersianNumber(attempt + 1) + ' از ' + toPersianNumber(3) + '...');
+                await new Promise(function(r){ setTimeout(r, attempt * 1500); });
+            }
         }
-        clearInterval(stall);
-        const blob = new Blob(chunks, { type: resp.headers.get('content-type') || 'application/octet-stream' });
-        chunks = null;
-        return blob;
-    } catch(e) { clearInterval(stall); throw e; }
+    }
+    throw lastErr || new Error('دانلود ناموفق');
 }
 
 async function ytSaveBlob(blob, filename) {

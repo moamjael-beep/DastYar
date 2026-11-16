@@ -1,1 +1,1 @@
-v247-2026-11-15-yt-mux-ffmpeg
+v248-2026-11-15-yt-retry-resume
