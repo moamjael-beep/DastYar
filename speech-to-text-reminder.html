@@ -5569,7 +5569,7 @@ body.locked .header-actions button {
                 <br>
                 <b>روش کار:</b> برنامه مستقیماً به سرورهای عمومی یوتیوب (Piped/Invidious) وصل می‌شود — بدون سرور واسطهٔ خودمان. اگر همهٔ سرورها ناموفق شدند، یک سرور سفارشی با CORS باز در فیلد بالا وارد کنید.<br>
                 <b>صدا:</b> کیفیت‌های ۱۰۸۰p و بالاتر به‌صورت ویدئو و صدای جداگانه گرفته شده و با موتور ffmpeg به <b>یک فایل واحد با صدا</b> ادغام می‌شوند (بار اول، دانلود موتور ~۲۵ مگابایت).<br>
-                <b>پایداری:</b> اگر سرور وسط دانلود خطای موقت بدهد (۵۰۲/۵۰۳/۵۰۴) یا اتصال قطع شود، دانلود تا ۳ بار خودکار دوباره تلاش می‌کند و از همان‌جایی که قطع شده ادامه می‌یابد — از صفر شروع نمی‌شود. اگر مسیر رسانه پایدار خطا بدهد، تا ۳ دور با «نمونه‌های سرور مختلف» تلاش می‌شود (نمونهٔ مقصر طرد شده و URL تازه گرفته می‌شود).
+                <b>پایداری:</b> اگر سرور وسط دانلود خطای موقت بدهد (۵۰۲/۵۰۳/۵۰۴) یا اتصال قطع شود، دانلود تا ۳ بار خودکار دوباره تلاش می‌کند و از همان‌جایی که قطع شده ادامه می‌یابد — از صفر شروع نمی‌شود.
             </div>
         </div>
     </div>
@@ -7419,6 +7419,14 @@ body.locked .header-actions button {
 //               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
 //               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
 //               آن از یک اپ استاتیک وجود ندارد.
+//         🔧 v250 (۱۴۰۵ آبان ۲۸) — گزارش کاربر: «قبل از اینکه بگویم ویدیو
+//           صدا نداره قشنگ کار می‌کرد از همان نسخه خطا را حل کن»
+//           — BA-163: ریشهٔ نهایی = v247 با اضافه‌کردن ffmpeg مسیر را به
+//           ویدئوی فقط‌تصویری ۱۰۸۰p بزرگ تغییر داد و خود ۵۰۴ را ساخت.
+//           راه‌حل: بازگشت کامل به منطق v246 — اول muxed (صدا+تصویر، یک
+//           فایل کوچک)، بدون ffmpeg/ادغام. ytRunPipeline دقیقاً با v246
+//           یکسان است (diff خالی).
+//
 //         🔧 v249 (۱۴۰۵ آبان ۲۸) — گزارش کاربر: «هنوز خطا HTTP 504»
 //           — BA-162: ریشه = URL رسانه متعلق به پروکسیِ نمونهٔ برندهٔ
 //           استخراج بود؛ همان نمونه پایدار ۵۰۴ می‌داد و تلاش مجدد v248 روی
@@ -7819,7 +7827,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v249-2026-11-16-yt-multiroute';
+const APP_VERSION = 'v250-2026-11-16-yt-revert-v246';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -21333,18 +21341,13 @@ async function ytSaveBlob(blob, filename) {
     return true;
 }
 
-async function ytDownloadAndSave(url, filename, allowAnchor) {
+async function ytDownloadAndSave(url, filename) {
     const wrap = document.getElementById('ytProgressWrap');
     try {
         const blob = await ytFetchBlob(url, null);
         if (wrap) wrap.style.display = 'none';
         return await ytSaveBlob(blob, filename);
-    } catch(e) {
-        console.warn('[YT] download attempt failed:', e.message);
-        // 🔧 v249 (BA-162): در دورهای ۱و۲ خطا به بالا پرتاب می‌شود تا با
-        // نمونهٔ سرور دیگر تلاش شود؛ محول‌کردن به مرورگر فقط در دور آخر.
-        if (allowAnchor === false) { if (wrap) wrap.style.display = 'none'; throw e; }
-    }
+    } catch(e) { console.warn('[YT] download attempt failed:', e.message); }
     if (wrap) wrap.style.display = 'none';
     // آخرین راه: دانلود نیتیو مرورگر (بدون Blob)
     const a = document.createElement('a');
@@ -21462,10 +21465,7 @@ function ytExtractJsonAfter(html, marker) {
 
 // ─── مسیر ۱: Piped — مسابقهٔ همزمان + ثبت دلیل شکست هر سرور ───
 async function ytExtractPiped(videoId, step) {
-    let bases = YT_PIPED_INSTANCES.concat(ytGetCustomInstances().filter(function(u){ return u.indexOf('pipedapi') >= 0 || u.indexOf('/streams/') < 0; }));
-    // 🔧 v249 (BA-162): نمونه‌های مقصر دورهای قبل کنار گذاشته می‌شوند
-    const _exclP = (ytState && ytState._exclBases) || [];
-    if (_exclP.length) { const _keepP = bases.filter(function(b){ return _exclP.indexOf(b) < 0; }); if (_keepP.length) bases = _keepP; }
+    const bases = YT_PIPED_INSTANCES.concat(ytGetCustomInstances().filter(function(u){ return u.indexOf('pipedapi') >= 0 || u.indexOf('/streams/') < 0; }));
     const failLog = [];
     const jobs = bases.map(function(base){
         return (async function(){
@@ -21491,7 +21491,7 @@ async function ytExtractPiped(videoId, step) {
                         ext: isOpus ? 'opus' : 'm4a', label: s.quality || '' });
                 });
                 if (!streams.length) { failLog.push(base + ': empty'); throw new Error('empty'); }
-                return { backend: 'Piped («' + base.replace('https://', '') + '»)', srcBase: base, title: d.title || '', streams: streams };
+                return { backend: 'Piped («' + base.replace('https://', '') + '»)', title: d.title || '', streams: streams };
             } catch(e) {
                 const m = String(e.message || e);
                 failLog.push(base + ': ' + (m === 'Failed to fetch' ? 'CORS/Net' : m));
@@ -21509,9 +21509,6 @@ async function ytExtractInvidious(videoId, step) {
     // ادغام لیست زنده با بذر؛ نمونه‌های بذر اولویت دارند (شناخته‌شده)
     const seen = {};
     let bases = YT_INVIDIOUS_INSTANCES.concat(ytGetCustomInstances());
-    // 🔧 v249 (BA-162): نمونه‌های مقصر دورهای قبل کنار گذاشته می‌شوند
-    const _exclI = (ytState && ytState._exclBases) || [];
-    if (_exclI.length) { const _keepI = bases.filter(function(b){ return _exclI.indexOf(b) < 0; }); if (_keepI.length) bases = _keepI; }
     bases.forEach(function(b){ seen[b] = true; });
     liveList.forEach(function(b){ if (!seen[b]) { bases.push(b); seen[b] = true; } });
     step('تلاش با ' + bases.length + ' سرور زندهٔ Invidious');
@@ -21539,7 +21536,7 @@ async function ytExtractInvidious(videoId, step) {
                         label: s.resolution || s.quality || '' });
                 });
                 if (!streams.length) { failLog.push(base + ': empty'); throw new Error('empty'); }
-                return { backend: 'Invidious («' + base.replace('https://', '') + '»)', srcBase: base, title: d.title || '', streams: streams };
+                return { backend: 'Invidious («' + base.replace('https://', '') + '»)', title: d.title || '', streams: streams };
             } catch(e) {
                 const m = String(e.message || e);
                 failLog.push(base + ': ' + (m === 'Failed to fetch' ? 'CORS/Net' : m));
@@ -21631,81 +21628,13 @@ async function ytResolveStreamUrl(st) {
     return null;
 }
 
-// ─── 🔧 v247 (BA-160): موتور ادغام در مرورگر (ffmpeg.wasm) ───
-// ویدئو و صدای جداگانه یوتیوب (DASH) را به «یک فایل واحد با صدا» ادغام
-// می‌کند. جریان‌های هم‌کانتینر با -c copy (بدون افت کیفیت و سریع)؛ اگر
-// کانتینرها ناهماهنگ باشند، ویدئو کپی و صدا سریع انکود می‌شود.
-function ytLoadScript(src, timeoutMs) {
-    return new Promise(function(resolve, reject){
-        const s = document.createElement('script');
-        const t = setTimeout(function(){ reject(new Error('timeout')); }, timeoutMs || 20000);
-        s.src = src;
-        s.onload = function(){ clearTimeout(t); resolve(); };
-        s.onerror = function(){ clearTimeout(t); reject(new Error('load error')); };
-        document.head.appendChild(s);
-    });
-}
-
-let YT_FFMPEG_PROMISE = null;
-function ytLoadFFmpeg() {
-    if (YT_FFMPEG_PROMISE) return YT_FFMPEG_PROMISE;
-    YT_FFMPEG_PROMISE = (async function(){
-        const umd = [
-            'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js',
-            'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js'
-        ];
-        let FF = null;
-        for (const src of umd) {
-            try { await ytLoadScript(src, 20000); if (window.FFmpeg && window.FFmpeg.createFFmpeg) { FF = window.FFmpeg; break; } }
-            catch(e) { console.warn('[YT-ffmpeg] UMD load failed:', src, e.message); }
-        }
-        if (!FF) throw new Error('دانلود موتور ffmpeg ناموفق بود');
-        const cores = [
-            'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
-            'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
-        ];
-        let lastErr = null;
-        for (const corePath of cores) {
-            try {
-                const inst = FF.createFFmpeg({ log: false, corePath: corePath });
-                await inst.load();
-                return inst;
-            } catch(e) { lastErr = e; console.warn('[YT-ffmpeg] core load failed:', corePath, e.message); }
-        }
-        throw new Error('بارگذاری هستهٔ ffmpeg ناموفق بود' + (lastErr ? ': ' + lastErr.message : ''));
-    })();
-    return YT_FFMPEG_PROMISE.catch(function(e){ YT_FFMPEG_PROMISE = null; throw e; });
-}
-
-async function ytMuxAv(vBlob, aBlob, vName, aName, outName, onProgress) {
-    const ffmpeg = await ytLoadFFmpeg();
-    ffmpeg.setProgress(function(p){ if (onProgress && p && typeof p.progress === 'number' && p.progress > 0 && p.progress <= 1) onProgress(p.progress); });
-    ffmpeg.FS('writeFile', vName, new Uint8Array(await vBlob.arrayBuffer()));
-    ffmpeg.FS('writeFile', aName, new Uint8Array(await aBlob.arrayBuffer()));
-    const vExt = vName.slice(vName.lastIndexOf('.') + 1);
-    const aExt = aName.slice(aName.lastIndexOf('.') + 1);
-    const matched = (vExt === 'mp4' && aExt === 'm4a') || (vExt === 'webm' && aExt !== 'm4a');
-    const args = ['-i', vName, '-i', aName, '-map', '0:v:0', '-map', '1:a:0'];
-    if (matched) args.push('-c', 'copy');                       // ادغام بدون افت کیفیت
-    else if (outName.indexOf('.mp4') >= 0) args.push('-c:v', 'copy', '-c:a', 'aac', '-b:a', '160k');
-    else args.push('-c:v', 'copy', '-c:a', 'libopus', '-b:a', '128k');
-    if (outName.indexOf('.mp4') >= 0) args.push('-movflags', '+faststart');
-    args.push(outName);
-    await ffmpeg.run.apply(ffmpeg, args);
-    const data = ffmpeg.FS('readFile', outName);
-    try { ffmpeg.FS('unlink', vName); } catch(e) {}
-    try { ffmpeg.FS('unlink', aName); } catch(e) {}
-    try { ffmpeg.FS('unlink', outName); } catch(e) {}
-    return new Blob([data.buffer], { type: outName.indexOf('.webm') >= 0 ? 'video/webm' : 'video/mp4' });
-}
 
 // ─── پایپ‌لاین: چندمسیره ← انتخاب فرمت ← دانلود با پیشرفت ───
-// 🔧 v249 (BA-162 — گزارش کاربر: «هنوز خطا HTTP 504»): ریشه — URL رسانهٔ
-// نمونهٔ برندهٔ استخراج (پروکسی همان نمونه) پایدار خطای سرور (۵۰۲/۵۰۳/۵۰۴)
-// می‌داد و تلاش مجدد روی همان URL بی‌فایده بود. راه‌حل: حلقهٔ ۳ دور؛ در هر
-// دور اگر رسانه پایدار ۵xx داد، نمونهٔ مقصر طرد شده، اطلاعات از نمونهٔ
-// دیگر دوباره گرفته می‌شود و دانلود با URL تازه ادامه می‌یابد.
-// محول‌کردن دانلود به مرورگر فقط در دور آخر انجام می‌شود.
+// 🔧 v250 (BA-163 — گزارش کاربر: «قبل از اینکه بگویم ویدیو صدا نداره
+// قشنگ کار می‌کرد از همان نسخه خطا را حل کن»): بازگشت کامل به منطق
+// v246 — اول فرمت muxed (صدا+تصویر، یک فایل کوچک، ~۱۰MB) انتخاب می‌شود
+// که سریع و بدون ۵۰۴ دانلود می‌شود. مسیر v247 (ویدئوی فقط‌تصویری ۱۰۸۰p
+// + صدای جدا + ادغام ffmpeg) که خود ۵۰۴ را ساخته بود، کاملاً حذف شد.
 async function ytRunPipeline(videoId, btn) {
         ytState._lastVideoId = videoId;
     // 🔧 v246: بارگذاری سرور سفارشی ذخیره‌شده
@@ -21714,68 +21643,37 @@ async function ytRunPipeline(videoId, btn) {
         const f = document.getElementById('ytCustomInstanceField');
         if (f && ytState.customInstances) f.value = ytState.customInstances;
     }
-    ytState._exclBases = []; // 🔧 v249: شروع تازه — هیچ نمونه‌ای طرد نشده
-    for (let round = 1; round <= 3; round++) {
-        if (round > 1) ytShowStatus('info', '🔄 مسیر رسانه پایدار خطای سرور داد — با نمونهٔ سرور دیگر تلاش می‌شود (' + toPersianNumber(round) + ' از ' + toPersianNumber(3) + ')...');
-        const backends = [
-            ['سرورهای Piped', ytExtractPiped],
-            ['سرورهای Invidious', ytExtractInvidious],
-            ['YouTube (کلاینت‌های موبایل)', ytExtractInnerTube],
-            ['صفحهٔ YouTube + دیکودر', ytExtractWatchPage]
-        ];
-        let ext = null;
-        for (let bi = 0; bi < backends.length; bi++) {
-            const stepMsg = function(m){ ytShowStatus('info', '🔄 مرحلهٔ ' + toPersianNumber(bi + 1) + ' از ' + toPersianNumber(backends.length) + ' — ' + ytEscape(m) + '...'); };
-            stepMsg('شروع');
-            try { ext = await backends[bi][1](videoId, stepMsg); }
-            catch(e) { console.warn('[YT] backend', backends[bi][0], 'error', e.message); ext = null; }
-            if (ext && ext.streams && ext.streams.length) { console.log('[YT] backend OK:', ext.backend); break; }
-            ext = null;
-        }
-        if (!ext) {
-            if (round > 1) {
-                ytShowStatus('error', '❌ دانلود با همهٔ نمونه‌های سرور ناموفق بود — چند دقیقه بعد تلاش کنید یا در فیلد «سرور سفارشی» یک سرور سالم بدهید.');
-                return false;
-            }
-            // 🔧 v246 (BA-159): پیام صادقانه با گزارش تعداد و دلیل شکست سرورها
-            const flog = ytState._lastFailLog || '';
-            ytState._lastFailLog = '';
-            ytShowStatus('error', '❌ دریافت اطلاعات ناموفق بود.<br>' +
-                '<b>دلیل:</b> سرورهای عمومی یوتیوب این روزها ناپایدار و مسدود (CORS) شده‌اند — VPN نمی‌تواند CORS مرورگر را دور بزند.<br>' +
-                '<b>راه‌حل ۱:</b> چند لحظه صبر کنید و دوباره «شروع دانلود» را بزنید (سرورها پشت‌سرهم زنده/مرده می‌شوند).<br>' +
-                '<b>راه‌حل ۲ (پایدار):</b> یک سرور Invidious شخص ثالث با CORS باز در فیلد «سرور سفارشی» (پایین) وارد کنید.<br>' +
-                '<details style="margin-top:6px; font-size:11px;"><summary>گزارش فنی</summary><pre style="white-space:pre-wrap; direction:ltr; text-align:left;">' + ytEscape(flog) + '</pre></details>');
-            return false;
-        }
-        // 🔧 v249: این نمونه در دور بعد طرد می‌شود (پروکسی‌اش است که ۵۰۴ می‌دهد)
-        if (ext.srcBase && ytState._exclBases.indexOf(ext.srcBase) < 0) ytState._exclBases.push(ext.srcBase);
-        try {
-            const ok = await ytDownloadFromExt(ext, videoId, btn, round);
-            if (ok) return true;
-            return false;
-        } catch(e) {
-            console.warn('[YT] round ' + round + ' media failed:', e.message);
-            const is5xx = /^HTTP 5/.test(String(e.message));
-            if (!is5xx || round === 3) {
-                ytShowStatus('error', '❌ خطا: ' + ytEscape(e.message || e) +
-                    (is5xx && round === 3 ? '<br>سه نمونهٔ سرور مختلف امتحان شد — چند دقیقه بعد تلاش کنید یا در «سرور سفارشی» یک سرور سالم بدهید.' : ''));
-                return false;
-            }
-            // دور بعد با نمونهٔ دیگر
-        }
+    const backends = [
+        ['سرورهای Piped', ytExtractPiped],
+        ['سرورهای Invidious', ytExtractInvidious],
+        ['YouTube (کلاینت‌های موبایل)', ytExtractInnerTube],
+        ['صفحهٔ YouTube + دیکودر', ytExtractWatchPage]
+    ];
+    let ext = null;
+    for (let bi = 0; bi < backends.length; bi++) {
+        const stepMsg = function(m){ ytShowStatus('info', '🔄 مرحلهٔ ' + toPersianNumber(bi + 1) + ' از ' + toPersianNumber(backends.length) + ' — ' + ytEscape(m) + '...'); };
+        stepMsg('شروع');
+        try { ext = await backends[bi][1](videoId, stepMsg); }
+        catch(e) { console.warn('[YT] backend', backends[bi][0], 'error', e.message); ext = null; }
+        if (ext && ext.streams && ext.streams.length) { console.log('[YT] backend OK:', ext.backend); break; }
+        ext = null;
     }
-    return false;
-}
-
-// 🔧 v249 (BA-162): انتخاب کیفیت + دانلود/ادغام — از ytRunPipeline جدا شد
-// تا در حلقهٔ دورها با هر نمونهٔ سرور صدا زده شود. round برای «محول‌کردن
-// دانلود به مرورگر فقط در دور آخر» استفاده می‌شود.
-async function ytDownloadFromExt(ext, videoId, btn, round) {
+    if (!ext) {
+        // 🔧 v246 (BA-159): پیام صادقانه با گزارش تعداد و دلیل شکست سرورها
+        const flog = ytState._lastFailLog || '';
+        ytState._lastFailLog = '';
+        ytShowStatus('error', '❌ دریافت اطلاعات ناموفق بود.<br>' +
+            '<b>دلیل:</b> سرورهای عمومی یوتیوب این روزها ناپایدار و مسدود (CORS) شده‌اند — VPN نمی‌تواند CORS مرورگر را دور بزند.<br>' +
+            '<b>راه‌حل ۱:</b> چند لحظه صبر کنید و دوباره «شروع دانلود» را بزنید (سرورها پشت‌سرهم زنده/مرده می‌شوند).<br>' +
+            '<b>راه‌حل ۲ (پایدار):</b> یک سرور Invidious شخص ثالث با CORS باز در فیلد «سرور سفارشی» (پایین) وارد کنید.<br>' +
+            '<details style="margin-top:6px; font-size:11px;"><summary>گزارش فنی</summary><pre style="white-space:pre-wrap; direction:ltr; text-align:left;">' + ytEscape(flog) + '</pre></details>');
+        return false;
+    }
     ytShowStatus('info', '✅ اطلاعات از ' + ytEscape(ext.backend) + ' گرفته شد — انتخاب کیفیت...');
     const title = ((ext.title || ('youtube_' + videoId)).replace(/[\\/:*?"<>|]/g, '_')).slice(0, 60);
     const q = ytState.quality;
     const qNum = (q === 'max') ? 99999 : parseInt(q, 10);
-    let mainStream = null, mainUrl = null;
+    let mainStream = null, mainUrl = null, audioPick = null;
 
     if (ytState.mode === 'audio') {
         // 🔊 بهترین صدا
@@ -21786,71 +21684,30 @@ async function ytDownloadFromExt(ext, videoId, btn, round) {
             if (u) { mainStream = s; mainUrl = u; break; }
         }
     } else {
-        // 🎬 v247 (BA-160): همیشه «یک فایل واحد با صدا» — هرگز ویدئوی بی‌صدا:
-        //   (۱) ≤720p → muxed مستقیم (سریع، بدون موتور اضافه)؛
-        //   (۲) >720p یا بدون muxed → ویدئو+صدا جدا ← ادغام ffmpeg (کیفیت واقعی درخواستی)؛
-        //   (۳) ادغام نشد → بهترین muxed دارای صدا.
+        // 🎬 ویدئو: اول muxed (صدا+تصویر)، بعد adaptive
         const vids = ext.streams.filter(function(s){ return (s.mime || '').indexOf('video/') === 0; });
         const muxed = vids.filter(function(s){ return s.hasAudio; })
                           .sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
         const only = vids.filter(function(s){ return !s.hasAudio; })
                          .sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
-        let pick = null, mergeVideo = null;
-        if (q === 'max') {
-            if (only.length && (!muxed.length || (only[0].height || 0) > (muxed[0].height || 0))) mergeVideo = only[0];
-            else if (muxed.length) pick = muxed[0];
-        } else if (qNum <= 720 && muxed.length) {
-            pick = muxed.find(function(s){ return (s.height || 0) === qNum; })
-                 || muxed.find(function(s){ return (s.height || 0) <= qNum && (s.height || 0) > 0; })
-                 || muxed[muxed.length - 1] || null;
-        } else if (only.length) {
-            mergeVideo = only.find(function(s){ return (s.height || 0) === qNum; })
-                      || only.find(function(s){ return (s.height || 0) <= qNum && (s.height || 0) > 0; })
-                      || only[only.length - 1];
-        }
+        const pool = muxed.length ? muxed : only;
+        let pick = null;
+        if (q === 'max') pick = pool[0] || null;
+        else pick = pool.find(function(s){ return (s.height || 0) === qNum; })
+                  || pool.find(function(s){ return (s.height || 0) <= qNum && (s.height || 0) > 0; })
+                  || pool[pool.length - 1] || null;
         if (pick) {
             const u = await ytResolveStreamUrl(pick);
             if (u) { mainStream = pick; mainUrl = u; }
-        } else if (mergeVideo) {
-            // مسیر ادغام: بهترین صدای متناسب با کانتینر ویدئو
-            const wantM4a = mergeVideo.ext !== 'webm';
+        }
+        // adaptive بدون صدا → فایل صدا هم خودکار
+        if (mainStream && !mainStream.hasAudio) {
             const auds = ext.streams.filter(function(s){ return (s.mime || '').indexOf('audio/') === 0; })
                                      .sort(function(a,b){ return (b.bitrate || 0) - (a.bitrate || 0); });
-            const aPick = auds.find(function(s){ return wantM4a ? s.ext === 'm4a' : (s.ext === 'opus' || s.ext === 'webm'); }) || auds[0] || null;
-            const vU = aPick ? await ytResolveStreamUrl(mergeVideo) : null;
-            const aU = aPick ? await ytResolveStreamUrl(aPick) : null;
-            if (vU && aU) {
-                ytShowStatus('info', '🎬 کیفیت ' + ytEscape(String(mergeVideo.label || q)) + ' به‌صورت ویدئو و صدای جداگانه ارائه می‌شود — هر دو دانلود و به «یک فایل با صدا» ادغام می‌شوند...');
-                try {
-                    const vBlob = await ytFetchBlob(vU, function(p, got, total){
-                        if (total) ytShowStatus('info', '⬇️ ویدئو... ' + toPersianNumber(p) + '٪ (' + toPersianNumber(Math.round(got / 1048576)) + ' از ' + toPersianNumber(Math.round(total / 1048576)) + ' مگابایت)');
-                    });
-                    ytShowStatus('info', '⬇️ در حال دانلود صدا...');
-                    const aBlob = await ytFetchBlob(aU, null);
-                    if (vBlob.size + aBlob.size > 500 * 1048576) throw new Error('حجم فایل برای ادغام در مرورگر زیاد است');
-                    ytShowStatus('info', '⚙️ در حال آماده‌سازی موتور ادغام ffmpeg (فقط بار اول، چند ده مگابایت)...');
-                    const outExt = mergeVideo.ext === 'webm' ? 'webm' : 'mp4';
-                    const merged = await ytMuxAv(vBlob, aBlob, 'v.' + mergeVideo.ext, 'a.' + (aPick.ext === 'opus' ? 'weba' : 'm4a'), 'out.' + outExt,
-                        function(ratio){ ytShowStatus('info', '🔀 در حال ادغام (بدون افت کیفیت)... ' + toPersianNumber(Math.round(ratio * 100)) + '٪'); });
-                    const okM = await ytSaveBlob(merged, title + '.' + outExt);
-                    if (okM) {
-                        ytShowStatus('success', '✅ ذخیره شد: ' + ytEscape(title) + ' (ویدئو + صدا — ' + ytEscape(String(mergeVideo.label || '')) + ')');
-                        if (btn) { btn.disabled = false; btn.textContent = '✅ آماده — دوباره'; }
-                        return true;
-                    }
-                    throw new Error('ذخیره ناموفق');
-                } catch(me) {
-                    console.warn('[YT] merge failed:', me.message);
-                    if (muxed.length) {
-                        pick = muxed[0];
-                        ytShowStatus('info', '⚠️ ادغام ممکن نشد (' + ytEscape(me.message) + ') — بهترین کیفیت دارای صدا (' + ytEscape(String(pick.label || '')) + ') دانلود می‌شود.');
-                    } else { throw me; }
-                }
-            } else if (muxed.length) { pick = muxed[0]; }
-        }
-        if (pick && !mainUrl) {
-            const u = await ytResolveStreamUrl(pick);
-            if (u) { mainStream = pick; mainUrl = u; }
+            for (const s of auds) {
+                const u = await ytResolveStreamUrl(s);
+                if (u) { audioPick = { s: s, u: u }; break; }
+            }
         }
     }
     if (!mainUrl) {
@@ -21859,7 +21716,11 @@ async function ytDownloadFromExt(ext, videoId, btn, round) {
     }
     const qLabel = mainStream.label || '';
     ytShowStatus('info', '⬇️ شروع دانلود: ' + ytEscape(title) + (qLabel ? ' — ' + ytEscape(String(qLabel)) : ''));
-    const ok = await ytDownloadAndSave(mainUrl, title + '.' + mainStream.ext, round === 3);
+    const ok = await ytDownloadAndSave(mainUrl, title + '.' + mainStream.ext);
+    if (ok && audioPick) {
+        ytShowStatus('info', '🔊 فایل صدا هم دانلود می‌شود (فرمت جدا)...');
+        await ytDownloadAndSave(audioPick.u, title + '_صدا.' + audioPick.s.ext);
+    }
     return ok;
 }
 
