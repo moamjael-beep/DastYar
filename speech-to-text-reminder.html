@@ -5569,7 +5569,8 @@ body.locked .header-actions button {
                 <br>
                 <b>روش کار:</b> برنامه مستقیماً به سرورهای عمومی یوتیوب (Piped/Invidious) وصل می‌شود — بدون سرور واسطهٔ خودمان. اگر همهٔ سرورها ناموفق شدند، یک سرور سفارشی با CORS باز در فیلد بالا وارد کنید.<br>
                 <b>صدا:</b> کیفیت‌های ۱۰۸۰p و بالاتر به‌صورت ویدئو و صدای جداگانه گرفته شده و با موتور ffmpeg به <b>یک فایل واحد با صدا</b> ادغام می‌شوند (بار اول، دانلود موتور ~۲۵ مگابایت).<br>
-                <b>پایداری:</b> اگر سرور وسط دانلود خطای موقت بدهد (۵۰۲/۵۰۳/۵۰۴) یا اتصال قطع شود، دانلود تا ۳ بار خودکار دوباره تلاش می‌کند و از همان‌جایی که قطع شده ادامه می‌یابد — از صفر شروع نمی‌شود.
+                <b>یک فایل با صدا:</b> ویدیو همیشه به‌صورت یک فایل MP4 با صدا و تصویر (نسخهٔ muxed، مثلاً 360p/720p) دانلود می‌شود — دیگر دو فایل جدا (صدا + تصویر) دریافت نخواهید کرد.
+                <b>پایداری:</b> اگر سرور وسط دانلود خطای موقت بدهد (۵۰۲/۵۰۳/۵۰۴) یا اتصال قطع شود، دانلود تا ۳ بار خودکار دوباره تلاش می‌کند و از همان‌جایی که قطع شده ادامه می‌یابد — از صفر شروع نمی‌شود. اگر یک کیفیت ۵۰۴ بدهد، خودکار به کیفیت بعدی (muxed) سوییچ می‌کند.
             </div>
         </div>
     </div>
@@ -7419,6 +7420,13 @@ body.locked .header-actions button {
 //               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
 //               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
 //               آن از یک اپ استاتیک وجود ندارد.
+//         🔧 v251 (۱۴۰۵ آبان ۲۸) — گزارش کاربر: «یک فایل صدا و یک فایل
+//           تصویر جدا می‌دهد» — BA-164: ریشه = بک‌اندها اغلب فقط استریم‌های
+//           adaptive (بدون صدا) برمی‌گردانند؛ کد به مسیر «دو فایل جدا»
+//           می‌افتاد. راه‌حل: تزریق مصنوعی itag 18/22 (muxed با صدا) در
+//           Invidious + اولویت سخت muxed + fallback ۵۰۴ + حذف کامل
+//           حالا همیشه یک فایل MP4 با صدا و تصویر. (v251: مسیر دو-فایلی حذف شد)
+//
 //         🔧 v250 (۱۴۰۵ آبان ۲۸) — گزارش کاربر: «قبل از اینکه بگویم ویدیو
 //           صدا نداره قشنگ کار می‌کرد از همان نسخه خطا را حل کن»
 //           — BA-163: ریشهٔ نهایی = v247 با اضافه‌کردن ffmpeg مسیر را به
@@ -7827,7 +7835,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v250-2026-11-16-yt-revert-v246';
+const APP_VERSION = 'v251-2026-11-16-yt-single-muxed-file';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -21347,15 +21355,12 @@ async function ytDownloadAndSave(url, filename) {
         const blob = await ytFetchBlob(url, null);
         if (wrap) wrap.style.display = 'none';
         return await ytSaveBlob(blob, filename);
-    } catch(e) { console.warn('[YT] download attempt failed:', e.message); }
-    if (wrap) wrap.style.display = 'none';
-    // آخرین راه: دانلود نیتیو مرورگر (بدون Blob)
-    const a = document.createElement('a');
-    a.href = url; a.download = filename; a.target = '_blank'; a.rel = 'noopener';
-    a.style.display = 'none';
-    document.body.appendChild(a); a.click(); a.remove();
-    ytShowStatus('info', '⚠️ دانلود به مرورگر سپرده شد — اگر شروع نشد، اتصال (VPN/پروکسی) را بررسی کنید و دوباره تلاش کنید.');
-    return true;
+    } catch(e) {
+        console.warn('[YT] download attempt failed:', e.message);
+        if (wrap) wrap.style.display = 'none';
+        // 🔧 v251 (BA-164): خطا را پرتاب کن تا پایپ‌لاین بتواند به فرمت بعدی fallback کند
+        throw e;
+    }
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -21521,11 +21526,27 @@ async function ytExtractInvidious(videoId, step) {
                 if (!d || (!d.formatStreams && !d.adaptiveFormats)) { failLog.push(base + ': empty'); throw new Error('no data'); }
                 const streams = [];
                 const lv = function(itag){ return base + '/latest_version?id=' + videoId + '&itag=' + itag + '&local=true'; };
+                // 🔧 v251 (BA-164): تزریق مصنوعی فرمت‌های muxed با صدا (itag 18=360p / 22=720p)
+                // از طریق latest_version — این همیشه یک MP4 با صدا برمی‌گرداند حتی اگر
+                // formatStreams خالی باشد. این مسیر «دو فایل جدا» را حذف می‌کند.
+                const _muxed = [
+                    { itag: 18, h: 360, lbl: '360p' },
+                    { itag: 22, h: 720, lbl: '720p' }
+                ];
+                const _haveH = {};
                 (d.formatStreams || []).forEach(function(s){
+                    const h = parseInt(String(s.resolution || '').replace(/[^0-9]/g, ''), 10) || 0;
+                    if (h) _haveH[h] = true;
                     streams.push({ url: lv(s.itag), mime: s.type || 'video/mp4',
-                        height: parseInt(String(s.resolution || '').replace(/[^0-9]/g, ''), 10) || 0,
-                        bitrate: 0, hasAudio: true,
+                        height: h, bitrate: 0, hasAudio: true,
                         ext: String(s.type || '').indexOf('webm') >= 0 ? 'webm' : 'mp4', label: s.resolution || '' });
+                });
+                _muxed.forEach(function(m){
+                    if (!_haveH[m.h]) {  // اگر از قبل آن کیفیت muxed نداریم، تزریق کن
+                        streams.push({ url: lv(m.itag), mime: 'video/mp4',
+                            height: m.h, bitrate: 0, hasAudio: true,
+                            ext: 'mp4', label: m.lbl });
+                    }
                 });
                 (d.adaptiveFormats || []).forEach(function(s){
                     const isAudio = String(s.type || '').indexOf('audio') === 0;
@@ -21673,7 +21694,7 @@ async function ytRunPipeline(videoId, btn) {
     const title = ((ext.title || ('youtube_' + videoId)).replace(/[\\/:*?"<>|]/g, '_')).slice(0, 60);
     const q = ytState.quality;
     const qNum = (q === 'max') ? 99999 : parseInt(q, 10);
-    let mainStream = null, mainUrl = null, audioPick = null;
+    let mainStream = null, mainUrl = null;
 
     if (ytState.mode === 'audio') {
         // 🔊 بهترین صدا
@@ -21683,30 +21704,67 @@ async function ytRunPipeline(videoId, btn) {
             const u = await ytResolveStreamUrl(s);
             if (u) { mainStream = s; mainUrl = u; break; }
         }
+        if (mainUrl) {
+            ytShowStatus('info', '⬇️ شروع دانلود صدا: ' + ytEscape(title) + ' — ' + ytEscape(String(mainStream.label || '')));
+            try {
+                const ok = await ytDownloadAndSave(mainUrl, title + '.' + mainStream.ext);
+                if (ok) return true;
+            } catch(e) {
+                console.warn('[YT] audio download failed:', e.message);
+                ytShowStatus('error', '❌ دانلود فایل صدا ناموفق بود: ' + ytEscape(e.message));
+                return false;
+            }
+        }
     } else {
-        // 🎬 ویدئو: اول muxed (صدا+تصویر)، بعد adaptive
+        // 🎬 ویدئو — v251 (BA-164): اولویت سخت muxed (صدا+تصویر در یک فایل).
+        // اگر حتی یک فرمت muxed موجود است، هرگز به مسیر «دو فایل جدا» نرو.
+        // این هم یک فایل با صدا می‌دهد و هم فایل کوچک‌تر (بدون ۵۰۴).
         const vids = ext.streams.filter(function(s){ return (s.mime || '').indexOf('video/') === 0; });
         const muxed = vids.filter(function(s){ return s.hasAudio; })
                           .sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
         const only = vids.filter(function(s){ return !s.hasAudio; })
                          .sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
-        const pool = muxed.length ? muxed : only;
-        let pick = null;
-        if (q === 'max') pick = pool[0] || null;
-        else pick = pool.find(function(s){ return (s.height || 0) === qNum; })
-                  || pool.find(function(s){ return (s.height || 0) <= qNum && (s.height || 0) > 0; })
-                  || pool[pool.length - 1] || null;
-        if (pick) {
-            const u = await ytResolveStreamUrl(pick);
-            if (u) { mainStream = pick; mainUrl = u; }
+        // اگر muxed موجود است، فقط از میان muxed انتخاب کن (هرگز only)
+        const hasMuxed = muxed.length > 0;
+        const pool = hasMuxed ? muxed : only;
+        // لیست کاندیداهای muxed به ترتیب اولویت (نزدیک‌ترین به کیفیت درخواستی اول)
+        const candidates = [];
+        if (q === 'max') {
+            pool.forEach(function(s){ candidates.push(s); });
+        } else {
+            const exact = pool.find(function(s){ return (s.height || 0) === qNum; });
+            if (exact) candidates.push(exact);
+            pool.forEach(function(s){ if (s !== exact) candidates.push(s); });
         }
-        // adaptive بدون صدا → فایل صدا هم خودکار
-        if (mainStream && !mainStream.hasAudio) {
-            const auds = ext.streams.filter(function(s){ return (s.mime || '').indexOf('audio/') === 0; })
-                                     .sort(function(a,b){ return (b.bitrate || 0) - (a.bitrate || 0); });
-            for (const s of auds) {
-                const u = await ytResolveStreamUrl(s);
-                if (u) { audioPick = { s: s, u: u }; break; }
+        // 🔧 v251: تاب‌آوری ۵۰۴ — هر کاندیدا را امتحان کن تا یکی کار کند
+        for (const pick of candidates) {
+            const u = await ytResolveStreamUrl(pick);
+            if (!u) continue;
+            ytShowStatus('info', '⬇️ شروع دانلود: ' + ytEscape(title) + ' — ' + ytEscape(String(pick.label || ('' + (pick.height||0) + 'p'))));
+            try {
+                const ok = await ytDownloadAndSave(u, title + '.' + pick.ext);
+                if (ok) { mainStream = pick; mainUrl = u; break; }
+            } catch(e) {
+                console.warn('[YT] muxed', pick.label, 'failed:', e.message);
+                if (candidates.indexOf(pick) < candidates.length - 1) {
+                    ytShowStatus('info', '🔄 این کیفیت خطا داد (' + ytEscape(e.message) + ') — تلاش با کیفیت بعدی...');
+                }
+            }
+        }
+        // فقط اگر هیچ muxed‌ای کار نکرد و only موجود است → آخرین راه، ویدئوی بی‌صدا
+        // (اما دیگر فایل صدای جدا نمی‌دهیم — فقط ویدئو، تا دو-فایلی نشود)
+        if (!mainUrl && !hasMuxed && only.length) {
+            for (const pick of only) {
+                const u = await ytResolveStreamUrl(pick);
+                if (!u) continue;
+                ytShowStatus('info', '⬇️ شروع دانلود (فقط تصویر): ' + ytEscape(title) + ' — ' + ytEscape(String(pick.label || '')));
+                try {
+                    const ok = await ytDownloadAndSave(u, title + '.' + pick.ext);
+                    if (ok) { mainStream = pick; mainUrl = u; break; }
+                } catch(e) { console.warn('[YT] only', pick.label, 'failed:', e.message); }
+            }
+            if (mainUrl) {
+                ytShowStatus('info', '⚠️ این ویدیو فقط با فرمت بی‌صدا در دسترس است (هیچ نسخهٔ muxed با صدا پیدا نشد). ویدئو دانلود شد ولی صدا ندارد.');
             }
         }
     }
@@ -21714,14 +21772,8 @@ async function ytRunPipeline(videoId, btn) {
         ytShowStatus('error', '❌ هیچ فرمت قابل دانلودی پیدا نشد. (ویدیو ممکن است محدودیت سنی/منطقه‌ای داشته باشد.)');
         return false;
     }
-    const qLabel = mainStream.label || '';
-    ytShowStatus('info', '⬇️ شروع دانلود: ' + ytEscape(title) + (qLabel ? ' — ' + ytEscape(String(qLabel)) : ''));
-    const ok = await ytDownloadAndSave(mainUrl, title + '.' + mainStream.ext);
-    if (ok && audioPick) {
-        ytShowStatus('info', '🔊 فایل صدا هم دانلود می‌شود (فرمت جدا)...');
-        await ytDownloadAndSave(audioPick.u, title + '_صدا.' + audioPick.s.ext);
-    }
-    return ok;
+    // 🔧 v251: هیچ فایل صدای جدا دیگری دانلود نمی‌شود — همیشه یک فایل.
+    return true;
 }
 
 async function ytStartDownload() {
