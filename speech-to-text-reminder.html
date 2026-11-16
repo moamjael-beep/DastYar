@@ -7420,6 +7420,14 @@ body.locked .header-actions button {
 //               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
 //               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
 //               آن از یک اپ استاتیک وجود ندارد.
+//         🔧 v252 (۱۴۰۵ آبان ۲۸) — گزارش کاربر: «میگوید هیچ فرمت قابل
+//           دانلودی موجود نیست» — BA-165: رگرسیون v251. در بازنویسی
+//           ytDownloadAndSave، مسیر fallback دانلود نیتیو مرورگر حذف
+//           شده بود → وقتی fetch به googlevideo به‌خاطر CORS شکست
+//           می‌خورد، همهٔ muxed‌ها throw و پیام «هیچ فرمت قابل دانلودی
+//           موجود نیست» می‌داد. راه‌حل: بازگرداندن native anchor download
+//           fallback + fallback به only وقتی muxed‌ها resolvable نیستند.
+//
 //         🔧 v251 (۱۴۰۵ آبان ۲۸) — گزارش کاربر: «یک فایل صدا و یک فایل
 //           تصویر جدا می‌دهد» — BA-164: ریشه = بک‌اندها اغلب فقط استریم‌های
 //           adaptive (بدون صدا) برمی‌گردانند؛ کد به مسیر «دو فایل جدا»
@@ -7835,7 +7843,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v251-2026-11-16-yt-single-muxed-file';
+const APP_VERSION = 'v252-2026-11-16-yt-native-fallback';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -21356,11 +21364,19 @@ async function ytDownloadAndSave(url, filename) {
         if (wrap) wrap.style.display = 'none';
         return await ytSaveBlob(blob, filename);
     } catch(e) {
-        console.warn('[YT] download attempt failed:', e.message);
-        if (wrap) wrap.style.display = 'none';
-        // 🔧 v251 (BA-164): خطا را پرتاب کن تا پایپ‌لاین بتواند به فرمت بعدی fallback کند
-        throw e;
+        console.warn('[YT] Blob fetch failed, fallback to native download:', e.message);
     }
+    if (wrap) wrap.style.display = 'none';
+    // 🔧 v252 (BA-165): آخرین راه — دانلود نیتیو مرورگر (بدون Blob).
+    // این مسیر حیاتی است چون URLهای googlevideo اغلب CORS ندارند و fetch
+    // شکست می‌خورد، ولی مرورگر مستقیم می‌تواند download کند. بدون این،
+    // پیام «هیچ فرمت قابل دانلودی موجود نیست» نمایش داده می‌شد.
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.target = '_blank'; a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a); a.click(); a.remove();
+    ytShowStatus('success', '✅ دانلود شروع شد: ' + ytEscape(filename) + ' (به مرورگر سپرده شد)');
+    return true;
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -21751,9 +21767,10 @@ async function ytRunPipeline(videoId, btn) {
                 }
             }
         }
-        // فقط اگر هیچ muxed‌ای کار نکرد و only موجود است → آخرین راه، ویدئوی بی‌صدا
-        // (اما دیگر فایل صدای جدا نمی‌دهیم — فقط ویدئو، تا دو-فایلی نشود)
-        if (!mainUrl && !hasMuxed && only.length) {
+        // 🔧 v252 (BA-165): اگر هیچ muxed‌ای resolvable نبود، به only هم fallback کن.
+        // (در v251 فقط وقتی hasMuxed=false بود به only می‌رفت، که اگر muxed موجود ولی
+        // همگی URL نداشتند → «هیچ فرمت قابل دانلودی موجود نیست» می‌داد.)
+        if (!mainUrl && only.length) {
             for (const pick of only) {
                 const u = await ytResolveStreamUrl(pick);
                 if (!u) continue;

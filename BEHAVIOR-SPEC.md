@@ -11,10 +11,10 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v251 — ۱۴۰۵ آبان ۲۸ (تک‌فایل muxed با صدا — حذف کامل مسیر دو-فایلی)
-#  نسخهٔ فعلی کد:  APP_VERSION = v251-2026-11-16-yt-single-muxed-file
-#                  CACHE_NAME  = yadavar-cache-v251
-#                  version.txt = v251-2026-11-16-yt-single-muxed-file
+#  آخرین به‌روزرسانی: v252 — ۱۴۰۵ آبان ۲۸ (native browser fallback — رگرسیون «هیچ فرمت قابل دانلودی»)
+#  نسخهٔ فعلی کد:  APP_VERSION = v252-2026-11-16-yt-native-fallback
+#                  CACHE_NAME  = yadavar-cache-v252
+#                  version.txt = v252-2026-11-16-yt-native-fallback
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -1393,6 +1393,17 @@
 //          دارند و «مرورگر متوجه مانع نمی‌شود»؛ دانلود به‌صورت پس‌زمینه‌ای
 //          (fetch نامتزامن) ادامه می‌یابد.
 #
+#   BA-165 (v252 — گزارش کاربر: «میگوید هیچ فرمت قابل دانلودی
+#          موجود نیست») رگرسیون v251: در بازنویسی ytDownloadAndSave،
+#          مسیر fallback دانلود نیتیو مرورگر (anchor → click) حذف شده
+#          بود. این مسیر حیاتی است چون URLهای googlevideo اغلب CORS
+#          ندارند و fetch شکست می‌خورد؛ بدون fallback نیتیو، همهٔ
+#          muxed‌ها throw می‌کردند و پیام «هیچ فرمت قابل دانلودی
+#          موجود نیست» نمایش داده می‌شد. راه‌حل: ۱) بازگرداندن native
+#          anchor download fallback در ytDownloadAndSave (همیشه true).
+#          ۲) اگر هیچ muxed‌ای resolvable نبود، به only هم fallback کن
+#          (در v251 فقط وقتی hasMuxed=false بود به only می‌رفت).
+#
 #   BA-164 (v251 — گزارش کاربر: «یک فایل صدا و یک فایل تصویر جدا
 #          می‌دهد») ریشهٔ قطعی: حتی در v250، وقتی بک‌اند فقط استریم‌های
 #          adaptive (بدون صدا) برمی‌گرداند (که در Piped رایج است:
@@ -1937,6 +1948,16 @@
 #
 #   فایل‌های نسخه: APP_VERSION / version.txt →
 #   v244-2026-11-15-align-keepalive-yt-multi؛ CACHE_NAME → yadavar-cache-v244.
+#
+### v252 (۱۴۰۵ آبان ۲۸) — native browser fallback (رفع «هیچ فرمت قابل دانلودی»)
+#   کاربر: «میگوید هیچ فرمت قابل دانلودی موجود نیست»
+#   ریشه: v251 مسیر native anchor download را حذف کرد → وقتی fetch به
+#   googlevideo به‌خاطر CORS شکست می‌خورد، همهٔ muxed‌ها throw و پیام
+#   «هیچ فرمت قابل دانلودی موجود نیست» می‌داد. راه‌حل: بازگرداندن native
+#   fallback + fallback به only وقتی muxed‌ها resolvable نیستند.
+#
+#   فایل‌های نسخه: APP_VERSION / version.txt →
+#   v252-2026-11-16-yt-native-fallback؛ CACHE_NAME → yadavar-cache-v252.
 #
 ### v251 (۱۴۰۵ آبان ۲۸) — تک‌فایل muxed با صدا (حذف کامل مسیر دو-فایلی)
 #   کاربر: «یک فایل صدا و یک فایل تصویر جدا می‌دهد»
