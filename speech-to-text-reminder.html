@@ -5497,56 +5497,44 @@ body.locked .header-actions button {
         <div class="yt-title">⬇️ دانلود از یوتیوب</div>
     </div>
     <div class="yt-scroll">
+        <!-- 🔧 v253 (BA-166): بازطراحی کامل بر اساس main.py کاربر (Kivy + pytubefix):
+             Link / Type(Video|Audio) / Path / Download + popup پیام -->
         <div class="yt-section">
-            <h3>🔗 لینک — کاملاً خودکار</h3>
-            <div class="yt-help">نیازی به تایپ لینک نیست! دو راه:<br>
-            ۱) در برنامهٔ یوتیوب: <b>اشتراک‌گذاری ← یادآور صوتی</b> — برنامه خودش باز می‌شود و دانلود را شروع می‌کند.<br>
-            ۲) لینک ویدیو را کپی کنید (Share ← Copy link) و این صفحه را باز کنید — لینک خودکار از کلیپ‌بورد خوانده می‌شود.</div>
+            <h3>🔗 لینک</h3>
+            <div class="yt-help">آدرس ویدیو را وارد کنید — یا راحت‌تر: در برنامهٔ یوتیوب <b>اشتراک‌گذاری ← یادآور صوتی</b> بزنید تا لینک خودکار همین‌جا بیاید و دانلود شروع شود.</div>
+            <div style="display:flex; gap:6px; margin-top:8px;">
+                <input type="text" id="ytUrl" placeholder="Enter YouTube URL" style="flex:1; min-width:0; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px; direction:ltr; text-align:left;">
+                <button class="open-btn yt-paste-btn" style="flex-shrink:0;" onclick="ytPasteFromClipboard()">📋 پیست</button>
+            </div>
         </div>
 
         <div class="yt-section">
             <h3>🎬 نوع دانلود</h3>
             <div class="yt-chip-group" id="ytModeGroup">
-                <button class="yt-chip selected" data-mode="auto" onclick="ytSelectMode('auto')">ویدئو + صدا</button>
-                <button class="yt-chip" data-mode="audio" onclick="ytSelectMode('audio')">فقط صدا</button>
+                <button class="yt-chip selected" data-mode="video" onclick="ytSelectMode('video')">ویدئو</button>
+                <button class="yt-chip" data-mode="audio" onclick="ytSelectMode('audio')">صدا</button>
             </div>
-            <div id="ytAudioOpts" style="display:none; margin-top:12px;">
-                <label class="yt-label">فرمت صدا</label>
-                <div class="yt-chip-group" id="ytAudioFmtGroup">
-                    <button class="yt-chip selected" data-afmt="mp3" onclick="ytSelectAudioFmt('mp3')">MP3</button>
-                    <button class="yt-chip" data-afmt="ogg" onclick="ytSelectAudioFmt('ogg')">OGG</button>
-                    <button class="yt-chip" data-afmt="opus" onclick="ytSelectAudioFmt('opus')">OPUS</button>
-                    <button class="yt-chip" data-afmt="best" onclick="ytSelectAudioFmt('best')">بهترین</button>
-                </div>
-                <label class="yt-label" style="margin-top:10px;">کیفیت صدا</label>
-                <div class="yt-chip-group" id="ytBitrateGroup">
-                    <button class="yt-chip selected" data-br="128" onclick="ytSelectBitrate('128')">۱۲۸</button>
-                    <button class="yt-chip" data-br="256" onclick="ytSelectBitrate('256')">۲۵۶</button>
-                    <button class="yt-chip" data-br="320" onclick="ytSelectBitrate('320')">۳۲۰ kbps</button>
-                </div>
-            </div>
-            <div id="ytVideoOpts" style="margin-top:12px;">
-                <label class="yt-label">کیفیت ویدئو</label>
-                <div class="yt-chip-group" id="ytQualityGroup">
-                    <button class="yt-chip" data-q="144" onclick="ytSelectQuality('144')">۱۴۴p</button>
-                    <button class="yt-chip" data-q="240" onclick="ytSelectQuality('240')">۲۴۰p</button>
-                    <button class="yt-chip" data-q="360" onclick="ytSelectQuality('360')">۳۶۰p</button>
-                    <button class="yt-chip" data-q="480" onclick="ytSelectQuality('480')">۴۸۰p</button>
-                    <button class="yt-chip selected" data-q="720" onclick="ytSelectQuality('720')">۷۲۰p</button>
-                    <button class="yt-chip" data-q="1080" onclick="ytSelectQuality('1080')">۱۰۸۰p</button>
-                    <button class="yt-chip" data-q="1440" onclick="ytSelectQuality('1440')">۱۴۴۰p</button>
-                    <button class="yt-chip" data-q="2160" onclick="ytSelectQuality('2160')">۴K</button>
-                    <button class="yt-chip" data-q="max" onclick="ytSelectQuality('max')">بالاترین</button>
-                </div>
-            </div>
+            <div class="yt-help" style="margin-top:8px; font-size:12px;">ویدئو = بالاترین کیفیت دارای صدا در <b>یک فایل MP4</b> (مثل get_highest_resolution در pytubefix). صدا = بهترین صدا با نام <b>.mp3</b> (مثل برنامهٔ پایتونی شما).</div>
+        </div>
+
+        <div class="yt-section">
+            <h3>📁 مسیر ذخیره / نام فایل</h3>
+            <div class="yt-help">خالی یا ۰ = نام خودکار از عنوان ویدیو، ذخیره در پوشهٔ Downloads مرورگر. اگر پر کنید، به‌عنوان نام فایل به‌کار می‌رود (مرورگر اجازهٔ انتخاب پوشه نمی‌دهد).</div>
+            <input type="text" id="ytPath" placeholder="Leave empty for current dir" style="width:100%; margin-top:8px; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px;" oninput="ytState.path = this.value;">
         </div>
 
 
         <div class="yt-section">
-            <button class="yt-download-btn" id="ytDownloadBtn" onclick="ytStartDownload()">⬇️ شروع دانلود</button>
+            <button class="yt-download-btn" id="ytDownloadBtn" onclick="ytStartDownload()">⬇️ دانلود</button>
             <div class="yt-status" id="ytStatus"></div>
             <div style="display:none; margin-top:10px; background:#e3ecf5; border-radius:6px; padding:3px;" id="ytProgressWrap"><div id="ytProgressBar" style="height:8px; background:#1976D2; width:0%; border-radius:6px; transition:width .25s;"></div></div>
             <div class="yt-result" id="ytResult"></div>
+        </div>
+
+        <!-- 🔧 v253 (BA-166): پورت show_message از main.py — popup پیام با دکمهٔ بستن -->
+        <div id="ytMsgPopup" style="display:none; position:fixed; bottom:16px; left:50%; transform:translateX(-50%); z-index:10001; max-width:360px; width:calc(100% - 32px);">
+            <div id="ytMsgText" style="background:#2b2b2b; color:#fff; border-radius:12px; padding:14px 16px; box-shadow:0 6px 24px rgba(0,0,0,.35); font-size:13.5px; line-height:1.9; text-align:center; word-break:break-word;"></div>
+            <button class="open-btn" style="margin-top:8px; width:100%;" onclick="ytCloseMessage()">بستن</button>
         </div>
 
         <div class="yt-section">
@@ -5562,15 +5550,15 @@ body.locked .header-actions button {
         <div class="yt-section">
             <h3>ℹ️ راهنما</h3>
             <div class="yt-help" style="font-size:12px;">
-                ۱) لینک ویدیو را کپی کنید (Share ← Copy link) و این صفحه را باز کنید — لینک خودکار خوانده می‌شود.<br>
-                ۲) نوع دانلود (ویدئو+صدا یا فقط صدا) و کیفیت را انتخاب کنید.<br>
-                ۳) «شروع دانلود» را بزنید — چند ثانیه طول می‌کشد.<br>
-                ۴) فایل خودکار در مرورگر ذخیره می‌شود.<br>
+                <b>بازطراحی v253 بر اساس برنامهٔ پایتونی شما (main.py — Kivy + pytubefix):</b><br>
+                ۱) لینک را در فیلد «لینک» وارد کنید یا از اشتراک‌گذاری یوتیوب (یادآور صوتی) خودکار بیاید.<br>
+                ۲) نوع را انتخاب کنید: <b>ویدئو</b> (پیش‌فرض) یا <b>صدا</b> — مثل دکمه‌های Video/Audio برنامه.<br>
+                ۳) «دانلود» را بزنید — چند ثانیه طول می‌کشد.<br>
                 <br>
-                <b>روش کار:</b> برنامه مستقیماً به سرورهای عمومی یوتیوب (Piped/Invidious) وصل می‌شود — بدون سرور واسطهٔ خودمان. اگر همهٔ سرورها ناموفق شدند، یک سرور سفارشی با CORS باز در فیلد بالا وارد کنید.<br>
-                <b>صدا:</b> کیفیت‌های ۱۰۸۰p و بالاتر به‌صورت ویدئو و صدای جداگانه گرفته شده و با موتور ffmpeg به <b>یک فایل واحد با صدا</b> ادغام می‌شوند (بار اول، دانلود موتور ~۲۵ مگابایت).<br>
-                <b>یک فایل با صدا:</b> ویدیو همیشه به‌صورت یک فایل MP4 با صدا و تصویر (نسخهٔ muxed، مثلاً 360p/720p) دانلود می‌شود — دیگر دو فایل جدا (صدا + تصویر) دریافت نخواهید کرد.
-                <b>پایداری:</b> اگر سرور وسط دانلود خطای موقت بدهد (۵۰۲/۵۰۳/۵۰۴) یا اتصال قطع شود، دانلود تا ۳ بار خودکار دوباره تلاش می‌کند و از همان‌جایی که قطع شده ادامه می‌یابد — از صفر شروع نمی‌شود. اگر یک کیفیت ۵۰۴ بدهد، خودکار به کیفیت بعدی (muxed) سوییچ می‌کند.
+                <b>ویدئو:</b> مثل get_highest_resolution در pytubefix — بالاترین نسخهٔ دارای صدا در یک فایل MP4 (معمولاً 720p/360p — یوتیوب نسخهٔ muxed بالاتر نمی‌دهد).<br>
+                <b>صدا:</b> مثل get_audio_only — بهترین بیت‌ریت صدا، ذخیره با نام {عنوان}.mp3 مثل برنامهٔ شما.<br>
+                <b>پایداری:</b> اگر سروری خطای موقت بدهد (۵۰۲/۵۰۳/۵۰۴)، خودکار به کاندیدای بعدی می‌رود؛ اگر fetch به googlevideo CORS خورد، دانلود به خود مرورگر سپرده می‌شود؛ ادامهٔ دانلود پس از قطعی از همان‌جا.<br>
+                <b>روش کار:</b> اتصال به سرورهای عمومی Piped/Invidious و InnerTube — اگر همه ناموفق بودند، یک سرور سفارشی با CORS باز در فیلد بالا وارد کنید.
             </div>
         </div>
     </div>
@@ -7420,6 +7408,14 @@ body.locked .header-actions button {
 //               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
 //               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
 //               آن از یک اپ استاتیک وجود ندارد.
+//         🔧 v253 (۱۴۰۵ آبان ۲۸) — الزام کاربر: «کل صفحه یوتیوب بر اساس
+//           این فایل پایتون من باز طراحی و باز کد نویسی شود» — BA-166:
+//           پورت کامل معماری upload/main.py (Kivy + pytubefix):
+//           Link / Type(Video|Audio) / Path / Download + popup پیام؛
+//           Video = get_highest_resolution → {name}.mp4؛
+//           Audio = get_audio_only → {name}.mp3؛ بدون انتخاب کیفیت؛
+//           تاب‌آوری v249–v252 زیر پورت حفظ شد.
+//
 //         🔧 v252 (۱۴۰۵ آبان ۲۸) — گزارش کاربر: «میگوید هیچ فرمت قابل
 //           دانلودی موجود نیست» — BA-165: رگرسیون v251. در بازنویسی
 //           ytDownloadAndSave، مسیر fallback دانلود نیتیو مرورگر حذف
@@ -7843,7 +7839,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v252-2026-11-16-yt-native-fallback';
+const APP_VERSION = 'v253-2026-11-16-yt-pytubefix-redesign';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -21000,15 +20996,19 @@ async function deletePdfFile(id) {
 // (مسیر قدیمی cobalt حذف شد — اکنون Piped/Invidious زنده.)
 // ════════════════════════════════════════════════════════════════════
 
+// 🔧 v253 (BA-166): بازطراحی بر اساس main.py کاربر (Kivy + pytubefix) —
+// state ساده مثل اپ پایتونی: نوع (Video/Audio) + مسیر + لینک خودکار
 let ytState = {
-    mode: 'auto',          // 'auto' (ویدئو+صدا) یا 'audio' (فقط صدا)
-    quality: '720',        // 144/240/360/480/720/1080/1440/2160/max
-    audioFmt: 'mp3',       // mp3/ogg/opus/best
-    bitrate: '128',        // 128/256/320 kbps
-    method: 'direct',      // 🔧 v243: فقط کد داخلی (dickodر خود برنامه) — سرور cobalt حذف شد
+    mode: 'video',         // 'video' (پیش‌فرض مثل Video در main.py) یا 'audio'
+    path: '',              // پورت path: خالی یا '0' = نام خودکار از عنوان ویدیو
+    quality: 'max',        // (سازگاری پروب‌ها) — در پورت main.py استفاده نمی‌شود
+    audioFmt: 'mp3',       // (سازگاری) — از UI حذف شد
+    bitrate: '128',        // (سازگاری) — از UI حذف شد
+    method: 'direct',      // 🔧 v243: فقط کد داخلی (دیکودر خود برنامه) — سرور cobalt حذف شد
     pendingUrl: '',        // 🔧 v243: لینک خودکار (share_target یا کلیپ‌بورد)
     _lastVideoId: null,    // 🔧 v243: برای دیکودر امضا
-    _fetchedDirect: false  // 🔧 v243: InnerTube مستقیم بود؟ (قفل IP لینک)
+    _fetchedDirect: false, // 🔧 v243: InnerTube مستقیم بود؟ (قفل IP لینک)
+    _lastSavedName: ''     // 🔧 v253: نام فایل ذخیره‌شده برای popup پیام
 };
 
 function ytSelectMethod(method) {
@@ -21039,7 +21039,8 @@ function openYouTubeDownloader(fromMenu) {
     const result = document.getElementById('ytResult');
     if (result) { result.className = 'yt-result'; result.innerHTML = ''; }
     const btn = document.getElementById('ytDownloadBtn');
-    if (btn) { btn.disabled = false; btn.textContent = '⬇️ شروع دانلود'; }
+    if (btn) { btn.disabled = false; btn.textContent = '⬇️ دانلود'; }
+    ytCloseMessage();   // 🔧 v253: popup قبلی بسته شود
     // 🔧 v243: اگر لینک اشتراک‌شده یا کلیپ‌بورد موجود است، خودکار شروع کن
     setTimeout(async function(){
         try {
@@ -21047,7 +21048,12 @@ function openYouTubeDownloader(fromMenu) {
             if (!u && navigator.clipboard && navigator.clipboard.readText) {
                 try { const t = await navigator.clipboard.readText(); if (t) u = t.trim(); } catch(e) {}
             }
-            if (u && ytExtractVideoId(u)) { ytState.pendingUrl = u; ytStartDownload(); }
+            if (u && ytExtractVideoId(u)) {
+                ytState.pendingUrl = u;
+                const inp = document.getElementById('ytUrl');
+                if (inp && !inp.value) inp.value = u;
+                ytStartDownload(true);   // 🔧 v253: خودکار = بی‌popup خطا
+            }
         } catch(e) {}
     }, 400);
 }
@@ -21062,34 +21068,51 @@ function closeYouTubeDownloader() {
 }
 
 function ytSelectMode(mode) {
+    // 🔧 v253 (BA-166): مثل ToggleButtonهای main.py — Video پیش‌فرض، Audio ثانویه
     ytState.mode = mode;
     document.querySelectorAll('#ytModeGroup .yt-chip').forEach(function(c){
         c.classList.toggle('selected', c.getAttribute('data-mode') === mode);
     });
-    // نمایش/پنهان‌کردن گزینه‌های مربوطه
-    document.getElementById('ytAudioOpts').style.display = (mode === 'audio') ? 'block' : 'none';
-    document.getElementById('ytVideoOpts').style.display = (mode === 'audio') ? 'none' : 'block';
 }
 
-function ytSelectQuality(q) {
-    ytState.quality = q;
-    document.querySelectorAll('#ytQualityGroup .yt-chip').forEach(function(c){
-        c.classList.toggle('selected', c.getAttribute('data-q') === q);
-    });
+// ─── 🔧 v253 (BA-166): پورت انتخاب‌گرهای pytubefix از main.py ───
+// معادل streams.get_highest_resolution() — فرمت‌های پیشرفتهٔ muxed (با صدا)
+// مرتب از بالاترین رزولوشن؛ اولین عنصر = همان get_highest_resolution
+function ytGetHighestResolution(streams) {
+    const prog = (streams || []).filter(function(s){
+        return (s.mime || '').indexOf('video/') === 0 && s.hasAudio;
+    }).sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
+    return prog.length ? prog : null;
 }
 
-function ytSelectAudioFmt(fmt) {
-    ytState.audioFmt = fmt;
-    document.querySelectorAll('#ytAudioFmtGroup .yt-chip').forEach(function(c){
-        c.classList.toggle('selected', c.getAttribute('data-afmt') === fmt);
-    });
+// معادل streams.get_audio_only() — صداها مرتب از بالاترین بیت‌ریت؛
+// اولین عنصر = همان get_audio_only
+function ytGetAudioOnly(streams) {
+    const auds = (streams || []).filter(function(s){ return (s.mime || '').indexOf('audio/') === 0; })
+                                .sort(function(a,b){ return (b.bitrate || 0) - (a.bitrate || 0); });
+    return auds.length ? auds : null;
 }
 
-function ytSelectBitrate(br) {
-    ytState.bitrate = br;
-    document.querySelectorAll('#ytBitrateGroup .yt-chip').forEach(function(c){
-        c.classList.toggle('selected', c.getAttribute('data-br') === br);
-    });
+// پورت path از main.py: خالی یا '0' → نام خودکار از عنوان ویدیو؛
+// پسوند تایپی کاربر حذف می‌شود تا «x.mp3.mp3» نشود
+function ytApplyPath(path, title) {
+    const p = String(path || '').trim().replace(/\.(mp3|mp4|m4a|webm|opus)$/i, '');
+    if (!p || p === '0') return title;
+    return p.replace(/[\\/:*?"<>|]/g, '_').slice(0, 80) || title;
+}
+
+// پورت show_message از main.py — popup پیام با دکمهٔ بستن (غیرمسدودکننده، مثل BoxLayout اپ)
+function ytShowMessage(html) {
+    const ov = document.getElementById('ytMsgPopup');
+    const tx = document.getElementById('ytMsgText');
+    if (!ov || !tx) return;
+    tx.innerHTML = html;
+    ov.style.display = 'block';
+}
+
+function ytCloseMessage() {
+    const ov = document.getElementById('ytMsgPopup');
+    if (ov) ov.style.display = 'none';
 }
 
 async function ytPasteFromClipboard() {
@@ -21701,87 +21724,60 @@ async function ytRunPipeline(videoId, btn) {
         ytState._lastFailLog = '';
         ytShowStatus('error', '❌ دریافت اطلاعات ناموفق بود.<br>' +
             '<b>دلیل:</b> سرورهای عمومی یوتیوب این روزها ناپایدار و مسدود (CORS) شده‌اند — VPN نمی‌تواند CORS مرورگر را دور بزند.<br>' +
-            '<b>راه‌حل ۱:</b> چند لحظه صبر کنید و دوباره «شروع دانلود» را بزنید (سرورها پشت‌سرهم زنده/مرده می‌شوند).<br>' +
+            '<b>راه‌حل ۱:</b> چند لحظه صبر کنید و دوباره «دانلود» را بزنید (سرورها پشت‌سرهم زنده/مرده می‌شوند).<br>' +
             '<b>راه‌حل ۲ (پایدار):</b> یک سرور Invidious شخص ثالث با CORS باز در فیلد «سرور سفارشی» (پایین) وارد کنید.<br>' +
             '<details style="margin-top:6px; font-size:11px;"><summary>گزارش فنی</summary><pre style="white-space:pre-wrap; direction:ltr; text-align:left;">' + ytEscape(flog) + '</pre></details>');
         return false;
     }
-    ytShowStatus('info', '✅ اطلاعات از ' + ytEscape(ext.backend) + ' گرفته شد — انتخاب کیفیت...');
+    ytShowStatus('info', '✅ اطلاعات از ' + ytEscape(ext.backend) + ' گرفته شد — شروع دانلود...');
     const title = ((ext.title || ('youtube_' + videoId)).replace(/[\\/:*?"<>|]/g, '_')).slice(0, 60);
-    const q = ytState.quality;
-    const qNum = (q === 'max') ? 99999 : parseInt(q, 10);
-    let mainStream = null, mainUrl = null;
+    // 🔧 v253 (BA-166): پورت download_file از main.py کاربر (Kivy + pytubefix):
+    //   Video → streams.get_highest_resolution() → یک فایل muxed → {name}.mp4
+    //   Audio → streams.get_audio_only()          → بهترین صدا    → {name}.mp3
+    // تاب‌آوری v249–v252 زیر همین پورت حفظ شده (کاندیدای بعدی + fallback بی‌صدا + native download).
+    const nameBase = ytApplyPath(ytState.path, title);
+    let mainUrl = null;
 
     if (ytState.mode === 'audio') {
-        // 🔊 بهترین صدا
-        const auds = ext.streams.filter(function(s){ return (s.mime || '').indexOf('audio/') === 0; })
-                                 .sort(function(a,b){ return (b.bitrate || 0) - (a.bitrate || 0); });
+        // 🔊 پورت get_audio_only() — کاندیداها از بالاترین بیت‌ریت
+        const auds = ytGetAudioOnly(ext.streams) || [];
         for (const s of auds) {
             const u = await ytResolveStreamUrl(s);
-            if (u) { mainStream = s; mainUrl = u; break; }
-        }
-        if (mainUrl) {
-            ytShowStatus('info', '⬇️ شروع دانلود صدا: ' + ytEscape(title) + ' — ' + ytEscape(String(mainStream.label || '')));
+            if (!u) continue;
+            ytShowStatus('info', '⬇️ شروع دانلود صدا: ' + ytEscape(nameBase) + '.mp3 — ' + ytEscape(String(s.label || '')));
             try {
-                const ok = await ytDownloadAndSave(mainUrl, title + '.' + mainStream.ext);
-                if (ok) return true;
-            } catch(e) {
-                console.warn('[YT] audio download failed:', e.message);
-                ytShowStatus('error', '❌ دانلود فایل صدا ناموفق بود: ' + ytEscape(e.message));
-                return false;
-            }
+                if (await ytDownloadAndSave(u, nameBase + '.mp3')) { mainUrl = u; ytState._lastSavedName = nameBase + '.mp3'; break; }
+            } catch(e) { console.warn('[YT] audio', s.label, 'failed:', e.message); }
         }
     } else {
-        // 🎬 ویدئو — v251 (BA-164): اولویت سخت muxed (صدا+تصویر در یک فایل).
-        // اگر حتی یک فرمت muxed موجود است، هرگز به مسیر «دو فایل جدا» نرو.
-        // این هم یک فایل با صدا می‌دهد و هم فایل کوچک‌تر (بدون ۵۰۴).
-        const vids = ext.streams.filter(function(s){ return (s.mime || '').indexOf('video/') === 0; });
-        const muxed = vids.filter(function(s){ return s.hasAudio; })
-                          .sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
-        const only = vids.filter(function(s){ return !s.hasAudio; })
-                         .sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
-        // اگر muxed موجود است، فقط از میان muxed انتخاب کن (هرگز only)
-        const hasMuxed = muxed.length > 0;
-        const pool = hasMuxed ? muxed : only;
-        // لیست کاندیداهای muxed به ترتیب اولویت (نزدیک‌ترین به کیفیت درخواستی اول)
-        const candidates = [];
-        if (q === 'max') {
-            pool.forEach(function(s){ candidates.push(s); });
-        } else {
-            const exact = pool.find(function(s){ return (s.height || 0) === qNum; });
-            if (exact) candidates.push(exact);
-            pool.forEach(function(s){ if (s !== exact) candidates.push(s); });
-        }
-        // 🔧 v251: تاب‌آوری ۵۰۴ — هر کاندیدا را امتحان کن تا یکی کار کند
-        for (const pick of candidates) {
+        // 🎬 پورت get_highest_resolution() — اولین muxed مرتب‌شده = بالاترین کیفیت دارای صدا
+        const muxed = ytGetHighestResolution(ext.streams) || [];
+        for (const pick of muxed) {
             const u = await ytResolveStreamUrl(pick);
             if (!u) continue;
-            ytShowStatus('info', '⬇️ شروع دانلود: ' + ytEscape(title) + ' — ' + ytEscape(String(pick.label || ('' + (pick.height||0) + 'p'))));
+            ytShowStatus('info', '⬇️ شروع دانلود ویدئو: ' + ytEscape(nameBase) + '.mp4 — ' + ytEscape(String(pick.label || ((pick.height || 0) + 'p'))));
             try {
-                const ok = await ytDownloadAndSave(u, title + '.' + pick.ext);
-                if (ok) { mainStream = pick; mainUrl = u; break; }
+                if (await ytDownloadAndSave(u, nameBase + '.mp4')) { mainUrl = u; ytState._lastSavedName = nameBase + '.mp4'; break; }
             } catch(e) {
                 console.warn('[YT] muxed', pick.label, 'failed:', e.message);
-                if (candidates.indexOf(pick) < candidates.length - 1) {
-                    ytShowStatus('info', '🔄 این کیفیت خطا داد (' + ytEscape(e.message) + ') — تلاش با کیفیت بعدی...');
-                }
+                ytShowStatus('info', '🔄 این کیفیت خطا داد (' + ytEscape(e.message) + ') — تلاش با کیفیت بعدی...');
             }
         }
-        // 🔧 v252 (BA-165): اگر هیچ muxed‌ای resolvable نبود، به only هم fallback کن.
-        // (در v251 فقط وقتی hasMuxed=false بود به only می‌رفت، که اگر muxed موجود ولی
-        // همگی URL نداشتند → «هیچ فرمت قابل دانلودی موجود نیست» می‌داد.)
-        if (!mainUrl && only.length) {
+        // 🔧 v252 (BA-165) حفظ شد: اگر هیچ نسخهٔ muxed نبود/کار نکرد → آخرین راه، فایل بی‌صدا با هشدار
+        if (!mainUrl) {
+            const only = (ext.streams || []).filter(function(s){ return (s.mime || '').indexOf('video/') === 0 && !s.hasAudio; })
+                                            .sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
             for (const pick of only) {
                 const u = await ytResolveStreamUrl(pick);
                 if (!u) continue;
-                ytShowStatus('info', '⬇️ شروع دانلود (فقط تصویر): ' + ytEscape(title) + ' — ' + ytEscape(String(pick.label || '')));
+                ytShowStatus('info', '⬇️ شروع دانلود (فقط تصویر): ' + ytEscape(nameBase));
                 try {
-                    const ok = await ytDownloadAndSave(u, title + '.' + pick.ext);
-                    if (ok) { mainStream = pick; mainUrl = u; break; }
+                    if (await ytDownloadAndSave(u, nameBase + '.' + (pick.ext || 'mp4'))) {
+                        mainUrl = u; ytState._lastSavedName = nameBase + '.' + (pick.ext || 'mp4');
+                        ytShowStatus('info', '⚠️ این ویدیو فقط با فرمت بی‌صدا در دسترس بود — فایل دانلود شد ولی صدا ندارد.');
+                        break;
+                    }
                 } catch(e) { console.warn('[YT] only', pick.label, 'failed:', e.message); }
-            }
-            if (mainUrl) {
-                ytShowStatus('info', '⚠️ این ویدیو فقط با فرمت بی‌صدا در دسترس است (هیچ نسخهٔ muxed با صدا پیدا نشد). ویدئو دانلود شد ولی صدا ندارد.');
             }
         }
     }
@@ -21789,14 +21785,17 @@ async function ytRunPipeline(videoId, btn) {
         ytShowStatus('error', '❌ هیچ فرمت قابل دانلودی پیدا نشد. (ویدیو ممکن است محدودیت سنی/منطقه‌ای داشته باشد.)');
         return false;
     }
-    // 🔧 v251: هیچ فایل صدای جدا دیگری دانلود نمی‌شود — همیشه یک فایل.
+    // 🔧 v253: همیشه فقط یک فایل — مثل اپ پایتونی
     return true;
 }
 
-async function ytStartDownload() {
+async function ytStartDownload(silent) {
     const btn = document.getElementById('ytDownloadBtn');
-    // ۱) لینک خودکار: share_target ← کلیپ‌بورد — هیچ فیلدی وجود ندارد
-    let url = ytState.pendingUrl || '';
+    ytCloseMessage();
+    // 🔧 v253 (BA-166): پورت main.py — اول فیلد «لینک» خوانده می‌شود؛
+    // اگر خالی بود مثل v243 از share_target/کلیپ‌بورد خودکار می‌آید
+    const inp = document.getElementById('ytUrl');
+    let url = (inp && inp.value.trim()) || ytState.pendingUrl || '';
     if (!url) {
         try {
             if (navigator.clipboard && navigator.clipboard.readText) {
@@ -21807,17 +21806,27 @@ async function ytStartDownload() {
     }
     const videoId = ytExtractVideoId(url);
     if (!videoId) {
-        ytShowStatus('error',
-            'لینکی پیدا نشد. دو راه:<br>۱) در برنامهٔ یوتیوب: «اشتراک‌گذاری ← یادآور صوتی»<br>۲) لینک ویدیو را کپی کنید (Share ← Copy link) و بعد «شروع دانلود» را بزنید.');
-        if (btn) { btn.disabled = false; btn.textContent = '⬇️ شروع دانلود'; }
+        // پورت ValueError("Please enter a valid URL") از main.py
+        ytShowStatus('error', '⚠️ لینک معتبر وارد نشده است. آدرس یوتیوب را در فیلد «لینک» وارد کنید — یا از اشتراک‌گذاری یوتیوب (یادآور صوتی) استفاده کنید.');
+        if (!silent) ytShowMessage('⚠️ خطا: لینک معتبر وارد نشده است.<br><span style="font-size:11.5px; color:#bbb;">Please enter a valid URL</span>');
+        if (btn) { btn.disabled = false; btn.textContent = '⬇️ دانلود'; }
         return;
     }
+    if (inp) inp.value = url;
     ytState.pendingUrl = url;
     if (btn) { btn.disabled = true; btn.textContent = '⏳ در حال دریافت اطلاعات...'; }
     let ok = false;
     try { ok = await ytRunPipeline(videoId, btn); }
-    catch(e) { console.error('[YT] pipeline error', e); ytShowStatus('error', '❌ خطا: ' + ytEscape(e.message || e)); }
-    if (btn) { btn.disabled = false; btn.textContent = ok ? '✅ تمام شد — دانلود دیگر' : '⬇️ شروع دانلود'; }
+    catch(e) {
+        console.error('[YT] pipeline error', e);
+        ytShowStatus('error', '❌ خطا: ' + ytEscape(e.message || e));
+        if (!silent) ytShowMessage('خطا: ' + ytEscape(e.message || e));
+    }
+    if (ok && !silent && ytState._lastSavedName) {
+        // پورت پیام موفقیت main.py: "Download completed! Saved as: ..."
+        ytShowMessage('✅ دانلود کامل شد!<br>📁 Saved as: ' + ytEscape(ytState._lastSavedName));
+    }
+    if (btn) { btn.disabled = false; btn.textContent = ok ? '✅ تمام شد — دانلود دیگر' : '⬇️ دانلود'; }
 }
 
 // ════════════════════════════════════════════════════════════════════

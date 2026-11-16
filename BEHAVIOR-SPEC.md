@@ -11,10 +11,10 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v252 — ۱۴۰۵ آبان ۲۸ (native browser fallback — رگرسیون «هیچ فرمت قابل دانلودی»)
-#  نسخهٔ فعلی کد:  APP_VERSION = v252-2026-11-16-yt-native-fallback
-#                  CACHE_NAME  = yadavar-cache-v252
-#                  version.txt = v252-2026-11-16-yt-native-fallback
+#  آخرین به‌روزرسانی: v253 — ۱۴۰۵ آبان ۲۸ (بازطراحی کامل صفحهٔ یوتیوب بر اساس main.py کاربر)
+#  نسخهٔ فعلی کد:  APP_VERSION = v253-2026-11-16-yt-pytubefix-redesign
+#                  CACHE_NAME  = yadavar-cache-v253
+#                  version.txt = v253-2026-11-16-yt-pytubefix-redesign
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -1393,6 +1393,21 @@
 //          دارند و «مرورگر متوجه مانع نمی‌شود»؛ دانلود به‌صورت پس‌زمینه‌ای
 //          (fetch نامتزامن) ادامه می‌یابد.
 #
+#   BA-166 (v253 — الزام کاربر: «کل صفحه یوتیوب بر اساس این فایل پایتون
+#          من باز طراحی و باز کد نویسی شود» + upload/main.py اپ Kivy +
+#          pytubefix) پورت کامل معماری main.py روی صفحهٔ یوتیوب:
+#          ۱) UI = Link / Type(Video|Audio) / Path / Download + popup
+#             پیام (show_message) — فیلد لینک برگشت، انتخاب کیفیت/فرمت/
+#             بیت‌ریت حذف شد (اپ پایتونی هیچ‌کدام را ندارد).
+#          ۲) Video = پورت streams.get_highest_resolution() → بالاترین
+#             muxed دارای صدا → {name}.mp4
+#          ۳) Audio = پورت streams.get_audio_only() → بالاترین بیت‌ریت →
+#             {name}.mp3 (نام‌گذاری دقیقاً مثل کد کاربر)
+#          ۴) Path: خالی یا '0' → نام خودکار از عنوان (مثل main.py)؛
+#             در مرورگر پوشه قابل انتخاب نیست → مقدار = نام فایل.
+#          ۵) تاب‌آوری v249–v252 زیر پورت حفظ شد: کاندیدای بعدی،
+#             fallback بی‌صدا با هشدار، native browser download.
+#
 #   BA-165 (v252 — گزارش کاربر: «میگوید هیچ فرمت قابل دانلودی
 #          موجود نیست») رگرسیون v251: در بازنویسی ytDownloadAndSave،
 #          مسیر fallback دانلود نیتیو مرورگر (anchor → click) حذف شده
@@ -1948,6 +1963,16 @@
 #
 #   فایل‌های نسخه: APP_VERSION / version.txt →
 #   v244-2026-11-15-align-keepalive-yt-multi؛ CACHE_NAME → yadavar-cache-v244.
+#
+### v253 (۱۴۰۵ آبان ۲۸) — بازطراحی کامل صفحهٔ یوتیوب بر اساس main.py (pytubefix)
+#   الزام کاربر: «کل صفحه یوتیوب بر اساس این فایل پایتون من باز طراحی
+#   و باز کد نویسی شود» + فایل upload/main.py (Kivy + pytubefix).
+#   ساختار جدید: Link / Type(Video|Audio، پیش‌فرض Video) / Path / Download
+#   + popup پیام با دکمهٔ بستن. Video = get_highest_resolution → {name}.mp4؛
+#   Audio = get_audio_only → {name}.mp3. بدون انتخاب کیفیت/فرمت/بیت‌ریت.
+#
+#   فایل‌های نسخه: APP_VERSION / version.txt →
+#   v253-2026-11-16-yt-pytubefix-redesign؛ CACHE_NAME → yadavar-cache-v253.
 #
 ### v252 (۱۴۰۵ آبان ۲۸) — native browser fallback (رفع «هیچ فرمت قابل دانلودی»)
 #   کاربر: «میگوید هیچ فرمت قابل دانلودی موجود نیست»
