@@ -5569,7 +5569,7 @@ body.locked .header-actions button {
                 <br>
                 <b>روش کار:</b> برنامه مستقیماً به سرورهای عمومی یوتیوب (Piped/Invidious) وصل می‌شود — بدون سرور واسطهٔ خودمان. اگر همهٔ سرورها ناموفق شدند، یک سرور سفارشی با CORS باز در فیلد بالا وارد کنید.<br>
                 <b>صدا:</b> کیفیت‌های ۱۰۸۰p و بالاتر به‌صورت ویدئو و صدای جداگانه گرفته شده و با موتور ffmpeg به <b>یک فایل واحد با صدا</b> ادغام می‌شوند (بار اول، دانلود موتور ~۲۵ مگابایت).<br>
-                <b>پایداری:</b> اگر سرور وسط دانلود خطای موقت بدهد (۵۰۲/۵۰۳/۵۰۴) یا اتصال قطع شود، دانلود تا ۳ بار خودکار دوباره تلاش می‌کند و از همان‌جایی که قطع شده ادامه می‌یابد — از صفر شروع نمی‌شود.
+                <b>پایداری:</b> اگر سرور وسط دانلود خطای موقت بدهد (۵۰۲/۵۰۳/۵۰۴) یا اتصال قطع شود، دانلود تا ۳ بار خودکار دوباره تلاش می‌کند و از همان‌جایی که قطع شده ادامه می‌یابد — از صفر شروع نمی‌شود. اگر مسیر رسانه پایدار خطا بدهد، تا ۳ دور با «نمونه‌های سرور مختلف» تلاش می‌شود (نمونهٔ مقصر طرد شده و URL تازه گرفته می‌شود).
             </div>
         </div>
     </div>
@@ -7419,6 +7419,13 @@ body.locked .header-actions button {
 //               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
 //               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
 //               آن از یک اپ استاتیک وجود ندارد.
+//         🔧 v249 (۱۴۰۵ آبان ۲۸) — گزارش کاربر: «هنوز خطا HTTP 504»
+//           — BA-162: ریشه = URL رسانه متعلق به پروکسیِ نمونهٔ برندهٔ
+//           استخراج بود؛ همان نمونه پایدار ۵۰۴ می‌داد و تلاش مجدد v248 روی
+//           همان URL بی‌فایده بود. راه‌حل: حلقهٔ ۳ دور — نمونهٔ مقصر طرد،
+//           اطلاعات از نمونهٔ دیگر، URL تازه؛ محول‌کردن به مرورگر فقط دور
+//           آخر؛ پیام پایانی راهنما.
+//
 //         🔧 v248 (۱۴۰۵ آبان ۲۷) — گزارش کاربر: «خطا HTTP 504»
 //           — BA-161: ریشه = دانلود رسانه تک‌تلاش بود؛ خطای موقت سرور
 //           واسطه/VPN کل دانلود را می‌انداخت. راه‌حل (سبک yt-dlp): ۳ تلاش
@@ -7812,7 +7819,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v248-2026-11-15-yt-retry-resume';
+const APP_VERSION = 'v249-2026-11-16-yt-multiroute';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -21326,13 +21333,18 @@ async function ytSaveBlob(blob, filename) {
     return true;
 }
 
-async function ytDownloadAndSave(url, filename) {
+async function ytDownloadAndSave(url, filename, allowAnchor) {
     const wrap = document.getElementById('ytProgressWrap');
     try {
         const blob = await ytFetchBlob(url, null);
         if (wrap) wrap.style.display = 'none';
         return await ytSaveBlob(blob, filename);
-    } catch(e) { console.warn('[YT] download attempt failed:', e.message); }
+    } catch(e) {
+        console.warn('[YT] download attempt failed:', e.message);
+        // 🔧 v249 (BA-162): در دورهای ۱و۲ خطا به بالا پرتاب می‌شود تا با
+        // نمونهٔ سرور دیگر تلاش شود؛ محول‌کردن به مرورگر فقط در دور آخر.
+        if (allowAnchor === false) { if (wrap) wrap.style.display = 'none'; throw e; }
+    }
     if (wrap) wrap.style.display = 'none';
     // آخرین راه: دانلود نیتیو مرورگر (بدون Blob)
     const a = document.createElement('a');
@@ -21450,7 +21462,10 @@ function ytExtractJsonAfter(html, marker) {
 
 // ─── مسیر ۱: Piped — مسابقهٔ همزمان + ثبت دلیل شکست هر سرور ───
 async function ytExtractPiped(videoId, step) {
-    const bases = YT_PIPED_INSTANCES.concat(ytGetCustomInstances().filter(function(u){ return u.indexOf('pipedapi') >= 0 || u.indexOf('/streams/') < 0; }));
+    let bases = YT_PIPED_INSTANCES.concat(ytGetCustomInstances().filter(function(u){ return u.indexOf('pipedapi') >= 0 || u.indexOf('/streams/') < 0; }));
+    // 🔧 v249 (BA-162): نمونه‌های مقصر دورهای قبل کنار گذاشته می‌شوند
+    const _exclP = (ytState && ytState._exclBases) || [];
+    if (_exclP.length) { const _keepP = bases.filter(function(b){ return _exclP.indexOf(b) < 0; }); if (_keepP.length) bases = _keepP; }
     const failLog = [];
     const jobs = bases.map(function(base){
         return (async function(){
@@ -21476,7 +21491,7 @@ async function ytExtractPiped(videoId, step) {
                         ext: isOpus ? 'opus' : 'm4a', label: s.quality || '' });
                 });
                 if (!streams.length) { failLog.push(base + ': empty'); throw new Error('empty'); }
-                return { backend: 'Piped («' + base.replace('https://', '') + '»)', title: d.title || '', streams: streams };
+                return { backend: 'Piped («' + base.replace('https://', '') + '»)', srcBase: base, title: d.title || '', streams: streams };
             } catch(e) {
                 const m = String(e.message || e);
                 failLog.push(base + ': ' + (m === 'Failed to fetch' ? 'CORS/Net' : m));
@@ -21494,6 +21509,9 @@ async function ytExtractInvidious(videoId, step) {
     // ادغام لیست زنده با بذر؛ نمونه‌های بذر اولویت دارند (شناخته‌شده)
     const seen = {};
     let bases = YT_INVIDIOUS_INSTANCES.concat(ytGetCustomInstances());
+    // 🔧 v249 (BA-162): نمونه‌های مقصر دورهای قبل کنار گذاشته می‌شوند
+    const _exclI = (ytState && ytState._exclBases) || [];
+    if (_exclI.length) { const _keepI = bases.filter(function(b){ return _exclI.indexOf(b) < 0; }); if (_keepI.length) bases = _keepI; }
     bases.forEach(function(b){ seen[b] = true; });
     liveList.forEach(function(b){ if (!seen[b]) { bases.push(b); seen[b] = true; } });
     step('تلاش با ' + bases.length + ' سرور زندهٔ Invidious');
@@ -21521,7 +21539,7 @@ async function ytExtractInvidious(videoId, step) {
                         label: s.resolution || s.quality || '' });
                 });
                 if (!streams.length) { failLog.push(base + ': empty'); throw new Error('empty'); }
-                return { backend: 'Invidious («' + base.replace('https://', '') + '»)', title: d.title || '', streams: streams };
+                return { backend: 'Invidious («' + base.replace('https://', '') + '»)', srcBase: base, title: d.title || '', streams: streams };
             } catch(e) {
                 const m = String(e.message || e);
                 failLog.push(base + ': ' + (m === 'Failed to fetch' ? 'CORS/Net' : m));
@@ -21682,6 +21700,12 @@ async function ytMuxAv(vBlob, aBlob, vName, aName, outName, onProgress) {
 }
 
 // ─── پایپ‌لاین: چندمسیره ← انتخاب فرمت ← دانلود با پیشرفت ───
+// 🔧 v249 (BA-162 — گزارش کاربر: «هنوز خطا HTTP 504»): ریشه — URL رسانهٔ
+// نمونهٔ برندهٔ استخراج (پروکسی همان نمونه) پایدار خطای سرور (۵۰۲/۵۰۳/۵۰۴)
+// می‌داد و تلاش مجدد روی همان URL بی‌فایده بود. راه‌حل: حلقهٔ ۳ دور؛ در هر
+// دور اگر رسانه پایدار ۵xx داد، نمونهٔ مقصر طرد شده، اطلاعات از نمونهٔ
+// دیگر دوباره گرفته می‌شود و دانلود با URL تازه ادامه می‌یابد.
+// محول‌کردن دانلود به مرورگر فقط در دور آخر انجام می‌شود.
 async function ytRunPipeline(videoId, btn) {
         ytState._lastVideoId = videoId;
     // 🔧 v246: بارگذاری سرور سفارشی ذخیره‌شده
@@ -21690,32 +21714,63 @@ async function ytRunPipeline(videoId, btn) {
         const f = document.getElementById('ytCustomInstanceField');
         if (f && ytState.customInstances) f.value = ytState.customInstances;
     }
-    const backends = [
-        ['سرورهای Piped', ytExtractPiped],
-        ['سرورهای Invidious', ytExtractInvidious],
-        ['YouTube (کلاینت‌های موبایل)', ytExtractInnerTube],
-        ['صفحهٔ YouTube + دیکودر', ytExtractWatchPage]
-    ];
-    let ext = null;
-    for (let bi = 0; bi < backends.length; bi++) {
-        const stepMsg = function(m){ ytShowStatus('info', '🔄 مرحلهٔ ' + toPersianNumber(bi + 1) + ' از ' + toPersianNumber(backends.length) + ' — ' + ytEscape(m) + '...'); };
-        stepMsg('شروع');
-        try { ext = await backends[bi][1](videoId, stepMsg); }
-        catch(e) { console.warn('[YT] backend', backends[bi][0], 'error', e.message); ext = null; }
-        if (ext && ext.streams && ext.streams.length) { console.log('[YT] backend OK:', ext.backend); break; }
-        ext = null;
+    ytState._exclBases = []; // 🔧 v249: شروع تازه — هیچ نمونه‌ای طرد نشده
+    for (let round = 1; round <= 3; round++) {
+        if (round > 1) ytShowStatus('info', '🔄 مسیر رسانه پایدار خطای سرور داد — با نمونهٔ سرور دیگر تلاش می‌شود (' + toPersianNumber(round) + ' از ' + toPersianNumber(3) + ')...');
+        const backends = [
+            ['سرورهای Piped', ytExtractPiped],
+            ['سرورهای Invidious', ytExtractInvidious],
+            ['YouTube (کلاینت‌های موبایل)', ytExtractInnerTube],
+            ['صفحهٔ YouTube + دیکودر', ytExtractWatchPage]
+        ];
+        let ext = null;
+        for (let bi = 0; bi < backends.length; bi++) {
+            const stepMsg = function(m){ ytShowStatus('info', '🔄 مرحلهٔ ' + toPersianNumber(bi + 1) + ' از ' + toPersianNumber(backends.length) + ' — ' + ytEscape(m) + '...'); };
+            stepMsg('شروع');
+            try { ext = await backends[bi][1](videoId, stepMsg); }
+            catch(e) { console.warn('[YT] backend', backends[bi][0], 'error', e.message); ext = null; }
+            if (ext && ext.streams && ext.streams.length) { console.log('[YT] backend OK:', ext.backend); break; }
+            ext = null;
+        }
+        if (!ext) {
+            if (round > 1) {
+                ytShowStatus('error', '❌ دانلود با همهٔ نمونه‌های سرور ناموفق بود — چند دقیقه بعد تلاش کنید یا در فیلد «سرور سفارشی» یک سرور سالم بدهید.');
+                return false;
+            }
+            // 🔧 v246 (BA-159): پیام صادقانه با گزارش تعداد و دلیل شکست سرورها
+            const flog = ytState._lastFailLog || '';
+            ytState._lastFailLog = '';
+            ytShowStatus('error', '❌ دریافت اطلاعات ناموفق بود.<br>' +
+                '<b>دلیل:</b> سرورهای عمومی یوتیوب این روزها ناپایدار و مسدود (CORS) شده‌اند — VPN نمی‌تواند CORS مرورگر را دور بزند.<br>' +
+                '<b>راه‌حل ۱:</b> چند لحظه صبر کنید و دوباره «شروع دانلود» را بزنید (سرورها پشت‌سرهم زنده/مرده می‌شوند).<br>' +
+                '<b>راه‌حل ۲ (پایدار):</b> یک سرور Invidious شخص ثالث با CORS باز در فیلد «سرور سفارشی» (پایین) وارد کنید.<br>' +
+                '<details style="margin-top:6px; font-size:11px;"><summary>گزارش فنی</summary><pre style="white-space:pre-wrap; direction:ltr; text-align:left;">' + ytEscape(flog) + '</pre></details>');
+            return false;
+        }
+        // 🔧 v249: این نمونه در دور بعد طرد می‌شود (پروکسی‌اش است که ۵۰۴ می‌دهد)
+        if (ext.srcBase && ytState._exclBases.indexOf(ext.srcBase) < 0) ytState._exclBases.push(ext.srcBase);
+        try {
+            const ok = await ytDownloadFromExt(ext, videoId, btn, round);
+            if (ok) return true;
+            return false;
+        } catch(e) {
+            console.warn('[YT] round ' + round + ' media failed:', e.message);
+            const is5xx = /^HTTP 5/.test(String(e.message));
+            if (!is5xx || round === 3) {
+                ytShowStatus('error', '❌ خطا: ' + ytEscape(e.message || e) +
+                    (is5xx && round === 3 ? '<br>سه نمونهٔ سرور مختلف امتحان شد — چند دقیقه بعد تلاش کنید یا در «سرور سفارشی» یک سرور سالم بدهید.' : ''));
+                return false;
+            }
+            // دور بعد با نمونهٔ دیگر
+        }
     }
-    if (!ext) {
-        // 🔧 v246 (BA-159): پیام صادقانه با گزارش تعداد و دلیل شکست سرورها
-        const flog = ytState._lastFailLog || '';
-        ytState._lastFailLog = '';
-        ytShowStatus('error', '❌ دریافت اطلاعات ناموفق بود.<br>' +
-            '<b>دلیل:</b> سرورهای عمومی یوتیوب این روزها ناپایدار و مسدود (CORS) شده‌اند — VPN نمی‌تواند CORS مرورگر را دور بزند.<br>' +
-            '<b>راه‌حل ۱:</b> چند لحظه صبر کنید و دوباره «شروع دانلود» را بزنید (سرورها پشت‌سرهم زنده/مرده می‌شوند).<br>' +
-            '<b>راه‌حل ۲ (پایدار):</b> یک سرور Invidious شخص ثالث با CORS باز در فیلد «سرور سفارشی» (پایین) وارد کنید.<br>' +
-            '<details style="margin-top:6px; font-size:11px;"><summary>گزارش فنی</summary><pre style="white-space:pre-wrap; direction:ltr; text-align:left;">' + ytEscape(flog) + '</pre></details>');
-        return false;
-    }
+    return false;
+}
+
+// 🔧 v249 (BA-162): انتخاب کیفیت + دانلود/ادغام — از ytRunPipeline جدا شد
+// تا در حلقهٔ دورها با هر نمونهٔ سرور صدا زده شود. round برای «محول‌کردن
+// دانلود به مرورگر فقط در دور آخر» استفاده می‌شود.
+async function ytDownloadFromExt(ext, videoId, btn, round) {
     ytShowStatus('info', '✅ اطلاعات از ' + ytEscape(ext.backend) + ' گرفته شد — انتخاب کیفیت...');
     const title = ((ext.title || ('youtube_' + videoId)).replace(/[\\/:*?"<>|]/g, '_')).slice(0, 60);
     const q = ytState.quality;
@@ -21804,7 +21859,7 @@ async function ytRunPipeline(videoId, btn) {
     }
     const qLabel = mainStream.label || '';
     ytShowStatus('info', '⬇️ شروع دانلود: ' + ytEscape(title) + (qLabel ? ' — ' + ytEscape(String(qLabel)) : ''));
-    const ok = await ytDownloadAndSave(mainUrl, title + '.' + mainStream.ext);
+    const ok = await ytDownloadAndSave(mainUrl, title + '.' + mainStream.ext, round === 3);
     return ok;
 }
 
