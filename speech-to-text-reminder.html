@@ -7703,7 +7703,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v261-2026-11-17-meeting-infinite-silence';
+const APP_VERSION = 'v262-2026-11-17-meeting-recognition-fixed';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20448,36 +20448,27 @@ function meetingToggleMic() {
 // کپی عینی accDocStartRec — تفاوت: continuous=true (پیوسته برای جلسه طولانی)
 // و هدف textarea + دکمهٔ meetingMicBtn.
 // ════════════════════════════════════════════════════════════════════
-// 🔧 v261 (BA-174 — الزام کاربر: «همهٔ اشکالات قبلی برطرف شود؛ هنوز قطع
-//   می‌شود و قفل می‌کند بعد از چند دقیقه باز کار میکند؛ تایم سکوت را
-//   بینهایت کن»): سه ریشهٔ قطع/قفل برطرف شد:
-//   (۱) سکوت بی‌نهایت — watchdog دیگر هرگز در سکوت stop/recreate نمی‌کند
-//       (شاخه‌های ۴۵ثانیه و ۹۰ثانیهٔ v244/v245 حذف شد). هیچ تایمری در
-//       سکوت یا عدم شنیدن، در هیچ پارتی، ضبط را قطع نمی‌کند.
-//   (۲) تشخیص هنگ واقعی با متر سطح میکروفون — یک استریم session-scoped
-//       (یک بار در شروع ضبط، بدون churn در هر سیکل) فقط برای سنجش انرژی
-//       صدا است. اگر صدا هست ولی موتور >۲۵ثانیه هیچ رویدادی (نتیجه/end/
-//       soundstart) نداده = موتور هنگ‌کرده → تعویض فوری نمونه (~۳۰۰ms
-//       به‌جای چند دقیقهٔ خودترمیمی قبلی). در سکوت واقعی حتی این هم رخ
-//       نمی‌دهد — مداخلهٔ صفر.
-//   (۳) گارد هویت restart — onendِ نمونه‌های کهنه فقط وقتی نمونهٔ جدید
-//       می‌سازند که هنوز همان نمونهٔ فعال باشند + فقط یک restart در
-//       انتظار (pending). توده‌شدن نمونه‌های SR و رقابت میکروفون (علت
-//       قفل چنددقیقه‌ای) از بین می‌رود.
+// 🔧 v262 (BA-175 — الزام کاربر: «خراب است، هیچ چیزی تشخیص نمی‌دهد و
+//   نمی‌نویسد»): ریشهٔ خرابی = متر سطح میکروفونِ v261. یک استریم
+//   getUserMedia موازی با موتور SR روی گوشیِ واقعی میکروفون را نگه
+//   می‌داشت و موتور دیگر صدا نمی‌گرفت → هیچ‌چیز تشخیص/نوشته نمی‌شد.
+//   متر کامل حذف شد و قاعدهٔ طلایی معماری برقرار است: «در حین ضبط هرگز
+//   getUserMedia». همهٔ اصلاحات درستِ v261 حفظ شد:
+//   (۱) سکوت بی‌نهایت — هیچ stop/تایمری در سکوت ضبط را قطع نمی‌کند.
+//   (۲) تعویض نمونه فقط برای زامبی واقعی: >۶۰ثانیه مطلقاً بدون هیچ
+//       رویدادی (نه نتیجه، نه soundstart، نه onend). موتور سالم در سکوت
+//       هر ~۸-۱۰ثانیه خودش onend می‌دهد و شمارنده صفر می‌شود؛ پس این
+//       شاخه هرگز به جلسهٔ ساکتِ سالم نمی‌خورد. تعویض seamess است:
+//       متن حفظ می‌شود، ضبط فعال می‌ماند.
+//   (۳) گارد هویت restart + فقط یک restart pending — نمونه‌های کهنه
+//       نمونهٔ موازی نمی‌سازند (علت قفل چنددقیقه‌ای). سقف backoff ۳s.
+//   (۴) محافظت ضبط جلسه از reload آپدیت (controllerchange / vcheck /
+//       checkPendingReload می‌شناسند meetRecActive).
 // ════════════════════════════════════════════════════════════════════
 let meetRecLastEventAt = 0;
 let meetWatchdogTimer = null;
-let meetRestartPending = null;    // 🔧 v261: فقط یک restart در انتظار
-const MEET_ZOMBIE_MS = 25000;     // 🔧 v261: صدا هست + ۲۵s بی‌رویداد = هنگ
-const MEET_SOUND_LEVEL = 0.015;   // آستانهٔ انرژی صدا (RMS) — زیر آن = سکوت
-let meetMicStream = null;         // 🔧 v261: استریم سنجش سطح (session-scoped)
-let meetAudioCtx = null;
-let meetAnalyser = null;
-let meetMeterTimer = null;
-let meetMeterBuf = null;
-let meetMicLevel = 0;             // آخرین RMS اندازه‌گیری‌شده
-let meetSoundAt = 0;              // آخرین زمانی که صدا بالای آستانه بود
-let meetMeterRetries = 0;
+let meetRestartPending = null;    // فقط یک restart در انتظار
+const MEET_ZOMBIE_MS = 60000;     // ۶۰s مطلقاً بدون رویداد = موتور زامبی
 function buildMeetSR() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SR();
@@ -20553,75 +20544,24 @@ function buildMeetSR() {
     };
     return rec;
 }
-// 🔧 v261 (BA-174): متر سطح میکروفون — استریم session-scoped فقط برای
-// سنجش انرژی صدا. یک بار در شروع ضبط گرفته می‌شود و تا توقف ضبط باز
-// می‌ماند (بدون churn در هر سیکل restart — قاعدهٔ معماری کهنه حفظ شد).
-// اگر مرورگر اجازه ندهد، متر بی‌صدا غیرفعال می‌شود و watchdog به رفتار
-// رویداد-محض برمی‌گردد (هیچ خرابی‌ای ایجاد نمی‌کند).
-async function meetStartMicMeter() {
-    if (meetMeterTimer) return;   // از قبل فعال
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        meetMicStream = stream;
-        const AC = window.AudioContext || window.webkitAudioContext;
-        meetAudioCtx = new AC();
-        if (meetAudioCtx.state === 'suspended') { try { await meetAudioCtx.resume(); } catch(e) {} }
-        const src = meetAudioCtx.createMediaStreamSource(stream);
-        meetAnalyser = meetAudioCtx.createAnalyser();
-        meetAnalyser.fftSize = 512;
-        src.connect(meetAnalyser);
-        meetMeterBuf = new Float32Array(meetAnalyser.fftSize);
-        meetMeterTimer = setInterval(function() {
-            try {
-                // اگر ترک میکروفون از بیرون بسته شد → یک بار دوباره بگیر
-                const tr = (meetMicStream && meetMicStream.getTracks()[0]) || null;
-                if (!tr || tr.readyState !== 'live') {
-                    if (++meetMeterRetries <= 3) {
-                        meetStopMicMeter();
-                        meetStartMicMeter();
-                    }
-                    return;
-                }
-                meetAnalyser.getFloatTimeDomainData(meetMeterBuf);
-                let sum = 0;
-                for (let i = 0; i < meetMeterBuf.length; i++) sum += meetMeterBuf[i] * meetMeterBuf[i];
-                meetMicLevel = Math.sqrt(sum / meetMeterBuf.length);
-                if (meetMicLevel >= MEET_SOUND_LEVEL) meetSoundAt = Date.now();
-            } catch(e) {}
-        }, 1000);
-    } catch(e) {
-        console.warn('[MeetingMic] mic meter unavailable:', e && e.name);
-        meetMicStream = null; meetAudioCtx = null; meetAnalyser = null;
-    }
-}
-function meetStopMicMeter() {
-    if (meetMeterTimer) { clearInterval(meetMeterTimer); meetMeterTimer = null; }
-    if (meetMicStream) { try { meetMicStream.getTracks().forEach(function(t){ t.stop(); }); } catch(e) {} }
-    if (meetAudioCtx) { try { meetAudioCtx.close(); } catch(e) {} }
-    meetMicStream = null; meetAudioCtx = null; meetAnalyser = null; meetMeterBuf = null;
-    meetMicLevel = 0; meetSoundAt = 0; meetMeterRetries = 0;
-}
+// 🔧 v262 (BA-175): متر میکروفون حذف شد — getUserMedia موازی با SR روی
+// گوشی واقعی صدا را از موتور می‌دزید («هیچ چیزی تشخیص نمی‌دهد»). قاعدهٔ
+// معماری: در حین ضبط هرگز getUserMedia.
 function meetWatchdog() {
     if (!meetRecActive) return;
-    // 🔧 v261 (BA-174): سکوت بی‌نهایت — هیچ تایمری در سکوت ضبط را قطع
-    // نمی‌کند. شاخه‌های ۴۵ثانیه (graceful stop) و ۹۰ثانیه (recreate) نسخهٔ
-    // v244/v245 که در سکوت ضبط زنده را قطع می‌کردند حذف شدند.
-    const soundRecent = (Date.now() - (meetSoundAt || 0)) < 8000;
-    if (!soundRecent) {
-        // سکوت واقعی (یا متر در دسترس نیست) → مداخلهٔ صفر. موتور خودش در
-        // سکوت به‌طور طبیعی onend می‌دهد و چرخهٔ restart ادامه می‌دهد.
-        const st = document.getElementById('meetingStatus');
-        if (st && meetRecActive && Date.now() - (meetRecLastEventAt || 0) > 15000) {
-            st.textContent = 'ضبط فعال — سکوت؛ تا هر زمان صحبت کنید گوش می‌دهد';
-        }
-        return;
-    }
-    // صدا هست (کاربر صحبت می‌کند) ولی موتور >۲۵ثانیه هیچ رویدادی نداده →
-    // موتور هنگ‌کرده است → تعویض فوری نمونه (~۳۰۰ms؛ قبلاً چند دقیقه طول
-    // می‌کشید تا موتور هنگ‌کرده خودش رها می‌شد).
+    // سکوت بی‌نهایت: در سکوت هیچ stop/قطع‌ای انجام نمی‌شود. پیام وضعیت
+    // آرامش‌بخش (فقط وقتی >۱۵s رویدادی نیست؛ با شروع گفتار، onresult
+    // خودش متن وضعیت را عوض می‌کند).
     const idle = Date.now() - (meetRecLastEventAt || 0);
+    if (idle > 15000) {
+        const st = document.getElementById('meetingStatus');
+        if (st && meetRecActive) st.textContent = 'ضبط فعال — سکوت؛ تا هر زمان صحبت کنید گوش می‌دهد';
+    }
+    // تعویض نمونه فقط برای زامبی واقعی: ۶۰ثانیه مطلقاً بدون هیچ رویدادی.
+    // موتور سالم در سکوت هر ~۸-۱۰ثانیه onend می‌دهد (شمارنده صفر می‌شود)
+    // و در گفتار پیوسته نتایج می‌فرستد — پس هرگز به ۶۰ نمی‌رسد.
     if (idle > MEET_ZOMBIE_MS) {
-        console.warn('[MeetingMic] watchdog: sound present but no SR events ' + Math.round(idle / 1000) + 's — swapping hung SR instance');
+        console.warn('[MeetingMic] watchdog: no SR events at all ' + Math.round(idle / 1000) + 's — swapping hung SR instance');
         if (meetRestartPending) { clearTimeout(meetRestartPending); meetRestartPending = null; }
         if (meetRecObj) { try { meetRecObj.abort(); } catch(e) {} }
         meetRecObj = buildMeetSR();
@@ -20665,10 +20605,7 @@ function meetingStartRec() {
     meetRecIndices = new Set();
     meetRecObj = buildMeetSR();   // 🔧 v244: نمونهٔ تازه در هر شروع
     meetRecActive = true;
-    // 🔧 v261 (BA-174): متر سطح میکروفون (سکوت بی‌نهایت + تشخیص هنگ) —
-    //    شکستش بی‌صدا نادیده گرفته می‌شود (watchdog به رویداد-محض برمی‌گردد)
-    meetSoundAt = 0; meetMicLevel = 0;
-    meetStartMicMeter();
+    // 🔧 v262: متر حذف شد — بدون استریم میکروفونِ موازی (موتور صدا می‌گیرد)
     const btn = document.getElementById('meetingMicBtn');
     if (btn) { btn.classList.add('recording'); btn.textContent = '⏹'; }
     const st = document.getElementById('meetingStatus');
@@ -20685,8 +20622,6 @@ function meetingStopRec() {
     if (meetRestartPending) { clearTimeout(meetRestartPending); meetRestartPending = null; }
     // 🔧 v244: توقف watchdog
     if (meetWatchdogTimer) { clearInterval(meetWatchdogTimer); meetWatchdogTimer = null; }
-    // 🔧 v261: متر سطح میکروفون
-    meetStopMicMeter();
     const btn = document.getElementById('meetingMicBtn');
     if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
     if (meetRecObj) {
