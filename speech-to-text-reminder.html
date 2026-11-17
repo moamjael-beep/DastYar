@@ -7703,7 +7703,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v263-2026-11-17-meeting-gentle-restart';
+const APP_VERSION = 'v264-2026-11-17-meeting-no-wipe-smart-restart';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20409,6 +20409,28 @@ function openMeetingRecorder(fromMenu) {
     // را می‌گیرد (meetingStartRec از textarea seed می‌کند). پاک‌سازی فقط با
     // دکمهٔ حذف (meetingClearText با تأیید) است.
     meetRecObj = null; meetRecActive = false; meetRecAccum = ''; meetRecIndices = null;
+    // 🔧 v264 (BA-177 — الزام کاربر: «حتی پاک کردن جملات قبلی»): پیش‌نویس زندهٔ
+    //    جلسه — reload معوق آپدیت (که دقیقاً هنگام stop اعمال می‌شود)، رفرش
+    //    دستی یا کشتنِ تب توسط اندروید، متن جلسه را پاک می‌کرد چون هیچ
+    //    persist‌ای وجود نداشت. حالا متن در localStorage ذخیره (در هر
+    //    onresult/onend/stop/تایپ) و هنگام باز شدن صفحه بازیابی می‌شود؛
+    //    پاک‌سازی واقعی فقط با دکمهٔ حذف (با تأیید) است.
+    try {
+        const mtEl = document.getElementById('meetingText');
+        if (mtEl && !mtEl.value.trim()) {
+            const savedDraft = localStorage.getItem(MEET_DRAFT_KEY) || '';
+            if (savedDraft.trim()) mtEl.value = savedDraft;
+        }
+    } catch(e) {}
+    try {
+        if (!window._meetingDraftInputBound) {
+            window._meetingDraftInputBound = true;
+            const mtIn = document.getElementById('meetingText');
+            if (mtIn) mtIn.addEventListener('input', function() {
+                try { localStorage.setItem(MEET_DRAFT_KEY, mtIn.value); } catch(e) {}
+            });
+        }
+    } catch(e) {}
     const btn = document.getElementById('meetingMicBtn');
     if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
     document.getElementById('meetingStatus').textContent = 'آمادهٔ ضبط — دکمهٔ میکروفون را بزنید';
@@ -20448,6 +20470,20 @@ function meetingToggleMic() {
 // کپی عینی accDocStartRec — تفاوت: continuous=true (پیوسته برای جلسه طولانی)
 // و هدف textarea + دکمهٔ meetingMicBtn.
 // ════════════════════════════════════════════════════════════════════
+// 🔧 v264 (BA-177 — الزام کاربر: «خراب است، قطع سریع و حتی پاک کردن
+//   جملات قبلی»): دو ریشه و دو درمان:
+//   (۱) قطع سریع — رشد تأخیرِ v263 روی نشست‌های «کوتاهِ پربار» هم فعال
+//       می‌شد. اندروید بعد از هر جمله نشست را می‌بندد و جمله‌های کوتاه
+//       (<۱.۵s ولی دارای نتیجه) را «پایان فوریِ رد‌شده» می‌شمرد → تأخیر
+//       بعد از چند جمله تا سقف ۵s رشد می‌کرد و میکروفون بین جمله‌ها
+//       می‌مُرد. درمان: رشد فقط برای نشستِ «بدون نتیجه» (meetSessionGotResult)
+//       — نشست پربارِ هر طولی مثل نشست سالم، شمارنده را صفر می‌کند.
+//   (۲) پاک‌شدن جملات قبلی — متن جلسه هیچ persist‌ای نداشت؛ reload معوق
+//       آپدیت (که checkPendingReload دقیقاً هنگام stop اعمال می‌کند)،
+//       رفرش یا کشتنِ تب، همهٔ متن را پاک می‌کرد. درمان: پیش‌نویس زندهٔ
+//       localStorage (MEET_DRAFT_KEY) — ذخیره در هر onresult/onend/stop/
+//       تایپ دستی، بازیابی هنگام باز شدن صفحه، پاک‌سازی فقط با دکمهٔ
+//       حذف (با تأیید).
 // 🔧 v263 (BA-176 — الزام کاربر: «۵ثانیه کار می‌کند و به کما می‌رود،
 //   ۳۰-۴۰ثانیه بعد یک بوق ری‌استارت می‌زند، باز ۵ثانیه می‌نویسد»):
 //   ریشه = restart فوری ۲۰۰ms. چرخهٔ سریع start/stop، سرویس گفتار گوگل
@@ -20486,6 +20522,10 @@ let meetQuickEnds = 0;            // دنبالهٔ «پایان‌های فور
 let meetSessionStartAt = 0;       // لحظهٔ start نشست فعلی
 const MEET_RESTART_BASE_MS = 600; // فاصلهٔ restart پس از نشست سالم (۶۰۰ms — نه ۲۰۰ms)
 const MEET_QUICKEND_MS = 1500;    // نشستِ کوتاه‌تر از این = «پایان فوری» (سرویس رد کرد)
+// 🔧 v264 (BA-177): رشد تأخیر فقط برای نشستِ «بدون نتیجه» — نشستِ کوتاهِ
+// پربار (جملهٔ کوتاه) ردِ سرویس نیست و نباید تأخیر را رشد دهد.
+let meetSessionGotResult = false; // آیا نشست فعلی حداقل یک نتیجه گرفته؟
+const MEET_DRAFT_KEY = 'yadavar_meeting_draft_v1'; // 🔧 v264: پیش‌نویس زندهٔ جلسه
 function buildMeetSR() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SR();
@@ -20493,13 +20533,14 @@ function buildMeetSR() {
     rec.continuous = true;
     // 🔧 v240 (الزام کاربر): interimResults=true — بازخورد زندهٔ کلمات (بوق ندارد).
     rec.interimResults = true;
-    rec.onstart = function() { meetRecLastEventAt = Date.now(); meetSessionStartAt = Date.now(); };   // 🔧 v244 + v263
+    rec.onstart = function() { meetRecLastEventAt = Date.now(); meetSessionStartAt = Date.now(); meetSessionGotResult = false; };   // 🔧 v244 + v263 + v264
     // 🔧 v261: موتورِ زنده‌ای که صدا می‌شنود رویداد soundstart می‌دهد —
     //    این هم شمارندهٔ بی‌رویدادی را صفر می‌کند (نشانهٔ سلامت موتور).
     rec.onsoundstart = function() { meetRecLastEventAt = Date.now(); };
     rec.onspeechstart = function() { meetRecLastEventAt = Date.now(); };
     rec.onresult = function(ev) {
         meetRecLastEventAt = Date.now();   // 🔧 v244
+        meetSessionGotResult = true;       // 🔧 v264: این نشست نتیجه دارد (پربار)
         // 🔧 v240: تفکیک interim و final — نمایش زندهٔ کلمات در حال گفتن.
         let interim = '';
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
@@ -20515,7 +20556,12 @@ function buildMeetSR() {
         }
         meetLastInterim = interim;   // 🔧 v243
         const el = document.getElementById('meetingText');
-        if (el) el.value = addNumericAfterWords((meetRecAccum + ' ' + interim).trim()).trim() + (interim ? '' : '');
+        // 🔧 v264: پیش‌نویس زنده — هر نوشتن بلافاصله ذخیره می‌شود تا
+        //    reload/رفرش/کشتنِ تب هرگز متن جلسه را پاک نکند (BA-177).
+        if (el) {
+            el.value = addNumericAfterWords((meetRecAccum + ' ' + interim).trim()).trim() + (interim ? '' : '');
+            try { localStorage.setItem(MEET_DRAFT_KEY, el.value); } catch(e) {}
+        }
         // به‌روزرسانی وضعیت برای بازخورد بصری زنده
         const st = document.getElementById('meetingStatus');
         if (st && meetRecActive) {
@@ -20537,7 +20583,10 @@ function buildMeetSR() {
         if (meetLastInterim && meetLastInterim.trim()) {
             meetRecAccum += meetLastInterim.trim() + ' ';
             const elC = document.getElementById('meetingText');
-            if (elC) elC.value = addNumericAfterWords(meetRecAccum.trim()).trim();
+            if (elC) {
+                elC.value = addNumericAfterWords(meetRecAccum.trim()).trim();
+                try { localStorage.setItem(MEET_DRAFT_KEY, elC.value); } catch(e) {}   // 🔧 v264
+            }
         }
         meetLastInterim = '';
         // 🔧 v242: پاک‌کردن ایندکس‌ها بعد از restart (توضیح در taskRecObj.onend)
@@ -20548,13 +20597,15 @@ function buildMeetSR() {
             //    نمی‌سازد (قبلاً نمونه‌های کهنه نمونهٔ موازی می‌ساختند و
             //    رقابت میکروفون ضبط را قفل می‌کرد).
             if (meetRestartPending) { clearTimeout(meetRestartPending); meetRestartPending = null; }
-            // 🔧 v263 (BA-176): restart ملایم — نشستِ سالم (≥۱.۵ثانیه) شمارندهٔ
-            //    پایان‌های فوری را صفر می‌کند و فاصلهٔ پایهٔ ۶۰۰ms برمی‌گردد؛
-            //    پایانِ فوری نشست (<۱.۵ثانیه = سرویس رد کرد) فاصلهٔ بعدی را
-            //    تصاعدی می‌کند (سقف ۵s) تا سرویس تروتل‌شده فرصت خنک‌شدن
-            //    بگیرد و چرخهٔ start/stop دیگر خودش را تغذیه نکند.
+            // 🔧 v263 (BA-176): restart ملایم — نشستِ سالم شمارندهٔ پایان‌های فوری را صفر می‌کند.
+            // 🔧 v264 (BA-177 — الزام کاربر: «قطع سریع»): رشد تأخیر فقط برای نشستِ
+            //    «بدون نتیجه» است (سرویس رد کرد/میکروفون باز نشد). اندروید بعد از
+            //    هر جمله نشست را می‌بندد و جمله‌های کوتاه‌اند (<۱.۵ثانیه ولی
+            //    پربار) — اگر آن‌ها هم «پایان فوری» شمرده می‌شدند، تأخیر بعد از
+            //    چند جمله تا سقف ۵s رشد می‌کرد و میکروفون بین جمله‌ها می‌مُرد
+            //    (قطع سریع). نشستِ پربار مثل نشست سالم، شمارنده را صفر می‌کند.
             const dur = Date.now() - (meetSessionStartAt || Date.now());
-            meetQuickEnds = dur < MEET_QUICKEND_MS ? Math.min(meetQuickEnds + 1, 4) : 0;
+            meetQuickEnds = (!meetSessionGotResult && dur < MEET_QUICKEND_MS) ? Math.min(meetQuickEnds + 1, 4) : 0;
             const waitMs = Math.min(MEET_RESTART_BASE_MS * Math.pow(2, meetQuickEnds), 5000);
             const myRec = rec;
             meetRestartPending = setTimeout(function() {
@@ -20647,6 +20698,12 @@ function meetingStopRec() {
     if (meetRestartPending) { clearTimeout(meetRestartPending); meetRestartPending = null; }
     // 🔧 v244: توقف watchdog
     if (meetWatchdogTimer) { clearInterval(meetWatchdogTimer); meetWatchdogTimer = null; }
+    // 🔧 v264: پیش‌نویس زنده — قبل از هر توقفی متن فعلی ذخیره شود (تایپ دستی
+    //    کاربر بین نشست‌ها هم محفوظ می‌ماند؛ reload معوق آپدیت متن را پاک نمی‌کند)
+    try {
+        const elS = document.getElementById('meetingText');
+        if (elS) localStorage.setItem(MEET_DRAFT_KEY, elS.value);
+    } catch(e) {}
     const btn = document.getElementById('meetingMicBtn');
     if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
     if (meetRecObj) {
@@ -20667,6 +20724,7 @@ function meetingClearText() {
     document.getElementById('meetingText').value = '';
     meetRecAccum = '';
     meetRecIndices = new Set();
+    try { localStorage.removeItem(MEET_DRAFT_KEY); } catch(e) {}   // 🔧 v264: پیش‌نویس زنده هم پاک شود
 }
 
 // ─── ذخیره PDF ───
