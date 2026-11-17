@@ -7416,6 +7416,12 @@ body.locked .header-actions button {
 //               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
 //               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
 //               آن از یک اپ استاتیک وجود ندارد.
+//         🔧 v258 (۱۴۰۵ آبان ۲۹) — پرسش کاربر: «یعنی تو دنیا یک نفر این
+//           مشکل رو حل نکرده؟» — BA-171: پاسخ صادقانه: حل‌های واقعی دنیا
+//           بیرون از مرورگرند؛ راه‌حل قطعی جدید: yt_relay_server.py (سرویس
+//           محلی urllib، bind 127.0.0.1) — گام ۰ زنجیره پینگ می‌زند و اگر
+//           زنده بود بایت‌ها از /dl می‌آید؛ دانلود ۱۰۰٪ مثل اپ پایتونی.
+//
 //         🔧 v257 (۱۴۰۵ آبان ۲۹) — گزارش کاربر: «خراب است دانلود نشد
 //           مسدودس سمت سرور» — BA-170: ① دانلود چند-منبعی تنبلی (تا ۳
 //           استخراج‌گر — هر نمونهٔ Piped پروکسی متمایز دارد) ② ترفند
@@ -7878,7 +7884,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v257-2026-11-17-yt-multi-source-relay';
+const APP_VERSION = 'v258-2026-11-17-yt-local-relay-helper';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -21526,9 +21532,40 @@ async function ytFetchViaCobalt(videoId, isAudio) {
     throw new Error('cobalt ناموفق: ' + lastErr.join(' | '));
 }
 
-// زنجیرهٔ کامل: مستقیم → اینوریوس → رله‌های عمومی → بازنویسی پایدی → cobalt
+// 🔧 v258 (BA-171 — «دنیا این مشکل را حل کرده، اما همهٔ راه‌حل‌های واقعی
+// بیرون از مرورگر اجرا می‌شوند»): کمکی محلی پایتون — اگر کاربر
+// yt_relay_server.py را کنار صفحه اجرا کرده باشد، بایت‌ها خارج از مرورگر
+// گرفته و از 127.0.0.1 پاس داده می‌شوند؛ CORS اصلاً در میان نیست —
+// دانلود قطعی مثل اپ پایتونی.
+window.YT_LOCAL_RELAY = 'http://127.0.0.1:8790';
+async function ytLocalRelayAlive() {
+    const now = Date.now();
+    if (ytState._relayOk === true) return true;
+    // پاس منفی فقط ۶۰ ثانیه کش می‌شود — اگر سرویس دیر روشن شود، صفحه می‌فهمد
+    if (ytState._relayOk === false && ytState._relayTs && (now - ytState._relayTs) < 60000) return false;
+    ytState._relayOk = false; ytState._relayTs = now;
+    try {
+        const ctrl = new AbortController();
+        const t = setTimeout(function(){ try { ctrl.abort(); } catch(e) {} }, 1500);
+        const r = await fetch(window.YT_LOCAL_RELAY + '/ping', { signal: ctrl.signal });
+        clearTimeout(t);
+        const j = await r.json();
+        ytState._relayOk = !!(j && j.ok);
+        ytState._relayTs = Date.now();
+    } catch(e) { console.log('[YT] local relay not running — normal chain'); }
+    return ytState._relayOk;
+}
+
+// زنجیرهٔ کامل: کمکی محلی → مستقیم → اینوریوس → رله‌های عمومی → بازنویسی پایدی → cobalt
 // اولین موفق برمی‌گردد؛ در پایان، خطای اصلی به بالا پرتاب می‌شود.
 async function ytFetchMediaBlob(url, onProgress) {
+    // ۰) کمکی محلی پایتون (اگر اجرا باشد) — قطعی‌ترین راه، بدون CORS
+    try {
+        if (await ytLocalRelayAlive()) {
+            ytShowStatus('info', '🚀 کمکی محلی پایتون فعال است — دانلود مثل اپ پایتونی، بدون محدودیت مرورگر...');
+            return await ytFetchBlobRelay(window.YT_LOCAL_RELAY + '/dl?url=' + encodeURIComponent(url), onProgress);
+        }
+    } catch(e) { console.warn('[YT] local relay download failed:', e.message); }
     try {
         return await ytFetchBlob(url, onProgress);
     } catch(directErr) {
@@ -22092,7 +22129,8 @@ async function ytDownloadFromExt(ext, videoId, chosen, title, showFinal) {
             ytShowStatus('error', '❌ ذخیرهٔ فایل ممکن نشد.<br>' +
                 '<b>دلیل:</b> واکشی مستقیم و همهٔ رله‌های واسط (اینوریوس + سرویس‌های CORS متن‌باز + پروکسی‌های Piped + cobalt) برای این فایل پاسخ ندادند — مسدودی سمت سرور/شبکه (CORS).<br>' +
                 '<b>راه‌حل ۱:</b> چند لحظه بعد دوباره «دانلود» بزنید (سرورها پشت‌سرهم زنده/مرده می‌شوند).<br>' +
-                '<b>راه‌حل ۲ (پایدار):</b> یک سرور Invidious با CORS باز در فیلد «سرور سفارشی» (پایین) وارد کنید.');
+                '<b>راه‌حل ۲ (پایدار):</b> یک سرور Invidious با CORS باز در فیلد «سرور سفارشی» (پایین) وارد کنید.<br>' +
+                '<b>راه‌حل ۳ (قطعی):</b> فایل <b>yt_relay_server.py</b> را کنار صفحه اجرا کنید (<span dir="ltr">python3 yt_relay_server.py</span>) و رفرش بزنید — دانلود مثل اپ پایتونی، ۱۰۰٪ بدون محدودیت مرورگر.');
             // راه دستی اختیاری — فقط دکمه؛ هیچ‌چیز خودکار باز نمی‌شود
             if (lastUrl) ytShowResult(lastUrl, lastName || (nameBase + '.mp4'));
         }
