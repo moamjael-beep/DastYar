@@ -7416,6 +7416,13 @@ body.locked .header-actions button {
 //               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
 //               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
 //               آن از یک اپ استاتیک وجود ندارد.
+//         🔧 v256 (۱۴۰۵ آبان ۲۹) — گزارش کاربر: خطای «ذخیرهٔ فایل ممکن
+//           نشد... مرورگر اجازهٔ واکشی...» + «با همان کد پایتون و هر روش
+//           مکمل آن در کل گیت‌هاب مرورگر را دور بزنی و نفهمد» — BA-169:
+//           زنجیرهٔ رلهٔ رسانه در ytFetchMediaBlob — مستقیم → اینوریوس
+//           latest_version (local=true با itag) → corsproxy.io / allorigins
+//           / codetabs / cors.eu.org / cors.workers.dev؛ اولین موفق ذخیره.
+//
 //         🔧 v255 (۱۴۰۵ آبان ۲۹) — گزارش کاربر: «خراب است؛ با همان
 //           کتابخانه‌ها/کدها/مسیرهای کد پایتون دانلود کن» + «تعداد زیادی
 //           پیشنهاد کیفیت‌های بی‌صدا میدهد؛ فقط تشخیص درست تمام کیفیت‌های
@@ -7864,7 +7871,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v255-2026-11-17-yt-muxed-only-picker';
+const APP_VERSION = 'v256-2026-11-17-yt-media-relay-chain';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -21408,10 +21415,99 @@ async function ytSaveBlob(blob, filename) {
     return true;
 }
 
+// ─── 🔧 v256 (BA-169 — الزام کاربر: «با همان کد پایتون و هر روش مکمل آن
+// در کل گیت‌هاب مرورگر را دور بزنی و نفهمد») — زنجیرهٔ رلهٔ رسانه ───
+// پایتون (urllib در pytubefix) محدودیت CORS ندارد؛ مرورگر دارد. پس وقتی
+// واکشی مستقیم فایل رسانه مسدود شد (خطای «ذخیرهٔ فایل ممکن نشد»)، بایت‌ها
+// مثل pipedproxy/اینوریوس از رله‌های سمت‌سرور گرفته می‌شوند — IP کاربر هم
+// از googlevideo پنهان می‌ماند. ترتیب تلاش:
+//   ۱) مستقیم (اگر CORS باز باشد — سریع‌ترین، مسیر فعلی v249)
+//   ۲) latest_version اینوریوس با local=true (وقتی itag شناخته شود)
+//   ۳..۷) رله‌های CORS متن‌باز شناخته‌شده از پروژه‌های گیت‌هاب
+const YT_MEDIA_CORS_PROXIES = [
+    { name: 'corsproxy.io',     build: function(u){ return 'https://corsproxy.io/?url=' + encodeURIComponent(u); } },
+    { name: 'allorigins',       build: function(u){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); } },
+    { name: 'codetabs',         build: function(u){ return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u); } },
+    { name: 'cors.eu.org',      build: function(u){ return 'https://cors.eu.org/' + u; } },
+    { name: 'cors.workers.dev', build: function(u){ return 'https://test.cors.workers.dev/?' + u; } }
+];
+
+// یک تلاش رله — خواندن استریمی با نوار پیشرفت + نگهبان رکود ۳۰ثانیه‌ای
+async function ytFetchBlobRelay(relayUrl, onProgress) {
+    const wrap = document.getElementById('ytProgressWrap');
+    const bar = document.getElementById('ytProgressBar');
+    const ctrl = new AbortController();
+    let lastData = Date.now();
+    const stall = setInterval(function(){ if (Date.now() - lastData > 30000) { try { ctrl.abort(); } catch(e) {} } }, 5000);
+    try {
+        const resp = await fetch(relayUrl, { signal: ctrl.signal });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const ct = resp.headers.get('content-type') || '';
+        if (ct.indexOf('text/html') === 0) throw new Error('پاسخ HTML — رله فایل را نداد');
+        const total = parseInt(resp.headers.get('content-length') || '0', 10);
+        const chunks = []; let got = 0;
+        const reader = resp.body && resp.body.getReader ? resp.body.getReader() : null;
+        if (reader) {
+            while (true) {
+                const r = await reader.read();
+                if (r.done) break;
+                chunks.push(r.value); got += r.value.length; lastData = Date.now();
+                if (total && onProgress) {
+                    const pct = Math.round(got / total * 100);
+                    if (wrap) wrap.style.display = 'block';
+                    if (bar) bar.style.width = pct + '%';
+                    onProgress(pct, got, total);
+                }
+            }
+        } else {
+            const buf = await resp.arrayBuffer();
+            chunks.push(new Uint8Array(buf)); got += buf.byteLength;
+        }
+        clearInterval(stall);
+        if (!got) throw new Error('رله فایل تهی داد');
+        return new Blob(chunks, { type: ct || 'application/octet-stream' });
+    } catch(e) { clearInterval(stall); throw e; }
+}
+
+// زنجیرهٔ کامل: مستقیم → اینوریوس → رله‌های عمومی؛ اولین موفق برمی‌گردد
+async function ytFetchMediaBlob(url, onProgress) {
+    try {
+        return await ytFetchBlob(url, onProgress);
+    } catch(directErr) {
+        console.warn('[YT] direct fetch blocked — relay chain starts:', directErr.message);
+        const vid = ytState._pendingVideoId || '';
+        const itag = ytState._curItag || null;
+        // ۲) رلهٔ خود اینوریوس — پورت رفتار وب اینوریوس (latest_version + local=true)
+        if (vid && itag) {
+            let insts = [];
+            try { insts = (await ytFetchInvidiousLiveList()) || []; } catch(e) {}
+            insts = insts.slice(0, 2).concat(YT_INVIDIOUS_INSTANCES.slice(0, 2));
+            const seen = {};
+            for (const inst of insts) {
+                if (!inst || seen[inst]) continue;
+                seen[inst] = 1;
+                const ru = inst.replace(/\/+$/, '') + '/latest_version?id=' + encodeURIComponent(vid) + '&itag=' + itag + '&local=true';
+                try {
+                    ytShowStatus('info', '🔄 واکشی مستقیم مسدود بود — دور زدن با رلهٔ ' + ytEscape(inst.replace(/^https?:\/\//, '').split('/')[0]) + '...');
+                    return await ytFetchBlobRelay(ru, onProgress);
+                } catch(e) { console.warn('[YT] invidious relay failed:', inst, e.message); }
+            }
+        }
+        // ۳..۷) رله‌های عمومی متن‌باز
+        for (const p of YT_MEDIA_CORS_PROXIES) {
+            try {
+                ytShowStatus('info', '🔄 دور زدن مسدودی مرورگر با ' + ytEscape(p.name) + ' (رلهٔ سمت سرور — مثل روش پایتون)...');
+                return await ytFetchBlobRelay(p.build(url), onProgress);
+            } catch(e) { console.warn('[YT] relay', p.name, 'failed:', e.message); }
+        }
+        throw directErr;
+    }
+}
+
 async function ytDownloadAndSave(url, filename) {
     const wrap = document.getElementById('ytProgressWrap');
     try {
-        const blob = await ytFetchBlob(url, null);
+        const blob = await ytFetchMediaBlob(url, null);
         // 🔧 v255 (BA-168 — گزارش کاربر: «خراب است»): محافظ صحت فایل —
         // صفحهٔ خطای HTML یا فایل تهی هرگز به‌عنوان ویدیو/صدا ذخیره و
         // «ذخیره شد» گزارش نمی‌شوند؛ مثل main.py که pytubefix فایل واقعی
@@ -21800,6 +21896,7 @@ async function ytDownloadFromExt(ext, videoId, chosen, title) {
         for (const s of order) {
             const u = await ytResolveStreamUrl(s);
             if (!u) continue;
+            ytState._curItag = s.itag || null;   // 🔧 v256: برای رلهٔ اینوریوس
             lastUrl = u; lastName = nameBase + '.mp3';
             ytShowStatus('info', '⬇️ شروع دانلود صدا: ' + ytEscape(nameBase) + '.mp3 — ' + ytEscape(String(s.label || '')));
             try {
@@ -21821,6 +21918,7 @@ async function ytDownloadFromExt(ext, videoId, chosen, title) {
         for (const pick of order) {
             const u = await ytResolveStreamUrl(pick);
             if (!u) continue;
+            ytState._curItag = pick.itag || null;   // 🔧 v256: برای رلهٔ اینوریوس
             lastUrl = u; lastName = nameBase + '.mp4';
             ytShowStatus('info', '⬇️ شروع دانلود ویدئو: ' + ytEscape(nameBase) + '.mp4 — ' + ytEscape(String(pick.label || ((pick.height || 0) + 'p'))));
             try {
@@ -21838,6 +21936,7 @@ async function ytDownloadFromExt(ext, videoId, chosen, title) {
             for (const pick of only) {
                 const u = await ytResolveStreamUrl(pick);
                 if (!u) continue;
+                ytState._curItag = pick.itag || null;   // 🔧 v256: برای رلهٔ اینوریوس
                 lastUrl = u; lastName = nameBase + '.' + (pick.ext || 'mp4');
                 ytShowStatus('info', '⬇️ شروع دانلود (فقط تصویر): ' + ytEscape(nameBase));
                 try {
@@ -21853,7 +21952,7 @@ async function ytDownloadFromExt(ext, videoId, chosen, title) {
     if (!mainUrl) {
         // 🔧 v254 (BA-167): پیام صادقانه — هیچ‌وقت «دانلود شد» دروغ نمی‌گوییم
         ytShowStatus('error', '❌ ذخیرهٔ فایل ممکن نشد.<br>' +
-            '<b>دلیل:</b> مرورگر اجازهٔ واکشی مستقیم فایل از سرور یوتیوب را ندارد (CORS) و هیچ‌کدام از منابع پاسخ ندادند.<br>' +
+            '<b>دلیل:</b> واکشی مستقیم و همهٔ رله‌های واسط (اینوریوس + سرویس‌های CORS متن‌باز) برای این فایل پاسخ ندادند — مسدودی سمت سرور/شبکه (CORS).<br>' +
             '<b>راه‌حل ۱:</b> چند لحظه بعد دوباره «دانلود» بزنید (سرورها پشت‌سرهم زنده/مرده می‌شوند).<br>' +
             '<b>راه‌حل ۲ (پایدار):</b> یک سرور Invidious با CORS باز در فیلد «سرور سفارشی» (پایین) وارد کنید.');
         // راه دستی اختیاری — فقط دکمه؛ هیچ‌چیز خودکار باز نمی‌شود
