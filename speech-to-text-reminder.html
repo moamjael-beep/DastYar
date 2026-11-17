@@ -5537,11 +5537,11 @@ body.locked .header-actions button {
             <button class="open-btn" style="margin-top:8px; width:100%;" onclick="ytCloseMessage()">بستن</button>
         </div>
 
-        <!-- 🔧 v254 (BA-167): انتخاب کیفیت — همهٔ کیفیت‌های ویدئو شناسایی و
-             از کاربر پرسیده می‌شود کدام را می‌خواهد (الزام کاربر) -->
+        <!-- 🔧 v255 (BA-168): فقط کیفیت‌های دارای صدا (muxed) — پورت
+             streams.filter(progressive=True) در pytubefix؛ بی‌صداها حذف شدند -->
         <div class="yt-section" id="ytQualityPicker" style="display:none;">
             <h3>🎚 کیفیت ویدئو — انتخاب کنید</h3>
-            <div class="yt-help">همهٔ کیفیت‌های موجود برای این ویدیو شناسایی شد. «با صدا» = یک فایل کامل با صدا و تصویر (پیشنهادی). «بی‌صدا» = فقط تصویر (وقتی نسخهٔ با صدا موجود نیست).</div>
+            <div class="yt-help">فقط کیفیت‌های دارای صدا (صدا+تصویر در یک فایل) پیشنهاد می‌شوند — مثل برنامهٔ پایتونی شما. کیفیت‌های بی‌صدا هرگز پیشنهاد نمی‌شوند.</div>
             <div class="yt-chip-group" id="ytQualityList" style="margin-top:8px;"></div>
         </div>
 
@@ -7416,6 +7416,14 @@ body.locked .header-actions button {
 //               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
 //               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
 //               آن از یک اپ استاتیک وجود ندارد.
+//         🔧 v255 (۱۴۰۵ آبان ۲۹) — گزارش کاربر: «خراب است؛ با همان
+//           کتابخانه‌ها/کدها/مسیرهای کد پایتون دانلود کن» + «تعداد زیادی
+//           پیشنهاد کیفیت‌های بی‌صدا میدهد؛ فقط تشخیص درست تمام کیفیت‌های
+//           ویدیو با صدا» — BA-168 (مطالعهٔ upload/main.py):
+//           ① پنل انتخاب کیفیت = پورت streams.filter(progressive=True) در
+//             pytubefix — فقط کیفیت‌های «با صدا»؛ بی‌صداها حذف شدند.
+//           ② محافظ صحت فایل: پاسخ HTML/فایل تهی هرگز ذخیره نمی‌شود.
+//
 //         🔧 v254 (۱۴۰۵ آبان ۲۹) — گزارش کاربر: «آخرش مینویسه دانلود شد
 //           اما فایلی دانلود نکرده؛ یک صفحه برای نمایش ویدیو باز میکنه
 //           که ناموفق است» + «مثل فایل پایتون تمام کیفیت‌های ویدیو را
@@ -7856,7 +7864,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v254-2026-11-17-yt-quality-picker';
+const APP_VERSION = 'v255-2026-11-17-yt-muxed-only-picker';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -21404,6 +21412,12 @@ async function ytDownloadAndSave(url, filename) {
     const wrap = document.getElementById('ytProgressWrap');
     try {
         const blob = await ytFetchBlob(url, null);
+        // 🔧 v255 (BA-168 — گزارش کاربر: «خراب است»): محافظ صحت فایل —
+        // صفحهٔ خطای HTML یا فایل تهی هرگز به‌عنوان ویدیو/صدا ذخیره و
+        // «ذخیره شد» گزارش نمی‌شوند؛ مثل main.py که pytubefix فایل واقعی
+        // را می‌نویسد وگرنه خطا می‌دهد.
+        if (!blob.size) throw new Error('فایل تهی بود (۰ بایت)');
+        if (blob.type && blob.type.indexOf('text/html') === 0) throw new Error('پاسخ HTML (صفحهٔ خطا) — نه فایل رسانه');
         if (wrap) wrap.style.display = 'none';
         return await ytSaveBlob(blob, filename);
     } catch(e) {
@@ -21860,26 +21874,25 @@ function ytFmtBytes(n) {
     return (n >= 10 ? Math.round(n) : Math.round(n * 10) / 10) + ' ' + u[i];
 }
 
+// ─── 🔧 v255 (BA-168 — الزام کاربر: «فقط تشخیص درست تمام کیفیت‌های ویدیو
+// با صدا» — گزارش: «تعداد زیادی پیشنهاد کیفیت‌های بی‌صدا میدهد») ───
+// پورت دقیق pytubefix در main.py کاربر: streams.filter(progressive=True)
+// — فقط نسخه‌های صدا+تصویر در یک فایل (muxed). کیفیت‌های بی‌صدا هرگز
+// پیشنهاد نمی‌شوند — همان رفتاری که کاربر در اپ پایتونی می‌بیند.
 function ytRenderQualityPicker(ext, title) {
     const wrap = document.getElementById('ytQualityPicker');
     const list = document.getElementById('ytQualityList');
     if (!wrap || !list) return false;
-    const vids = (ext.streams || []).filter(function(s){ return (s.mime || '').indexOf('video/') === 0; });
-    const muxed = vids.filter(function(s){ return s.hasAudio; })
-                      .sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
-    const only  = vids.filter(function(s){ return !s.hasAudio; })
-                      .sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
-    if (!muxed.length && !only.length) return false;
-    const choices = [];
-    muxed.forEach(function(s){ choices.push({ s: s, tag: 'با صدا' }); });
-    only.forEach(function(s){ choices.push({ s: s, tag: 'بی‌صدا' }); });
-    ytState._qualityChoices = choices;
-    list.innerHTML = choices.map(function(c, i){
+    const muxed = (ext.streams || []).filter(function(s){ return (s.mime || '').indexOf('video/') === 0 && s.hasAudio; })
+                  .sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
+    if (!muxed.length) return false;
+    ytState._qualityChoices = muxed.map(function(s){ return { s: s, tag: 'با صدا' }; });
+    list.innerHTML = ytState._qualityChoices.map(function(c, i){
         const lbl = ytEscape(String(c.s.label || ((c.s.height || 0) + 'p')));
         const size = ytFmtBytes(c.s.contentLength || c.s.size || 0);
         const sel = (i === 0) ? ' selected' : '';
         return '<button class="yt-chip' + sel + '" data-qi="' + i + '" onclick="ytQualityChoose(' + i + ')">' + lbl +
-               ' <span style="opacity:.75; font-size:11px;">(' + c.tag + (size ? ' · ' + size : '') + ')</span></button>';
+               ' <span style="opacity:.75; font-size:11px;">(با صدا' + (size ? ' · ' + size : '') + ')</span></button>';
     }).join('');
     wrap.style.display = 'block';
     return true;
