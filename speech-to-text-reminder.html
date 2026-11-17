@@ -7416,6 +7416,13 @@ body.locked .header-actions button {
 //               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
 //               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
 //               آن از یک اپ استاتیک وجود ندارد.
+//         🔧 v257 (۱۴۰۵ آبان ۲۹) — گزارش کاربر: «خراب است دانلود نشد
+//           مسدودس سمت سرور» — BA-170: ① دانلود چند-منبعی تنبلی (تا ۳
+//           استخراج‌گر — هر نمونهٔ Piped پروکسی متمایز دارد) ② ترفند
+//           بازنویسی &host= خودِ TeamPiped (گوگل‌ویدیو از ۸ pipedproxy)
+//           ③ موتور متن‌باز cobalt (tunnel) + رله‌های cors.lol/thingproxy
+//           + همهٔ نمونه‌های اینوریوس برای latest_version؛ پیام نهایی یک‌بار.
+//
 //         🔧 v256 (۱۴۰۵ آبان ۲۹) — گزارش کاربر: خطای «ذخیرهٔ فایل ممکن
 //           نشد... مرورگر اجازهٔ واکشی...» + «با همان کد پایتون و هر روش
 //           مکمل آن در کل گیت‌هاب مرورگر را دور بزنی و نفهمد» — BA-169:
@@ -7871,7 +7878,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v256-2026-11-17-yt-media-relay-chain';
+const APP_VERSION = 'v257-2026-11-17-yt-multi-source-relay';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -21429,7 +21436,10 @@ const YT_MEDIA_CORS_PROXIES = [
     { name: 'allorigins',       build: function(u){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); } },
     { name: 'codetabs',         build: function(u){ return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u); } },
     { name: 'cors.eu.org',      build: function(u){ return 'https://cors.eu.org/' + u; } },
-    { name: 'cors.workers.dev', build: function(u){ return 'https://test.cors.workers.dev/?' + u; } }
+    { name: 'cors.workers.dev', build: function(u){ return 'https://test.cors.workers.dev/?' + u; } },
+    // 🔧 v257: + دو رلهٔ متن‌باز دیگر از پروژه‌های گیت‌هاب
+    { name: 'cors.lol',         build: function(u){ return 'https://api.cors.lol/?url=' + encodeURIComponent(u); } },
+    { name: 'thingproxy',       build: function(u){ return 'https://thingproxy.freeboard.io/fetch/' + u; } }
 ];
 
 // یک تلاش رله — خواندن استریمی با نوار پیشرفت + نگهبان رکود ۳۰ثانیه‌ای
@@ -21469,7 +21479,55 @@ async function ytFetchBlobRelay(relayUrl, onProgress) {
     } catch(e) { clearInterval(stall); throw e; }
 }
 
-// زنجیرهٔ کامل: مستقیم → اینوریوس → رله‌های عمومی؛ اولین موفق برمی‌گردد
+// 🔧 v257 (BA-170): ترفند بازنویسی خودِ Piped (TeamPiped/Piped در گیت‌هاب) —
+// هر URL گوگل‌ویدیو از هر پروکسی pipedproxy قابل عبور است:
+//   https://<proxy>/videoplayback?<همان query>&host=<هاست گوگل‌ویدیو>
+// پروکسی با IP خودش از گوگل می‌خواند (قفل IP و CORS هر دو دور زده می‌شوند).
+function ytPipedProxyUrls(origUrl) {
+    const m = String(origUrl).match(/^https:\/\/([^/]+\.googlevideo\.com)(\/[^?]*)\?(.+)$/);
+    if (!m) return [];
+    const hosts = (window.YT_PIPED_PROXY_HOSTS || []).slice();
+    // + مشتق از نمونه‌های Piped فعال: pipedapi.X / api.piped.X → pipedproxy.X
+    (window.YT_PIPED_INSTANCES || YT_PIPED_INSTANCES).forEach(function(api){
+        const d = String(api).replace(/^https:\/\//, '').replace(/^pipedapi\./, '').replace(/^api\.piped\./, '');
+        if (d && d.indexOf('.') > 0) { hosts.push('pipedproxy.' + d); hosts.push('piped-proxy.' + d); }
+    });
+    const seen = {}, out = [];
+    hosts.forEach(function(ph){
+        if (!ph || seen[ph]) return;
+        seen[ph] = 1;
+        out.push('https://' + ph + m[2] + '?' + m[3] + '&host=' + m[1]);
+    });
+    return out;
+}
+
+// 🔧 v257: آخرین حلقهٔ زنجیره — موتور متن‌باز cobalt (imputnet/cobalt):
+// POST به نمونه‌های انجمنی → پاسخ tunnel با URL رسانهٔ CORS باز.
+async function ytFetchViaCobalt(videoId, isAudio) {
+    if (!videoId) throw new Error('بدون videoId');
+    if (ytState._cobaltTried && (Date.now() - ytState._cobaltTried) < 60000) throw new Error('cobalt همین حالا امتحان شد');
+    ytState._cobaltTried = Date.now();
+    const bases = window.YT_COBALT_INSTANCES || [];
+    const lastErr = [];
+    for (const base of bases) {
+        try {
+            ytShowStatus('info', '🔄 آخرین راه — موتور متن‌باز cobalt (' + ytEscape(String(base).replace(/^https?:\/\//, '').split('/')[0]) + ')...');
+            const resp = await ytFetchT(base + '/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ url: 'https://www.youtube.com/watch?v=' + videoId, downloadMode: isAudio ? 'audio' : 'auto', videoQuality: isAudio ? '' : '720' })
+            }, 15000);
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const j = await resp.json();
+            if (!j || !j.url || (j.status !== 'tunnel' && j.status !== 'redirect')) throw new Error('پاسخ نامعتبر cobalt');
+            return await ytFetchBlobRelay(j.url, null);   // tunnel خودش CORS باز دارد
+        } catch(e) { lastErr.push(e.message); console.warn('[YT] cobalt', base, 'failed:', e.message); }
+    }
+    throw new Error('cobalt ناموفق: ' + lastErr.join(' | '));
+}
+
+// زنجیرهٔ کامل: مستقیم → اینوریوس → رله‌های عمومی → بازنویسی پایدی → cobalt
+// اولین موفق برمی‌گردد؛ در پایان، خطای اصلی به بالا پرتاب می‌شود.
 async function ytFetchMediaBlob(url, onProgress) {
     try {
         return await ytFetchBlob(url, onProgress);
@@ -21481,7 +21539,8 @@ async function ytFetchMediaBlob(url, onProgress) {
         if (vid && itag) {
             let insts = [];
             try { insts = (await ytFetchInvidiousLiveList()) || []; } catch(e) {}
-            insts = insts.slice(0, 2).concat(YT_INVIDIOUS_INSTANCES.slice(0, 2));
+            // 🔧 v257: همهٔ نمونه‌ها امتحان می‌شوند، نه فقط دو تا
+            insts = insts.slice(0, 4).concat(YT_INVIDIOUS_INSTANCES);
             const seen = {};
             for (const inst of insts) {
                 if (!inst || seen[inst]) continue;
@@ -21493,13 +21552,25 @@ async function ytFetchMediaBlob(url, onProgress) {
                 } catch(e) { console.warn('[YT] invidious relay failed:', inst, e.message); }
             }
         }
-        // ۳..۷) رله‌های عمومی متن‌باز
+        // ۳..۹) رله‌های عمومی متن‌باز
         for (const p of YT_MEDIA_CORS_PROXIES) {
             try {
                 ytShowStatus('info', '🔄 دور زدن مسدودی مرورگر با ' + ytEscape(p.name) + ' (رلهٔ سمت سرور — مثل روش پایتون)...');
                 return await ytFetchBlobRelay(p.build(url), onProgress);
             } catch(e) { console.warn('[YT] relay', p.name, 'failed:', e.message); }
         }
+        // ۱۰) بازنویسی پایدی &host= — گوگل‌ویدیو از پروکسی‌های pipedproxy
+        const proxyUrls = ytPipedProxyUrls(url);
+        if (proxyUrls.length) {
+            ytShowStatus('info', '🔄 دور زدن با پروکسی‌های رسانهٔ Piped (' + toPersianNumber(proxyUrls.length) + ' سرور)...');
+            for (const pu of proxyUrls) {
+                try { return await ytFetchBlobRelay(pu, onProgress); }
+                catch(e) { console.warn('[YT] piped-proxy rewrite failed:', String(pu).split('/')[2], e.message); }
+            }
+        }
+        // ۱۱) موتور cobalt — tunnel با CORS باز
+        try { return await ytFetchViaCobalt(vid, ytState.mode === 'audio'); }
+        catch(e) { console.warn('[YT] cobalt chain failed:', e.message); }
         throw directErr;
     }
 }
@@ -21549,19 +21620,48 @@ async function ytDownloadAndSave(url, filename) {
 //   مرجع: api.invidious.io فقط ۱۰ نمونهٔ زنده دارد و تنها yt.chocolatemoo53.com
 //   هم api و هم cors=true دارد — بقیه مرورگر را CORS-block می‌کنند (VPN بی‌اثر).
 const YT_PIPED_INSTANCES = [
-    // 🔧 v246: سرورهای Piped کثیراً ناپایدارند؛ فقط چند کاندیدای شناخته‌شده.
+    // 🔧 v246: سرورهای Piped کثیراً ناپایدارند؛ چند کاندیدای شناخته‌شده.
+    // 🔧 v257 (BA-170): فهرست گسترده‌تر از فهرست رسمی TeamPiped/Piped در
+    //   گیت‌هاب — هر نمونه API + پروکسی رسانهٔ متمایز خودش را دارد.
     'https://pipedapi.kavin.rocks',
     'https://pipedapi.leptons.xyz',
     'https://pipedapi.reallyaweso.me',
-    'https://api.piped.private.coffee'
+    'https://api.piped.private.coffee',
+    'https://pipedapi.r4fo.com',
+    'https://pipedapi.adminforge.de',
+    'https://api.piped.projectsegfault.lt',
+    'https://pipedapi.owo.si'
 ];
 const YT_INVIDIOUS_INSTANCES = [
     // 🔧 v246: تنها نمونهٔ Invidious با api:true + cors:true (تأییدشدهٔ زنده).
     'https://yt.chocolatemoo53.com',
     // کاندیداهای ثانویه (ممکن است CORS-block شوند — در لاگ دلیل داده می‌شود):
+    // 🔧 v257: + دو نمونه از فهرست رسمی iv-org/documentation در گیت‌هاب
     'https://invidious.nerdvpn.de',
     'https://inv.nadeko.net',
-    'https://invidious.tiekoetter.com'
+    'https://invidious.tiekoetter.com',
+    'https://invidious.adminforge.de',
+    'https://invidious.f5.si'
+];
+// 🔧 v257 (BA-170): پروکسی‌های رسانهٔ Piped برای ترفند بازنویسی &host= —
+//   پورت رفتار TeamPiped/Piped (گیت‌هاب): هر URL گوگل‌ویدیو را می‌توان از
+//   هر pipedproxy عبور داد: /videoplayback?<query>&host=<gvhost>
+window.YT_PIPED_PROXY_HOSTS = [
+    'pipedproxy.kavin.rocks',
+    'pipedproxy.adminforge.de',
+    'pipedproxy.r4fo.com',
+    'pipedproxy.private.coffee',
+    'pipedproxy.projectsegfault.lt',
+    'pipedproxy.leptons.xyz',
+    'pipedproxy.reallyaweso.me',
+    'pipedproxy.owo.si'
+];
+// 🔧 v257: موتور متن‌باز cobalt (imputnet/cobalt در گیت‌هاب) — نمونه‌های
+//   انجمنی از فهرست cobalt-instances؛ endpoint tunnel خودش CORS باز دارد.
+window.YT_COBALT_INSTANCES = [
+    'https://cobalt-api.kwiatekmiki.com',
+    'https://cobalt-backend.canine.tools',
+    'https://capi.3kh0.net'
 ];
 
 // واکشی زندهٔ فهرست نمونه‌های Invidious از api.invidious.io (CORS *)
@@ -21837,15 +21937,25 @@ async function ytRunPipeline(videoId, btn) {
         ['YouTube (کلاینت‌های موبایل)', ytExtractInnerTube],
         ['صفحهٔ YouTube + دیکودر', ytExtractWatchPage]
     ];
-    let ext = null;
-    for (let bi = 0; bi < backends.length; bi++) {
-        const stepMsg = function(m){ ytShowStatus('info', '🔄 مرحلهٔ ' + toPersianNumber(bi + 1) + ' از ' + toPersianNumber(backends.length) + ' — ' + ytEscape(m) + '...'); };
-        stepMsg('شروع');
-        try { ext = await backends[bi][1](videoId, stepMsg); }
-        catch(e) { console.warn('[YT] backend', backends[bi][0], 'error', e.message); ext = null; }
-        if (ext && ext.streams && ext.streams.length) { console.log('[YT] backend OK:', ext.backend); break; }
-        ext = null;
-    }
+    // 🔧 v257 (BA-170 — گزارش کاربر: «مسدودی سمت سرور» در دانلود): استخراج
+    //   تنبلی — منبع بعدی فقط وقتی صدا زده می‌شود که دانلود از منبع قبلی
+    //   شکست خورده باشد. هر نمونهٔ Piped پروکسی رسانهٔ متمایز خودش را دارد،
+    //   پس «منبع بعدی» = راه برون‌رفت واقعی تازه (تا ۳ منبع).
+    let bi = 0;
+    const collected = [];
+    const nextExt = async function(){
+        while (bi < backends.length && collected.length < 3) {
+            const stepMsg = function(m){ ytShowStatus('info', '🔄 مرحلهٔ ' + toPersianNumber(bi + 1) + ' از ' + toPersianNumber(backends.length) + ' — ' + ytEscape(m) + '...'); };
+            stepMsg('شروع');
+            let e2 = null;
+            try { e2 = await backends[bi][1](videoId, stepMsg); }
+            catch(e) { console.warn('[YT] backend', backends[bi][0], 'error', e.message); e2 = null; }
+            bi++;
+            if (e2 && e2.streams && e2.streams.length) { console.log('[YT] backend OK:', e2.backend); collected.push(e2); return e2; }
+        }
+        return null;
+    };
+    let ext = await nextExt();
     if (!ext) {
         // 🔧 v246 (BA-159): پیام صادقانه با گزارش تعداد و دلیل شکست سرورها
         const flog = ytState._lastFailLog || '';
@@ -21866,23 +21976,48 @@ async function ytRunPipeline(videoId, btn) {
     ytState._pendingExt = ext;
     ytState._pendingTitle = title;
     ytState._pendingVideoId = videoId;
+    ytState._finalMsgShown = false;   // 🔧 v257: پیام صادقانهٔ نهایی فقط یک‌بار در هر اجرا
 
     if (ytState.mode === 'audio') {
-        return await ytDownloadFromExt(ext, videoId, null, title);
+        // 🔧 v257: اول دانلود از منبع فعلی، در شکست منبع بعدی — بدون کار اضافه
+        while (ext) {
+            if (await ytDownloadFromExt(ext, videoId, null, title)) return true;
+            ext = await nextExt();
+            if (ext) ytState._pendingExt = ext;
+        }
+        return false;
     }
     // پنل انتخاب کیفیت — فقط وقتی صفحهٔ یوتیوب باز است و از مسیر کاربر آمده‌ایم
     // (فراخوانی مستقیم برنامه‌ای/پروب: مثل main.py خودکار بالاترین را می‌گیرد)
     const ov = document.getElementById('ytOverlay');
-    if (ytState._askQuality && ov && ov.classList.contains('active') && ytRenderQualityPicker(ext, title)) {
-        ytShowStatus('info', '✅ همهٔ کیفیت‌ها شناسایی شد — کدام را می‌خواهید؟ یکی را انتخاب کنید:');
-        return false;   // منتظر انتخاب کاربر — خطا نیست
+    if (ytState._askQuality && ov && ov.classList.contains('active')) {
+        // 🔧 v257: اولین منبعی که نسخهٔ با صدا دارد پنل را باز می‌کند
+        while (ext) {
+            if (ytRenderQualityPicker(ext, title)) {
+                ytShowStatus('info', '✅ همهٔ کیفیت‌ها شناسایی شد — کدام را می‌خواهید؟ یکی را انتخاب کنید:');
+                return false;   // منتظر انتخاب کاربر — خطا نیست
+            }
+            ext = await nextExt();
+            if (ext) ytState._pendingExt = ext;
+        }
+        // هیچ منبعی نسخهٔ با صدا نداشت — مسیر خودکار از همهٔ منابع جمع‌شده
+        for (let i = 0; i < collected.length; i++) {
+            if (await ytDownloadFromExt(collected[i], videoId, null, title, i === collected.length - 1)) return true;
+        }
+        return false;
     }
-    return await ytDownloadFromExt(ext, videoId, null, title);
+    while (ext) {
+        if (await ytDownloadFromExt(ext, videoId, null, title)) return true;
+        ext = await nextExt();
+    }
+    return false;
 }
 
 // 🔧 v254 (BA-167): دانلود از اطلاعات استخراج‌شده — کاندیداها به‌ترتیب:
 //   انتخاب کاربر (در صورت وجود) ← بقیهٔ هم‌نوع‌ها ← fallback بی‌صدا (BA-165).
-async function ytDownloadFromExt(ext, videoId, chosen, title) {
+// 🔧 v257: showFinal=false یعنی منبع بعدی هنوز امتحان نشده — پیام صادقانهٔ
+//   نهایی فقط از آخرین منبع نمایش داده می‌شود (پایپ‌لاین چند-منبعی).
+async function ytDownloadFromExt(ext, videoId, chosen, title, showFinal) {
     title = title || ((ext.title || ('youtube_' + videoId)).replace(/[\\/:*?"<>|]/g, '_')).slice(0, 60);
     const nameBase = ytApplyPath(ytState.path, title);
     let mainUrl = null, lastUrl = null, lastName = null;
@@ -21951,12 +22086,16 @@ async function ytDownloadFromExt(ext, videoId, chosen, title) {
     }
     if (!mainUrl) {
         // 🔧 v254 (BA-167): پیام صادقانه — هیچ‌وقت «دانلود شد» دروغ نمی‌گوییم
-        ytShowStatus('error', '❌ ذخیرهٔ فایل ممکن نشد.<br>' +
-            '<b>دلیل:</b> واکشی مستقیم و همهٔ رله‌های واسط (اینوریوس + سرویس‌های CORS متن‌باز) برای این فایل پاسخ ندادند — مسدودی سمت سرور/شبکه (CORS).<br>' +
-            '<b>راه‌حل ۱:</b> چند لحظه بعد دوباره «دانلود» بزنید (سرورها پشت‌سرهم زنده/مرده می‌شوند).<br>' +
-            '<b>راه‌حل ۲ (پایدار):</b> یک سرور Invidious با CORS باز در فیلد «سرور سفارشی» (پایین) وارد کنید.');
-        // راه دستی اختیاری — فقط دکمه؛ هیچ‌چیز خودکار باز نمی‌شود
-        if (lastUrl) ytShowResult(lastUrl, lastName || (nameBase + '.mp4'));
+        // 🔧 v257: فقط یک‌بار در هر اجرا (منابع بعدی هم امتحان می‌شوند)
+        if (showFinal !== false && !ytState._finalMsgShown) {
+            ytState._finalMsgShown = true;
+            ytShowStatus('error', '❌ ذخیرهٔ فایل ممکن نشد.<br>' +
+                '<b>دلیل:</b> واکشی مستقیم و همهٔ رله‌های واسط (اینوریوس + سرویس‌های CORS متن‌باز + پروکسی‌های Piped + cobalt) برای این فایل پاسخ ندادند — مسدودی سمت سرور/شبکه (CORS).<br>' +
+                '<b>راه‌حل ۱:</b> چند لحظه بعد دوباره «دانلود» بزنید (سرورها پشت‌سرهم زنده/مرده می‌شوند).<br>' +
+                '<b>راه‌حل ۲ (پایدار):</b> یک سرور Invidious با CORS باز در فیلد «سرور سفارشی» (پایین) وارد کنید.');
+            // راه دستی اختیاری — فقط دکمه؛ هیچ‌چیز خودکار باز نمی‌شود
+            if (lastUrl) ytShowResult(lastUrl, lastName || (nameBase + '.mp4'));
+        }
         return false;
     }
     // همیشه فقط یک فایل — مثل اپ پایتونی
