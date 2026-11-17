@@ -7703,7 +7703,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v264-2026-11-17-meeting-no-wipe-smart-restart';
+const APP_VERSION = 'v265-2026-11-17-meeting-unintelligible-dots-no-lock';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20470,6 +20470,12 @@ function meetingToggleMic() {
 // کپی عینی accDocStartRec — تفاوت: continuous=true (پیوسته برای جلسه طولانی)
 // و هدف textarea + دکمهٔ meetingMicBtn.
 // ════════════════════════════════════════════════════════════════════
+// 🔧 v265 (BA-178 — الزام کاربر: «کلمات نامفهوم گیر می‌کند و قفل می‌کند،
+//   ~۳۰ثانیه طول می‌کشد تا ریست شود»): شکارچی interim یخ‌زده — متن زندهٔ
+//   بی‌تغییرِ >۴.۵ثانیه = موتور روی گفتار نامفهوم گیر کرده. درمان:
+//   تعهد فوریِ بخش مفهومِ جمله + «....» جای واژه‌های نامفهوم + شکستن
+//   نشستِ گیرکرده (restart پایهٔ ۶۰۰ms). onnomatch هم همین‌طور تعهد
+//   می‌کند. هیچ قفل ۳۰ثانیه‌ای باقی نمی‌ماند.
 // 🔧 v264 (BA-177 — الزام کاربر: «خراب است، قطع سریع و حتی پاک کردن
 //   جملات قبلی»): دو ریشه و دو درمان:
 //   (۱) قطع سریع — رشد تأخیرِ v263 روی نشست‌های «کوتاهِ پربار» هم فعال
@@ -20526,6 +20532,11 @@ const MEET_QUICKEND_MS = 1500;    // نشستِ کوتاه‌تر از این = 
 // پربار (جملهٔ کوتاه) ردِ سرویس نیست و نباید تأخیر را رشد دهد.
 let meetSessionGotResult = false; // آیا نشست فعلی حداقل یک نتیجه گرفته؟
 const MEET_DRAFT_KEY = 'yadavar_meeting_draft_v1'; // 🔧 v264: پیش‌نویس زندهٔ جلسه
+// 🔧 v265 (BA-178): شکارچی «interim یخ‌زده» — گفتار نامفهوم
+let meetInterimFrozenText = '';      // آخرین متن interim بدون هیچ تغییر
+let meetInterimStuckAt = 0;          // لحظه‌ای که interim همین متن را نشان داد
+let meetStuckTimer = null;           // تایمر شکارچی (هر ۱ثانیه)
+const MEET_INTERIM_STUCK_MS = 4500;  // interimِ بی‌تغییرِ بیشتر از این = گیرِ موتور روی گفتار نامفهوم
 function buildMeetSR() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SR();
@@ -20555,6 +20566,19 @@ function buildMeetSR() {
             }
         }
         meetLastInterim = interim;   // 🔧 v243
+        // 🔧 v265 (BA-178): سنجش گیرِ interim — اگر متن زنده همان متن قبلی
+        //    بماند (هیچ پیش‌رفتی)، موتور روی گفتار نامفهوم گیر کرده؛
+        //    شکارچی (هر ۱ثانیه) آن را با «....» تعهد می‌کند و نشست را می‌شکند.
+        if (interim && interim.trim()) {
+            const curI = interim.trim();
+            if (curI !== meetInterimFrozenText) {
+                meetInterimFrozenText = curI;
+                meetInterimStuckAt = Date.now();
+            }
+        } else {
+            meetInterimFrozenText = '';
+            meetInterimStuckAt = 0;
+        }
         const el = document.getElementById('meetingText');
         // 🔧 v264: پیش‌نویس زنده — هر نوشتن بلافاصله ذخیره می‌شود تا
         //    reload/رفرش/کشتنِ تب هرگز متن جلسه را پاک نکند (BA-177).
@@ -20574,21 +20598,37 @@ function buildMeetSR() {
             meetingStopRec();
             showToast('دسترسی به میکروفون رد شد. در تنظیمات مرورگر اجازه دهید.');
         }
-        // خطاهای گذرا — سیکل بعدی (onend → 200ms restart) ادامه می‌دهد
+        // خطاهای گذرا — سیکل بعدی (onend → restart ملایم ۶۰۰ms) ادامه می‌دهد
+    };
+    // 🔧 v265 (BA-178): nomatch = صدا شنیده شد ولی هیچ واژه‌ای قابل تشخیص
+    //    نبود — به‌جای انتظار/قفل، بخشِ مفهومِ interim + «....» تعهد می‌شود.
+    //    پربار شمرده می‌شود تا restart ملایم پایهٔ ۶۰۰ms بماند و روی
+    //    گفتار نامفهومِ پیوسته، ضدتروتل هم اشتباهی فعال نشود.
+    rec.onnomatch = function() {
+        meetRecLastEventAt = Date.now();
+        meetSessionGotResult = true;
+        meetForceCommitUnintelligible();
     };
     rec.onend = function() {
         meetRecLastEventAt = Date.now();   // 🔧 v244
         // 🔧 v243: تعهد آخرین interim قبل از restart (توضیح در taskRecObj.onend) —
         //    جملهٔ شنیده‌شدهٔ نافینال‌شده هرگز گم نمی‌شود.
         if (meetLastInterim && meetLastInterim.trim()) {
-            meetRecAccum += meetLastInterim.trim() + ' ';
-            const elC = document.getElementById('meetingText');
-            if (elC) {
-                elC.value = addNumericAfterWords(meetRecAccum.trim()).trim();
-                try { localStorage.setItem(MEET_DRAFT_KEY, elC.value); } catch(e) {}   // 🔧 v264
+            // 🔧 v265 (BA-178): اگر interim هنگام پایانِ نشست یخ‌زده بود
+            //    (گفتار نامفهوم)، با «....» تعهد می‌شود نه متنِ خامِ گیرکرده.
+            if (meetInterimStuckAt && Date.now() - meetInterimStuckAt >= MEET_INTERIM_STUCK_MS) {
+                meetForceCommitUnintelligible();
+            } else {
+                meetRecAccum += meetLastInterim.trim() + ' ';
+                const elC = document.getElementById('meetingText');
+                if (elC) {
+                    elC.value = addNumericAfterWords(meetRecAccum.trim()).trim();
+                    try { localStorage.setItem(MEET_DRAFT_KEY, elC.value); } catch(e) {}   // 🔧 v264
+                }
             }
         }
         meetLastInterim = '';
+        meetInterimFrozenText = ''; meetInterimStuckAt = 0;   // 🔧 v265
         // 🔧 v242: پاک‌کردن ایندکس‌ها بعد از restart (توضیح در taskRecObj.onend)
         meetRecIndices = new Set();
         if (meetRecActive) {
@@ -20665,6 +20705,37 @@ function meetSafeStart(attempt) {
         setTimeout(function() { if (meetRecActive && meetRecObj === myObj) meetSafeStart((attempt || 0) + 1); }, wait);
     }
 }
+// 🔧 v265 (BA-178 — الزام کاربر: «کلمات نامفهوم گیر می‌کند، قفل می‌کند و
+//    ~۳۰ثانیه طول می‌کشد تا ریست شود؛ همان جای مفهوم را بنویسد و به جای
+//    نامفهوم‌ها .... بگذارد»): تعهد فوری بخشِ مفهوم + «....» برای ناگفته‌ها.
+function meetForceCommitUnintelligible() {
+    if (!meetRecActive) return;
+    if (meetLastInterim && meetLastInterim.trim()) {
+        meetRecAccum += meetLastInterim.trim() + '.... ';   // بخش مفهوم + نشانهٔ نامفهوم
+    } else {
+        meetRecAccum += '.... ';   // صدا بود ولی هیچ واژه‌ای قابل تشخیص نبود (nomatch)
+    }
+    meetLastInterim = '';
+    meetInterimFrozenText = '';
+    meetInterimStuckAt = 0;
+    const el = document.getElementById('meetingText');
+    if (el) {
+        el.value = addNumericAfterWords(meetRecAccum.trim()).trim();
+        try { localStorage.setItem(MEET_DRAFT_KEY, el.value); } catch(e) {}
+    }
+}
+// شکارچی interim یخ‌زده — هر ۱ثانیه: اگر متن زندهٔ بی‌تغییر از آستانهٔ گیر
+// گذشت، با «....» تعهد می‌شود و نشست شکسته می‌شود (abort → onend → restart
+// پایهٔ ۶۰۰ms چون نشست پربار شمرده می‌شود). این همان «قفل ۳۰ثانیه‌ای» را
+// به ~۵ثانیهٔ مؤدبانه تبدیل می‌کند.
+function meetStuckCheck() {
+    if (!meetRecActive || !meetRecObj) return;
+    if (!meetLastInterim || !meetLastInterim.trim() || !meetInterimStuckAt) return;
+    if (Date.now() - meetInterimStuckAt < MEET_INTERIM_STUCK_MS) return;
+    console.warn('[MeetingMic] interim frozen ' + Math.round((Date.now() - meetInterimStuckAt) / 1000) + 's — committing with dots, breaking session');
+    meetForceCommitUnintelligible();
+    try { meetRecObj.abort(); } catch(e) {}
+}
 function meetingStartRec() {
     if (!isSpeechSupported()) {
         showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. از Chrome یا Edge استفاده کنید.');
@@ -20689,6 +20760,7 @@ function meetingStartRec() {
     // 🔧 v244: watchdog
     meetRecLastEventAt = Date.now();
     if (!meetWatchdogTimer) meetWatchdogTimer = setInterval(meetWatchdog, 5000);
+    if (!meetStuckTimer) meetStuckTimer = setInterval(meetStuckCheck, 1000);   // 🔧 v265: شکارچی interim یخ‌زده
     meetSafeStart(0);
 }
 
@@ -20698,6 +20770,10 @@ function meetingStopRec() {
     if (meetRestartPending) { clearTimeout(meetRestartPending); meetRestartPending = null; }
     // 🔧 v244: توقف watchdog
     if (meetWatchdogTimer) { clearInterval(meetWatchdogTimer); meetWatchdogTimer = null; }
+    // 🔧 v265: توقف شکارچی interim یخ‌زده + پاک‌سازی گیر
+    if (meetStuckTimer) { clearInterval(meetStuckTimer); meetStuckTimer = null; }
+    meetInterimFrozenText = '';
+    meetInterimStuckAt = 0;
     // 🔧 v264: پیش‌نویس زنده — قبل از هر توقفی متن فعلی ذخیره شود (تایپ دستی
     //    کاربر بین نشست‌ها هم محفوظ می‌ماند؛ reload معوق آپدیت متن را پاک نمی‌کند)
     try {
