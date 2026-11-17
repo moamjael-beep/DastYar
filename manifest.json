@@ -69,16 +69,5 @@
       "description": "شروع ضبط صوت و افزودن یادآور",
       "url": "./speech-to-text-reminder.html?action=add"
     }
-  ],
-  "_comment_share_target": "v243: اشتراک‌گذاری لینک یوتیوب از برنامهٔ یوتیوب به «یادآور صوتی» — دانلود خودکار شروع می‌شود",
-  "share_target": {
-    "action": "./speech-to-text-reminder.html",
-    "method": "GET",
-    "enctype": "application/x-www-form-urlencoded",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  }
+  ]
 }
