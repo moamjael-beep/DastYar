@@ -7703,7 +7703,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v262-2026-11-17-meeting-recognition-fixed';
+const APP_VERSION = 'v263-2026-11-17-meeting-gentle-restart';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20448,6 +20448,18 @@ function meetingToggleMic() {
 // کپی عینی accDocStartRec — تفاوت: continuous=true (پیوسته برای جلسه طولانی)
 // و هدف textarea + دکمهٔ meetingMicBtn.
 // ════════════════════════════════════════════════════════════════════
+// 🔧 v263 (BA-176 — الزام کاربر: «۵ثانیه کار می‌کند و به کما می‌رود،
+//   ۳۰-۴۰ثانیه بعد یک بوق ری‌استارت می‌زند، باز ۵ثانیه می‌نویسد»):
+//   ریشه = restart فوری ۲۰۰ms. چرخهٔ سریع start/stop، سرویس گفتار گوگل
+//   را تروتل می‌کند؛ در پنجرهٔ ردِ ~۳۰-۴۰ثانیه‌ای هر نشست فوراً با
+//   'aborted' رد می‌شود و چون هر رد هم بلافاصله restart بعدی را
+//   می‌ساخت، چرخه خودش را تغذیه و کما را طولانی‌تر می‌کرد. درمان:
+//   restart ملایم — پایهٔ ۶۰۰ms پس از نشست سالم؛ «پایان فوری» (نشستِ
+//   کوتاه‌تر از ۱.۵ثانیه = سرویس رد کرد/میکروفون آزاد نشد) فاصلهٔ
+//   بعدی را تصاعدی می‌کند: ۱.۲s → ۲.۴s → ۴.۸s → سقف ۵s — سرویس فرصت
+//   خنک‌شدن می‌گیرد و نشست سالم بعدی بلافاصله باز می‌شود (بوق = صدای
+//   سیستم اندروید هنگام بازشدن میکروفونِ نشست؛ با چرخهٔ ملایم فقط یکی
+//   به‌ازای هر جمله).
 // 🔧 v262 (BA-175 — الزام کاربر: «خراب است، هیچ چیزی تشخیص نمی‌دهد و
 //   نمی‌نویسد»): ریشهٔ خرابی = متر سطح میکروفونِ v261. یک استریم
 //   getUserMedia موازی با موتور SR روی گوشیِ واقعی میکروفون را نگه
@@ -20469,6 +20481,11 @@ let meetRecLastEventAt = 0;
 let meetWatchdogTimer = null;
 let meetRestartPending = null;    // فقط یک restart در انتظار
 const MEET_ZOMBIE_MS = 60000;     // ۶۰s مطلقاً بدون رویداد = موتور زامبی
+// 🔧 v263 (BA-176): restart ملایم — ضدتروتل سرویس گفتار
+let meetQuickEnds = 0;            // دنبالهٔ «پایان‌های فوری» (نشست‌های رد‌شده)
+let meetSessionStartAt = 0;       // لحظهٔ start نشست فعلی
+const MEET_RESTART_BASE_MS = 600; // فاصلهٔ restart پس از نشست سالم (۶۰۰ms — نه ۲۰۰ms)
+const MEET_QUICKEND_MS = 1500;    // نشستِ کوتاه‌تر از این = «پایان فوری» (سرویس رد کرد)
 function buildMeetSR() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SR();
@@ -20476,7 +20493,7 @@ function buildMeetSR() {
     rec.continuous = true;
     // 🔧 v240 (الزام کاربر): interimResults=true — بازخورد زندهٔ کلمات (بوق ندارد).
     rec.interimResults = true;
-    rec.onstart = function() { meetRecLastEventAt = Date.now(); };   // 🔧 v244
+    rec.onstart = function() { meetRecLastEventAt = Date.now(); meetSessionStartAt = Date.now(); };   // 🔧 v244 + v263
     // 🔧 v261: موتورِ زنده‌ای که صدا می‌شنود رویداد soundstart می‌دهد —
     //    این هم شمارندهٔ بی‌رویدادی را صفر می‌کند (نشانهٔ سلامت موتور).
     rec.onsoundstart = function() { meetRecLastEventAt = Date.now(); };
@@ -20531,6 +20548,14 @@ function buildMeetSR() {
             //    نمی‌سازد (قبلاً نمونه‌های کهنه نمونهٔ موازی می‌ساختند و
             //    رقابت میکروفون ضبط را قفل می‌کرد).
             if (meetRestartPending) { clearTimeout(meetRestartPending); meetRestartPending = null; }
+            // 🔧 v263 (BA-176): restart ملایم — نشستِ سالم (≥۱.۵ثانیه) شمارندهٔ
+            //    پایان‌های فوری را صفر می‌کند و فاصلهٔ پایهٔ ۶۰۰ms برمی‌گردد؛
+            //    پایانِ فوری نشست (<۱.۵ثانیه = سرویس رد کرد) فاصلهٔ بعدی را
+            //    تصاعدی می‌کند (سقف ۵s) تا سرویس تروتل‌شده فرصت خنک‌شدن
+            //    بگیرد و چرخهٔ start/stop دیگر خودش را تغذیه نکند.
+            const dur = Date.now() - (meetSessionStartAt || Date.now());
+            meetQuickEnds = dur < MEET_QUICKEND_MS ? Math.min(meetQuickEnds + 1, 4) : 0;
+            const waitMs = Math.min(MEET_RESTART_BASE_MS * Math.pow(2, meetQuickEnds), 5000);
             const myRec = rec;
             meetRestartPending = setTimeout(function() {
                 meetRestartPending = null;
@@ -20539,7 +20564,7 @@ function buildMeetSR() {
                     meetRecObj = buildMeetSR();
                     meetSafeStart(0);
                 }
-            }, 200);
+            }, waitMs);
         }
     };
     return rec;
