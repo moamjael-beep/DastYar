@@ -5514,7 +5514,7 @@ body.locked .header-actions button {
                 <button class="yt-chip selected" data-mode="video" onclick="ytSelectMode('video')">ویدئو</button>
                 <button class="yt-chip" data-mode="audio" onclick="ytSelectMode('audio')">صدا</button>
             </div>
-            <div class="yt-help" style="margin-top:8px; font-size:12px;">ویدئو = بالاترین کیفیت دارای صدا در <b>یک فایل MP4</b> (مثل get_highest_resolution در pytubefix). صدا = بهترین صدا با نام <b>.mp3</b> (مثل برنامهٔ پایتونی شما).</div>
+            <div class="yt-help" style="margin-top:8px; font-size:12px;">ویدئو = همهٔ کیفیت‌ها شناسایی و از شما پرسیده می‌شود کدام را می‌خواهید (v254). صدا = بهترین صدا با نام <b>.mp3</b> (مثل برنامهٔ پایتونی شما).</div>
         </div>
 
         <div class="yt-section">
@@ -5535,6 +5535,14 @@ body.locked .header-actions button {
         <div id="ytMsgPopup" style="display:none; position:fixed; bottom:16px; left:50%; transform:translateX(-50%); z-index:10001; max-width:360px; width:calc(100% - 32px);">
             <div id="ytMsgText" style="background:#2b2b2b; color:#fff; border-radius:12px; padding:14px 16px; box-shadow:0 6px 24px rgba(0,0,0,.35); font-size:13.5px; line-height:1.9; text-align:center; word-break:break-word;"></div>
             <button class="open-btn" style="margin-top:8px; width:100%;" onclick="ytCloseMessage()">بستن</button>
+        </div>
+
+        <!-- 🔧 v254 (BA-167): انتخاب کیفیت — همهٔ کیفیت‌های ویدئو شناسایی و
+             از کاربر پرسیده می‌شود کدام را می‌خواهد (الزام کاربر) -->
+        <div class="yt-section" id="ytQualityPicker" style="display:none;">
+            <h3>🎚 کیفیت ویدئو — انتخاب کنید</h3>
+            <div class="yt-help">همهٔ کیفیت‌های موجود برای این ویدیو شناسایی شد. «با صدا» = یک فایل کامل با صدا و تصویر (پیشنهادی). «بی‌صدا» = فقط تصویر (وقتی نسخهٔ با صدا موجود نیست).</div>
+            <div class="yt-chip-group" id="ytQualityList" style="margin-top:8px;"></div>
         </div>
 
         <div class="yt-section">
@@ -7408,6 +7416,15 @@ body.locked .header-actions button {
 //               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
 //               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
 //               آن از یک اپ استاتیک وجود ندارد.
+//         🔧 v254 (۱۴۰۵ آبان ۲۹) — گزارش کاربر: «آخرش مینویسه دانلود شد
+//           اما فایلی دانلود نکرده؛ یک صفحه برای نمایش ویدیو باز میکنه
+//           که ناموفق است» + «مثل فایل پایتون تمام کیفیت‌های ویدیو را
+//           تشخیص و از کاربر بخواهد» — BA-167:
+//           ① حذف native fallback v252 (anchor cross-origin = صفحهٔ پخش،
+//             نه دانلود) → خطای صادقانه + کارت لینک دستی، بدون false-success.
+//           ② پنل انتخاب کیفیت: همهٔ کیفیت‌ها (با صدا/بی‌صدا + حجم) پس از
+//             استخراج به کاربر نمایش داده می‌شود؛ انتخابش اول دانلود می‌شود.
+//
 //         🔧 v253 (۱۴۰۵ آبان ۲۸) — الزام کاربر: «کل صفحه یوتیوب بر اساس
 //           این فایل پایتون من باز طراحی و باز کد نویسی شود» — BA-166:
 //           پورت کامل معماری upload/main.py (Kivy + pytubefix):
@@ -7839,7 +7856,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v253-2026-11-16-yt-pytubefix-redesign';
+const APP_VERSION = 'v254-2026-11-17-yt-quality-picker';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -21041,6 +21058,9 @@ function openYouTubeDownloader(fromMenu) {
     const btn = document.getElementById('ytDownloadBtn');
     if (btn) { btn.disabled = false; btn.textContent = '⬇️ دانلود'; }
     ytCloseMessage();   // 🔧 v253: popup قبلی بسته شود
+    const pk = document.getElementById('ytQualityPicker');
+    if (pk) pk.style.display = 'none';   // 🔧 v254: picker قبلی بسته شود
+    ytState._askQuality = false;
     // 🔧 v243: اگر لینک اشتراک‌شده یا کلیپ‌بورد موجود است، خودکار شروع کن
     setTimeout(async function(){
         try {
@@ -21387,19 +21407,17 @@ async function ytDownloadAndSave(url, filename) {
         if (wrap) wrap.style.display = 'none';
         return await ytSaveBlob(blob, filename);
     } catch(e) {
-        console.warn('[YT] Blob fetch failed, fallback to native download:', e.message);
+        console.warn('[YT] Blob fetch failed:', e.message);
+        // 🔧 v254 (BA-167 — گزارش کاربر: «مینویسه دانلود شد اما فایلی دانلود
+        // نکرده و یک صفحهٔ نمایش ویدیو باز می‌کند که ناموفق است»): مسیر v252
+        // (کلیک anchor با آدرس cross-origin) هرگز فایل نمی‌سازد — مرورگر
+        // attribute download را برای دامنهٔ دیگر نادیده می‌گیرد و به‌جای ذخیره
+        // صفحهٔ پخش را باز می‌کند. پس اینجا دیگر «موفق» دروغ نمی‌گوییم:
+        // false برمی‌گردد تا پایپ‌لاین کاندیدای بعدی (سرور دیگر) را امتحان کند
+        // و در پایانِ شکست، پیام صادقانه + کارت لینک دستی نمایش داده شود.
+        ytShowStatus('info', '⚠️ واکشی مستقیم ممکن نشد (' + ytEscape(e.message) + ') — تلاش با منبع بعدی...');
+        return false;
     }
-    if (wrap) wrap.style.display = 'none';
-    // 🔧 v252 (BA-165): آخرین راه — دانلود نیتیو مرورگر (بدون Blob).
-    // این مسیر حیاتی است چون URLهای googlevideo اغلب CORS ندارند و fetch
-    // شکست می‌خورد، ولی مرورگر مستقیم می‌تواند download کند. بدون این،
-    // پیام «هیچ فرمت قابل دانلودی موجود نیست» نمایش داده می‌شد.
-    const a = document.createElement('a');
-    a.href = url; a.download = filename; a.target = '_blank'; a.rel = 'noopener';
-    a.style.display = 'none';
-    document.body.appendChild(a); a.click(); a.remove();
-    ytShowStatus('success', '✅ دانلود شروع شد: ' + ytEscape(filename) + ' (به مرورگر سپرده شد)');
-    return true;
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -21729,32 +21747,67 @@ async function ytRunPipeline(videoId, btn) {
             '<details style="margin-top:6px; font-size:11px;"><summary>گزارش فنی</summary><pre style="white-space:pre-wrap; direction:ltr; text-align:left;">' + ytEscape(flog) + '</pre></details>');
         return false;
     }
-    ytShowStatus('info', '✅ اطلاعات از ' + ytEscape(ext.backend) + ' گرفته شد — شروع دانلود...');
+    ytShowStatus('info', '✅ اطلاعات از ' + ytEscape(ext.backend) + ' گرفته شد — ' + (ytState.mode === 'audio' ? 'شروع دانلود صدا...' : 'تشخیص کیفیت‌ها...'));
     const title = ((ext.title || ('youtube_' + videoId)).replace(/[\\/:*?"<>|]/g, '_')).slice(0, 60);
-    // 🔧 v253 (BA-166): پورت download_file از main.py کاربر (Kivy + pytubefix):
-    //   Video → streams.get_highest_resolution() → یک فایل muxed → {name}.mp4
-    //   Audio → streams.get_audio_only()          → بهترین صدا    → {name}.mp3
-    // تاب‌آوری v249–v252 زیر همین پورت حفظ شده (کاندیدای بعدی + fallback بی‌صدا + native download).
+    // 🔧 v253 (BA-166): پورت download_file از main.py کاربر (Kivy + pytubefix) +
+    // 🔧 v254 (BA-167 — الزام کاربر: «تمام کیفیت‌های ویدیو را تشخیص و از
+    //   کاربر بخواهد کدام را میخواهد»): قبل از دانلود ویدئو، همهٔ کیفیت‌ها
+    //   شناسایی و پنل انتخاب کیفیت نمایش داده می‌شود.
+    ytState._pendingExt = ext;
+    ytState._pendingTitle = title;
+    ytState._pendingVideoId = videoId;
+
+    if (ytState.mode === 'audio') {
+        return await ytDownloadFromExt(ext, videoId, null, title);
+    }
+    // پنل انتخاب کیفیت — فقط وقتی صفحهٔ یوتیوب باز است و از مسیر کاربر آمده‌ایم
+    // (فراخوانی مستقیم برنامه‌ای/پروب: مثل main.py خودکار بالاترین را می‌گیرد)
+    const ov = document.getElementById('ytOverlay');
+    if (ytState._askQuality && ov && ov.classList.contains('active') && ytRenderQualityPicker(ext, title)) {
+        ytShowStatus('info', '✅ همهٔ کیفیت‌ها شناسایی شد — کدام را می‌خواهید؟ یکی را انتخاب کنید:');
+        return false;   // منتظر انتخاب کاربر — خطا نیست
+    }
+    return await ytDownloadFromExt(ext, videoId, null, title);
+}
+
+// 🔧 v254 (BA-167): دانلود از اطلاعات استخراج‌شده — کاندیداها به‌ترتیب:
+//   انتخاب کاربر (در صورت وجود) ← بقیهٔ هم‌نوع‌ها ← fallback بی‌صدا (BA-165).
+async function ytDownloadFromExt(ext, videoId, chosen, title) {
+    title = title || ((ext.title || ('youtube_' + videoId)).replace(/[\\/:*?"<>|]/g, '_')).slice(0, 60);
     const nameBase = ytApplyPath(ytState.path, title);
-    let mainUrl = null;
+    let mainUrl = null, lastUrl = null, lastName = null;
 
     if (ytState.mode === 'audio') {
         // 🔊 پورت get_audio_only() — کاندیداها از بالاترین بیت‌ریت
         const auds = ytGetAudioOnly(ext.streams) || [];
-        for (const s of auds) {
+        const order = (chosen && String(chosen.mime || '').indexOf('audio/') === 0)
+            ? [chosen].concat(auds.filter(function(s){ return s !== chosen; }))
+            : auds;
+        for (const s of order) {
             const u = await ytResolveStreamUrl(s);
             if (!u) continue;
+            lastUrl = u; lastName = nameBase + '.mp3';
             ytShowStatus('info', '⬇️ شروع دانلود صدا: ' + ytEscape(nameBase) + '.mp3 — ' + ytEscape(String(s.label || '')));
             try {
                 if (await ytDownloadAndSave(u, nameBase + '.mp3')) { mainUrl = u; ytState._lastSavedName = nameBase + '.mp3'; break; }
             } catch(e) { console.warn('[YT] audio', s.label, 'failed:', e.message); }
         }
     } else {
-        // 🎬 پورت get_highest_resolution() — اولین muxed مرتب‌شده = بالاترین کیفیت دارای صدا
+        // 🎬 ویدئو — اولویت سخت muxed (صدا+تصویر در یک فایل، مثل main.py)
         const muxed = ytGetHighestResolution(ext.streams) || [];
-        for (const pick of muxed) {
+        let order;
+        if (chosen) {
+            const pool = chosen.hasAudio ? muxed
+                : (ext.streams || []).filter(function(s){ return (s.mime || '').indexOf('video/') === 0 && !s.hasAudio; })
+                  .sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
+            order = [chosen].concat(pool.filter(function(s){ return s !== chosen; }));
+        } else {
+            order = muxed;
+        }
+        for (const pick of order) {
             const u = await ytResolveStreamUrl(pick);
             if (!u) continue;
+            lastUrl = u; lastName = nameBase + '.mp4';
             ytShowStatus('info', '⬇️ شروع دانلود ویدئو: ' + ytEscape(nameBase) + '.mp4 — ' + ytEscape(String(pick.label || ((pick.height || 0) + 'p'))));
             try {
                 if (await ytDownloadAndSave(u, nameBase + '.mp4')) { mainUrl = u; ytState._lastSavedName = nameBase + '.mp4'; break; }
@@ -21763,13 +21816,15 @@ async function ytRunPipeline(videoId, btn) {
                 ytShowStatus('info', '🔄 این کیفیت خطا داد (' + ytEscape(e.message) + ') — تلاش با کیفیت بعدی...');
             }
         }
-        // 🔧 v252 (BA-165) حفظ شد: اگر هیچ نسخهٔ muxed نبود/کار نکرد → آخرین راه، فایل بی‌صدا با هشدار
-        if (!mainUrl) {
+        // 🔧 v252 (BA-165) حفظ شد: بدون انتخاب صریح کاربر، اگر هیچ نسخهٔ muxed
+        // نبود/کار نکرد → آخرین راه، فایل بی‌صدا با هشدار
+        if (!mainUrl && !chosen) {
             const only = (ext.streams || []).filter(function(s){ return (s.mime || '').indexOf('video/') === 0 && !s.hasAudio; })
                                             .sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
             for (const pick of only) {
                 const u = await ytResolveStreamUrl(pick);
                 if (!u) continue;
+                lastUrl = u; lastName = nameBase + '.' + (pick.ext || 'mp4');
                 ytShowStatus('info', '⬇️ شروع دانلود (فقط تصویر): ' + ytEscape(nameBase));
                 try {
                     if (await ytDownloadAndSave(u, nameBase + '.' + (pick.ext || 'mp4'))) {
@@ -21782,11 +21837,74 @@ async function ytRunPipeline(videoId, btn) {
         }
     }
     if (!mainUrl) {
-        ytShowStatus('error', '❌ هیچ فرمت قابل دانلودی پیدا نشد. (ویدیو ممکن است محدودیت سنی/منطقه‌ای داشته باشد.)');
+        // 🔧 v254 (BA-167): پیام صادقانه — هیچ‌وقت «دانلود شد» دروغ نمی‌گوییم
+        ytShowStatus('error', '❌ ذخیرهٔ فایل ممکن نشد.<br>' +
+            '<b>دلیل:</b> مرورگر اجازهٔ واکشی مستقیم فایل از سرور یوتیوب را ندارد (CORS) و هیچ‌کدام از منابع پاسخ ندادند.<br>' +
+            '<b>راه‌حل ۱:</b> چند لحظه بعد دوباره «دانلود» بزنید (سرورها پشت‌سرهم زنده/مرده می‌شوند).<br>' +
+            '<b>راه‌حل ۲ (پایدار):</b> یک سرور Invidious با CORS باز در فیلد «سرور سفارشی» (پایین) وارد کنید.');
+        // راه دستی اختیاری — فقط دکمه؛ هیچ‌چیز خودکار باز نمی‌شود
+        if (lastUrl) ytShowResult(lastUrl, lastName || (nameBase + '.mp4'));
         return false;
     }
-    // 🔧 v253: همیشه فقط یک فایل — مثل اپ پایتونی
+    // همیشه فقط یک فایل — مثل اپ پایتونی
     return true;
+}
+
+// ─── 🔧 v254 (BA-167): پنل انتخاب کیفیت ───
+function ytFmtBytes(n) {
+    n = Number(n) || 0;
+    if (n <= 0) return '';
+    const u = ['KB', 'MB', 'GB'];
+    let i = -1;
+    do { n /= 1024; i++; } while (n >= 1024 && i < u.length - 1);
+    return (n >= 10 ? Math.round(n) : Math.round(n * 10) / 10) + ' ' + u[i];
+}
+
+function ytRenderQualityPicker(ext, title) {
+    const wrap = document.getElementById('ytQualityPicker');
+    const list = document.getElementById('ytQualityList');
+    if (!wrap || !list) return false;
+    const vids = (ext.streams || []).filter(function(s){ return (s.mime || '').indexOf('video/') === 0; });
+    const muxed = vids.filter(function(s){ return s.hasAudio; })
+                      .sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
+    const only  = vids.filter(function(s){ return !s.hasAudio; })
+                      .sort(function(a,b){ return (b.height || 0) - (a.height || 0); });
+    if (!muxed.length && !only.length) return false;
+    const choices = [];
+    muxed.forEach(function(s){ choices.push({ s: s, tag: 'با صدا' }); });
+    only.forEach(function(s){ choices.push({ s: s, tag: 'بی‌صدا' }); });
+    ytState._qualityChoices = choices;
+    list.innerHTML = choices.map(function(c, i){
+        const lbl = ytEscape(String(c.s.label || ((c.s.height || 0) + 'p')));
+        const size = ytFmtBytes(c.s.contentLength || c.s.size || 0);
+        const sel = (i === 0) ? ' selected' : '';
+        return '<button class="yt-chip' + sel + '" data-qi="' + i + '" onclick="ytQualityChoose(' + i + ')">' + lbl +
+               ' <span style="opacity:.75; font-size:11px;">(' + c.tag + (size ? ' · ' + size : '') + ')</span></button>';
+    }).join('');
+    wrap.style.display = 'block';
+    return true;
+}
+
+async function ytQualityChoose(i) {
+    const c = (ytState._qualityChoices || [])[i];
+    const wrap = document.getElementById('ytQualityPicker');
+    if (wrap) wrap.style.display = 'none';
+    ytState._qualityChoices = null;
+    ytState._askQuality = false;
+    if (!c || !ytState._pendingExt) return;
+    const btn = document.getElementById('ytDownloadBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ در حال دانلود...'; }
+    let ok = false;
+    try { ok = await ytDownloadFromExt(ytState._pendingExt, ytState._pendingVideoId, c.s, ytState._pendingTitle); }
+    catch(e) {
+        console.error('[YT] choose error', e);
+        ytShowStatus('error', '❌ خطا: ' + ytEscape(e.message || e));
+        ytShowMessage('خطا: ' + ytEscape(e.message || e));
+    }
+    if (ok && ytState._lastSavedName) {
+        ytShowMessage('✅ دانلود کامل شد!<br>📁 Saved as: ' + ytEscape(ytState._lastSavedName));
+    }
+    if (btn) { btn.disabled = false; btn.textContent = ok ? '✅ تمام شد — دانلود دیگر' : '⬇️ دانلود'; }
 }
 
 async function ytStartDownload(silent) {
@@ -21814,6 +21932,10 @@ async function ytStartDownload(silent) {
     }
     if (inp) inp.value = url;
     ytState.pendingUrl = url;
+    const pk = document.getElementById('ytQualityPicker');
+    if (pk) pk.style.display = 'none';   // 🔧 v254: picker قبلی بسته شود
+    // 🔧 v254 (BA-167): حالت ویدئو → بعد از استخراج، کیفیت از کاربر پرسیده شود
+    ytState._askQuality = (ytState.mode !== 'audio');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ در حال دریافت اطلاعات...'; }
     let ok = false;
     try { ok = await ytRunPipeline(videoId, btn); }
