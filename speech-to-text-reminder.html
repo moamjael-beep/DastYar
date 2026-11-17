@@ -7416,6 +7416,12 @@ body.locked .header-actions button {
 //               روش cobalt سوییچ می‌کند (با اطلاع‌رسانی به کاربر). این یک
 //               محدودیت ذاتی مرورگر است، نه کد ما — هیچ راهی برای دور زدن
 //               آن از یک اپ استاتیک وجود ندارد.
+//         🔧 v259 (۱۴۰۵ آبان ۲۹) — درخواست کاربر: «نمی‌خواهم پایتون اجرا کنم —
+//           خودت از طریق جاوا اجراش کن» — BA-172: (۱) کلیدها/نسخه‌های InnerTube
+//           بومی به ثابت‌های رسمی yt-dlp اصلاح + دو میزبان (www + googleapis)؛
+//           (۲) دکمهٔ «ارسال به اپ دانلودر گوشی (Seal/NewPipe)» با navigator.share
+//           در هر دو پیام خطا — بدون پایتون، یک ضربه؛ کپی لینک به‌عنوان جایگزین.
+//
 //         🔧 v258 (۱۴۰۵ آبان ۲۹) — پرسش کاربر: «یعنی تو دنیا یک نفر این
 //           مشکل رو حل نکرده؟» — BA-171: پاسخ صادقانه: حل‌های واقعی دنیا
 //           بیرون از مرورگرند؛ راه‌حل قطعی جدید: yt_relay_server.py (سرویس
@@ -7884,7 +7890,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v258-2026-11-17-yt-local-relay-helper';
+const APP_VERSION = 'v259-2026-11-17-yt-native-share-btn';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -21194,6 +21200,44 @@ function ytShowStatus(type, msg) {
     el.innerHTML = msg;
 }
 
+// 🔧 v259 (BA-172 — درخواست کاربر: «نمی‌خواهم پایتون اجرا کنم») — دکمهٔ
+// ارسال به اپ دانلودر گوشی: Seal/NewPipe همان yt-dlp هستند ولی بدون پایتون
+// و بدون ترمینال — یک ضربه از منوی اشتراک‌گذاری اندروید. اگر share نبود →
+// کپی لینک با یک ضربه.
+function ytShowShareBtn(vid) {
+    try {
+        const el = document.getElementById('ytStatus');
+        if (!el || !vid) return;
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'margin-top:8px;';
+        const btn = document.createElement('button');
+        btn.className = 'yt-share-btn';
+        btn.style.cssText = 'background:#00a884; color:#fff; border:none; border-radius:8px; padding:8px 14px; font-size:13px; font-family:inherit; cursor:pointer;';
+        btn.textContent = '⬇️ ارسال به اپ دانلودر گوشی (Seal/NewPipe — بدون پایتون)';
+        btn.onclick = function() {
+            const url = 'https://www.youtube.com/watch?v=' + vid;
+            if (navigator.share) {
+                navigator.share({ title: 'دانلود ویدیو', url: url }).catch(function() {});
+            } else if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(function() { btn.textContent = '✅ لینک کپی شد — در اپ دانلودر بچسبانید'; }).catch(function() {});
+            }
+        };
+        wrap.appendChild(btn);
+        el.appendChild(wrap);
+    } catch(e) {}
+}
+
+// 🔧 v259 (BA-172): حکم نهایی در پایانِ واقعی همهٔ منابع — پیام صادقانهٔ
+// وسطِ جریان با پیام‌های «مرحلهٔ بعدی» رونویسی می‌شود؛ در پایان دوباره نشان
+// بده تا آخرین چیزی که کاربر می‌بیند حکم نهایی + دکمهٔ اپ دانلودر باشد.
+function ytFinalVerdict(videoId) {
+    ytShowStatus('error', '❌ همهٔ منابع امتحان شد و ذخیرهٔ فایل ممکن نشد.<br>' +
+        '<b>راه‌حل گوشی (یک ضربه):</b> دکمهٔ سبز زیر — ارسال به اپ دانلودر گوشی (Seal یا NewPipe، بدون پایتون).<br>' +
+        '<b>راه‌حل کامپیوتر (قطعی):</b> اجرای <span dir="ltr">yt_relay_server.py</span> کنار صفحه و رفرش.<br>' +
+        '<b>راه‌حل فوری:</b> چند لحظه بعد دوباره «دانلود» بزنید (سرورها پشت‌سرهم زنده/مرده می‌شوند).');
+    ytShowShareBtn(videoId);
+}
+
 function ytShowResult(url, filename) {
     const el = document.getElementById('ytResult');
     if (!el) return;
@@ -21890,19 +21934,25 @@ function ytNormTubeFormats(sd) {
 
 // ─── مسیر ۳: InnerTube با زنجیرهٔ پروکسی ───
 async function ytExtractInnerTube(videoId, step) {
+    // 🔧 v259 (BA-172 — درخواست کاربر: «خودت از طریق جاوا اجراش کن»): کلیدها و
+    //   نسخه‌ها به ثابت‌های رسمی yt-dlp/pytubefix اصلاح شد + دو میزبان — اگر روی
+    //   شبکهٔ کاربر یکی باز شد، استخراج بومی مثل اپ پایتونی جواب می‌دهد (لینک
+    //   قفل‌شده به IP خود کاربر → دانلود مستقیم همان دستگاه معتبر است).
     const clients = [
-        { name: 'ANDROID', apiKey: 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8',
-          ctx: { client: { clientName: 'ANDROID', clientVersion: '19.09.37', androidSdkVersion: 34, hl: 'fa', gl: 'IR' } } },
-        { name: 'IOS', apiKey: 'AIzaSyB-63vPrdThhKuerbB2N_l7Kww9Yr0pksM',
-          ctx: { client: { clientName: 'IOS', clientVersion: '19.09.3', deviceMake: 'Apple', deviceModel: 'iPhone16,2', hl: 'fa', gl: 'IR' } } },
+        { name: 'ANDROID', apiKey: 'AIzaSyA8eiZmM1FaDVjRy-df2KTyQ_vz_YYM39w',
+          ctx: { client: { clientName: 'ANDROID', clientVersion: '19.44.38', androidSdkVersion: 30, hl: 'fa', gl: 'IR' } } },
+        { name: 'IOS', apiKey: 'AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc',
+          ctx: { client: { clientName: 'IOS', clientVersion: '19.29.1', deviceMake: 'Apple', deviceModel: 'iPhone16,2', hl: 'fa', gl: 'IR' } } },
         { name: 'WEB', apiKey: 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8',
-          ctx: { client: { clientName: 'WEB', clientVersion: '2.20240101.00.00', hl: 'fa', gl: 'IR' } } }
+          ctx: { client: { clientName: 'WEB', clientVersion: '2.20240726.00.00', hl: 'fa', gl: 'IR' } } }
     ];
+    const hosts = ['https://www.youtube.com/youtubei/v1/player', 'https://youtubei.googleapis.com/youtubei/v1/player'];
     for (const c of clients) {
+        for (const hostBase of hosts) {
         try {
             step('کلاینت ' + c.name + ' از YouTube');
             // Content-Type ساده ← بدون preflight؛ CORS مسدود کرد ← پروکسی‌ها
-            const resp = await ytFetchT('https://www.youtube.com/youtubei/v1/player?key=' + c.apiKey, {
+            const resp = await ytFetchT(hostBase + '?key=' + c.apiKey, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
                 body: JSON.stringify({ context: c.ctx, videoId: videoId, contentCheckOk: true, racyCheckOk: true })
@@ -21914,6 +21964,7 @@ async function ytExtractInnerTube(videoId, step) {
             const streams = ytNormTubeFormats(sd);
             if (streams.length) return { backend: 'YouTube (' + c.name + ')', title: (data.videoDetails || {}).title || '', streams: streams };
         } catch(e) { console.warn('[YT-InnerTube]', c.name, e.message); }
+        }
     }
     return null;
 }
@@ -22001,7 +22052,10 @@ async function ytRunPipeline(videoId, btn) {
             '<b>دلیل:</b> سرورهای عمومی یوتیوب این روزها ناپایدار و مسدود (CORS) شده‌اند — VPN نمی‌تواند CORS مرورگر را دور بزند.<br>' +
             '<b>راه‌حل ۱:</b> چند لحظه صبر کنید و دوباره «دانلود» را بزنید (سرورها پشت‌سرهم زنده/مرده می‌شوند).<br>' +
             '<b>راه‌حل ۲ (پایدار):</b> یک سرور Invidious شخص ثالث با CORS باز در فیلد «سرور سفارشی» (پایین) وارد کنید.<br>' +
+            '<b>راه‌حل ۳ (گوشی — یک ضربه):</b> از دکمهٔ زیر ویدیو را به اپ دانلودر گوشی (Seal یا NewPipe) بفرستید — همان yt-dlp هستند، بدون پایتون و بدون ترمینال.<br>' +
             '<details style="margin-top:6px; font-size:11px;"><summary>گزارش فنی</summary><pre style="white-space:pre-wrap; direction:ltr; text-align:left;">' + ytEscape(flog) + '</pre></details>');
+        // 🔧 v259 (BA-172): دکمهٔ ارسال به اپ دانلودر گوشی — بدون پایتون
+        ytShowShareBtn(videoId);
         return false;
     }
     ytShowStatus('info', '✅ اطلاعات از ' + ytEscape(ext.backend) + ' گرفته شد — ' + (ytState.mode === 'audio' ? 'شروع دانلود صدا...' : 'تشخیص کیفیت‌ها...'));
@@ -22022,6 +22076,7 @@ async function ytRunPipeline(videoId, btn) {
             ext = await nextExt();
             if (ext) ytState._pendingExt = ext;
         }
+        ytFinalVerdict(videoId);   // 🔧 v259: حکم نهایی بعد از رونویسی پیام‌های مرحله
         return false;
     }
     // پنل انتخاب کیفیت — فقط وقتی صفحهٔ یوتیوب باز است و از مسیر کاربر آمده‌ایم
@@ -22047,6 +22102,7 @@ async function ytRunPipeline(videoId, btn) {
         if (await ytDownloadFromExt(ext, videoId, null, title)) return true;
         ext = await nextExt();
     }
+    ytFinalVerdict(videoId);   // 🔧 v259: حکم نهایی بعد از رونویسی پیام‌های مرحله
     return false;
 }
 
@@ -22130,9 +22186,12 @@ async function ytDownloadFromExt(ext, videoId, chosen, title, showFinal) {
                 '<b>دلیل:</b> واکشی مستقیم و همهٔ رله‌های واسط (اینوریوس + سرویس‌های CORS متن‌باز + پروکسی‌های Piped + cobalt) برای این فایل پاسخ ندادند — مسدودی سمت سرور/شبکه (CORS).<br>' +
                 '<b>راه‌حل ۱:</b> چند لحظه بعد دوباره «دانلود» بزنید (سرورها پشت‌سرهم زنده/مرده می‌شوند).<br>' +
                 '<b>راه‌حل ۲ (پایدار):</b> یک سرور Invidious با CORS باز در فیلد «سرور سفارشی» (پایین) وارد کنید.<br>' +
-                '<b>راه‌حل ۳ (قطعی):</b> فایل <b>yt_relay_server.py</b> را کنار صفحه اجرا کنید (<span dir="ltr">python3 yt_relay_server.py</span>) و رفرش بزنید — دانلود مثل اپ پایتونی، ۱۰۰٪ بدون محدودیت مرورگر.');
+                '<b>راه‌حل ۳ (گوشی — یک ضربه):</b> از دکمهٔ زیر ویدیو را به اپ دانلودر گوشی (Seal یا NewPipe) بفرستید — همان yt-dlp هستند، بدون پایتون و بدون ترمینال.<br>' +
+                '<b>راه‌حل ۴ (کامپیوتر — قطعی):</b> فایل <b>yt_relay_server.py</b> را کنار صفحه اجرا کنید (<span dir="ltr">python3 yt_relay_server.py</span>) و رفرش بزنید — دانلود ۱۰۰٪ مثل اپ پایتونی.');
             // راه دستی اختیاری — فقط دکمه؛ هیچ‌چیز خودکار باز نمی‌شود
             if (lastUrl) ytShowResult(lastUrl, lastName || (nameBase + '.mp4'));
+            // 🔧 v259 (BA-172): دکمهٔ ارسال به اپ دانلودر گوشی — بدون پایتون
+            ytShowShareBtn(videoId);
         }
         return false;
     }
