@@ -7703,7 +7703,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v268-2026-11-17-meeting-never-stuck';
+const APP_VERSION = 'v269-2026-11-17-meeting-progress-meter';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20568,6 +20568,10 @@ const MEET_MANUAL_GUARD_MS = 15000; // گارد دلتا تا ۱۵ثانیه پ�
 // ۳) برگشت به برنامه (تایمرهای منجمد اندروید — kick فوری هنگام visibility).
 // به‌علاوه رندر ارزان: نمایش فقط وقتی متن عوض شد + ذخیرهٔ دیسک حداکثر
 // هر ۱.۵ثانیه (interim تکراری روی متنِ طولانیِ جلسه روی گوشی = کندی).
+let meetLastProgressAt = 0;   // 🔧 v269: آخرین تغییر واقعیِ متن (پیشرفتِ تشخیص)
+let meetSessionVoiceAt = 0;   // 🔧 v269: آخرین ورود interim/final (شواهدِ صدای موتور)
+const MEET_NOPROGRESS_MS = 12000;  // 🔧 v269: ۱۲s بدون هیچ واژهٔ تازه + صدای اخیر = نشست گِل‌کرده
+const MEET_VOICE_FRESH_MS = 6000;   // 🔧 v269: شواهدِ صدای تازه‌تر از این = موتور فعال ولی گِل‌کرده
 let meetStartArmedAt = 0;    // لحظهٔ آخرین start() موفق (شکارِ شروع مرده)
 let meetAudioOpenAt = 0;     // لحظهٔ onaudiostart (صدا واقعاً باز شد)
 let meetLastShown = '';      // آخرین متن نمایش‌داده‌شده (ضد رندر تکراری)
@@ -20598,6 +20602,7 @@ function buildMeetSR() {
     rec.onresult = function(ev) {
         meetRecLastEventAt = Date.now();   // 🔧 v244
         meetSessionGotResult = true;       // 🔧 v264: این نشست نتیجه دارد (پربار)
+        meetSessionVoiceAt = Date.now();   // 🔧 v269: شواهدِ صدا — ورودیِ هر interim/final
         // 🔧 v240: تفکیک interim و final — 🔧 v267 (BA-180): تایپ واژه‌به‌واژه —
         //    هر واژهٔ interim به‌محض تشخیص فوراً تایپ می‌شود؛ فاینال فقط دلتا.
         let interim = '';
@@ -20710,6 +20715,7 @@ function buildMeetSR() {
                     // 🔧 v244 (BA-155): restart با نمونهٔ تازه
                     meetRecObj = buildMeetSR();
                     meetAudioOpenAt = 0;   // 🔧 v268: شکارِ شروعِ مرده برای نمونهٔ تازه
+                    meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0;   // 🔧 v269: ساعتِ تازهٔ پیشرفت‌سنج
                     meetSafeStart(0);
                 }
             }, waitMs);
@@ -20741,7 +20747,7 @@ function meetWatchdog() {
         if (meetRecObj) { try { meetRecObj.abort(); } catch(e) {} }
         meetRecObj = buildMeetSR();
         meetAudioOpenAt = 0; meetStartArmedAt = 0;   // 🔧 v268
-        meetRecLastEventAt = Date.now();
+        meetRecLastEventAt = Date.now(); meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0;   // 🔧 v269
         meetSafeStart(0);
     }
 }
@@ -20759,7 +20765,7 @@ document.addEventListener('visibilitychange', function() {
         try { meetRecObj.abort(); } catch(e) {}
         meetRecObj = buildMeetSR();
         meetAudioOpenAt = 0; meetStartArmedAt = 0;
-        meetRecLastEventAt = Date.now();
+        meetRecLastEventAt = Date.now(); meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0;   // 🔧 v269
         meetSafeStart(0);
     }
 });
@@ -20812,6 +20818,7 @@ function meetSafeStart(attempt) {
 function meetCommitInterimWords(idx, txt) {
     const w = (txt || '').trim().split(/\s+/).filter(Boolean);
     if (!w.length) return;
+    const accum0 = meetRecAccum;   // 🔧 v269: سنجشِ پیشرفتِ واقعیِ متن
     // 🔧 v267: اگر دقیقاً همان واژه‌های تعهدشدهٔ «....»دار است، هیچ تغییری
     //    نکن (کروم interimِ کهنه را تکرار می‌کند) — وگرنه نقشهٔ واژه‌ها دوباره
     //    مسلح می‌شد و به جملهٔ بعدی «....»/تکرارِ کاذب می‌نشست.
@@ -20842,10 +20849,12 @@ function meetCommitInterimWords(idx, txt) {
         if (extra) meetRecAccum += extra + ' ';
     }
     meetUtterMap.set(idx, w);
+    if (meetRecAccum !== accum0) meetLastProgressAt = Date.now();   // 🔧 v269: متن واقعاً پیشرفت کرد
 }
 function meetCommitFinalWords(idx, txt) {
     const fin = (txt || '').trim();
     if (!fin) return;
+    const accum0 = meetRecAccum;   // 🔧 v269: سنجشِ پیشرفتِ واقعیِ متن
     const fw = fin.split(/\s+/).filter(Boolean);
     const committed = meetUtterMap.get(idx);
     if (committed && committed.length) {
@@ -20874,6 +20883,7 @@ function meetCommitFinalWords(idx, txt) {
         meetRecAccum += fin + ' ';
     }
     if (idx === meetUtterIdx) { meetUtterIdx = -1; meetUtterStartLen = 0; }   // جملهٔ جاری بسته شد
+    if (meetRecAccum !== accum0) meetLastProgressAt = Date.now();   // 🔧 v269
 }
 function meetFreezeUtter() {
     if (meetUtterIdx >= 0) {
@@ -20893,6 +20903,7 @@ function meetFreezeUtter() {
 function meetForceCommitUnintelligible() {
     if (!meetRecActive) return;
     meetRecAccum = meetRecAccum.replace(/\s+$/, '') + '.... ';   // جای واژه‌هایی که تشخیص داده نشد
+    meetLastProgressAt = Date.now();   // 🔧 v269: دات‌ها هم پیشرفتِ متن‌اند (پنجرهٔ تازه به موتور)
     meetFreezeUtter();
     meetLastInterim = '';
     meetInterimFrozenText = '';
@@ -20930,9 +20941,33 @@ function meetStuckCheck() {
                 try { dead.abort(); } catch(e) {}
                 meetRecObj = buildMeetSR();
                 meetAudioOpenAt = 0;
+                meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0;   // 🔧 v269
                 meetSafeStart(0);
             }
         }, 300);
+        return;
+    }
+    // 🔧 v269 (BA-182): پیشرفت‌سنج — شکارِ «گِل‌کردن» (هنگِ واقعیِ
+    //    گزارش‌شده: «تا یک کلمه‌ای برایش نامفهوم است»). موتور روی واژهٔ
+    //    نامفهوم گِل می‌کند و همان interimِ کهنه را تا ابد تکرار می‌کند:
+    //    رویداد می‌آید (زامبی بی‌اثر می‌شود)، شکارچیِ «....» هم یک‌بار دات
+    //    می‌گذارد و گاردِ بین‌نشستی بقیه را خنثی می‌کند — و نشست تا ابد
+    //    زنده می‌ماند در حالی که هیچ واژهٔ تازه‌ای تولید نمی‌شود = هرچه
+    //    کاربر بعدش بگوید گم می‌شود. معیارِ درستِ سلامت «رویداد» نیست،
+    //    «پیشرفتِ متن» است: ۱۲ثانیه بدون هیچ واژهٔ تازه، در حالی که
+    //    شواهدِ صدای موتور تازه است (موتور فعال ولی گِل‌کرده) → تعویض
+    //    کاملِ نشست. در سکوتِ خالص شواهدِ صدا کهنه است → پیشرفت‌سنج
+    //    بی‌اثر (زامبی و چرخهٔ طبیعی onend همان را اداره می‌کنند).
+    const nowP = Date.now();
+    if (meetLastProgressAt > 0 && (nowP - meetLastProgressAt) > MEET_NOPROGRESS_MS &&
+        meetSessionVoiceAt > 0 && (nowP - meetSessionVoiceAt) < MEET_VOICE_FRESH_MS) {
+        console.warn('[MeetingMic] no text progress ' + Math.round((nowP - meetLastProgressAt) / 1000) + 's while voice fresh — recycling wedged session');
+        if (meetRestartPending) { clearTimeout(meetRestartPending); meetRestartPending = null; }
+        try { meetRecObj.abort(); } catch(e) {}
+        meetRecObj = buildMeetSR();
+        meetAudioOpenAt = 0; meetStartArmedAt = 0;
+        meetRecLastEventAt = Date.now(); meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0;
+        meetSafeStart(0);
         return;
     }
     if (!meetLastInterim || !meetLastInterim.trim() || !meetInterimStuckAt) return;
@@ -20957,6 +20992,7 @@ function meetingStartRec() {
     meetManualCommitText = ''; meetManualCommitAt = 0;   // 🔧 v266: گارد دلتا تازه
     meetUtterIdx = -1; meetUtterStartLen = 0; meetUtterMap.clear();   // 🔧 v267: واژه‌به‌واژه تازه
     meetStartArmedAt = 0; meetAudioOpenAt = 0; meetLastShown = ''; meetLastPersistAt = 0;   // 🔧 v268
+    meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0;   // 🔧 v269: ساعتِ تازهٔ پیشرفت‌سنج
     meetRecObj = buildMeetSR();   // 🔧 v244: نمونهٔ تازه در هر شروع
     meetRecActive = true;
     // 🔧 v262: متر حذف شد — بدون استریم میکروفونِ موازی (موتور صدا می‌گیرد)
@@ -20984,6 +21020,7 @@ function meetingStopRec() {
     meetManualCommitText = ''; meetManualCommitAt = 0;   // 🔧 v266
     meetUtterIdx = -1; meetUtterStartLen = 0; meetUtterMap.clear();   // 🔧 v267
     meetStartArmedAt = 0; meetAudioOpenAt = 0; meetLastShown = ''; meetLastPersistAt = 0;   // 🔧 v268
+    meetLastProgressAt = 0; meetSessionVoiceAt = 0;   // 🔧 v269
     // 🔧 v264: پیش‌نویس زنده — قبل از هر توقفی متن فعلی ذخیره شود (تایپ دستی
     //    کاربر بین نشست‌ها هم محفوظ می‌ماند؛ reload معوق آپدیت متن را پاک نمی‌کند)
     try {
