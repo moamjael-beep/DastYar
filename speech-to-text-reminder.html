@@ -7703,7 +7703,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v270-2026-11-17-meeting-anti-coma';
+const APP_VERSION = 'v271-2026-11-17-meeting-fast-unintelligible';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20574,6 +20574,11 @@ let meetLastProgressAt = 0;   // 🔧 v269: آخرین تغییر واقعیِ �
 let meetSessionVoiceAt = 0;   // 🔧 v269: آخرین ورود interim/final (شواهدِ صدای موتور)
 const MEET_NOPROGRESS_MS = 12000;  // 🔧 v269: ۱۲s بدون هیچ واژهٔ تازه + صدای اخیر = نشست گِل‌کرده
 const MEET_VOICE_FRESH_MS = 6000;   // 🔧 v269: شواهدِ صدای تازه‌تر از این = موتور فعال ولی گِل‌کرده
+let meetVoiceNow = false;            // 🔧 v271: صدای زندهٔ فعال (soundstart ↔ soundend)
+let meetVoiceLastAt = 0;             // 🔧 v271: آخرین نشانهٔ صدای زنده
+const MEET_STUCK_VOICE_MS = 1200;    // 🔧 v271: روی صدای زنده، interimِ ثابتِ >۱.۲s = واژهٔ نامفهوم → «....» فوری (الزام کاربر: «روی هیچ کلمه نامفهومی نمان و سریع کلمات بعدی را تایپ کن»)
+const MEET_LIVEDEAF_MS = 4000;       // 🔧 v271: صدای زنده ولی ۴s بدون هیچ واژهٔ تازه = نشست روی گفتار زنده کر است → تعویض فوری
+const MEET_VOICE_EDGE_MS = 2500;     // 🔧 v271: صدایی که تا این حد پیشه قطعه‌اش تمام شده هم «زنده» شمرده می‌شود
 let meetStartArmedAt = 0;    // لحظهٔ آخرین start() موفق (شکارِ شروع مرده)
 let meetAudioOpenAt = 0;     // لحظهٔ onaudiostart (صدا واقعاً باز شد)
 let meetLastShown = '';      // آخرین متن نمایش‌داده‌شده (ضد رندر تکراری)
@@ -20595,8 +20600,10 @@ function buildMeetSR() {
     rec.onstart = function() { meetRecLastEventAt = Date.now(); meetSessionStartAt = Date.now(); meetSessionGotResult = false; };   // 🔧 v244 + v263 + v264
     // 🔧 v261: موتورِ زنده‌ای که صدا می‌شنود رویداد soundstart می‌دهد —
     //    این هم شمارندهٔ بی‌رویدادی را صفر می‌کند (نشانهٔ سلامت موتور).
-    rec.onsoundstart = function() { meetRecLastEventAt = Date.now(); };
-    rec.onspeechstart = function() { meetRecLastEventAt = Date.now(); };
+    rec.onsoundstart = function() { meetRecLastEventAt = Date.now(); meetVoiceNow = true; meetVoiceLastAt = Date.now(); };   // 🔧 v271: صدای زنده روشن
+    rec.onspeechstart = function() { meetRecLastEventAt = Date.now(); meetVoiceNow = true; meetVoiceLastAt = Date.now(); };
+    rec.onsoundend = function() { meetVoiceNow = false; meetVoiceLastAt = Date.now(); };   // 🔧 v271: قطعهٔ صدا تمام شد
+    rec.onspeechend = function() { meetVoiceNow = false; meetVoiceLastAt = Date.now(); };
     // 🔧 v268 (BA-181): onaudiostart = صدا واقعاً باز شد — پایهٔ شکارِ
     //    «شروعِ مرده» (اگر این هرگز نیاید، نشست باز نشده و باید سریع-شکست
     //    خورده و دوباره باز شود؛ تا v267 چنین شروعی تا زامبیِ ۳۰ثانیه معلق بود).
@@ -20735,7 +20742,7 @@ function buildMeetSR() {
                     // 🔧 v244 (BA-155): restart با نمونهٔ تازه
                     meetRecObj = buildMeetSR();
                     meetAudioOpenAt = 0;   // 🔧 v268: شکارِ شروعِ مرده برای نمونهٔ تازه
-                    meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0;   // 🔧 v269: ساعتِ تازهٔ پیشرفت‌سنج
+                    meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0; meetVoiceNow = false; meetVoiceLastAt = 0;   // 🔧 v269: ساعتِ تازهٔ پیشرفت‌سنج
                     meetSafeStart(0);
                 }
             }, waitMs);
@@ -20767,7 +20774,7 @@ function meetWatchdog() {
         if (meetRecObj) { try { meetRecObj.abort(); } catch(e) {} }
         meetRecObj = buildMeetSR();
         meetAudioOpenAt = 0; meetStartArmedAt = 0;   // 🔧 v268
-        meetRecLastEventAt = Date.now(); meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0;   // 🔧 v269
+        meetRecLastEventAt = Date.now(); meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0; meetVoiceNow = false; meetVoiceLastAt = 0;   // 🔧 v269
         meetSafeStart(0);
     }
     // 🔧 v270 (BA-183): نبضِ آخرین خط — همهٔ نگهبان‌ها «نشستِ زندهٔ کر» را
@@ -20783,7 +20790,7 @@ function meetWatchdog() {
         if (meetRecObj) { try { meetRecObj.abort(); } catch(e) {} }
         meetRecObj = buildMeetSR();
         meetAudioOpenAt = 0; meetStartArmedAt = 0;
-        meetRecLastEventAt = Date.now(); meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0;   // 🔧 v269
+        meetRecLastEventAt = Date.now(); meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0; meetVoiceNow = false; meetVoiceLastAt = 0;   // 🔧 v269
         meetSafeStart(0);
     }
 }
@@ -20801,7 +20808,7 @@ document.addEventListener('visibilitychange', function() {
         try { meetRecObj.abort(); } catch(e) {}
         meetRecObj = buildMeetSR();
         meetAudioOpenAt = 0; meetStartArmedAt = 0;
-        meetRecLastEventAt = Date.now(); meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0;   // 🔧 v269
+        meetRecLastEventAt = Date.now(); meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0; meetVoiceNow = false; meetVoiceLastAt = 0;   // 🔧 v269
         meetSafeStart(0);
     }
 });
@@ -20977,10 +20984,39 @@ function meetStuckCheck() {
                 try { dead.abort(); } catch(e) {}
                 meetRecObj = buildMeetSR();
                 meetAudioOpenAt = 0;
-                meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0;   // 🔧 v269
+                meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0; meetVoiceNow = false; meetVoiceLastAt = 0;   // 🔧 v269
                 meetSafeStart(0);
             }
         }, 300);
+        return;
+    }
+    // 🔧 v271 (BA-184 — الزام کاربر: «روی هیچ کلمه نامفهومی نمان و سریع
+    //    کلمات بعدی را تایپ کن»): صدای زنده معیارِ سرعت شد — تا دیروز روی
+    //    واژهٔ نامفهوم ۴.۵s (دات) تا ۱۲-۱۹s (بازیافت) می‌ماندیم. حالا:
+    //    الف) صدای زنده ولی ۴s بدونِ هیچ واژهٔ تازه = نشست روی گفتارِ زنده
+    //    کر است → تعویض فوری (~۱s restart) به‌جای ۱۲-۱۹s؛ واژه‌های بعدی
+    //    با نشستِ تازه بلافاصله می‌آیند.
+    //    ب) روی صدای زنده، interimِ ثابتِ >۱.۲s همان لحظه «....» می‌گیرد —
+    //    واژه‌های بعدی یا از همین نشست جاری می‌شوند (گاردِ دلتا تحویلِ
+    //    دیرهنگام را بدون تکرار می‌نشیند) یا از نشستِ تازه.
+    //    در مکثِ واقعی (صدای زنده نیست) قواعدِ قدیمی برقرارند: داتِ ۴.۵s،
+    //    پیشرفت‌سنج/زامبی ۱۲s — مکثِ طبیعی هرگز دات/تعویضِ فوری نمی‌گیرد.
+    const nowQ = Date.now();
+    const voiceLive = meetVoiceNow || (meetVoiceLastAt > 0 && (nowQ - meetVoiceLastAt) < MEET_VOICE_EDGE_MS);
+    if (voiceLive && meetLastProgressAt > 0 && (nowQ - meetLastProgressAt) > MEET_LIVEDEAF_MS) {
+        console.warn('[MeetingMic] live voice but ' + Math.round((nowQ - meetLastProgressAt) / 1000) + 's without a single new word — session deaf on live speech, swapping now');
+        if (meetRestartPending) { clearTimeout(meetRestartPending); meetRestartPending = null; }
+        try { meetRecObj.abort(); } catch(e) {}
+        meetRecObj = buildMeetSR();
+        meetAudioOpenAt = 0; meetStartArmedAt = 0;
+        meetRecLastEventAt = Date.now(); meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0; meetVoiceNow = false; meetVoiceLastAt = 0;   // 🔧 v269+v271
+        meetSafeStart(0);
+        return;
+    }
+    if (voiceLive && meetInterimStuckAt > 0 && (nowQ - meetInterimStuckAt) > MEET_STUCK_VOICE_MS &&
+        (nowQ - meetLastProgressAt) <= MEET_LIVEDEAF_MS) {
+        console.warn('[MeetingMic] live voice, interim frozen ' + Math.round((nowQ - meetInterimStuckAt) / 1000) + 's — instant unintelligible dots, keep typing next words');
+        meetForceCommitUnintelligible();
         return;
     }
     // 🔧 v269 (BA-182): پیشرفت‌سنج — شکارِ «گِل‌کردن» (هنگِ واقعیِ
@@ -21002,7 +21038,7 @@ function meetStuckCheck() {
         try { meetRecObj.abort(); } catch(e) {}
         meetRecObj = buildMeetSR();
         meetAudioOpenAt = 0; meetStartArmedAt = 0;
-        meetRecLastEventAt = Date.now(); meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0;
+        meetRecLastEventAt = Date.now(); meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0; meetVoiceNow = false; meetVoiceLastAt = 0;
         meetSafeStart(0);
         return;
     }
@@ -21028,7 +21064,7 @@ function meetingStartRec() {
     meetManualCommitText = ''; meetManualCommitAt = 0;   // 🔧 v266: گارد دلتا تازه
     meetUtterIdx = -1; meetUtterStartLen = 0; meetUtterMap.clear();   // 🔧 v267: واژه‌به‌واژه تازه
     meetStartArmedAt = 0; meetAudioOpenAt = 0; meetLastShown = ''; meetLastPersistAt = 0;   // 🔧 v268
-    meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0;   // 🔧 v269: ساعتِ تازهٔ پیشرفت‌سنج
+    meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0; meetVoiceNow = false; meetVoiceLastAt = 0;   // 🔧 v269: ساعتِ تازهٔ پیشرفت‌سنج
     meetRecObj = buildMeetSR();   // 🔧 v244: نمونهٔ تازه در هر شروع
     meetRecActive = true;
     // 🔧 v262: متر حذف شد — بدون استریم میکروفونِ موازی (موتور صدا می‌گیرد)
@@ -21056,7 +21092,7 @@ function meetingStopRec() {
     meetManualCommitText = ''; meetManualCommitAt = 0;   // 🔧 v266
     meetUtterIdx = -1; meetUtterStartLen = 0; meetUtterMap.clear();   // 🔧 v267
     meetStartArmedAt = 0; meetAudioOpenAt = 0; meetLastShown = ''; meetLastPersistAt = 0;   // 🔧 v268
-    meetLastProgressAt = 0; meetSessionVoiceAt = 0;   // 🔧 v269
+    meetLastProgressAt = 0; meetSessionVoiceAt = 0; meetVoiceNow = false; meetVoiceLastAt = 0;   // 🔧 v269
     // 🔧 v264: پیش‌نویس زنده — قبل از هر توقفی متن فعلی ذخیره شود (تایپ دستی
     //    کاربر بین نشست‌ها هم محفوظ می‌ماند؛ reload معوق آپدیت متن را پاک نمی‌کند)
     try {
