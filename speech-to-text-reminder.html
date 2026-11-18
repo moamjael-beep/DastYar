@@ -7703,7 +7703,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v267-2026-11-17-meeting-word-by-word';
+const APP_VERSION = 'v268-2026-11-17-meeting-never-stuck';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20540,7 +20540,8 @@ function meetingToggleMic() {
 let meetRecLastEventAt = 0;
 let meetWatchdogTimer = null;
 let meetRestartPending = null;    // فقط یک restart در انتظار
-const MEET_ZOMBIE_MS = 30000;     // 🔧 v266: ۳۰s مطلقاً بدون رویداد = موتور زامبی (بود ۶۰s — بازیابی کما سریع‌تر)
+const MEET_ZOMBIE_MS = 12000;     // 🔧 v268: ۱۲s مطلقاً بدون رویداد = موتور زامبی (بود ۳۰s — «گیر» طولانی‌ترین شکل کما بود)
+const MEET_START_HUNG_MS = 2500;  // 🔧 v268: start() بدون onaudiostart بیشتر از این = شروعِ مرده → سریع-شکست
 // 🔧 v263 (BA-176): restart ملایم — ضدتروتل سرویس گفتار
 let meetQuickEnds = 0;            // دنبالهٔ «پایان‌های فوری» (نشست‌های رد‌شده)
 let meetSessionStartAt = 0;       // لحظهٔ start نشست فعلی
@@ -20560,6 +20561,17 @@ const MEET_INTERIM_STUCK_MS = 4500;  // interimِ بی‌تغییرِ بیشتر
 let meetManualCommitText = '';    // متنِ تعهدشدهٔ دستی با «....» (برای گارد دلتا)
 let meetManualCommitAt = 0;       // لحظهٔ تعهد دستی
 const MEET_MANUAL_GUARD_MS = 15000; // گارد دلتا تا ۱۵ثانیه پس از تعهد دستی معتبر است
+// 🔧 v268 (BA-181 — الزام کاربر: «اصلاً مورد قبول نیست، گیر می‌کند»):
+// سه کلاس هنگِ واقعی که شبیه‌ساز تولیدشان نمی‌کند، این‌بار مستقیم شکار
+// می‌شوند: ۱) شروعِ مرده (start بدون onaudiostart — تا v267 تا ۳۰s معلق
+// می‌ماند) ۲) نشستِ کِر (مطلقاً بدون رویداد — زامبی از ۳۰s به ۱۲s)
+// ۳) برگشت به برنامه (تایمرهای منجمد اندروید — kick فوری هنگام visibility).
+// به‌علاوه رندر ارزان: نمایش فقط وقتی متن عوض شد + ذخیرهٔ دیسک حداکثر
+// هر ۱.۵ثانیه (interim تکراری روی متنِ طولانیِ جلسه روی گوشی = کندی).
+let meetStartArmedAt = 0;    // لحظهٔ آخرین start() موفق (شکارِ شروع مرده)
+let meetAudioOpenAt = 0;     // لحظهٔ onaudiostart (صدا واقعاً باز شد)
+let meetLastShown = '';      // آخرین متن نمایش‌داده‌شده (ضد رندر تکراری)
+let meetLastPersistAt = 0;   // آخرین ذخیرهٔ دیسکِ پیش‌نویس
 // 🔧 v267 (BA-180): تایپ واژه‌به‌واژه — هر واژه به‌محض تشخیص فوراً تایپ
 // می‌شود؛ دیگر هیچ واژه‌ای منتظر فاینالِ جمله نمی‌ماند (ریشهٔ کما).
 let meetUtterIdx = -1;           // ایندکس utterance جاری (واژه‌به‌واژه)
@@ -20579,6 +20591,10 @@ function buildMeetSR() {
     //    این هم شمارندهٔ بی‌رویدادی را صفر می‌کند (نشانهٔ سلامت موتور).
     rec.onsoundstart = function() { meetRecLastEventAt = Date.now(); };
     rec.onspeechstart = function() { meetRecLastEventAt = Date.now(); };
+    // 🔧 v268 (BA-181): onaudiostart = صدا واقعاً باز شد — پایهٔ شکارِ
+    //    «شروعِ مرده» (اگر این هرگز نیاید، نشست باز نشده و باید سریع-شکست
+    //    خورده و دوباره باز شود؛ تا v267 چنین شروعی تا زامبیِ ۳۰ثانیه معلق بود).
+    rec.onaudiostart = function() { meetRecLastEventAt = Date.now(); meetAudioOpenAt = Date.now(); };
     rec.onresult = function(ev) {
         meetRecLastEventAt = Date.now();   // 🔧 v244
         meetSessionGotResult = true;       // 🔧 v264: این نشست نتیجه دارد (پربار)
@@ -20618,13 +20634,23 @@ function buildMeetSR() {
             meetInterimStuckAt = 0;
         }
         const el = document.getElementById('meetingText');
-        // 🔧 v264: پیش‌نویس زنده — هر نوشتن بلافاصله ذخیره می‌شود تا
-        //    reload/رفرش/کشتنِ تب هرگز متن جلسه را پاک نکند (BA-177).
-        // 🔧 v267: همهٔ واژه‌ها هم‌زمان با تشخیص به متن رفته‌اند — نمایش =
-        //    خودِ متنِ تعهدشده (واژه‌به‌واژه، بدون انتظارِ فاینال)
+        // 🔧 v264: پیش‌نویس زنده — reload/رفرش/کشتنِ تب هرگز متن جلسه را پاک
+        //    نمی‌کند (BA-177). 🔧 v268: رندر ارزان — کروم interimِ تکراری
+        //    می‌فرستد؛ روی متنِ طولانیِ جلسه، بازنویسی کاملِ textarea +
+        //    localStorage در هر رویداد روی گوشی = کندی/گیر حس می‌شد. حالا
+        //    نمایش فقط وقتی متن واقعاً عوض شد و ذخیرهٔ دیسک حداکثر هر
+        //    ۱.۵ثانیه (pagehide هم آخرین نسخه را ذخیره می‌کند).
         if (el) {
-            el.value = addNumericAfterWords(meetRecAccum.trim()).trim();
-            try { localStorage.setItem(MEET_DRAFT_KEY, el.value); } catch(e) {}
+            const shown = addNumericAfterWords(meetRecAccum.trim()).trim();
+            if (shown !== meetLastShown) {
+                meetLastShown = shown;
+                el.value = shown;
+                const nowT = Date.now();
+                if (nowT - meetLastPersistAt >= 1500) {
+                    meetLastPersistAt = nowT;
+                    try { localStorage.setItem(MEET_DRAFT_KEY, el.value); } catch(e) {}
+                }
+            }
         }
         // به‌روزرسانی وضعیت برای بازخورد بصری زنده
         const st = document.getElementById('meetingStatus');
@@ -20683,6 +20709,7 @@ function buildMeetSR() {
                 if (meetRecActive && meetRecObj === myRec) {
                     // 🔧 v244 (BA-155): restart با نمونهٔ تازه
                     meetRecObj = buildMeetSR();
+                    meetAudioOpenAt = 0;   // 🔧 v268: شکارِ شروعِ مرده برای نمونهٔ تازه
                     meetSafeStart(0);
                 }
             }, waitMs);
@@ -20696,26 +20723,53 @@ function buildMeetSR() {
 function meetWatchdog() {
     if (!meetRecActive) return;
     // سکوت بی‌نهایت: در سکوت هیچ stop/قطع‌ای انجام نمی‌شود. پیام وضعیت
-    // آرامش‌بخش (فقط وقتی >۱۵s رویدادی نیست؛ با شروع گفتار، onresult
-    // خودش متن وضعیت را عوض می‌کند).
+    // آرامش‌بخش (فقط وقتی >۹s رویدادی نیست؛ با شروع گفتار، onresult
+    // خودش متن وضعیت را عوض می‌کند). 🔧 v268: از ۱۵s به ۹s — با زامبیِ
+    // ۱۲ثانیه‌ای، پیام ۱۵s دیگر هرگز نمی‌رسید.
     const idle = Date.now() - (meetRecLastEventAt || 0);
-    if (idle > 15000) {
+    if (idle > 9000) {
         const st = document.getElementById('meetingStatus');
         if (st && meetRecActive) st.textContent = 'ضبط فعال — سکوت؛ تا هر زمان صحبت کنید گوش می‌دهد';
     }
-    // تعویض نمونه فقط برای زامبی واقعی: 🔧 v266 — ۳۰ثانیه مطلقاً بدون هیچ
-    // رویدادی (بود ۶۰s؛ بازیابی کما سریع‌تر شود). موتور سالم در سکوت هر
-    // ~۸-۱۰ثانیه onend می‌دهد (شمارنده صفر می‌شود) و در گفتار پیوسته
-    // نتایج می‌فرستد — پس هرگز به ۳۰ نمی‌رسد.
+    // تعویض نمونه فقط برای زامبی واقعی: 🔧 v268 — ۱۲ثانیه مطلقاً بدون هیچ
+    // رویدادی (بود ۳۰s؛ این طولانی‌ترین شکل «گیر» بود). موتور سالم در سکوت
+    // هر ~۸-۱۰ثانیه onend می‌دهد و در گفتار نتایج می‌فرستد — پس هرگز به ۱۲
+    // نمی‌رسد؛ اگر رسید یعنی نشست کِر است و باید فوری عوض شود.
     if (idle > MEET_ZOMBIE_MS) {
         console.warn('[MeetingMic] watchdog: no SR events at all ' + Math.round(idle / 1000) + 's — swapping hung SR instance');
         if (meetRestartPending) { clearTimeout(meetRestartPending); meetRestartPending = null; }
         if (meetRecObj) { try { meetRecObj.abort(); } catch(e) {} }
         meetRecObj = buildMeetSR();
+        meetAudioOpenAt = 0; meetStartArmedAt = 0;   // 🔧 v268
         meetRecLastEventAt = Date.now();
         meetSafeStart(0);
     }
 }
+// 🔧 v268 (BA-181): برگشت به برنامه — اندروید تایمرها را در پس‌زمینه منجمد
+// می‌کند؛ بعد از برگشت ممکن است نشست از قبل مرده باشد. بدون این قلاب،
+// بازیابی تا چرخهٔ watchdog (~۵s) و زامبی (۱۲s) طول می‌کشید = «برگشتم،
+// گیر کرده». هنگام visibility فوری بررسی و در صورت لزوم تعویض آنی.
+const MEET_VISIBILITY_KICK_MS = 6000;   // بی‌رویدادیِ بیشتر از این هنگام برگشت = تعویض فوری
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden || !meetRecActive || !meetRecObj) return;
+    const idleV = Date.now() - (meetRecLastEventAt || 0);
+    if (idleV > MEET_VISIBILITY_KICK_MS) {
+        console.warn('[MeetingMic] visibility kick: idle ' + Math.round(idleV / 1000) + 's — instant swap');
+        if (meetRestartPending) { clearTimeout(meetRestartPending); meetRestartPending = null; }
+        try { meetRecObj.abort(); } catch(e) {}
+        meetRecObj = buildMeetSR();
+        meetAudioOpenAt = 0; meetStartArmedAt = 0;
+        meetRecLastEventAt = Date.now();
+        meetSafeStart(0);
+    }
+});
+// 🔧 v268: آخرین لحظهٔ ترک/انجماد صفحه — پیش‌نویس با هر محتوایی که هست
+// ذخیره می‌شود (گارانتی v264 در سطح کل صفحه، مستقل از debounce).
+window.addEventListener('pagehide', function() {
+    if (!meetRecActive) return;
+    const elP = document.getElementById('meetingText');
+    if (elP) { try { localStorage.setItem(MEET_DRAFT_KEY, elP.value); } catch(e) {} }
+});
 // 🔧 v245 (BA-158 — الزام کاربر: «باید دوباره کلید میکروفون را قطع و وصل
 // کنم تا دوباره ادامه دهد»): پلکانهٔ تلاش مجدد start — اگر Chrome بعد از
 // جلسهٔ طولانی هنوز در حال تخلیه بود (InvalidStateError) یا میکروفون موقتاً
@@ -20726,7 +20780,17 @@ function meetSafeStart(attempt) {
     const myObj = meetRecObj;
     if (!meetRecActive || !myObj) return;
     try {
+        // 🔧 v268: شکارِ «شروعِ مرده» مسلح شد — اگر onaudiostart در
+        //    ۲.۵ثانیه نیاید (و نه خطا نه پایان)، meetStuckCheck سریع-شکست
+        //    می‌دهد و نشست را از نو باز می‌کند؛ تا v267 چنین شروعی تا
+        //    زامبیِ ۳۰ثانیه معلق می‌ماند = «گیر». نکتهٔ ظریف: resetِ
+        //    meetAudioOpenAt باید «قبل از» start() باشد — بعضی محیط‌ها
+        //    onaudiostart را هم‌زمان داخل start() شلیک می‌کنند و اگر بعد
+        //    از آن صفر کنیم، سیگنالِ «صدای باز» از بین می‌رفت و شکارچی
+        //    نشستِ سالم را هم قربانی می‌کرد.
+        meetAudioOpenAt = 0;
         myObj.start();
+        meetStartArmedAt = Date.now();
     } catch(e) {
         // 🔧 v261: سقف backoff از ۱۵ثانیه به ۳ثانیه — با میکروفون گرم و
         //    restart هویت‌دار، تلاش بعدی تقریباً همیشه فوری موفق است؛
@@ -20835,7 +20899,8 @@ function meetForceCommitUnintelligible() {
     meetInterimStuckAt = 0;
     const el = document.getElementById('meetingText');
     if (el) {
-        el.value = addNumericAfterWords(meetRecAccum.trim()).trim();
+        meetLastShown = addNumericAfterWords(meetRecAccum.trim()).trim();   // 🔧 v268: همگام با رندر ارزان
+        el.value = meetLastShown;
         try { localStorage.setItem(MEET_DRAFT_KEY, el.value); } catch(e) {}
     }
 }
@@ -20849,6 +20914,27 @@ function meetForceCommitUnintelligible() {
 // رویداد) با زامبی‌سوآپ ۳۰ثانیه‌ای تعویض می‌شود.
 function meetStuckCheck() {
     if (!meetRecActive || !meetRecObj) return;
+    // 🔧 v268 (BA-181): شکارِ «شروعِ مرده» — start() شده ولی onaudiostart
+    //    در ۲.۵ثانیه نیامده (و نه خطا، نه پایان): نشست هرگز باز نمی‌شود
+    //    (تروتل سرویس/میکروفون دزدیده‌شده). abort اینجا مجاز و امن است —
+    //    صدا هرگز باز نشده، چیزی برای شکستن نیست (قاعدهٔ «بدون abort» فقط
+    //    برای نشستِ درحال-شنیدن است). اگر onend هم نیامد، ۳۰۰ms بعد تعویض
+    //    مستقیم با گارد هویت.
+    if (meetStartArmedAt && !meetAudioOpenAt && (Date.now() - meetStartArmedAt) >= MEET_START_HUNG_MS) {
+        const dead = meetRecObj;
+        meetStartArmedAt = 0;
+        console.warn('[MeetingMic] start hung without onaudiostart ≥2.5s — fast-fail, reopening');
+        try { dead.abort(); } catch(e) {}
+        setTimeout(function() {
+            if (meetRecActive && meetRecObj === dead) {   // onend نیامد — تعویض مستقیم
+                try { dead.abort(); } catch(e) {}
+                meetRecObj = buildMeetSR();
+                meetAudioOpenAt = 0;
+                meetSafeStart(0);
+            }
+        }, 300);
+        return;
+    }
     if (!meetLastInterim || !meetLastInterim.trim() || !meetInterimStuckAt) return;
     if (Date.now() - meetInterimStuckAt < MEET_INTERIM_STUCK_MS) return;
     console.warn('[MeetingMic] interim frozen ' + Math.round((Date.now() - meetInterimStuckAt) / 1000) + 's — committing with dots (session stays listening)');
@@ -20870,6 +20956,7 @@ function meetingStartRec() {
     meetRecIndices = new Set();
     meetManualCommitText = ''; meetManualCommitAt = 0;   // 🔧 v266: گارد دلتا تازه
     meetUtterIdx = -1; meetUtterStartLen = 0; meetUtterMap.clear();   // 🔧 v267: واژه‌به‌واژه تازه
+    meetStartArmedAt = 0; meetAudioOpenAt = 0; meetLastShown = ''; meetLastPersistAt = 0;   // 🔧 v268
     meetRecObj = buildMeetSR();   // 🔧 v244: نمونهٔ تازه در هر شروع
     meetRecActive = true;
     // 🔧 v262: متر حذف شد — بدون استریم میکروفونِ موازی (موتور صدا می‌گیرد)
@@ -20896,6 +20983,7 @@ function meetingStopRec() {
     meetInterimStuckAt = 0;
     meetManualCommitText = ''; meetManualCommitAt = 0;   // 🔧 v266
     meetUtterIdx = -1; meetUtterStartLen = 0; meetUtterMap.clear();   // 🔧 v267
+    meetStartArmedAt = 0; meetAudioOpenAt = 0; meetLastShown = ''; meetLastPersistAt = 0;   // 🔧 v268
     // 🔧 v264: پیش‌نویس زنده — قبل از هر توقفی متن فعلی ذخیره شود (تایپ دستی
     //    کاربر بین نشست‌ها هم محفوظ می‌ماند؛ reload معوق آپدیت متن را پاک نمی‌کند)
     try {
