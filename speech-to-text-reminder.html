@@ -7703,7 +7703,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v266-2026-11-17-meeting-silence-no-coma';
+const APP_VERSION = 'v267-2026-11-17-meeting-word-by-word';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20470,6 +20470,14 @@ function meetingToggleMic() {
 // کپی عینی accDocStartRec — تفاوت: continuous=true (پیوسته برای جلسه طولانی)
 // و هدف textarea + دکمهٔ meetingMicBtn.
 // ════════════════════════════════════════════════════════════════════
+// 🔧 v267 (BA-180 — الزام کاربر: «تایپ کلمات تشخیص داده شده را از جمله به
+//   کلمات کاهش بده و سریعاً هر کلمه‌ای تشخیص دادی تایپ کن؛ تحت هیچ
+//   شرایطی هنگ نکن و متوقف نشو و هر کلمه متوجه نشدی .... بگذار»):
+//   تایپ واژه‌به‌واژهٔ فوری — هر واژهٔ interim به‌محض تشخیص به متن می‌رود
+//   (ریشهٔ کما: انتظارِ جمله‌محور برای فاینال بود). بازنویسیِ دُمِ جملهٔ
+//   جاری تا مرز فاینال؛ واژهٔ دورریختهٔ کروم = «....». فاینال فقط دلتا
+//   می‌نشیند. همهٔ گاردهای ضدهنگ (restart ملایم، بدون abort، زامبی ۳۰s،
+//   backoff بی‌پایان، پیش‌نویس زنده) برقرار می‌مانند.
 // 🔧 v266 (BA-179 — الزام کاربر: «با یک سکوت چندثانیه‌ای به کما می‌رود»):
 //   علت = شکستن نشست با abort هنگام تعهد «....» (v265) — قطع در میانهٔ
 //   پردازش صدا خودش کما می‌ساخت: چرخهٔ start/stop پرتکرار (تروتل سرویس)
@@ -20552,6 +20560,13 @@ const MEET_INTERIM_STUCK_MS = 4500;  // interimِ بی‌تغییرِ بیشتر
 let meetManualCommitText = '';    // متنِ تعهدشدهٔ دستی با «....» (برای گارد دلتا)
 let meetManualCommitAt = 0;       // لحظهٔ تعهد دستی
 const MEET_MANUAL_GUARD_MS = 15000; // گارد دلتا تا ۱۵ثانیه پس از تعهد دستی معتبر است
+// 🔧 v267 (BA-180): تایپ واژه‌به‌واژه — هر واژه به‌محض تشخیص فوراً تایپ
+// می‌شود؛ دیگر هیچ واژه‌ای منتظر فاینالِ جمله نمی‌ماند (ریشهٔ کما).
+let meetUtterIdx = -1;           // ایندکس utterance جاری (واژه‌به‌واژه)
+let meetUtterStartLen = 0;       // شروع پنجرهٔ بازنویسی دُم در accum (فقط جملهٔ جاری)
+const meetUtterMap = new Map();  // idx → واژه‌های تعهدشده (دلتای فاینال بدون تکرار)
+function meetNormWord(w) { return (w || '').replace(/\u200c/g, ''); }
+function meetLcpWords(a, b) { let p = 0; while (p < a.length && p < b.length && meetNormWord(a[p]) === meetNormWord(b[p])) p++; return p; }
 function buildMeetSR() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SR();
@@ -20567,37 +20582,19 @@ function buildMeetSR() {
     rec.onresult = function(ev) {
         meetRecLastEventAt = Date.now();   // 🔧 v244
         meetSessionGotResult = true;       // 🔧 v264: این نشست نتیجه دارد (پربار)
-        // 🔧 v240: تفکیک interim و final — نمایش زندهٔ کلمات در حال گفتن.
+        // 🔧 v240: تفکیک interim و final — 🔧 v267 (BA-180): تایپ واژه‌به‌واژه —
+        //    هر واژهٔ interim به‌محض تشخیص فوراً تایپ می‌شود؛ فاینال فقط دلتا.
         let interim = '';
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
             const r = ev.results[i];
             if (r.isFinal) {
                 if (meetRecIndices && !meetRecIndices.has(i)) {
-                    // 🔧 v266 (BA-179): گارد دلتا — فاینالِ دیرهنگامِ همان جمله‌ای
-                    //    که با «....» دستی تعهد شده، فقط بخشِ تازه‌اش اضافه
-                    //    می‌شود (بدون تکرار). تطبیق واژه‌به‌واژه با پیشوند.
-                    const finTxt = r[0].transcript.trim();
-                    const mw = meetManualCommitText ? meetManualCommitText.split(/\s+/).filter(Boolean) : [];
-                    const fw = finTxt.split(/\s+/).filter(Boolean);
-                    const normW = function(w) { return w.replace(/\u200c/g, ''); };
-                    let isPrefix = mw.length > 0 && fw.length >= mw.length &&
-                                   (Date.now() - meetManualCommitAt) < MEET_MANUAL_GUARD_MS;
-                    if (isPrefix) {
-                        for (let k = 0; k < mw.length; k++) {
-                            if (normW(fw[k]) !== normW(mw[k])) { isPrefix = false; break; }
-                        }
-                    }
-                    if (isPrefix) {
-                        const deltaTxt = fw.slice(mw.length).join(' ').trim();
-                        if (deltaTxt) meetRecAccum += deltaTxt + ' ';
-                        meetManualCommitText = ''; meetManualCommitAt = 0;
-                    } else {
-                        meetRecAccum += r[0].transcript + ' ';
-                    }
                     meetRecIndices.add(i);
+                    meetCommitFinalWords(i, r[0].transcript);
                 }
             } else {
                 interim += r[0].transcript;
+                meetCommitInterimWords(i, r[0].transcript);   // فوری — واژه‌به‌واژه
             }
         }
         meetLastInterim = interim;   // 🔧 v243
@@ -20623,11 +20620,10 @@ function buildMeetSR() {
         const el = document.getElementById('meetingText');
         // 🔧 v264: پیش‌نویس زنده — هر نوشتن بلافاصله ذخیره می‌شود تا
         //    reload/رفرش/کشتنِ تب هرگز متن جلسه را پاک نکند (BA-177).
+        // 🔧 v267: همهٔ واژه‌ها هم‌زمان با تشخیص به متن رفته‌اند — نمایش =
+        //    خودِ متنِ تعهدشده (واژه‌به‌واژه، بدون انتظارِ فاینال)
         if (el) {
-            // 🔧 v266: interimِ هم‌متن با تعهدِ دستی دوباره نمایش داده نمی‌شود
-            //    (متنش با «....» تعهد شده — نمایش دوباره = تکرار بصری)
-            const showInterim = (meetManualCommitText && interim.trim() === meetManualCommitText) ? '' : interim;
-            el.value = addNumericAfterWords((meetRecAccum + ' ' + showInterim).trim()).trim();
+            el.value = addNumericAfterWords(meetRecAccum.trim()).trim();
             try { localStorage.setItem(MEET_DRAFT_KEY, el.value); } catch(e) {}
         }
         // به‌روزرسانی وضعیت برای بازخورد بصری زنده
@@ -20644,10 +20640,11 @@ function buildMeetSR() {
         }
         // خطاهای گذرا — سیکل بعدی (onend → restart ملایم ۶۰۰ms) ادامه می‌دهد
     };
-    // 🔧 v265 (BA-178): nomatch = صدا شنیده شد ولی هیچ واژه‌ای قابل تشخیص
-    //    نبود — به‌جای انتظار/قفل، بخشِ مفهومِ interim + «....» تعهد می‌شود.
-    //    پربار شمرده می‌شود تا restart ملایم پایهٔ ۶۰۰ms بماند و روی
-    //    گفتار نامفهومِ پیوسته، ضدتروتل هم اشتباهی فعال نشود.
+    // 🔧 v265 (BA-178) + v267 (BA-180): nomatch = صدا شنیده شد ولی هیچ
+    //    واژه‌ای قابل تشخیص نبود — همان لحظه «....» می‌گذارد (واژه‌های
+    //    قبلی واژه‌به‌واژه تعهد شده‌اند) و جملهٔ باز را می‌بندد. پربار
+    //    شمرده می‌شود تا restart ملایم پایهٔ ۶۰۰ms بماند و روی گفتار
+    //    نامفهومِ پیوسته، ضدتروتل هم اشتباهی فعال نشود.
     rec.onnomatch = function() {
         meetRecLastEventAt = Date.now();
         meetSessionGotResult = true;
@@ -20655,26 +20652,15 @@ function buildMeetSR() {
     };
     rec.onend = function() {
         meetRecLastEventAt = Date.now();   // 🔧 v244
-        // 🔧 v243: تعهد آخرین interim قبل از restart (توضیح در taskRecObj.onend) —
-        //    جملهٔ شنیده‌شدهٔ نافینال‌شده هرگز گم نمی‌شود.
-        if (meetLastInterim && meetLastInterim.trim()) {
-            // 🔧 v265 (BA-178): اگر interim هنگام پایانِ نشست یخ‌زده بود
-            //    (گفتار نامفهوم)، با «....» تعهد می‌شود نه متنِ خامِ گیرکرده.
-            if (meetInterimStuckAt && Date.now() - meetInterimStuckAt >= MEET_INTERIM_STUCK_MS) {
-                meetForceCommitUnintelligible();
-            } else {
-                meetRecAccum += meetLastInterim.trim() + ' ';
-                const elC = document.getElementById('meetingText');
-                if (elC) {
-                    elC.value = addNumericAfterWords(meetRecAccum.trim()).trim();
-                    try { localStorage.setItem(MEET_DRAFT_KEY, elC.value); } catch(e) {}   // 🔧 v264
-                }
-            }
-        }
+        // 🔧 v267 (BA-180): واژه‌ها همگی واژه‌به‌واژه تعهد شده‌اند — فقط
+        //    جملهٔ باز را فریز می‌کنیم (گارد بین‌نشستی برای تحویل‌دوبارهٔ
+        //    کروم در نشست بعدی). هیچ واژه‌ای در انتظارِ فاینال نمی‌ماند.
+        meetFreezeUtter();
         meetLastInterim = '';
         meetInterimFrozenText = ''; meetInterimStuckAt = 0;   // 🔧 v265
         // 🔧 v242: پاک‌کردن ایندکس‌ها بعد از restart (توضیح در taskRecObj.onend)
         meetRecIndices = new Set();
+        meetUtterMap.clear();   // 🔧 v267: نقشهٔ واژه‌ها مخصوص همین نشست است
         if (meetRecActive) {
             // 🔧 v261: فقط یک restart در انتظار + گارد هویت — اگر watchdog
             //    نمونه را عوض کرده یا stop شده، onendِ کهنه نمونهٔ جدید
@@ -20750,18 +20736,100 @@ function meetSafeStart(attempt) {
         setTimeout(function() { if (meetRecActive && meetRecObj === myObj) meetSafeStart((attempt || 0) + 1); }, wait);
     }
 }
-// 🔧 v265 (BA-178 — الزام کاربر: «کلمات نامفهوم گیر می‌کند، قفل می‌کند و
-//    ~۳۰ثانیه طول می‌کشد تا ریست شود؛ همان جای مفهوم را بنویسد و به جای
-//    نامفهوم‌ها .... بگذارد»): تعهد فوری بخشِ مفهوم + «....» برای ناگفته‌ها.
+// 🔧 v267 (BA-180 — الزام کاربر: «تایپ را از جمله به کلمات کاهش بده و
+//    سریعاً هر کلمه‌ای تشخیص دادی تایپ کن؛ تحت هیچ شرایطی هنگ نکن و هر
+//    کلمه متوجه نشدی .... بگذار»): تعهد واژه‌به‌واژه.
+//  • هر واژهٔ interim به‌محض رسیدن فوراً به متن می‌رود — هیچ واژه‌ای
+//    منتظر فاینالِ جمله نمی‌ماند (ریشهٔ کما: انتظارِ جمله‌محور بود).
+//  • کروم فرضش را عوض کرد؟ فقط دُمِ جملهٔ جاری (هنوز فینال‌نشده)
+//    بازنویسی می‌شود؛ واژه‌ای که کروم دور ریخت = نامفهوم → «....».
+//  • فاینال فقط دلتا را می‌نشیند (بدون تکرار). هر مسیرِ نامفهوم
+//    (nomatch/گیرِ یخ‌زده/حذفِ واژه در فاینال) «....» می‌گذارد.
+function meetCommitInterimWords(idx, txt) {
+    const w = (txt || '').trim().split(/\s+/).filter(Boolean);
+    if (!w.length) return;
+    // 🔧 v267: اگر دقیقاً همان واژه‌های تعهدشدهٔ «....»دار است، هیچ تغییری
+    //    نکن (کروم interimِ کهنه را تکرار می‌کند) — وگرنه نقشهٔ واژه‌ها دوباره
+    //    مسلح می‌شد و به جملهٔ بعدی «....»/تکرارِ کاذب می‌نشست.
+    if (meetManualCommitText && (Date.now() - meetManualCommitAt) < MEET_MANUAL_GUARD_MS) {
+        const mw0 = meetManualCommitText.split(/\s+/).filter(Boolean);
+        if (w.length === mw0.length && meetLcpWords(mw0, w) === mw0.length) return;
+    }
+    if (idx !== meetUtterIdx) {          // جملهٔ تازه — قبلی خودبه‌خود فریز می‌شود
+        meetUtterIdx = idx;
+        meetUtterStartLen = meetRecAccum.length;
+    }
+    let committed = meetUtterMap.get(idx) || [];
+    let fromManual = false;
+    if (!committed.length && meetManualCommitText && (Date.now() - meetManualCommitAt) < MEET_MANUAL_GUARD_MS) {
+        const mw = meetManualCommitText.split(/\s+/).filter(Boolean);
+        if (meetLcpWords(mw, w) === mw.length) { committed = mw; fromManual = true; }   // ادامهٔ جملهٔ «....»دار
+    }
+    const lcp = meetLcpWords(committed, w);
+    if (lcp === committed.length && w.length >= committed.length) {
+        if (w.length > lcp) meetRecAccum += w.slice(lcp).join(' ') + ' ';   // هر واژهٔ تازه: فوری
+    } else if (!fromManual && meetRecAccum.length >= meetUtterStartLen) {
+        // بازنویسی دُمِ جملهٔ جاری — فرضِ کروم عوض شد (هنوز فینال نشده)
+        meetRecAccum = (meetRecAccum.slice(0, meetUtterStartLen) + w.join(' ')).replace(/\s+$/, '');
+        if (w.length < committed.length) meetRecAccum += '.... ';   // واژه‌ای که کروم دور ریخت = نامفهوم
+        else meetRecAccum += ' ';
+    } else {
+        const extra = w.slice(committed.length).join(' ');
+        if (extra) meetRecAccum += extra + ' ';
+    }
+    meetUtterMap.set(idx, w);
+}
+function meetCommitFinalWords(idx, txt) {
+    const fin = (txt || '').trim();
+    if (!fin) return;
+    const fw = fin.split(/\s+/).filter(Boolean);
+    const committed = meetUtterMap.get(idx);
+    if (committed && committed.length) {
+        const lcp = meetLcpWords(committed, fw);
+        if (lcp === committed.length && fw.length >= committed.length) {
+            if (fw.length > lcp) meetRecAccum += fw.slice(lcp).join(' ') + ' ';   // فقط دلتا — بدون تکرار
+        } else if (fw.length < committed.length && lcp === fw.length) {
+            meetRecAccum = meetRecAccum.replace(/\s+$/, '') + '.... ';   // فاینال واژه‌های تعهدشده را دور ریخت = نامفهوم
+        } else {
+            meetRecAccum += fin + ' ';   // فرض کلاً عوض شد — فاینال مرجع است
+        }
+        meetUtterMap.delete(idx);
+    } else if (meetManualCommitText && (Date.now() - meetManualCommitAt) < MEET_MANUAL_GUARD_MS) {
+        // گارد بین‌نشستی (v266): فاینالِ دیرهنگام/تحویل‌دوبارهٔ جملهٔ تعهدشده
+        const mw = meetManualCommitText.split(/\s+/).filter(Boolean);
+        const lcp = meetLcpWords(mw, fw);
+        if (lcp === mw.length && fw.length >= mw.length) {
+            if (fw.length > lcp) meetRecAccum += fw.slice(lcp).join(' ') + ' ';
+            meetManualCommitText = ''; meetManualCommitAt = 0;
+        } else if (fw.length < mw.length && lcp === fw.length) {
+            meetManualCommitText = ''; meetManualCommitAt = 0;   // همین واژه‌ها با «....» تعهد شده‌اند
+        } else {
+            meetRecAccum += fin + ' ';
+        }
+    } else {
+        meetRecAccum += fin + ' ';
+    }
+    if (idx === meetUtterIdx) { meetUtterIdx = -1; meetUtterStartLen = 0; }   // جملهٔ جاری بسته شد
+}
+function meetFreezeUtter() {
+    if (meetUtterIdx >= 0) {
+        const cw = meetUtterMap.get(meetUtterIdx);
+        if (cw && cw.length) {   // جملهٔ بازِ واژه‌تعهدشده → گارد بین‌نشستی (تحویل‌دوبارهٔ کروم)
+            meetManualCommitText = cw.join(' ');
+            meetManualCommitAt = Date.now();
+        }
+        meetUtterMap.delete(meetUtterIdx);
+    }
+    meetUtterIdx = -1;
+    meetUtterStartLen = 0;
+}
+// 🔧 v265 (BA-178) + v267 (BA-180): واژه‌های شنیده‌شده هم‌اکنون واژه‌به‌واژه
+//    تعهد شده‌اند — این تابع فقط نشانهٔ «....» می‌گذارد و جملهٔ باز را
+//    می‌بندد (برای nomatch و گیرِ یخ‌زده). بدون abort — نشست می‌شنود.
 function meetForceCommitUnintelligible() {
     if (!meetRecActive) return;
-    if (meetLastInterim && meetLastInterim.trim()) {
-        meetManualCommitText = meetLastInterim.trim();   // 🔧 v266: برای گارد دلتای فاینال دیرهنگام
-        meetManualCommitAt = Date.now();
-        meetRecAccum += meetManualCommitText + '.... ';   // بخش مفهوم + نشانهٔ نامفهوم
-    } else {
-        meetRecAccum += '.... ';   // صدا بود ولی هیچ واژه‌ای قابل تشخیص نبود (nomatch)
-    }
+    meetRecAccum = meetRecAccum.replace(/\s+$/, '') + '.... ';   // جای واژه‌هایی که تشخیص داده نشد
+    meetFreezeUtter();
     meetLastInterim = '';
     meetInterimFrozenText = '';
     meetInterimStuckAt = 0;
@@ -20801,6 +20869,7 @@ function meetingStartRec() {
     if (meetRecAccum && !meetRecAccum.endsWith(' ')) meetRecAccum += ' ';
     meetRecIndices = new Set();
     meetManualCommitText = ''; meetManualCommitAt = 0;   // 🔧 v266: گارد دلتا تازه
+    meetUtterIdx = -1; meetUtterStartLen = 0; meetUtterMap.clear();   // 🔧 v267: واژه‌به‌واژه تازه
     meetRecObj = buildMeetSR();   // 🔧 v244: نمونهٔ تازه در هر شروع
     meetRecActive = true;
     // 🔧 v262: متر حذف شد — بدون استریم میکروفونِ موازی (موتور صدا می‌گیرد)
@@ -20826,6 +20895,7 @@ function meetingStopRec() {
     meetInterimFrozenText = '';
     meetInterimStuckAt = 0;
     meetManualCommitText = ''; meetManualCommitAt = 0;   // 🔧 v266
+    meetUtterIdx = -1; meetUtterStartLen = 0; meetUtterMap.clear();   // 🔧 v267
     // 🔧 v264: پیش‌نویس زنده — قبل از هر توقفی متن فعلی ذخیره شود (تایپ دستی
     //    کاربر بین نشست‌ها هم محفوظ می‌ماند؛ reload معوق آپدیت متن را پاک نمی‌کند)
     try {
