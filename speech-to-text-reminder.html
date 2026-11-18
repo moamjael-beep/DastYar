@@ -7703,7 +7703,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v271-2026-11-17-meeting-fast-unintelligible';
+const APP_VERSION = 'v272-2026-11-17-meeting-silent';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -14783,8 +14783,17 @@ function playShortBeeps() {
     // 🔧 v236: هنگام ضبط صوت (مودال باز)، بوق نزن — کاربر «بوق‌های متوالی»
     // را در حالی که داشت تسک ضبط می‌کرد می‌شنید و گمان می‌کرد بوقِ صفحهٔ ضبط
     // است. در واقع این بوقِ اعلان‌هاست. تا مودال ضبط باز است، آن را ساکت کن.
+    // 🔧 v272 (BA-185 — الزام کاربر: «فقط صدای بوق‌های متوالی خیلی بده —
+    //    بدون صدا باشه»): همان سرکوب برای ضبطِ جلسه هم — فلگِ ضبطِ جلسه
+    //    (meetRecActive) از گاردِ v236 جا مانده بود و هر یادآوریِ سررسیده
+    //    در میانهٔ جلسه، بوقِ ۵تایی پشت‌سرهم پخش می‌کرد. در حین ضبطِ جلسه
+    //    هیچ صدایی از اپ پخش نمی‌شود؛ اعلان‌ها فقط تصویری می‌مانند.
     if (typeof isRecording !== 'undefined' && isRecording) {
         console.log('[NotifSound] Suppressed during recording');
+        return;
+    }
+    if (typeof meetRecActive !== 'undefined' && meetRecActive) {
+        console.log('[NotifSound] Suppressed during meeting recording');
         return;
     }
     var ctx = getNotifAudioContext();
@@ -23388,8 +23397,13 @@ function playBellNote(ctx, freq, startTime, duration, gainVal) {
 // پخش صدای کامل اعلان: ۳ نت × ۳ بار تکرار = ~۸ ثانیه
 function playNotificationSound() {
     // 🔧 v236: هنگام ضبط صوت، صدای اعلان پخش نشود — مزاحم ضبط است.
+    // 🔧 v272 (BA-185): ضبطِ جلسه هم — هیچ صدایی در حین جلسهٔ ضبط‌شونده.
     if (typeof isRecording !== 'undefined' && isRecording) {
         console.log('[NotifSound] Bell suppressed during recording');
+        return;
+    }
+    if (typeof meetRecActive !== 'undefined' && meetRecActive) {
+        console.log('[NotifSound] Bell suppressed during meeting recording');
         return;
     }
     const ctx = getNotifAudioContext();
