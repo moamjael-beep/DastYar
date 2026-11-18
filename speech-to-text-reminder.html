@@ -7703,7 +7703,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v269-2026-11-17-meeting-progress-meter';
+const APP_VERSION = 'v270-2026-11-17-meeting-anti-coma';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20544,8 +20544,10 @@ const MEET_ZOMBIE_MS = 12000;     // 🔧 v268: ۱۲s مطلقاً بدون رو
 const MEET_START_HUNG_MS = 2500;  // 🔧 v268: start() بدون onaudiostart بیشتر از این = شروعِ مرده → سریع-شکست
 // 🔧 v263 (BA-176): restart ملایم — ضدتروتل سرویس گفتار
 let meetQuickEnds = 0;            // دنبالهٔ «پایان‌های فوری» (نشست‌های رد‌شده)
+let meetLastPermToastAt = 0;      // 🔧 v270: آخرین توستِ اجازهٔ میکروفون (محدودیت نرخ)
 let meetSessionStartAt = 0;       // لحظهٔ start نشست فعلی
 const MEET_RESTART_BASE_MS = 600; // فاصلهٔ restart پس از نشست سالم (۶۰۰ms — نه ۲۰۰ms)
+const MEET_RESTART_CAP_MS = 1200; // 🔧 v270: سقفِ مطلقِ تأخیر restart — پنجرهٔ کرِ مطلقِ میکروفون هرگز >۱.۲s (سقف ۵s پنجرهٔ کما می‌ساخت)
 const MEET_QUICKEND_MS = 1500;    // نشستِ کوتاه‌تر از این = «پایان فوری» (سرویس رد کرد)
 // 🔧 v264 (BA-177): رشد تأخیر فقط برای نشستِ «بدون نتیجه» — نشستِ کوتاهِ
 // پربار (جملهٔ کوتاه) ردِ سرویس نیست و نباید تأخیر را رشد دهد.
@@ -20663,13 +20665,23 @@ function buildMeetSR() {
             st.textContent = interim ? 'در حال شنیدن: ' + interim.slice(-30) : 'در حال ضبط... صحبت کنید';
         }
     };
+    // 🔧 v270 (BA-183): هیچ خطایی ضبط را نمی‌کشد — «service-not-allowed»
+    //    روی اندروید گاهی وسطِ جلسهٔ سالم هم شلیک می‌شود (کرَج شناخته‌شدهٔ
+    //    کروم، دقیقاً بعد از صوتِ نامفهوم)؛ کشتنِ ضبط یعنی پایانِ جلسهٔ
+    //    کاربر. حتی «not-allowed» واقعی هم چرخه ادامه می‌دهد — به‌محض
+    //    اجازهٔ دوباره، ضبط خودش برمی‌گردد (فلسفهٔ v245: هیچ قطع/وصلِ
+    //    دستی). توستِ راهنما با محدودیت نرخ (هر ۲۰s) تا طوفانِ خطا،
+    //    توستِ بی‌پایان نسازد.
     rec.onerror = function(ev) {
         console.error('[MeetingMic] error:', ev.error);
-        if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
-            meetingStopRec();
-            showToast('دسترسی به میکروفون رد شد. در تنظیمات مرورگر اجازه دهید.');
+        if ((ev.error === 'not-allowed' || ev.error === 'service-not-allowed') && meetRecActive) {
+            const nowE = Date.now();
+            if (nowE - meetLastPermToastAt > 20000) {
+                meetLastPermToastAt = nowE;
+                showToast('اجازهٔ میکروفون قطع شد — تا دوباره اجازه دهید، خودکار تلاش می‌کنیم');
+            }
         }
-        // خطاهای گذرا — سیکل بعدی (onend → restart ملایم ۶۰۰ms) ادامه می‌دهد
+        // هر خطایی — onend می‌آید و restart ملایم ادامه می‌دهد؛ ضبط هرگز نمی‌میرد
     };
     // 🔧 v265 (BA-178) + v267 (BA-180): nomatch = صدا شنیده شد ولی هیچ
     //    واژه‌ای قابل تشخیص نبود — همان لحظه «....» می‌گذارد (واژه‌های
@@ -20707,7 +20719,15 @@ function buildMeetSR() {
             //    (قطع سریع). نشستِ پربار مثل نشست سالم، شمارنده را صفر می‌کند.
             const dur = Date.now() - (meetSessionStartAt || Date.now());
             meetQuickEnds = (!meetSessionGotResult && dur < MEET_QUICKEND_MS) ? Math.min(meetQuickEnds + 1, 4) : 0;
-            const waitMs = Math.min(MEET_RESTART_BASE_MS * Math.pow(2, meetQuickEnds), 5000);
+            // 🔧 v270 (BA-183 — الزام کاربر: «با شنیدن حروف و کلمات نامفهوم
+            //    به کما می‌رود»): سقفِ ۵s پنجرهٔ کما می‌ساخت — روی گفتارِ
+            //    نامفهومِ پیوسته سرویس مدام بدونِ نتیجه می‌میرد، شمارنده تا
+            //    ۴ بالا می‌ماند و میکروفون در هر چرخه ~۵ثانیه کرِ مطلق بود
+            //    (زامبی هم هرگز شلیک نمی‌کرد: idle با هر onend صفر می‌شد و
+            //    به ۱۲s نمی‌رسید). حالا سقفِ تأخیر ۱.۲s است — پنجرهٔ
+            //    ناشنوایی هرگز از این بیشتر نمی‌شود؛ حالت‌های مرضی را
+            //    شروع‌مرده/زامبی/پیشرفت‌سنج/نبض می‌بینند.
+            const waitMs = Math.min(MEET_RESTART_BASE_MS * Math.pow(2, meetQuickEnds), MEET_RESTART_CAP_MS);
             const myRec = rec;
             meetRestartPending = setTimeout(function() {
                 meetRestartPending = null;
@@ -20747,6 +20767,22 @@ function meetWatchdog() {
         if (meetRecObj) { try { meetRecObj.abort(); } catch(e) {} }
         meetRecObj = buildMeetSR();
         meetAudioOpenAt = 0; meetStartArmedAt = 0;   // 🔧 v268
+        meetRecLastEventAt = Date.now(); meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0;   // 🔧 v269
+        meetSafeStart(0);
+    }
+    // 🔧 v270 (BA-183): نبضِ آخرین خط — همهٔ نگهبان‌ها «نشستِ زندهٔ کر» را
+    //    می‌بینند؛ این یکی حالتی را می‌بیند که هیچ نگهبانی نمی‌بیند:
+    //    ضبطِ فعال ولی مطلقاً هیچ شنونده‌ای نیست (نه نشستِ زندهٔ صدا-باز،
+    //    نه start مسلح، نه restart در انتظار) — زنجیرهٔ تلاشِ start مرده یا
+    //    هر مسیرِ ناشناخته. ۶ثانیه در این حالت = ضربهٔ سخت: نمونهٔ تازه +
+    //    start بی‌قید. (اگر start مدام خطا دهد، هر ۶s یک تلاشِ تازه —
+    //    محدود، ارزان، هرگز ساکت نمی‌ماند.)
+    if (idle > 6000 && !meetRestartPending && !meetAudioOpenAt && !meetStartArmedAt) {
+        console.warn('[MeetingMic] heartbeat: active but NO live listener (idle ' + Math.round(idle / 1000) + 's, nothing pending/armed/open) — hard kick');
+        if (meetRestartPending) { clearTimeout(meetRestartPending); meetRestartPending = null; }
+        if (meetRecObj) { try { meetRecObj.abort(); } catch(e) {} }
+        meetRecObj = buildMeetSR();
+        meetAudioOpenAt = 0; meetStartArmedAt = 0;
         meetRecLastEventAt = Date.now(); meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0;   // 🔧 v269
         meetSafeStart(0);
     }
