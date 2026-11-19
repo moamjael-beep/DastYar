@@ -7703,7 +7703,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v274-2026-11-19-meeting-silence-tolerant';
+const APP_VERSION = 'v275-2026-11-19-meeting-stuck-realistic';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20564,7 +20564,8 @@ let meetSessionGotResult = false; // آیا نشست فعلی حداقل یک ن
 const MEET_DRAFT_KEY = 'yadavar_meeting_draft_v1'; // 🔧 v264: پیش‌نویس زندهٔ جلسه
 // 🔧 v265 (BA-178): شکارچی «interim یخ‌زده» — گفتار نامفهوم
 let meetInterimFrozenText = '';      // آخرین متن interim بدون هیچ تغییر
-let meetInterimStuckAt = 0;          // لحظه‌ای که interim همین متن را نشان داد
+let meetInterimStuckAt = 0;          // لحظه‌ای که interim تکرارِ واقعی شد (گیرِ سریع)
+let meetInterimFirstAt = 0;          // 🔧 v274-fix (BA-187): لحظهٔ ورودِ اولِ هر interim (گیرِ آهستهٔ پشتیبان ۴.۵s)
 let meetStuckTimer = null;           // تایمر شکارچی (هر ۱ثانیه)
 const MEET_INTERIM_STUCK_MS = 4500;  // interimِ بی‌تغییرِ بیشتر از این = گیرِ موتور روی گفتار نامفهوم
 // 🔧 v266 (BA-179): تعهدِ «....» دیگر نشست را نمی‌شکند (سکوت چندثانیه‌ای →
@@ -20645,30 +20646,36 @@ function buildMeetSR() {
         if (interim && interim.trim()) {
             const curI = interim.trim();
             if (meetManualCommitText && curI === meetManualCommitText) {
+                // جملهٔ تعهدشدهٔ دستی (پس از «....») — کروم آن را دوباره می‌فرستد؛ گیر نیست
                 meetInterimFrozenText = '';
-                meetInterimStuckAt = 0;
-            } else if (curI !== meetInterimFrozenText) {
-                meetInterimFrozenText = curI;
-                meetInterimStuckAt = Date.now();
-            }
-            // 🔧 v274 (BA-187 — الزام کاربر: «گیر نیافتادن روی پردازش کلمات
-            //    نامفهوم را به یک میلیونیوم ثانیه برسان و سریع تا کلمه‌ای
-            //    معلوم نیست به تشخیص و تایپ کلمات بعدی برس»): لایهٔ ۰ms —
-            //    تشخیصِ هم‌زمان در onresult. اگر کروم دقیقاً همان interim را
-            //    تکرار کرد (curI === meetInterimFrozenText) و صدای زنده است،
-            //    یعنی موتور روی همین واژهٔ نامفهوم گیر کرده. فوراً — بدون
-            //    انتظار برای polling — «....» می‌گذاریم و عبور می‌کنیم. این
-            //    لایه polling ۵۰ms را به‌عنوان پشتیبان دارد (اگر onresult
-            //    نیامد، polling در ≤۵۰ms می‌گیرد).
-            if (curI === meetInterimFrozenText && meetInterimStuckAt > 0) {
+                meetInterimStuckAt = 0; meetInterimFirstAt = 0;
+            } else if (curI === meetInterimFrozenText) {
+                // 🔧 v274-fix (BA-187): تکرارِ واقعیِ همان interim — این یعنی گیر روی
+                //    واژهٔ نامفهوم (کروم همان را دوباره می‌فرستد). فقط در تکرار واقعی،
+                //    meetInterimStuckAt را مسلح می‌کنیم (برای لایهٔ هم‌زمان ۰ms و
+                //    polling سریع ۵۰ms). تغییر/اصلاحِ کلمهٔ معتبر را گیر نمی‌اندازد.
+                if (!meetInterimStuckAt) meetInterimStuckAt = Date.now();
+                // 🔧 v274 (BA-187 — الزام کاربر: «گیر ... به یک میلیونیوم ثانیه
+                //    برسان»): لایهٔ ۰ms — تشخیصِ هم‌زمان. همان interim تکرار شد و
+                //    صدای زنده است → فوراً «....» و عبور. polling ۵۰ms پشتیبان است.
                 const voiceNow = meetVoiceNow || (meetVoiceLastAt > 0 && (Date.now() - meetVoiceLastAt) < MEET_VOICE_EDGE_MS);
                 if (voiceNow && (Date.now() - meetInterimStuckAt) >= MEET_STUCK_VOICE_MS) {
                     meetForceCommitUnintelligible();
                 }
+            } else {
+                // 🔧 v274-fix (BA-187): interim تغییر کرد — کروم در حال تشخیص/اصلاحِ
+                //    کلمهٔ معتبر است (مثلاً سمن→سمند). لایهٔ هم‌زمان «....» نمی‌گذارد.
+                //    meetInterimStuckAt=0 می‌ماند تا polling سریع ۵۰ms آن را گیر
+                //    نیندازد. ولی meetInterimFirstAt را مسلح می‌کنیم: اگر همین کلمهٔ
+                //    تازه بیش از MEET_INTERIM_STUCK_MS (۴.۵s) ثابت بماند و کروم هیچ
+                //    چیزِ تازه‌ای نفرستد، polling آهسته (آخرِ خط) آن را می‌گیرد.
+                meetInterimFrozenText = curI;
+                meetInterimStuckAt = 0; meetInterimFirstAt = 0;
+                meetInterimFirstAt = Date.now();
             }
         } else {
             meetInterimFrozenText = '';
-            meetInterimStuckAt = 0;
+            meetInterimStuckAt = 0; meetInterimFirstAt = 0;
         }
         const el = document.getElementById('meetingText');
         // 🔧 v264: پیش‌نویس زنده — reload/رفرش/کشتنِ تب هرگز متن جلسه را پاک
@@ -20730,7 +20737,7 @@ function buildMeetSR() {
         //    کروم در نشست بعدی). هیچ واژه‌ای در انتظارِ فاینال نمی‌ماند.
         meetFreezeUtter();
         meetLastInterim = '';
-        meetInterimFrozenText = ''; meetInterimStuckAt = 0;   // 🔧 v265
+        meetInterimFrozenText = ''; meetInterimStuckAt = 0; meetInterimFirstAt = 0;   // 🔧 v265
         // 🔧 v242: پاک‌کردن ایندکس‌ها بعد از restart (توضیح در taskRecObj.onend)
         meetRecIndices = new Set();
         meetUtterMap.clear();   // 🔧 v267: نقشهٔ واژه‌ها مخصوص همین نشست است
@@ -20973,7 +20980,7 @@ function meetForceCommitUnintelligible() {
     meetFreezeUtter();
     meetLastInterim = '';
     meetInterimFrozenText = '';
-    meetInterimStuckAt = 0;
+    meetInterimStuckAt = 0; meetInterimFirstAt = 0;
     const el = document.getElementById('meetingText');
     if (el) {
         meetLastShown = addNumericAfterWords(meetRecAccum.trim()).trim();   // 🔧 v268: همگام با رندر ارزان
@@ -21028,7 +21035,20 @@ function meetStuckCheck() {
     //    مرده، نبض) و onend ملایمِ طبیعیِ کروم.
     const nowQ = Date.now();
     const voiceLive = meetVoiceNow || (meetVoiceLastAt > 0 && (nowQ - meetVoiceLastAt) < MEET_VOICE_EDGE_MS);
-    if (voiceLive && meetInterimStuckAt > 0 && (nowQ - meetInterimStuckAt) > MEET_STUCK_VOICE_MS) {
+    // 🔧 v274-fix (BA-187): فقط وقتی گیر می‌کنیم که کروم همان interim را
+    //    واقعاً تکرار کرده باشد (تکرار، نه تغییر). meetInterimStuckAt فقط در
+    //    تکرار واقعی تنظیم می‌شود (در onresult). + گارد سیل: اگر آخرین کلمهٔ
+    //    تعهدشده همین «....» بود، دوباره نگذار (جمله بسته شده، کروم قدیمی را
+    //    دوباره می‌فرستد).
+    if (voiceLive && meetInterimStuckAt > 0 && (nowQ - meetInterimStuckAt) > MEET_STUCK_VOICE_MS
+        && meetInterimFrozenText && meetLastInterim && meetLastInterim.trim() === meetInterimFrozenText) {
+        // گارد سیلِ «....»: اگر آخرین کارِ ما «....» گذاشتن روی همین کلمه بود،
+        // دوباره نگذار (meetFreezeUtter جمله را در meetManualCommitText چیده و
+        // کروم قدیمی را دوباره می‌فرستد؛ آن در onresult بازنشانی می‌کند).
+        if (meetRecAccum.endsWith('.... ')) {
+            meetInterimStuckAt = 0; meetInterimFirstAt = 0;   // سکوتِ شمارنده تا کروم چیزی تازه بیاورد
+            return;
+        }
         console.warn('[MeetingMic] live voice, interim frozen ' + Math.round((nowQ - meetInterimStuckAt) / 1000) + 's — instant unintelligible dots, keep typing next words (no restart)');
         meetForceCommitUnintelligible();
         return;
@@ -21049,9 +21069,18 @@ function meetStuckCheck() {
         meetForceCommitUnintelligible();
         return;
     }
-    if (!meetLastInterim || !meetLastInterim.trim() || !meetInterimStuckAt) return;
-    if (Date.now() - meetInterimStuckAt < MEET_INTERIM_STUCK_MS) return;
-    console.warn('[MeetingMic] interim frozen ' + Math.round((Date.now() - meetInterimStuckAt) / 1000) + 's — committing with dots (session stays listening)');
+    if (!meetLastInterim || !meetLastInterim.trim()) return;
+    // 🔧 v274-fix (BA-187): پشتیبانِ آخرِ خط — polling آهستهٔ ۴.۵s روی هر interim
+    //    ثابت (چه تکرار، چه کلمهٔ تازه‌ای که بیش از ۴.۵s ثابت ماند). از
+    //    meetInterimFirstAt (ورودِ اول) یا meetInterimStuckAt (تکرار) استفاده می‌کند.
+    const firstAt = meetInterimStuckAt || meetInterimFirstAt;
+    if (!firstAt) return;
+    // فقط تکرارِ واقعیِ همان interim (نه تغییر/اصلاح).
+    if (!meetInterimFrozenText || meetLastInterim.trim() !== meetInterimFrozenText) return;
+    if (Date.now() - firstAt < MEET_INTERIM_STUCK_MS) return;
+    // گارد سیلِ «....»: اگر آخرین کار «....» بود، دوباره نگذار.
+    if (meetRecAccum.endsWith('.... ')) { meetInterimStuckAt = 0; meetInterimFirstAt = 0; return; }
+    console.warn('[MeetingMic] interim frozen ' + Math.round((Date.now() - firstAt) / 1000) + 's — committing with dots (session stays listening)');
     meetForceCommitUnintelligible();
 }
 function meetingStartRec() {
@@ -21095,7 +21124,7 @@ function meetingStopRec() {
     // 🔧 v265: توقف شکارچی interim یخ‌زده + پاک‌سازی گیر
     if (meetStuckTimer) { clearInterval(meetStuckTimer); meetStuckTimer = null; }
     meetInterimFrozenText = '';
-    meetInterimStuckAt = 0;
+    meetInterimStuckAt = 0; meetInterimFirstAt = 0;
     meetManualCommitText = ''; meetManualCommitAt = 0;   // 🔧 v266
     meetUtterIdx = -1; meetUtterStartLen = 0; meetUtterMap.clear();   // 🔧 v267
     meetStartArmedAt = 0; meetAudioOpenAt = 0; meetLastShown = ''; meetLastPersistAt = 0;   // 🔧 v268
