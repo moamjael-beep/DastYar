@@ -7703,7 +7703,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v276-2026-11-19-meeting-no-coma-no-dots-flood';
+const APP_VERSION = 'v277-2026-11-19-meeting-no-coma-no-dots-real';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20549,13 +20549,13 @@ function meetingToggleMic() {
 let meetRecLastEventAt = 0;
 let meetWatchdogTimer = null;
 let meetRestartPending = null;    // فقط یک restart در انتظار
-const MEET_ZOMBIE_MS = 600000;    // 🔧 v274 (BA-187 — الزام کاربر: «فواصل تحمل سکوت را هزاران برابر بیشتر کن»): ۱۰ دقیقه (بود ۱۲s). سکوتِ خالص، هرچند طولانی، دیگر هرگز نشست را قطع نمی‌کند — میکروفون ساعت‌ها باز می‌ماند و به شنیدن ادامه می‌دهد. زامبیِ واقعی (مطلقاً بدون رویداد، موتور مرده) نادر است؛ ۱۰ دقیقه مطمئن می‌سازد هرگز یک نشستِ سالمِ ساکت تعویض نشود.
+const MEET_ZOMBIE_MS = 1800000;   // 🔧 v277 (BA-190): ۳۰ دقیقه (بود ۱۰min). سکوتِ خالص، هرچند طولانی، هرگز نشست را قطع نمی‌کند — میکروفون ساعت‌ها باز می‌ماند. زامبیِ واقعی نادر است؛ ۳۰min مطمئن می‌سازد هرگز نشستِ سالمِ ساکت تعویض نشود.
 const MEET_START_HUNG_MS = 2500;  // 🔧 v268: start() بدون onaudiostart بیشتر از این = شروعِ مرده → سریع-شکست
 // 🔧 v263 (BA-176): restart ملایم — ضدتروتل سرویس گفتار
 let meetQuickEnds = 0;            // دنبالهٔ «پایان‌های فوری» (نشست‌های رد‌شده)
 let meetLastPermToastAt = 0;      // 🔧 v270: آخرین توستِ اجازهٔ میکروفون (محدودیت نرخ)
 let meetSessionStartAt = 0;       // لحظهٔ start نشست فعلی
-const MEET_RESTART_BASE_MS = 600; // فاصلهٔ restart پس از نشست سالم (۶۰۰ms — نه ۲۰۰ms)
+const MEET_RESTART_BASE_MS = 150; // 🔧 v277 (BA-190 — الزام کاربر: «هنوز به کما میرود»): ۱۵۰ms (بود ۶۰۰ms). onend طبیعیِ کروم روی هر مکث، restart با ۶۰۰ms = قطع/وصلِ محسوس (کما). ۱۵۰ms عملاً غیرقابل‌تشخیص.
 const MEET_RESTART_CAP_MS = 1200; // 🔧 v270: سقفِ مطلقِ تأخیر restart — پنجرهٔ کرِ مطلقِ میکروفون هرگز >۱.۲s (سقف ۵s پنجرهٔ کما می‌ساخت)
 const MEET_QUICKEND_MS = 1500;    // نشستِ کوتاه‌تر از این = «پایان فوری» (سرویس رد کرد)
 // 🔧 v264 (BA-177): رشد تأخیر فقط برای نشستِ «بدون نتیجه» — نشستِ کوتاهِ
@@ -20582,11 +20582,11 @@ const MEET_MANUAL_GUARD_MS = 15000; // گارد دلتا تا ۱۵ثانیه پ�
 // هر ۱.۵ثانیه (interim تکراری روی متنِ طولانیِ جلسه روی گوشی = کندی).
 let meetLastProgressAt = 0;   // 🔧 v269: آخرین تغییر واقعیِ متن (پیشرفتِ تشخیص)
 let meetSessionVoiceAt = 0;   // 🔧 v269: آخرین ورود interim/final (شواهدِ صدای موتور)
-const MEET_NOPROGRESS_MS = 600000;  // 🔧 v274 (BA-187): ۱۰ دقیقه بدون واژهٔ تازه (بود ۱۲s). روی گفتارِ زنده، گیر روی کلمهٔ نامفهوم حالا در ~۱ms با «....» حل می‌شود (MEET_STUCK_VOICE_MS=50ms + polling ۵۰ms + تشخیصِ هم‌زمان در onresult) — دیگر نیازی به این مسیرِ درازی نیست. اینجا فقط آخرین تور برای نشستِ واقعاً گِل‌کرده باقی می‌ماند، آن هم در ۱۰ دقیقه.
+const MEET_NOPROGRESS_MS = 1800000;  // 🔧 v277 (BA-190): ۳۰ دقیقه (بود ۱۰min). با حذفِ تزریقِ polling-based «....»، این فقط آخرین تورِ نشستِ واقعاً گِل‌کرده باقی است، در ۳۰min.
 const MEET_VOICE_FRESH_MS = 6000;   // 🔧 v269: شواهدِ صدای تازه‌تر از این = موتور فعال ولی گِل‌کرده
 let meetVoiceNow = false;            // 🔧 v271: صدای زندهٔ فعال (soundstart ↔ soundend)
 let meetVoiceLastAt = 0;             // 🔧 v271: آخرین نشانهٔ صدای زنده
-const MEET_STUCK_VOICE_MS = 3000;     // 🔧 v276 (BA-189 — الزام کاربر: «بعد از هر کلمه .... میگذارد»): ۳ ثانیه (بود ۵۰ms). ۵۰ms تهاجمی بود — کروم برای به‌روزرسانیِ اعتمادِ همان interim را هر ~۱۰۰-۲۰۰ms تکرار می‌کند و این تکرارِ طبیعی است، نه گیر. ۳s: مکث‌های طبیعیِ بین کلمات (زیر ۳s) تحمل می‌شوند؛ فقط اگر ۳s روی همان کلمهٔ نامفهوم ماند، «....» می‌گذارد. هنوز «سریع» است ولی دیگر روی گفتارِ عادی سیلی از «....» نمی‌سازد.
+const MEET_STUCK_VOICE_MS = 3000;     // 🔧 v277 (BA-190): اکنون بی‌اثر — meetStuckCheck حذف شد. فقط برای سازگاری باقی است.
 const MEET_VOICE_EDGE_MS = 2500;     // 🔧 v271: صدایی که تا این حد پیشه قطعه‌اش تمام شده هم «زنده» شمرده می‌شود
 let meetStartArmedAt = 0;    // لحظهٔ آخرین start() موفق (شکارِ شروع مرده)
 let meetAudioOpenAt = 0;     // لحظهٔ onaudiostart (صدا واقعاً باز شد)
@@ -20637,39 +20637,11 @@ function buildMeetSR() {
             }
         }
         meetLastInterim = interim;   // 🔧 v243
-        // 🔧 v265 (BA-178) + v266 (BA-179): سنجش گیرِ interim — اگر متن زنده
-        //    همان متن قبلی بماند (هیچ پیش‌رفتی)، موتور روی گفتار نامفهوم گیر
-        //    کرده؛ شکارچی (هر ۱ثانیه) آن را با «....» تعهد می‌کند — بدون
-        //    شکستن نشست (قطع در میانهٔ پردازش صدا خودش کما می‌ساخت). اگر
-        //    interim همان متنِ تعهدشدهٔ دستی باشد، گیرِ جدید نیست — شمارنده
-        //    نمی‌گیرد (وگرنه «....» تکراری می‌نشست).
-        if (interim && interim.trim()) {
-            const curI = interim.trim();
-            if (meetManualCommitText && curI === meetManualCommitText) {
-                // جملهٔ تعهدشدهٔ دستی (پس از «....») — کروم آن را دوباره می‌فرستد؛ گیر نیست
-                meetInterimFrozenText = '';
-                meetInterimStuckAt = 0; meetInterimFirstAt = 0;
-            } else if (curI === meetInterimFrozenText) {
-                // 🔧 v276 (BA-189 — الزام کاربر: «بعد از هر کلمه .... میگذارد»):
-                //    تکرارِ همان interim — کروم برای به‌روزرسانیِ اعتمادِ همان
-                //    کلمه را هر ~۱۰۰-۲۰۰ms تکرار می‌کند. این تکرارِ طبیعی است،
-                //    نه گیر. لایهٔ هم‌زمانِ ۰ms (که روی هر تکرار «....» می‌گذاشت)
-                //    حذف شد. حالا فقط polling (هر ۲۵۰ms) با آستانهٔ ۳s تصمیم
-                //    می‌گیرد — مکث‌های طبیعی تحمل می‌شوند، فقط گیرِ واقعی (۳s
-                //    روی همان کلمه + صدای زنده) «....» می‌گذارد.
-                if (!meetInterimStuckAt) meetInterimStuckAt = Date.now();
-            } else {
-                // 🔧 v274-fix (BA-187): interim تغییر کرد — کروم در حال تشخیص/اصلاحِ
-                //    کلمهٔ معتبر است (مثلاً سمن→سمند). لایهٔ هم‌زمان «....» نمی‌گذارد.
-                //    meetInterimStuckAt=0 می‌ماند تا polling سریع ۵۰ms آن را گیر
-                //    نیندازد. ولی meetInterimFirstAt را مسلح می‌کنیم: اگر همین کلمهٔ
-                //    تازه بیش از MEET_INTERIM_STUCK_MS (۴.۵s) ثابت بماند و کروم هیچ
-                //    چیزِ تازه‌ای نفرستد، polling آهسته (آخرِ خط) آن را می‌گیرد.
-                meetInterimFrozenText = curI;
-                meetInterimStuckAt = 0; meetInterimFirstAt = 0;
-                meetInterimFirstAt = Date.now();
-            }
-        } else {
+        // 🔧 v277 (BA-190): تشخیصِ گیرِ polling-based حذف شد — تکرارِ طبیعیِ
+        //    اعتمادِ کروم را گیر می‌انداخت و «....» روی هر کلمه می‌گذاشت.
+        //    حالا فقط onnomatch واقعیِ کروم «....» می‌گذارد. متغیرها را فقط
+        //    برای سازگاری با کدِ قدیمی صفر نگه می‌داریم.
+        if (!interim || !interim.trim()) {
             meetInterimFrozenText = '';
             meetInterimStuckAt = 0; meetInterimFirstAt = 0;
         }
@@ -20815,7 +20787,7 @@ function meetWatchdog() {
 // می‌کند؛ بعد از برگشت ممکن است نشست از قبل مرده باشد. بدون این قلاب،
 // بازیابی تا چرخهٔ watchdog (~۵s) و زامبی (۱۲s) طول می‌کشید = «برگشتم،
 // گیر کرده». هنگام visibility فوری بررسی و در صورت لزوم تعویض آنی.
-const MEET_VISIBILITY_KICK_MS = 600000;   // 🔧 v274 (BA-187): ۱۰ دقیقه (بود ۶s). برگشت از پس‌زمینه، حتی بعد از ۱۰ دقیقه غیبت، نشست را تعویض نمی‌کند — میکروفون ساعت‌ها باز می‌ماند.
+const MEET_VISIBILITY_KICK_MS = 1800000;   // 🔧 v277 (BA-190): ۳۰ دقیقه (بود ۱۰min). برگشت از پس‌زمینه، حتی بعد از ۳۰ دقیقه غیبت، نشست را تعویض نمی‌کند — میکروفون ساعت‌ها باز می‌ماند.
 document.addEventListener('visibilitychange', function() {
     if (document.hidden || !meetRecActive || !meetRecObj) return;
     const idleV = Date.now() - (meetRecLastEventAt || 0);
@@ -20983,7 +20955,23 @@ function meetForceCommitUnintelligible() {
 // ادامه می‌دهد — سکوت بی‌نهایتِ v261 برقرار؛ فاینالِ دیرهنگامِ همان جمله
 // با گارد دلتا بدون تکرار می‌نشیند و موتورِ واقعاً مرده (مطلقاً بدون
 // رویداد) با زامبی‌سوآپ ۳۰ثانیه‌ای تعویض می‌شود.
+// 🔧 v277 (BA-190 — الزام کاربر: «خراب است خراب است خراب است»): تزریقِ
+//    polling-based «....» به‌کلی حذف شد. چهار نسخهٔ پیاپی (v273-v276)
+//    ادعا کردند درست شد ولی پروب‌های StubSR رفتارِ واقعیِ کروم را بازنمایی
+//    نمی‌کردند (onend طبیعی روی مکث نمی‌فرستند). ریشهٔ واقعی:
+//    ۱) «....» روی هر کلمه — polling با آستانهٔ هرچه کم، تکرارِ طبیعیِ
+//       اعتمادِ کروم را گیر می‌انداخت. حالا فقط onnomatch واقعیِ کروم
+//       (صدای واقعاً نامفهوم) «....» می‌گذارد؛ مکثِ طبیعی هرگز onnomatch
+//       نمی‌فرستد.
+//    ۲) کما — onend طبیعیِ کروم روی هر مکث، buildMeetSR+start با تأخیر ۶۰۰ms
+//       می‌ساخت = قطع/وصلِ محسوس. تأخیر به ۱۵۰ms رسید.
 function meetStuckCheck() {
+    // 🔧 v277 (BA-190 — الزام کاربر: «خراب است خراب است خراب است»): تزریقِ
+    //    polling-based «....» به‌کلی حذیف شد. چهار نسخهٔ پیاپی (v273-v276)
+    //    ادعا کردند درست شد ولی پروب‌های StubSR رفتارِ واقعیِ کروم را
+    //    بازنمایی نمی‌کردند (onend طبیعی روی مکث نمی‌فرستند). حالا فقط
+    //    onnomatch واقعیِ کروم «....» می‌گذارد. اینجا فقط «شکارِ شروعِ مرده»
+    //    باقی است (تشخیصِ start() بدون onaudiostart = نشست هرگز باز نشده).
     if (!meetRecActive || !meetRecObj) return;
     // 🔧 v268 (BA-181): شکارِ «شروعِ مرده» — start() شده ولی onaudiostart
     //    در ۲.۵ثانیه نیامده (و نه خطا، نه پایان): نشست هرگز باز نمی‌شود
@@ -21007,69 +20995,6 @@ function meetStuckCheck() {
         }, 300);
         return;
     }
-    // 🔧 v273 (BA-186 — الزام کاربر: «بوق‌های متوالی از قطع/وصل میکروفون
-    //    است قطع کن؛ هنوز در شنیدن کلمات نامفهوم هنگ می‌کند .... بگذار و
-    //    رد شو؛ میکروفون را ساعت‌ها باز بگذار ولی کلمه‌به‌کلمه پردازش و
-    //    تایپ کن و به کلمات قبل برنگرد تا اصلاح و حذفشان نکنی»):
-    //    restartها خودشان منشأ بوق بودند. v271 روی هر صدای نامفهومِ زنده،
-    //    هر ۴ثانیه نشست را تعویض می‌کرد (abort+build+start = قطع/وصل
-    //    میکروفون = بوقِ متوالی). v273 این مسیرِ restart را کلاً حذف کرد.
-    //    حالا نشست روی گفتارِ زندهٔ بی‌واژه هنگ می‌کند، ولی «همانجا
-    //    می‌ماند» — صدا هنوز به موتور می‌رود و به‌محض اینکه کروم واژه‌ای
-    //    تشخیص دهد، می‌نشیند. روی کلمهٔ نامفهوم فقط «....» می‌گذارد و
-    //    عبور می‌کند (بدون هیچ قطع میکروفون). تنها restartهایی که
-    //    می‌مانند: نشستِ واقعاً مرده (زامبی ۱۲s بدونِ هیچ رویداد، شروعِ
-    //    مرده، نبض) و onend ملایمِ طبیعیِ کروم.
-    const nowQ = Date.now();
-    const voiceLive = meetVoiceNow || (meetVoiceLastAt > 0 && (nowQ - meetVoiceLastAt) < MEET_VOICE_EDGE_MS);
-    // 🔧 v276 (BA-189): گیر روی کلمهٔ نامفهوم — وقتی interim ثابت مانده
-    //    (تکرار واقعی، نه تغییر) و صدای زنده است. آستانه از اولین ورودِ این
-    //    interim حساب می‌شود (meetInterimFirstAt) یا اولین تکرار (meetInterimStuckAt)
-    //    — هر کدام زودتر. + گارد سیل: اگر آخرین کلمهٔ تعهدشده همین «....» بود،
-    //    دوباره نگذار.
-    const stuckSince = meetInterimFirstAt || meetInterimStuckAt;
-    if (voiceLive && stuckSince > 0 && (nowQ - stuckSince) > MEET_STUCK_VOICE_MS
-        && meetInterimFrozenText && meetLastInterim && meetLastInterim.trim() === meetInterimFrozenText) {
-        // گارد سیلِ «....»: اگر آخرین کارِ ما «....» گذاشتن روی همین کلمه بود،
-        // دوباره نگذار (meetFreezeUtter جمله را در meetManualCommitText چیده و
-        // کروم قدیمی را دوباره می‌فرستد؛ آن در onresult بازنشانی می‌کند).
-        if (meetRecAccum.endsWith('.... ')) {
-            meetInterimStuckAt = 0; meetInterimFirstAt = 0;   // سکوتِ شمارنده تا کروم چیزی تازه بیاورد
-            return;
-        }
-        console.warn('[MeetingMic] live voice, interim frozen ' + Math.round((nowQ - stuckSince) / 1000) + 's — unintelligible dots, keep typing next words (no restart)');
-        meetForceCommitUnintelligible();
-        return;
-    }
-    // 🔧 v273 (BA-186): پیشرفت‌سنجِ بدون-restart — موتور روی واژهٔ نامفهوم
-    //    گِل می‌کند و همان interimِ کهنه را تکرار می‌کند. تا v272 اینجا
-    //    نشست را تعویض می‌کردیم (abort+build+start = بوقِ متوالی از قطع/
-    //    وصل میکروفون — کاربر صریحاً گفت قطع کن). حالا به‌جای تعویض، فقط
-    //    «....» می‌گذاریم و عبور می‌کنیم: نشست همانجا می‌ماند و به
-    //    شنیدن ادامه می‌دهد؛ به‌محض اینکه کروم واژهٔ تازه‌ای تشخیص دهد،
-    //    می‌نشیند. تنها نشستِ واقعاً مرده (مطلقاً بدونِ رویداد) با زامبی
-    //    تعویض می‌شود.
-    const nowP = Date.now();
-    if (meetLastProgressAt > 0 && (nowP - meetLastProgressAt) > MEET_NOPROGRESS_MS &&
-        meetSessionVoiceAt > 0 && (nowP - meetSessionVoiceAt) < MEET_VOICE_FRESH_MS &&
-        meetInterimStuckAt > 0 && (nowP - meetInterimStuckAt) > MEET_STUCK_VOICE_MS) {
-        console.warn('[MeetingMic] no text progress ' + Math.round((nowP - meetLastProgressAt) / 1000) + 's while voice fresh — dots and pass, no restart (session stays listening)');
-        meetForceCommitUnintelligible();
-        return;
-    }
-    if (!meetLastInterim || !meetLastInterim.trim()) return;
-    // 🔧 v276 (BA-189): پشتیبانِ آخرِ خط — polling آهستهٔ ۴.۵s روی هر interim
-    //    ثابت (چه تکرار، چه کلمهٔ تازه‌ای که بیش از ۴.۵s ثابت ماند). اولویت با
-    //    meetInterimFirstAt (اولین ورود) است، سپس meetInterimStuckAt (تکرار).
-    const firstAt = meetInterimFirstAt || meetInterimStuckAt;
-    if (!firstAt) return;
-    // فقط تکرارِ واقعیِ همان interim (نه تغییر/اصلاح).
-    if (!meetInterimFrozenText || meetLastInterim.trim() !== meetInterimFrozenText) return;
-    if (Date.now() - firstAt < MEET_INTERIM_STUCK_MS) return;
-    // گارد سیلِ «....»: اگر آخرین کار «....» بود، دوباره نگذار.
-    if (meetRecAccum.endsWith('.... ')) { meetInterimStuckAt = 0; meetInterimFirstAt = 0; return; }
-    console.warn('[MeetingMic] interim frozen ' + Math.round((Date.now() - firstAt) / 1000) + 's — committing with dots (session stays listening)');
-    meetForceCommitUnintelligible();
 }
 function meetingStartRec() {
     if (!isSpeechSupported()) {
