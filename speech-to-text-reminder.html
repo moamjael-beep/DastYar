@@ -7703,7 +7703,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v273-2026-11-19-meeting-silent-append';
+const APP_VERSION = 'v274-2026-11-19-meeting-silence-tolerant';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20549,7 +20549,7 @@ function meetingToggleMic() {
 let meetRecLastEventAt = 0;
 let meetWatchdogTimer = null;
 let meetRestartPending = null;    // فقط یک restart در انتظار
-const MEET_ZOMBIE_MS = 12000;     // 🔧 v268: ۱۲s مطلقاً بدون رویداد = موتور زامبی (بود ۳۰s — «گیر» طولانی‌ترین شکل کما بود)
+const MEET_ZOMBIE_MS = 600000;    // 🔧 v274 (BA-187 — الزام کاربر: «فواصل تحمل سکوت را هزاران برابر بیشتر کن»): ۱۰ دقیقه (بود ۱۲s). سکوتِ خالص، هرچند طولانی، دیگر هرگز نشست را قطع نمی‌کند — میکروفون ساعت‌ها باز می‌ماند و به شنیدن ادامه می‌دهد. زامبیِ واقعی (مطلقاً بدون رویداد، موتور مرده) نادر است؛ ۱۰ دقیقه مطمئن می‌سازد هرگز یک نشستِ سالمِ ساکت تعویض نشود.
 const MEET_START_HUNG_MS = 2500;  // 🔧 v268: start() بدون onaudiostart بیشتر از این = شروعِ مرده → سریع-شکست
 // 🔧 v263 (BA-176): restart ملایم — ضدتروتل سرویس گفتار
 let meetQuickEnds = 0;            // دنبالهٔ «پایان‌های فوری» (نشست‌های رد‌شده)
@@ -20581,11 +20581,11 @@ const MEET_MANUAL_GUARD_MS = 15000; // گارد دلتا تا ۱۵ثانیه پ�
 // هر ۱.۵ثانیه (interim تکراری روی متنِ طولانیِ جلسه روی گوشی = کندی).
 let meetLastProgressAt = 0;   // 🔧 v269: آخرین تغییر واقعیِ متن (پیشرفتِ تشخیص)
 let meetSessionVoiceAt = 0;   // 🔧 v269: آخرین ورود interim/final (شواهدِ صدای موتور)
-const MEET_NOPROGRESS_MS = 12000;  // 🔧 v269: ۱۲s بدون هیچ واژهٔ تازه + صدای اخیر = نشست گِل‌کرده
+const MEET_NOPROGRESS_MS = 600000;  // 🔧 v274 (BA-187): ۱۰ دقیقه بدون واژهٔ تازه (بود ۱۲s). روی گفتارِ زنده، گیر روی کلمهٔ نامفهوم حالا در ~۱ms با «....» حل می‌شود (MEET_STUCK_VOICE_MS=50ms + polling ۵۰ms + تشخیصِ هم‌زمان در onresult) — دیگر نیازی به این مسیرِ درازی نیست. اینجا فقط آخرین تور برای نشستِ واقعاً گِل‌کرده باقی می‌ماند، آن هم در ۱۰ دقیقه.
 const MEET_VOICE_FRESH_MS = 6000;   // 🔧 v269: شواهدِ صدای تازه‌تر از این = موتور فعال ولی گِل‌کرده
 let meetVoiceNow = false;            // 🔧 v271: صدای زندهٔ فعال (soundstart ↔ soundend)
 let meetVoiceLastAt = 0;             // 🔧 v271: آخرین نشانهٔ صدای زنده
-const MEET_STUCK_VOICE_MS = 1000;    // 🔧 v273 (BA-186): روی صدای زنده، interimِ ثابتِ >۱s = واژهٔ نامفهوم → «....» فوری و عبور — بدون هیچ restart (الزام کاربر: «قطع/وصل میکروفون قطع شود؛ هنوز هنگ می‌کند؛ .... بگذار و رد شو»)
+const MEET_STUCK_VOICE_MS = 50;     // 🔧 v274 (BA-187 — الزام کاربر: «گیر نیافتادن روی پردازش کلمات نامفهوم را به یک میلیونیوم ثانیه برسان و سریع تا کلمه‌ای معلوم نیست به تشخیص و تایپ کلمات بعدی برس»): ۵۰ms (بود ۱۰۰۰ms). روی صدای زنده، interimِ ثابتِ >۵۰ms = واژهٔ نامفهوم → فوری «....» و عبور. + polling ۵۰ms (بود ۱۰۰۰ms) + تشخیصِ هم‌زمان در onresult → نهایتاً ~۱۰۰ms تأخیر. عملاً فوری.
 const MEET_VOICE_EDGE_MS = 2500;     // 🔧 v271: صدایی که تا این حد پیشه قطعه‌اش تمام شده هم «زنده» شمرده می‌شود
 let meetStartArmedAt = 0;    // لحظهٔ آخرین start() موفق (شکارِ شروع مرده)
 let meetAudioOpenAt = 0;     // لحظهٔ onaudiostart (صدا واقعاً باز شد)
@@ -20650,6 +20650,21 @@ function buildMeetSR() {
             } else if (curI !== meetInterimFrozenText) {
                 meetInterimFrozenText = curI;
                 meetInterimStuckAt = Date.now();
+            }
+            // 🔧 v274 (BA-187 — الزام کاربر: «گیر نیافتادن روی پردازش کلمات
+            //    نامفهوم را به یک میلیونیوم ثانیه برسان و سریع تا کلمه‌ای
+            //    معلوم نیست به تشخیص و تایپ کلمات بعدی برس»): لایهٔ ۰ms —
+            //    تشخیصِ هم‌زمان در onresult. اگر کروم دقیقاً همان interim را
+            //    تکرار کرد (curI === meetInterimFrozenText) و صدای زنده است،
+            //    یعنی موتور روی همین واژهٔ نامفهوم گیر کرده. فوراً — بدون
+            //    انتظار برای polling — «....» می‌گذاریم و عبور می‌کنیم. این
+            //    لایه polling ۵۰ms را به‌عنوان پشتیبان دارد (اگر onresult
+            //    نیامد، polling در ≤۵۰ms می‌گیرد).
+            if (curI === meetInterimFrozenText && meetInterimStuckAt > 0) {
+                const voiceNow = meetVoiceNow || (meetVoiceLastAt > 0 && (Date.now() - meetVoiceLastAt) < MEET_VOICE_EDGE_MS);
+                if (voiceNow && (Date.now() - meetInterimStuckAt) >= MEET_STUCK_VOICE_MS) {
+                    meetForceCommitUnintelligible();
+                }
             }
         } else {
             meetInterimFrozenText = '';
@@ -20806,7 +20821,7 @@ function meetWatchdog() {
 // می‌کند؛ بعد از برگشت ممکن است نشست از قبل مرده باشد. بدون این قلاب،
 // بازیابی تا چرخهٔ watchdog (~۵s) و زامبی (۱۲s) طول می‌کشید = «برگشتم،
 // گیر کرده». هنگام visibility فوری بررسی و در صورت لزوم تعویض آنی.
-const MEET_VISIBILITY_KICK_MS = 6000;   // بی‌رویدادیِ بیشتر از این هنگام برگشت = تعویض فوری
+const MEET_VISIBILITY_KICK_MS = 600000;   // 🔧 v274 (BA-187): ۱۰ دقیقه (بود ۶s). برگشت از پس‌زمینه، حتی بعد از ۱۰ دقیقه غیبت، نشست را تعویض نمی‌کند — میکروفون ساعت‌ها باز می‌ماند.
 document.addEventListener('visibilitychange', function() {
     if (document.hidden || !meetRecActive || !meetRecObj) return;
     const idleV = Date.now() - (meetRecLastEventAt || 0);
@@ -21067,7 +21082,7 @@ function meetingStartRec() {
     // 🔧 v244: watchdog
     meetRecLastEventAt = Date.now();
     if (!meetWatchdogTimer) meetWatchdogTimer = setInterval(meetWatchdog, 5000);
-    if (!meetStuckTimer) meetStuckTimer = setInterval(meetStuckCheck, 1000);   // 🔧 v265: شکارچی interim یخ‌زده
+    if (!meetStuckTimer) meetStuckTimer = setInterval(meetStuckCheck, 50);   // 🔧 v274 (BA-187): ۵۰ms (بود ۱۰۰۰ms) — شکارچیِ interim یخ‌زده روی کلمهٔ نامفهوم در ~۵۰ms، نه ۱s. عملاً فوری.
     meetSafeStart(0);
 }
 
