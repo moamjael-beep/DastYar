@@ -7703,7 +7703,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v272-2026-11-17-meeting-silent';
+const APP_VERSION = 'v273-2026-11-19-meeting-silent-append';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20585,8 +20585,7 @@ const MEET_NOPROGRESS_MS = 12000;  // 🔧 v269: ۱۲s بدون هیچ واژه�
 const MEET_VOICE_FRESH_MS = 6000;   // 🔧 v269: شواهدِ صدای تازه‌تر از این = موتور فعال ولی گِل‌کرده
 let meetVoiceNow = false;            // 🔧 v271: صدای زندهٔ فعال (soundstart ↔ soundend)
 let meetVoiceLastAt = 0;             // 🔧 v271: آخرین نشانهٔ صدای زنده
-const MEET_STUCK_VOICE_MS = 1200;    // 🔧 v271: روی صدای زنده، interimِ ثابتِ >۱.۲s = واژهٔ نامفهوم → «....» فوری (الزام کاربر: «روی هیچ کلمه نامفهومی نمان و سریع کلمات بعدی را تایپ کن»)
-const MEET_LIVEDEAF_MS = 4000;       // 🔧 v271: صدای زنده ولی ۴s بدون هیچ واژهٔ تازه = نشست روی گفتار زنده کر است → تعویض فوری
+const MEET_STUCK_VOICE_MS = 1000;    // 🔧 v273 (BA-186): روی صدای زنده، interimِ ثابتِ >۱s = واژهٔ نامفهوم → «....» فوری و عبور — بدون هیچ restart (الزام کاربر: «قطع/وصل میکروفون قطع شود؛ هنوز هنگ می‌کند؛ .... بگذار و رد شو»)
 const MEET_VOICE_EDGE_MS = 2500;     // 🔧 v271: صدایی که تا این حد پیشه قطعه‌اش تمام شده هم «زنده» شمرده می‌شود
 let meetStartArmedAt = 0;    // لحظهٔ آخرین start() موفق (شکارِ شروع مرده)
 let meetAudioOpenAt = 0;     // لحظهٔ onaudiostart (صدا واقعاً باز شد)
@@ -20860,13 +20859,17 @@ function meetSafeStart(attempt) {
 }
 // 🔧 v267 (BA-180 — الزام کاربر: «تایپ را از جمله به کلمات کاهش بده و
 //    سریعاً هر کلمه‌ای تشخیص دادی تایپ کن؛ تحت هیچ شرایطی هنگ نکن و هر
-//    کلمه متوجه نشدی .... بگذار»): تعهد واژه‌به‌واژه.
+//    کلمه متوجه نشدی .... بگذار») + 🔧 v273 (BA-186 — الزام کاربر:
+//    «کلمه‌به‌کلمه پردازش و تایپ کن و به کلمات قبل برنگرد تا اصلاح و
+//    حذفشان نکنی»): تعهد واژه‌به‌واژه append-only.
 //  • هر واژهٔ interim به‌محض رسیدن فوراً به متن می‌رود — هیچ واژه‌ای
 //    منتظر فاینالِ جمله نمی‌ماند (ریشهٔ کما: انتظارِ جمله‌محور بود).
-//  • کروم فرضش را عوض کرد؟ فقط دُمِ جملهٔ جاری (هنوز فینال‌نشده)
-//    بازنویسی می‌شود؛ واژه‌ای که کروم دور ریخت = نامفهوم → «....».
-//  • فاینال فقط دلتا را می‌نشیند (بدون تکرار). هر مسیرِ نامفهوم
-//    (nomatch/گیرِ یخ‌زده/حذفِ واژه در فاینال) «....» می‌گذارد.
+//  • 🔧 v273: هرگز به کلمات قبلی برنمی‌گردیم. شاخهٔ «بازنویسی دُم» که
+//    کروم فرضش را عوض می‌کرد و کلمهٔ قبلی را اصلاح/حذف می‌کرد، حذف شد —
+//    حالا هر واژهٔ تازه فقط append می‌شود؛ کلماتِ تعهدشدهٔ قبلی هرگز
+//    دست نمی‌خورند. گاردِ دلتا (LCP) تکرار را می‌گیرد؛ واژه‌ای که کروم
+//    در فاینال دور ریخت = نامفهوم → «....» در فاینال می‌نشیند.
+//  • فاینال فقط دلتا را می‌نشیند (بدون تکرار، بدون بازنویسیِ قبلی).
 function meetCommitInterimWords(idx, txt) {
     const w = (txt || '').trim().split(/\s+/).filter(Boolean);
     if (!w.length) return;
@@ -20888,17 +20891,12 @@ function meetCommitInterimWords(idx, txt) {
         const mw = meetManualCommitText.split(/\s+/).filter(Boolean);
         if (meetLcpWords(mw, w) === mw.length) { committed = mw; fromManual = true; }   // ادامهٔ جملهٔ «....»دار
     }
+    // 🔧 v273: فقط append — هرگز بازنویسیِ کلمات قبلی نه. دلتای LCP را
+    //    می‌نشینیم؛ واژهٔ دورریختهٔ کروم به فاینال موکول می‌شود (.... در
+    //    فاینال، یا اصلاً چیزی اگر فاینال همان دلتا را تأیید کند).
     const lcp = meetLcpWords(committed, w);
-    if (lcp === committed.length && w.length >= committed.length) {
-        if (w.length > lcp) meetRecAccum += w.slice(lcp).join(' ') + ' ';   // هر واژهٔ تازه: فوری
-    } else if (!fromManual && meetRecAccum.length >= meetUtterStartLen) {
-        // بازنویسی دُمِ جملهٔ جاری — فرضِ کروم عوض شد (هنوز فینال نشده)
-        meetRecAccum = (meetRecAccum.slice(0, meetUtterStartLen) + w.join(' ')).replace(/\s+$/, '');
-        if (w.length < committed.length) meetRecAccum += '.... ';   // واژه‌ای که کروم دور ریخت = نامفهوم
-        else meetRecAccum += ' ';
-    } else {
-        const extra = w.slice(committed.length).join(' ');
-        if (extra) meetRecAccum += extra + ' ';
+    if (w.length > lcp) {
+        meetRecAccum += w.slice(lcp).join(' ') + ' ';   // هر واژهٔ تازه: فوری، فقط append
     }
     meetUtterMap.set(idx, w);
     if (meetRecAccum !== accum0) meetLastProgressAt = Date.now();   // 🔧 v269: متن واقعاً پیشرفت کرد
@@ -20908,31 +20906,32 @@ function meetCommitFinalWords(idx, txt) {
     if (!fin) return;
     const accum0 = meetRecAccum;   // 🔧 v269: سنجشِ پیشرفتِ واقعیِ متن
     const fw = fin.split(/\s+/).filter(Boolean);
+    // 🔧 v273 (BA-186): append-only — به کلمات قبلی برنمی‌گردیم. شاخهٔ
+    //    «فاینال مرجع است → بازنویسی» حذف شد (کلمات قبلی را اصلاح/حذف
+    //    می‌کرد). حالا فقط: دلتا append، یا «....» اگر فاینال واژه‌ای را
+    //    دور ریخت. کلمهٔ تازه‌ای که فقط در فاینال آمد، append می‌شود.
     const committed = meetUtterMap.get(idx);
     if (committed && committed.length) {
         const lcp = meetLcpWords(committed, fw);
-        if (lcp === committed.length && fw.length >= committed.length) {
-            if (fw.length > lcp) meetRecAccum += fw.slice(lcp).join(' ') + ' ';   // فقط دلتا — بدون تکرار
+        if (fw.length > lcp) {
+            meetRecAccum += fw.slice(lcp).join(' ') + ' ';   // فقط دلتا — بدون تکرار، بدون بازنویسیِ قبلی
         } else if (fw.length < committed.length && lcp === fw.length) {
             meetRecAccum = meetRecAccum.replace(/\s+$/, '') + '.... ';   // فاینال واژه‌های تعهدشده را دور ریخت = نامفهوم
-        } else {
-            meetRecAccum += fin + ' ';   // فرض کلاً عوض شد — فاینال مرجع است
         }
+        // اگر fw === committed (lcp === fw.length === committed.length) هیچ تغییری نه — فاینال همانِ تعهدشده را تأیید کرد
         meetUtterMap.delete(idx);
     } else if (meetManualCommitText && (Date.now() - meetManualCommitAt) < MEET_MANUAL_GUARD_MS) {
-        // گارد بین‌نشستی (v266): فاینالِ دیرهنگام/تحویل‌دوبارهٔ جملهٔ تعهدشده
+        // گارد بین‌نشستی (v266): فاینالِ دیرهنگاب/تحویل‌دوبارهٔ جملهٔ تعهدشده
         const mw = meetManualCommitText.split(/\s+/).filter(Boolean);
         const lcp = meetLcpWords(mw, fw);
-        if (lcp === mw.length && fw.length >= mw.length) {
-            if (fw.length > lcp) meetRecAccum += fw.slice(lcp).join(' ') + ' ';
+        if (fw.length > lcp) {
+            meetRecAccum += fw.slice(lcp).join(' ') + ' ';
             meetManualCommitText = ''; meetManualCommitAt = 0;
         } else if (fw.length < mw.length && lcp === fw.length) {
             meetManualCommitText = ''; meetManualCommitAt = 0;   // همین واژه‌ها با «....» تعهد شده‌اند
-        } else {
-            meetRecAccum += fin + ' ';
         }
     } else {
-        meetRecAccum += fin + ' ';
+        meetRecAccum += fin + ' ';   // نشستِ تازه — فاینال مستقیم (هیچ کلمهٔ قبلی‌ای برای بازنویسی نیست)
     }
     if (idx === meetUtterIdx) { meetUtterIdx = -1; meetUtterStartLen = 0; }   // جملهٔ جاری بسته شد
     if (meetRecAccum !== accum0) meetLastProgressAt = Date.now();   // 🔧 v269
@@ -20999,56 +20998,40 @@ function meetStuckCheck() {
         }, 300);
         return;
     }
-    // 🔧 v271 (BA-184 — الزام کاربر: «روی هیچ کلمه نامفهومی نمان و سریع
-    //    کلمات بعدی را تایپ کن»): صدای زنده معیارِ سرعت شد — تا دیروز روی
-    //    واژهٔ نامفهوم ۴.۵s (دات) تا ۱۲-۱۹s (بازیافت) می‌ماندیم. حالا:
-    //    الف) صدای زنده ولی ۴s بدونِ هیچ واژهٔ تازه = نشست روی گفتارِ زنده
-    //    کر است → تعویض فوری (~۱s restart) به‌جای ۱۲-۱۹s؛ واژه‌های بعدی
-    //    با نشستِ تازه بلافاصله می‌آیند.
-    //    ب) روی صدای زنده، interimِ ثابتِ >۱.۲s همان لحظه «....» می‌گیرد —
-    //    واژه‌های بعدی یا از همین نشست جاری می‌شوند (گاردِ دلتا تحویلِ
-    //    دیرهنگام را بدون تکرار می‌نشیند) یا از نشستِ تازه.
-    //    در مکثِ واقعی (صدای زنده نیست) قواعدِ قدیمی برقرارند: داتِ ۴.۵s،
-    //    پیشرفت‌سنج/زامبی ۱۲s — مکثِ طبیعی هرگز دات/تعویضِ فوری نمی‌گیرد.
+    // 🔧 v273 (BA-186 — الزام کاربر: «بوق‌های متوالی از قطع/وصل میکروفون
+    //    است قطع کن؛ هنوز در شنیدن کلمات نامفهوم هنگ می‌کند .... بگذار و
+    //    رد شو؛ میکروفون را ساعت‌ها باز بگذار ولی کلمه‌به‌کلمه پردازش و
+    //    تایپ کن و به کلمات قبل برنگرد تا اصلاح و حذفشان نکنی»):
+    //    restartها خودشان منشأ بوق بودند. v271 روی هر صدای نامفهومِ زنده،
+    //    هر ۴ثانیه نشست را تعویض می‌کرد (abort+build+start = قطع/وصل
+    //    میکروفون = بوقِ متوالی). v273 این مسیرِ restart را کلاً حذف کرد.
+    //    حالا نشست روی گفتارِ زندهٔ بی‌واژه هنگ می‌کند، ولی «همانجا
+    //    می‌ماند» — صدا هنوز به موتور می‌رود و به‌محض اینکه کروم واژه‌ای
+    //    تشخیص دهد، می‌نشیند. روی کلمهٔ نامفهوم فقط «....» می‌گذارد و
+    //    عبور می‌کند (بدون هیچ قطع میکروفون). تنها restartهایی که
+    //    می‌مانند: نشستِ واقعاً مرده (زامبی ۱۲s بدونِ هیچ رویداد، شروعِ
+    //    مرده، نبض) و onend ملایمِ طبیعیِ کروم.
     const nowQ = Date.now();
     const voiceLive = meetVoiceNow || (meetVoiceLastAt > 0 && (nowQ - meetVoiceLastAt) < MEET_VOICE_EDGE_MS);
-    if (voiceLive && meetLastProgressAt > 0 && (nowQ - meetLastProgressAt) > MEET_LIVEDEAF_MS) {
-        console.warn('[MeetingMic] live voice but ' + Math.round((nowQ - meetLastProgressAt) / 1000) + 's without a single new word — session deaf on live speech, swapping now');
-        if (meetRestartPending) { clearTimeout(meetRestartPending); meetRestartPending = null; }
-        try { meetRecObj.abort(); } catch(e) {}
-        meetRecObj = buildMeetSR();
-        meetAudioOpenAt = 0; meetStartArmedAt = 0;
-        meetRecLastEventAt = Date.now(); meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0; meetVoiceNow = false; meetVoiceLastAt = 0;   // 🔧 v269+v271
-        meetSafeStart(0);
-        return;
-    }
-    if (voiceLive && meetInterimStuckAt > 0 && (nowQ - meetInterimStuckAt) > MEET_STUCK_VOICE_MS &&
-        (nowQ - meetLastProgressAt) <= MEET_LIVEDEAF_MS) {
-        console.warn('[MeetingMic] live voice, interim frozen ' + Math.round((nowQ - meetInterimStuckAt) / 1000) + 's — instant unintelligible dots, keep typing next words');
+    if (voiceLive && meetInterimStuckAt > 0 && (nowQ - meetInterimStuckAt) > MEET_STUCK_VOICE_MS) {
+        console.warn('[MeetingMic] live voice, interim frozen ' + Math.round((nowQ - meetInterimStuckAt) / 1000) + 's — instant unintelligible dots, keep typing next words (no restart)');
         meetForceCommitUnintelligible();
         return;
     }
-    // 🔧 v269 (BA-182): پیشرفت‌سنج — شکارِ «گِل‌کردن» (هنگِ واقعیِ
-    //    گزارش‌شده: «تا یک کلمه‌ای برایش نامفهوم است»). موتور روی واژهٔ
-    //    نامفهوم گِل می‌کند و همان interimِ کهنه را تا ابد تکرار می‌کند:
-    //    رویداد می‌آید (زامبی بی‌اثر می‌شود)، شکارچیِ «....» هم یک‌بار دات
-    //    می‌گذارد و گاردِ بین‌نشستی بقیه را خنثی می‌کند — و نشست تا ابد
-    //    زنده می‌ماند در حالی که هیچ واژهٔ تازه‌ای تولید نمی‌شود = هرچه
-    //    کاربر بعدش بگوید گم می‌شود. معیارِ درستِ سلامت «رویداد» نیست،
-    //    «پیشرفتِ متن» است: ۱۲ثانیه بدون هیچ واژهٔ تازه، در حالی که
-    //    شواهدِ صدای موتور تازه است (موتور فعال ولی گِل‌کرده) → تعویض
-    //    کاملِ نشست. در سکوتِ خالص شواهدِ صدا کهنه است → پیشرفت‌سنج
-    //    بی‌اثر (زامبی و چرخهٔ طبیعی onend همان را اداره می‌کنند).
+    // 🔧 v273 (BA-186): پیشرفت‌سنجِ بدون-restart — موتور روی واژهٔ نامفهوم
+    //    گِل می‌کند و همان interimِ کهنه را تکرار می‌کند. تا v272 اینجا
+    //    نشست را تعویض می‌کردیم (abort+build+start = بوقِ متوالی از قطع/
+    //    وصل میکروفون — کاربر صریحاً گفت قطع کن). حالا به‌جای تعویض، فقط
+    //    «....» می‌گذاریم و عبور می‌کنیم: نشست همانجا می‌ماند و به
+    //    شنیدن ادامه می‌دهد؛ به‌محض اینکه کروم واژهٔ تازه‌ای تشخیص دهد،
+    //    می‌نشیند. تنها نشستِ واقعاً مرده (مطلقاً بدونِ رویداد) با زامبی
+    //    تعویض می‌شود.
     const nowP = Date.now();
     if (meetLastProgressAt > 0 && (nowP - meetLastProgressAt) > MEET_NOPROGRESS_MS &&
-        meetSessionVoiceAt > 0 && (nowP - meetSessionVoiceAt) < MEET_VOICE_FRESH_MS) {
-        console.warn('[MeetingMic] no text progress ' + Math.round((nowP - meetLastProgressAt) / 1000) + 's while voice fresh — recycling wedged session');
-        if (meetRestartPending) { clearTimeout(meetRestartPending); meetRestartPending = null; }
-        try { meetRecObj.abort(); } catch(e) {}
-        meetRecObj = buildMeetSR();
-        meetAudioOpenAt = 0; meetStartArmedAt = 0;
-        meetRecLastEventAt = Date.now(); meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0; meetVoiceNow = false; meetVoiceLastAt = 0;
-        meetSafeStart(0);
+        meetSessionVoiceAt > 0 && (nowP - meetSessionVoiceAt) < MEET_VOICE_FRESH_MS &&
+        meetInterimStuckAt > 0 && (nowP - meetInterimStuckAt) > MEET_STUCK_VOICE_MS) {
+        console.warn('[MeetingMic] no text progress ' + Math.round((nowP - meetLastProgressAt) / 1000) + 's while voice fresh — dots and pass, no restart (session stays listening)');
+        meetForceCommitUnintelligible();
         return;
     }
     if (!meetLastInterim || !meetLastInterim.trim() || !meetInterimStuckAt) return;
