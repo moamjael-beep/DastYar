@@ -2464,6 +2464,38 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .cal-week-line { font-size: 11.5px; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cal-week-empty { font-size: 11px; color: #bbb; }
 
+/* 🔧 BA-199 (v233 — الزام کاربر: «نمای هفتگی تقویم غلط است — هر روز یک
+   سطر و زیر هم تا پایین صفحه»): ردیف‌های هفتگی قبلاً داخل grid ۷ستونهٔ
+   ماه له می‌شدند (هر ردیف ~۴۶px عرض). اکنون در نمای هفته مودال
+   تمام‌عرض/تمام‌ارتفاع زیر هدر می‌شود (BA-154) و گرید به ستون عمودی
+   تبدیل می‌شود — ۷ سطرِ کامل، زیر هم، تا پایین صفحه. */
+#calendarOverlay .calendar-modal.week-mode {
+    max-width: none;
+    width: 100%;
+    height: calc(100vh - var(--header-h, 58px) - 8px);
+    max-height: none;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    box-sizing: border-box;
+}
+#calendarOverlay .week-mode .calendar-header { flex-shrink: 0; margin-bottom: 8px; }
+#calendarOverlay .week-mode .calendar-grid.week-grid {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow-y: auto;
+    margin-bottom: 0;
+}
+#calendarOverlay .week-mode .cal-week-row {
+    flex: 1 1 0;
+    min-height: 72px;
+    margin-bottom: 0;
+}
+#calendarOverlay .week-mode .modal-buttons { flex-shrink: 0; margin-top: 8px; margin-bottom: 0; }
+
 .cal-empty {
     text-align: center;
     color: var(--text-light);
@@ -3648,6 +3680,16 @@ body.locked .header-actions button {
 .bulk-sms-send-btn:active { background: #1B5E20; }
 .bulk-sms-send-btn:disabled { background: #A5D6A7; }
 .bulk-sms-hint { font-size: 10.5px; color: #999; margin-top: 6px; text-align: center; }
+/* 🔧 BA-200 (v233): پنل پیشرفت ارسال جداگانه — یک گیرنده در هر گام */
+.bulk-sms-progress {
+    margin-top: 10px; padding: 10px;
+    background: #E8F5E9; border: 1px solid #A5D6A7; border-radius: 8px;
+}
+.bulk-sms-progress-title { font-size: 13px; font-weight: 700; color: #1B5E20; }
+.bulk-sms-progress-person { font-size: 13px; font-weight: 600; color: #1a1a1a; margin-top: 4px; }
+.bulk-sms-progress-hint { font-size: 10.5px; color: #555; margin-top: 4px; line-height: 1.7; }
+.bulk-sms-progress-btns { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.bulk-sms-progress-btns .bulk-sms-mini-btn { flex: 1; min-width: 90px; }
 
 /* ============ 👥 بانک اطلاعاتی اشخاص (CRM) ============ */
 .contacts-overlay {
@@ -4853,6 +4895,17 @@ body.locked .header-actions button {
             <textarea id="bulkSmsText" class="bulk-sms-text" placeholder="متن پیامک را اینجا بنویسید..." oninput="bulkSmsUpdateCount()"></textarea>
             <div class="bulk-sms-charcount" id="bulkSmsCharCount"></div>
             <button type="button" class="bulk-sms-send-btn" id="bulkSmsSendBtn" onclick="bulkSmsSend()">📤 ارسال به همهٔ انتخاب‌شدگان</button>
+            <!-- 🔧 BA-200 (v233): پنل پیشرفت ارسال جداگانه — یک گیرنده در هر گام -->
+            <div class="bulk-sms-progress" id="bulkSmsProgress" style="display:none;">
+                <div class="bulk-sms-progress-title">📤 ارسال جداگانه — <span id="bulkSmsProgressCount"></span></div>
+                <div class="bulk-sms-progress-person" id="bulkSmsProgressPerson"></div>
+                <div class="bulk-sms-progress-hint">در برنامهٔ پیامک فقط «ارسال» را بزنید؛ با برگشتن به برنامه، گیرندهٔ بعدی خودکار باز می‌شود (یا «بعدی» را بزنید).</div>
+                <div class="bulk-sms-progress-btns">
+                    <button type="button" class="bulk-sms-mini-btn" onclick="bulkSmsOpenCurrent()">🔁 بازکردن دوباره</button>
+                    <button type="button" class="bulk-sms-mini-btn" onclick="bulkSmsAdvance()">✅ بعدی</button>
+                    <button type="button" class="bulk-sms-mini-btn" style="color:#c62828;border-color:#ef9a9a;" onclick="bulkSmsCancelQueue()">✖ پایان</button>
+                </div>
+            </div>
             <div class="bulk-sms-hint">پس از زدن ارسال، برنامهٔ پیامکِ گوشی با همهٔ گیرنده‌ها و متنِ آماده باز می‌شود.</div>
         </div>
     </div>
@@ -7673,7 +7726,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v232-2026-11-21-calendar-weekly-bulksms';
+const APP_VERSION = 'v233-2026-11-21-week-fullpage-bulksms-seq';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -15880,6 +15933,9 @@ function renderContactsList() {
 // — ارسال: sms: با شماره‌های جدا‌شده با کاما + متن (اندروید).
 // ════════════════════════════════════════════════════════════════════
 var _bulkSmsState = { sel: {}, company: '', position: '' };
+// 🔧 BA-200 (v233): صف ارسال جداگانه — یک گیرنده در هر گام
+var _bulkSmsQueue = null;            // { items: [{id,name,phone,uri}], idx, text }
+var _bulkSmsReturnedFromSms = false; // کاربر از پیامک‌سنج برگشت → نفر بعدی
 
 function bulkSmsAttrEsc(v) {
     return String(v == null ? '' : v)
@@ -15993,26 +16049,75 @@ function bulkSmsUpdateCount() {
     if (sendBtn) sendBtn.disabled = (n === 0);
 }
 
-// ساخت URI پیامک انبوه — جدا از ارسال (قابل تست)
-function bulkSmsBuildUri(text, contacts) {
-    const numbers = [];
-    (contacts || []).forEach(function (c) {
-        const p = bulkSmsNormalizePhone(c.primaryPhone || ((c.phones && c.phones.length > 0) ? c.phones[0] : ''));
-        if (p) numbers.push(p);
-    });
-    return { uri: 'sms:' + numbers.join(',') + '?body=' + encodeURIComponent(text), numbers: numbers };
+// ساخت URI پیامک تک‌گیرنده — جدا از ارسال (قابل تست)
+function bulkSmsBuildUri(text, contact) {
+    const p = bulkSmsNormalizePhone(contact && (contact.primaryPhone || ((contact.phones && contact.phones.length > 0) ? contact.phones[0] : '')));
+    return { uri: 'sms:' + p + '?body=' + encodeURIComponent(text), phone: p };
 }
 
 function bulkSmsSend() {
     const text = document.getElementById('bulkSmsText').value.trim();
     if (!text) { showToast('متن پیامک را بنویسید'); return; }
-    const r = bulkSmsBuildUri(text, bulkSmsSelectedContacts());
-    if (r.numbers.length === 0) { showToast('هیچ شماره‌ای برای ارسال یافت نشد'); return; }
-    // sms: با شماره‌های جدا‌شده با کاما + متن — پیامک‌سنجِ پیش‌فرض اندروید
-    // همهٔ گیرنده‌ها و متن را از پیش پر می‌کند و کاربر فقط «ارسال» می‌زند.
-    window.location.href = r.uri;
-    showToast('برنامهٔ پیامک باز شد — ' + toPersianNumber(r.numbers.length) + ' گیرنده');
+    const items = [];
+    bulkSmsSelectedContacts().forEach(function (c) {
+        const r = bulkSmsBuildUri(text, c);
+        if (r.phone) items.push({ id: c.id, name: c.name || '', phone: r.phone, uri: r.uri });
+    });
+    if (items.length === 0) { showToast('هیچ شماره‌ای برای ارسال یافت نشد'); return; }
+    // 🔧 BA-200 (v233 — عکس کاربر): پیامکِ گروهی (sms:n1,n2) در Google
+    // Messages حالت «Mass text» را باز می‌کند که یک‌بار «Add your number»
+    // می‌خواهد و مسیر ارسال را می‌بندد. اکنون ارسالِ جداگانه است: هر گیرنده
+    // یک پیامکِ ۱:۱ (بدون نیاز به ثبت شماره). با برگشتن به برنامه، گیرندهٔ
+    // بعدی خودکار باز می‌شود؛ یا با کلید «بعدی» به‌صورت دستی.
+    _bulkSmsQueue = { items: items, idx: 0, text: text };
+    document.getElementById('bulkSmsProgress').style.display = 'block';
+    document.getElementById('bulkSmsSendBtn').disabled = true;
+    bulkSmsOpenCurrent();
 }
+
+function bulkSmsOpenCurrent() {
+    const q = _bulkSmsQueue; if (!q) return;
+    const it = q.items[q.idx];
+    document.getElementById('bulkSmsProgressCount').textContent =
+        'گام ' + toPersianNumber(q.idx + 1) + ' از ' + toPersianNumber(q.items.length);
+    document.getElementById('bulkSmsProgressPerson').textContent =
+        it.name + ' — ' + toPersianDigits(it.phone);
+    // پیامک‌سنج با گیرنده و متنِ آماده باز می‌شود؛ کاربر فقط «ارسال» می‌زند
+    window.location.href = it.uri;
+}
+
+function bulkSmsAdvance() {
+    const q = _bulkSmsQueue; if (!q) return;
+    q.idx++;
+    if (q.idx >= q.items.length) {
+        const n = q.items.length;
+        _bulkSmsQueue = null;
+        document.getElementById('bulkSmsProgress').style.display = 'none';
+        document.getElementById('bulkSmsSendBtn').disabled = false;
+        showToast('همهٔ گیرنده‌ها پردازش شدند — ' + toPersianNumber(n) + ' پیامک جداگانه');
+        return;
+    }
+    bulkSmsOpenCurrent();
+}
+
+function bulkSmsCancelQueue() {
+    _bulkSmsQueue = null;
+    _bulkSmsReturnedFromSms = false;
+    document.getElementById('bulkSmsProgress').style.display = 'none';
+    document.getElementById('bulkSmsSendBtn').disabled = false;
+    showToast('ارسال جداگانه لغو شد');
+}
+
+// برگشت خودکار از برنامهٔ پیامک → گیرندهٔ بعدی
+document.addEventListener('visibilitychange', function () {
+    if (!_bulkSmsQueue) return;
+    if (document.visibilityState === 'hidden') {
+        _bulkSmsReturnedFromSms = true;
+    } else if (_bulkSmsReturnedFromSms) {
+        _bulkSmsReturnedFromSms = false;
+        setTimeout(bulkSmsAdvance, 700);
+    }
+});
 
 // 🔧 v144: منوی لمسی شخص — وقتی روی یک شخص کلیک می‌شود، باز می‌شود
 // 🔧 v169: تمام تلفن‌ها نمایش داده می‌شوند — برای هر شماره، دو دکمه «تماس» و «پیامک»
@@ -22051,10 +22156,14 @@ function renderCalendar() {
     const grid = document.getElementById('calendarGrid');
     grid.innerHTML = '';
 
-    // 🔧 BA-196: نمای هفتگی — ردیف‌های هفته + پیش‌نمایش یادداشت هر روز
+    // 🔧 BA-196: در نمای هفتگی، ردیف‌های هفته + پیش‌نمایش یادداشت هر روز
     if (calState.view === 'week') { calRenderWeek(grid); return; }
     const dayTasksPanel = document.getElementById('calendarDayTasks');
     if (dayTasksPanel) dayTasksPanel.style.display = '';
+    // 🔧 BA-199: خروج از حالت تمام‌صفحهٔ هفتگی
+    const calCardMonth = document.querySelector('#calendarOverlay .calendar-modal');
+    if (calCardMonth) calCardMonth.classList.remove('week-mode');
+    grid.classList.remove('week-grid');
 
     // Weekday header
     calWeekdayNames.forEach(w => {
@@ -22210,6 +22319,11 @@ function calOpenDayNotesKeepCalendar(jy, jm, jd) {
 }
 
 function calRenderWeek(grid) {
+    // 🔧 BA-199: مودال تمام‌صفحه + گریدِ عمودی — هر روز یک سطر کامل زیر
+    // هم تا پایین صفحه (نه داخل grid ۷ستونهٔ ماه)
+    const calCardWeek = document.querySelector('#calendarOverlay .calendar-modal');
+    if (calCardWeek) calCardWeek.classList.add('week-mode');
+    grid.classList.add('week-grid');
     // پنل کارهای روزِ انتخابی فقط در نمای ماه است
     const dayTasks = document.getElementById('calendarDayTasks');
     if (dayTasks) dayTasks.style.display = 'none';
