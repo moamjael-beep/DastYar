@@ -766,25 +766,32 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .item.warning { background: linear-gradient(135deg, #FB8C00, #E65100); }
 .item.urgent { background: linear-gradient(135deg, #E53935, #B71C1C); }
 
-/* 🔧 v177: Overdue: blinking light black <-> pure black, 3s cycle (was 2s — slower) */
+/* 🔧 BA-197 (v232 — الزام کاربر: «رنگ تسک هایی که از زمانشان گذشته از
+   قرمز پررنگ به قرمز کمرنگ تغییر کند نه مشکی»): چشمک تسک‌های گذشته
+   بین قرمز پررنگ (#E53935) و قرمز کمرنگ (#FFCDD2). متن هم هم‌زمان
+   سفید ↔ قرمز تیره می‌شود تا روی زمینهٔ کمرنگ خوانا بماند. */
 @keyframes overdueBlink {
     0%, 100% {
-        background-color: #616161;  /* 🔧 v176: مشکی روشن (Material Gray 700) */
-        box-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
+        background-color: #E53935;  /* قرمز پررنگ */
+        color: #ffffff;
+        box-shadow: 0 2px 14px rgba(229, 57, 53, 0.5);
     }
     50% {
-        background-color: #000000;  /* 🔧 v176: مشکی خالص */
-        box-shadow: 0 2px 18px rgba(0, 0, 0, 0.8);
+        background-color: #FFCDD2;  /* قرمز کمرنگ */
+        color: #B71C1C;
+        box-shadow: 0 2px 18px rgba(229, 57, 53, 0.8);
     }
 }
 .item.overdue {
-    background-color: #616161; /* fallback — 🔧 v176: مشکی */
-    animation: overdueBlink 3s ease-in-out infinite;  /* 🔧 v177: 2s → 3s (کمی کندتر) */
+    background-color: #E53935; /* fallback — قرمز پررنگ */
+    color: #ffffff;
+    animation: overdueBlink 3s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
     .item.overdue {
         animation: none;
-        background-color: #616161; /* 🔧 v176: مشکی */
+        background-color: #FFCDD2; /* قرمز کمرنگ — بدون چشمک */
+        color: #B71C1C;
     }
 }
 
@@ -2421,6 +2428,42 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .cal-group-header.prio-1 { color: #2e7d32; }  /* done green */
 .cal-group-header.prio-2 { color: #2e7d32; }  /* completed today green */
 .cal-group-header.prio-3 { color: #1565c0; }  /* created blue */
+/* ════════════════════════════════════════════════════════════════════
+   🔧 BA-195 (v232): تقویم طبق قانون BA-154 — بالای مودال دقیقاً زیر هدر
+   اصلی فیکس می‌شود (top = --header-h زنده با applyHeaderAlignedTop) و
+   بدنه با overflow-y اسکرول‌پذیر می‌ماند. قبلاً با padding-top ثابتِ
+   70px/78px وسط‌چین بود و با هدرِ اندازه‌گیری‌شده تراز نبود.
+   ════════════════════════════════════════════════════════════════════ */
+#calendarOverlay {
+    align-items: flex-start;
+    padding-top: var(--header-h, 58px);
+}
+#calendarOverlay .calendar-modal {
+    max-height: calc(100vh - var(--header-h, 58px) - 10px);
+}
+/* 🔧 BA-196 (v232): نمای هفتگی — یک ردیف برای هر روز + فضای پیش‌نمایش
+   یادداشت آن روز (چند خط اول). کلیک روی ردیف → یادداشت کامل همان روز. */
+.cal-week-row {
+    display: flex; gap: 10px; align-items: stretch;
+    border: 1px solid #e0e0e0; border-radius: 10px;
+    padding: 8px 10px; margin-bottom: 8px; cursor: pointer; background: #fff;
+}
+.cal-week-row:active { background: #f5f5f5; }
+.cal-week-row.today { border: 2px solid #1976D2; background: #E3F2FD; }
+.cal-week-day {
+    width: 56px; flex-shrink: 0; text-align: center;
+    display: flex; flex-direction: column; gap: 2px; justify-content: center;
+    border-left: 1px solid #eee; padding-left: 8px;
+}
+.cal-week-wd { font-size: 10px; color: #888; }
+.cal-week-num { font-size: 16px; font-weight: 700; color: #1a1a1a; }
+.cal-week-row.today .cal-week-num { color: #1976D2; }
+.cal-week-month { font-size: 9.5px; color: #999; }
+.cal-week-today-tag { font-size: 9px; background: #1976D2; color: #fff; border-radius: 8px; padding: 1px 6px; align-self: center; }
+.cal-week-preview { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; justify-content: center; }
+.cal-week-line { font-size: 11.5px; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-week-empty { font-size: 11px; color: #bbb; }
+
 .cal-empty {
     text-align: center;
     color: var(--text-light);
@@ -3559,6 +3602,52 @@ body.locked .header-actions button {
     .notes-mic-btn { width: 52px; height: 52px; font-size: 24px; left: 14px; }
     .notes-content { font-size: 14px; padding: 14px; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   🔧 BA-198 (v232): پیامک انبوه — صفحهٔ تمام‌صفحه زیر هدر اصلی (BA-154)
+   ════════════════════════════════════════════════════════════════════ */
+.bulk-sms-overlay {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    top: var(--header-h, 58px);
+    background: #f0f2f5; z-index: 10100;
+    display: none; flex-direction: column; direction: rtl;
+}
+.bulk-sms-overlay.active { display: flex; }
+.bulk-sms-topbar {
+    display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+    background: #fff; border-bottom: 1px solid #e5e5e5; flex-shrink: 0;
+}
+.bulk-sms-back-btn { background: none; border: none; font-size: 14px; color: #1976D2; font-family: inherit; cursor: pointer; padding: 4px 6px; }
+.bulk-sms-title { font-size: 17px; font-weight: 700; color: #1a1a1a; flex: 1; }
+.bulk-sms-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
+.bulk-sms-filters { display: flex; gap: 8px; }
+.bulk-sms-sel { flex: 1; min-width: 0; padding: 8px; border: 1px solid #ccc; border-radius: 8px; font-family: inherit; font-size: 12.5px; background: #fff; direction: rtl; }
+.bulk-sms-actions-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bulk-sms-mini-btn { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 7px 12px; font-size: 12px; font-family: inherit; cursor: pointer; color: #333; }
+.bulk-sms-mini-btn:active { background: #eee; }
+.bulk-sms-count { font-size: 12px; font-weight: 700; color: #1976D2; margin-right: auto; }
+.bulk-sms-list { background: #fff; border: 1px solid #e5e5e5; border-radius: 10px; overflow: hidden; flex-shrink: 0; max-height: 38vh; overflow-y: auto; }
+.bulk-sms-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
+.bulk-sms-row:last-child { border-bottom: none; }
+.bulk-sms-row:active { background: #f5f5f5; }
+.bulk-sms-check {
+    width: 22px; height: 22px; border: 2px solid #bbb; border-radius: 6px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: transparent; transition: all 0.15s;
+}
+.bulk-sms-row.checked { background: #E8F5E9; }
+.bulk-sms-row.checked .bulk-sms-check { background: #2E7D32; border-color: #2E7D32; color: #fff; }
+.bulk-sms-info { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.bulk-sms-name { font-size: 13px; font-weight: 600; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bulk-sms-meta { font-size: 11px; color: #777; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bulk-sms-empty { padding: 30px; text-align: center; color: #999; font-size: 12.5px; }
+.bulk-sms-compose { background: #fff; border: 1px solid #e5e5e5; border-radius: 10px; padding: 10px; }
+.bulk-sms-text { width: 100%; min-height: 110px; border: 1px solid #ccc; border-radius: 8px; padding: 8px; font-family: inherit; font-size: 13px; resize: vertical; box-sizing: border-box; direction: rtl; }
+.bulk-sms-charcount { font-size: 11px; color: #888; margin-top: 4px; text-align: left; }
+.bulk-sms-send-btn { width: 100%; margin-top: 8px; background: #2E7D32; color: #fff; border: none; border-radius: 8px; padding: 12px; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; }
+.bulk-sms-send-btn:active { background: #1B5E20; }
+.bulk-sms-send-btn:disabled { background: #A5D6A7; }
+.bulk-sms-hint { font-size: 10.5px; color: #999; margin-top: 6px; text-align: center; }
 
 /* ============ 👥 بانک اطلاعاتی اشخاص (CRM) ============ */
 .contacts-overlay {
@@ -4733,10 +4822,39 @@ body.locked .header-actions button {
             <button class="contacts-action-btn" onclick="openContactSearch()">🔍 جستجو</button>
             <button class="contacts-action-btn" onclick="openTaskReport()">📋 گزارش کارها</button>
             <button class="contacts-action-btn" onclick="openContactReport()">📊 گزارش اشخاص</button>
+            <button class="contacts-action-btn" onclick="openBulkSms()" style="background:#2E7D32;color:#fff;">📩 پیامک انبوه</button>
         </div>
     </div>
     <div class="contacts-body" id="contactsBody">
         <!-- جدول اشخاص توسط JavaScript پر می‌شود -->
+    </div>
+</div>
+
+<!-- 🔧 BA-198 (v232): پیامک انبوه — انتخاب اشخاص (تیک/انتخاب همه/فیلتر
+     شرکت و سمت) + گرفتن یک متن + ارسال به همهٔ انتخاب‌شدگان.
+     طبق قانون BA-154: بالای صفحه زیر هدر اصلی فیکس و بدنه اسکرول‌پذیر. -->
+<div class="bulk-sms-overlay" id="bulkSmsOverlay">
+    <div class="bulk-sms-topbar">
+        <button class="bulk-sms-back-btn" onclick="closeBulkSms()">بازگشت ❯</button>
+        <div class="bulk-sms-title">📩 پیامک انبوه</div>
+    </div>
+    <div class="bulk-sms-body">
+        <div class="bulk-sms-filters">
+            <select id="bulkSmsCompanySel" class="bulk-sms-sel" onchange="bulkSmsFilterChange('company', this.value)"></select>
+            <select id="bulkSmsPositionSel" class="bulk-sms-sel" onchange="bulkSmsFilterChange('position', this.value)"></select>
+        </div>
+        <div class="bulk-sms-actions-row">
+            <button type="button" class="bulk-sms-mini-btn" onclick="bulkSmsSelectAll()">✔ انتخاب همه</button>
+            <button type="button" class="bulk-sms-mini-btn" onclick="bulkSmsClearAll()">✖ لغو انتخاب</button>
+            <span class="bulk-sms-count" id="bulkSmsCount">۰ نفر انتخاب شده</span>
+        </div>
+        <div class="bulk-sms-list" id="bulkSmsList"></div>
+        <div class="bulk-sms-compose">
+            <textarea id="bulkSmsText" class="bulk-sms-text" placeholder="متن پیامک را اینجا بنویسید..." oninput="bulkSmsUpdateCount()"></textarea>
+            <div class="bulk-sms-charcount" id="bulkSmsCharCount"></div>
+            <button type="button" class="bulk-sms-send-btn" id="bulkSmsSendBtn" onclick="bulkSmsSend()">📤 ارسال به همهٔ انتخاب‌شدگان</button>
+            <div class="bulk-sms-hint">پس از زدن ارسال، برنامهٔ پیامکِ گوشی با همهٔ گیرنده‌ها و متنِ آماده باز می‌شود.</div>
+        </div>
     </div>
 </div>
 
@@ -5619,6 +5737,7 @@ body.locked .header-actions button {
                 <div id="calMonthYear"></div>
                 <div class="cal-title-row">
                     <button class="cal-today-btn" onclick="goToToday()">امروز</button>
+                    <button class="cal-today-btn" id="calViewToggleBtn" onclick="calToggleView()" title="نمای هفتگی">🗓 هفته</button>
                     <button class="cal-add-day-btn" onclick="openDayNotes()" title="یادداشت روز انتخاب‌شده" style="background: #FF9800;">📝</button>
                     <button class="cal-add-day-btn" id="calAddDayBtn" onclick="addTaskForSelectedDay()" title="افزودن یادآور برای روز انتخاب‌شده">+</button>
                 </div>
@@ -7554,7 +7673,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v231-2026-11-21-meeting-removed';
+const APP_VERSION = 'v232-2026-11-21-calendar-weekly-bulksms';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -15575,6 +15694,7 @@ function closeContacts() {
     document.getElementById('contactSearchResultsOverlay').classList.remove('active');
     document.getElementById('contactReportOverlay').classList.remove('active');
     document.getElementById('contactReportResultsOverlay').classList.remove('active');
+    document.getElementById('bulkSmsOverlay').classList.remove('active');   // 🔧 BA-198
     var co = document.getElementById('contactsOverlay');
     co.classList.remove('active');
     co.style.display = '';
@@ -15746,6 +15866,152 @@ function renderContactsList() {
         html += '</div>';
     }
     body.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔧 BA-198 (v232 — الزام کاربر): پیامک انبوه در بانک اطلاعاتی اشخاص
+// «یک کلید عکس پیامک انبوه بگذار که بعد از زدن آن امکان تیک زدن اشخاص
+// و یا انتخاب همه یا از هر شرکت یا سمت مشخص و گرفتن یک متن پیامک و
+// ارسال به همه را انجام دهد»
+// — کلید «📩 پیامک انبوه» در هدر بانک اشخاص → صفحهٔ تمام‌صفحه.
+// — فیلتر با دو dropdown (شرکت/سمت — مقادیر متمایز از همهٔ اشخاص).
+// — تیک هر شخص، «انتخاب همه» (فقط فیلترشده‌ها) و «لغو انتخاب».
+// — یک متن برای همه + شمارش کاراکتر/تعداد پیامک.
+// — ارسال: sms: با شماره‌های جدا‌شده با کاما + متن (اندروید).
+// ════════════════════════════════════════════════════════════════════
+var _bulkSmsState = { sel: {}, company: '', position: '' };
+
+function bulkSmsAttrEsc(v) {
+    return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function bulkSmsVisibleContacts() {
+    let list = getContacts();
+    if (_bulkSmsState.company) list = list.filter(function (c) { return (c.company || '').trim() === _bulkSmsState.company; });
+    if (_bulkSmsState.position) list = list.filter(function (c) { return (c.position || '').trim() === _bulkSmsState.position; });
+    return list;
+}
+
+function bulkSmsFillFilters() {
+    const all = getContacts();
+    const companies = Array.from(new Set(all.map(function (c) { return (c.company || '').trim(); }).filter(Boolean))).sort(comparePersian);
+    const positions = Array.from(new Set(all.map(function (c) { return (c.position || '').trim(); }).filter(Boolean))).sort(comparePersian);
+    document.getElementById('bulkSmsCompanySel').innerHTML =
+        '<option value="">همهٔ شرکت‌ها</option>' + companies.map(function (x) {
+            return '<option value="' + bulkSmsAttrEsc(x) + '"' + (x === _bulkSmsState.company ? ' selected' : '') + '>' + bulkSmsAttrEsc(x) + '</option>';
+        }).join('');
+    document.getElementById('bulkSmsPositionSel').innerHTML =
+        '<option value="">همهٔ سمت‌ها</option>' + positions.map(function (x) {
+            return '<option value="' + bulkSmsAttrEsc(x) + '"' + (x === _bulkSmsState.position ? ' selected' : '') + '>' + bulkSmsAttrEsc(x) + '</option>';
+        }).join('');
+}
+
+function bulkSmsFilterChange(field, val) {
+    _bulkSmsState[field] = val;
+    renderBulkSmsList();
+}
+
+function openBulkSms() {
+    applyHeaderAlignedTop();   // 🔧 قانون BA-154: تراز زیر هدر اصلی
+    bulkSmsFillFilters();
+    renderBulkSmsList();
+    const ov = document.getElementById('bulkSmsOverlay');
+    ov.classList.add('active');
+    bringToFront(ov);
+}
+
+function closeBulkSms() {
+    const ov = document.getElementById('bulkSmsOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    ov.classList.remove('active');
+}
+
+function renderBulkSmsList() {
+    const body = document.getElementById('bulkSmsList');
+    const list = bulkSmsVisibleContacts();
+    if (list.length === 0) {
+        body.innerHTML = '<div class="bulk-sms-empty">هیچ شخصی با این فیلتر یافت نشد</div>';
+        bulkSmsUpdateCount();
+        return;
+    }
+    let html = '';
+    list.forEach(function (c) {
+        const phone = c.primaryPhone || ((c.phones && c.phones.length > 0) ? c.phones[0] : '');
+        const checked = _bulkSmsState.sel[c.id] ? ' checked' : '';
+        const meta = [c.company, c.position, phone].filter(Boolean).join(' • ');
+        html += '<div class="bulk-sms-row' + checked + '" onclick="bulkSmsToggle(\'' + String(c.id).replace(/'/g, '') + '\')">' +
+            '<span class="bulk-sms-check">✔</span>' +
+            '<span class="bulk-sms-info">' +
+            '<span class="bulk-sms-name">' + escapeHtml(c.name || '—') + '</span>' +
+            (meta ? '<span class="bulk-sms-meta">' + escapeHtml(meta) + '</span>' : '') +
+            '</span></div>';
+    });
+    body.innerHTML = html;
+    bulkSmsUpdateCount();
+}
+
+function bulkSmsToggle(id) {
+    if (_bulkSmsState.sel[id]) delete _bulkSmsState.sel[id];
+    else _bulkSmsState.sel[id] = true;
+    renderBulkSmsList();
+}
+
+function bulkSmsSelectAll() {
+    // «انتخاب همه» = همهٔ اشخاصِ فیلترشدهٔ فعلی تیک می‌خورند
+    bulkSmsVisibleContacts().forEach(function (c) { _bulkSmsState.sel[c.id] = true; });
+    renderBulkSmsList();
+}
+
+function bulkSmsClearAll() {
+    _bulkSmsState.sel = {};
+    renderBulkSmsList();
+}
+
+function bulkSmsSelectedContacts() {
+    return getContacts().filter(function (c) { return _bulkSmsState.sel[c.id]; });
+}
+
+function bulkSmsNormalizePhone(p) {
+    return String(p || '')
+        .replace(/[۰-۹]/g, function (d) { return String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)); })
+        .replace(/[٠-٩]/g, function (d) { return String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)); })
+        .replace(/[^\d+]/g, '');
+}
+
+function bulkSmsUpdateCount() {
+    const n = bulkSmsSelectedContacts().length;
+    const el = document.getElementById('bulkSmsCount');
+    if (el) el.textContent = toPersianNumber(n) + ' نفر انتخاب شده';
+    const txt = document.getElementById('bulkSmsText');
+    const cc = document.getElementById('bulkSmsCharCount');
+    if (cc && txt) {
+        const len = txt.value.length;
+        cc.textContent = toPersianNumber(len) + ' کاراکتر' + (len > 0 ? ' — حدود ' + toPersianNumber(Math.max(1, Math.ceil(len / 70))) + ' پیامک' : '');
+    }
+    const sendBtn = document.getElementById('bulkSmsSendBtn');
+    if (sendBtn) sendBtn.disabled = (n === 0);
+}
+
+// ساخت URI پیامک انبوه — جدا از ارسال (قابل تست)
+function bulkSmsBuildUri(text, contacts) {
+    const numbers = [];
+    (contacts || []).forEach(function (c) {
+        const p = bulkSmsNormalizePhone(c.primaryPhone || ((c.phones && c.phones.length > 0) ? c.phones[0] : ''));
+        if (p) numbers.push(p);
+    });
+    return { uri: 'sms:' + numbers.join(',') + '?body=' + encodeURIComponent(text), numbers: numbers };
+}
+
+function bulkSmsSend() {
+    const text = document.getElementById('bulkSmsText').value.trim();
+    if (!text) { showToast('متن پیامک را بنویسید'); return; }
+    const r = bulkSmsBuildUri(text, bulkSmsSelectedContacts());
+    if (r.numbers.length === 0) { showToast('هیچ شماره‌ای برای ارسال یافت نشد'); return; }
+    // sms: با شماره‌های جدا‌شده با کاما + متن — پیامک‌سنجِ پیش‌فرض اندروید
+    // همهٔ گیرنده‌ها و متن را از پیش پر می‌کند و کاربر فقط «ارسال» می‌زند.
+    window.location.href = r.uri;
+    showToast('برنامهٔ پیامک باز شد — ' + toPersianNumber(r.numbers.length) + ' گیرنده');
 }
 
 // 🔧 v144: منوی لمسی شخص — وقتی روی یک شخص کلیک می‌شود، باز می‌شود
@@ -21724,10 +21990,12 @@ const calWeekdayNames = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
 // are already defined above in the Jalali Date Conversion section.
 
 function openCalendar() {
+    applyHeaderAlignedTop();   // 🔧 BA-195: تراز زیر هدر اصلی (قانون BA-154)
     const today = new Date();
     const [jy, jm, jd] = toJalaliParts(today);
-    calState = { year: jy, month: jm, selectedDay: jd };
+    calState = { year: jy, month: jm, selectedDay: jd, view: 'month', weekStart: null };
     renderCalendar();
+    calUpdateViewBtn();   // 🔧 BA-196
     var calOverlay = document.getElementById('calendarOverlay');
     calOverlay.classList.add('active');
     bringToFront(calOverlay);  // 🔧 v156: روی همه overlayها قرار بگیرد
@@ -21752,6 +22020,8 @@ function closeCalendar() {
 }
 
 function changeMonth(delta) {
+    // 🔧 BA-196: در نمای هفتگی، ◄ ► هفته را جابه‌جا می‌کنند (هفته به هفته)
+    if (calState && calState.view === 'week') { calShiftWeek(delta); return; }
     let m = calState.month + delta;
     let y = calState.year;
     if (m > 12) { m = 1; y++; }
@@ -21764,7 +22034,13 @@ function changeMonth(delta) {
 function goToToday() {
     const today = new Date();
     const [jy, jm, jd] = toJalaliParts(today);
-    calState = { year: jy, month: jm, selectedDay: jd };
+    // 🔧 BA-196: نما و هفتهٔ فعلی حفظ می‌شود — «امروز» به روز/هفتهٔ امروز می‌رود
+    const keepView = calState ? calState.view : 'month';
+    calState = {
+        year: jy, month: jm, selectedDay: jd,
+        view: keepView,
+        weekStart: (keepView === 'week') ? calSaturdayOf(jy, jm, jd) : null
+    };
     renderCalendar();
 }
 
@@ -21774,6 +22050,11 @@ function renderCalendar() {
 
     const grid = document.getElementById('calendarGrid');
     grid.innerHTML = '';
+
+    // 🔧 BA-196: نمای هفتگی — ردیف‌های هفته + پیش‌نمایش یادداشت هر روز
+    if (calState.view === 'week') { calRenderWeek(grid); return; }
+    const dayTasksPanel = document.getElementById('calendarDayTasks');
+    if (dayTasksPanel) dayTasksPanel.style.display = '';
 
     // Weekday header
     calWeekdayNames.forEach(w => {
@@ -21844,6 +22125,145 @@ function renderCalendar() {
 function selectCalendarDay(day) {
     calState.selectedDay = day;
     renderCalendar();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔧 BA-196 (v232 — الزام کاربر): نمای هفتگی تقویم
+// «یک کلید تغییر نما برای تقویم بگذار که فقط هفته به هفته با یک فضا
+// برای هر روز پیش نمایش یادداشت های آن روز چند خط اولش را نشان دهد و
+// در صورت کلیک روی هر روز صفحه یادداشت کامل آن روز باز و با بستن آن
+// به تقویم هفتگی برگردیم»
+// — هفتهٔ ایرانی از شنبه شروع می‌شود و می‌تواند از مرز ماه عبور کند.
+// — کلید «🗓 هفته / 📅 ماه» در هدر تقویم نما را عوض می‌کند.
+// — کلیک روی هر روز: یادداشتِ کاملِ همان روز «روی» تقویم باز می‌شود
+//   (تقویم بسته نمی‌شود) و با بستنِ یادداشت، تقویم هفتگی سرِ جایش است.
+// ════════════════════════════════════════════════════════════════════
+var calFullWeekdayNames = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'];
+
+function calSaturdayOf(jy, jm, jd) {
+    const g = jalaliToGregorian(jy, jm, jd);
+    const persianOffset = ((g.getUTCDay() + 1) % 7); // شنبه=۰ ... جمعه=۶ (همان الگوی renderCalendar)
+    const start = new Date(g.getTime() - persianOffset * 86400000);
+    const p = toJalaliParts(start);
+    return { jy: p[0], jm: p[1], jd: p[2] };
+}
+
+function calToggleView() {
+    if (calState.view === 'week') {
+        calState.view = 'month';
+    } else {
+        calState.view = 'week';
+        if (!calState.weekStart) {
+            const sel = calState.selectedDay || 1;
+            calState.weekStart = calSaturdayOf(calState.year, calState.month, sel);
+        }
+    }
+    calUpdateViewBtn();
+    renderCalendar();
+}
+
+function calUpdateViewBtn() {
+    const btn = document.getElementById('calViewToggleBtn');
+    if (!btn) return;
+    if (calState.view === 'week') {
+        btn.textContent = '📅 ماه';
+        btn.title = 'نمای ماهانه';
+    } else {
+        btn.textContent = '🗓 هفته';
+        btn.title = 'نمای هفتگی (پیش‌نمایش یادداشت‌ها)';
+    }
+}
+
+function calShiftWeek(delta) {
+    const ws = calState.weekStart;
+    const g = jalaliToGregorian(ws.jy, ws.jm, ws.jd);
+    const next = new Date(g.getTime() + delta * 7 * 86400000);
+    const p = toJalaliParts(next);
+    calState.weekStart = { jy: p[0], jm: p[1], jd: p[2] };
+    calState.year = p[0];
+    calState.month = p[1];
+    renderCalendar();
+}
+
+// پیش‌نمایش یادداشت روز: چند خط اول (متنِ خالص از HTML ذخیره‌شده)
+function calNotePreviewLines(jy, jm, jd, maxLines) {
+    let raw = '';
+    try { raw = localStorage.getItem(getNotesKey('day_' + jy + '_' + jm + '_' + jd)) || ''; } catch (e) {}
+    if (!raw) return [];
+    raw = String(raw)
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/(p|div|li|h[1-6]|blockquote|ul|ol)>/gi, '\n')
+        .replace(/<[^>]*>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+    const lines = raw.split('\n').map(function (x) { return x.replace(/\s+/g, ' ').trim(); }).filter(Boolean);
+    return lines.slice(0, maxLines);
+}
+
+function calOpenDayNotesKeepCalendar(jy, jm, jd) {
+    // برخلاف openDayNotes (نمای ماه که تقویم را می‌بندد)، تقویم باز می‌ماند —
+    // یادداشت روی تقویم باز می‌شود و با بستنش (closeNotes → navBack)
+    // به تقویم هفتگی برمی‌گردیم.
+    const dayKey = 'day_' + jy + '_' + jm + '_' + jd;
+    const dateStr = toPersianDigits(jd) + ' ' + jalaliMonths[jm - 1] + ' ' + toPersianNumber(jy);
+    openNotes(dayKey, '📝 یادداشت — ' + dateStr);
+}
+
+function calRenderWeek(grid) {
+    // پنل کارهای روزِ انتخابی فقط در نمای ماه است
+    const dayTasks = document.getElementById('calendarDayTasks');
+    if (dayTasks) dayTasks.style.display = 'none';
+
+    const ws = calState.weekStart;
+    const gStart = jalaliToGregorian(ws.jy, ws.jm, ws.jd);
+    const gEnd = new Date(gStart.getTime() + 6 * 86400000);
+    const pe = toJalaliParts(gEnd);
+    const startStr = toPersianDigits(ws.jd) + ' ' + jalaliMonths[ws.jm - 1];
+    const endStr = toPersianDigits(pe[2]) + ' ' + jalaliMonths[pe[1] - 1] + ' ' + toPersianNumber(pe[0]);
+    document.getElementById('calMonthYear').textContent = 'هفته: ' + startStr + ' تا ' + endStr;
+
+    grid.innerHTML = '';
+    const today = new Date();
+    const ty = toJalaliParts(today);
+    const tJy = ty[0], tJm = ty[1], tJd = ty[2];
+
+    for (let i = 0; i < 7; i++) {
+        const g = new Date(gStart.getTime() + i * 86400000);
+        const p = toJalaliParts(g);
+        const jy = p[0], jm = p[1], jd = p[2];
+        const isToday = (jy === tJy && jm === tJm && jd === tJd);
+
+        const row = document.createElement('div');
+        row.className = 'cal-week-row' + (isToday ? ' today' : '');
+        row.onclick = (function (jy2, jm2, jd2) {
+            return function () { calOpenDayNotesKeepCalendar(jy2, jm2, jd2); };
+        })(jy, jm, jd);
+
+        const dayCell = document.createElement('div');
+        dayCell.className = 'cal-week-day';
+        let cellHtml = '<div class="cal-week-wd">' + calFullWeekdayNames[i] + '</div>' +
+            '<div class="cal-week-num">' + toPersianDigits(jd) + '</div>';
+        if (jm !== ws.jm || jy !== ws.jy) {
+            cellHtml += '<div class="cal-week-month">' + jalaliMonths[jm - 1] + '</div>';
+        }
+        if (isToday) cellHtml += '<div class="cal-week-today-tag">امروز</div>';
+        dayCell.innerHTML = cellHtml;
+
+        const prev = document.createElement('div');
+        prev.className = 'cal-week-preview';
+        const lines = calNotePreviewLines(jy, jm, jd, 3);
+        if (lines.length === 0) {
+            prev.innerHTML = '<div class="cal-week-empty">یادداشتی ثبت نشده</div>';
+        } else {
+            prev.innerHTML = lines.map(function (l) {
+                return '<div class="cal-week-line">' + escapeHtml(l) + '</div>';
+            }).join('');
+        }
+
+        row.appendChild(dayCell);
+        row.appendChild(prev);
+        grid.appendChild(row);
+    }
 }
 
 function getTaskTypeLabel(t) {
