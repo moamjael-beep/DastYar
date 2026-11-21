@@ -7703,7 +7703,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v277-2026-11-19-meeting-no-coma-no-dots-real';
+const APP_VERSION = 'v229-2026-11-19-meeting-no-numeric-filter';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20594,9 +20594,18 @@ let meetLastShown = '';      // آخرین متن نمایش‌داده‌شده
 let meetLastPersistAt = 0;   // آخرین ذخیرهٔ دیسکِ پیش‌نویس
 // 🔧 v267 (BA-180): تایپ واژه‌به‌واژه — هر واژه به‌محض تشخیص فوراً تایپ
 // می‌شود؛ دیگر هیچ واژه‌ای منتظر فاینالِ جمله نمی‌ماند (ریشهٔ کما).
-let meetUtterIdx = -1;           // ایندکس utterance جاری (واژه‌به‌واژه)
-let meetUtterStartLen = 0;       // شروع پنجرهٔ بازنویسی دُم در accum (فقط جملهٔ جاری)
-const meetUtterMap = new Map();  // idx → واژه‌های تعهدشده (دلتای فاینال بدون تکرار)
+// 🔧 v228 (BA-191 — الزام کاربر: «بر برنگ برنگذ برنگذرد» می‌بینم): کروم یک
+//    واژه را حرف‌به‌حرف رشد می‌دهد (بر→برنگ→برنگذ→برنگذرزد). مدلِ قدیمیِ
+//    LCPِ واژه‌ای، هر پیشوند را واژهٔ متفاوت می‌دانست و دوباره append
+//    می‌کرد → سیلِ پیشوندها. مدلِ جدید: دُمِ زندهٔ utterance جاری —
+//    هر interim، دُم (از utterStartLen) را بازنویسی می‌کند (هرگز به کلماتِ
+//    قبلیِ تعهدشده برنمی‌گردد) و فقط پیشوندِ رو به رشد را نشان می‌دهد.
+//    فاینال، دُمِ زنده را تعهد می‌کند و پنجره را می‌بندد.
+let meetUtterIdx = -1;           // ایندکس utterance جاری (دُمِ زنده)
+let meetUtterStartLen = 0;       // شروعِ دُمِ زندهٔ utterance جاری در accum
+let meetUtterLiveText = '';      // 🔧 v228: متنِ زندهٔ utterance جاری (دُم، نه به accum سبک شده)
+let meetLiveShown = false;       // 🔧 v228: آیا دُمِ زنده روی accum نوشته شده (برای undo پیش از تعهد)
+const meetUtterMap = new Map();  // idx → متنِ تعهدشدهٔ فاینالِ آن utterance (برای ضدتکرار)
 function meetNormWord(w) { return (w || '').replace(/\u200c/g, ''); }
 function meetLcpWords(a, b) { let p = 0; while (p < a.length && p < b.length && meetNormWord(a[p]) === meetNormWord(b[p])) p++; return p; }
 function buildMeetSR() {
@@ -20653,7 +20662,16 @@ function buildMeetSR() {
         //    نمایش فقط وقتی متن واقعاً عوض شد و ذخیرهٔ دیسک حداکثر هر
         //    ۱.۵ثانیه (pagehide هم آخرین نسخه را ذخیره می‌کند).
         if (el) {
-            const shown = addNumericAfterWords(meetRecAccum.trim()).trim();
+            // 🔧 v229 (BA-192 — الزام کاربر: «فیلترهای عددی و مفهومی من رو فقط
+            //    از کد تشخیص صوت قسمت ضبط جلسات حذف کنی — نه به هیچ وجه در
+            //    بخش‌های دیگر مثل تسک‌ها، یادداشت‌ها، تیر سند حسابداری و متن
+            //    رکورد حسابداری»): ضبط جلسات دیگر addNumericAfterWords را
+            //    اعمال نمی‌کند. متنِ خامِ کروم (فارسی) مستقیماً نمایش داده
+            //    می‌شود — نه تبدیلِ «دو میلیون»→۲٬۰۰۰٬۰۰۰، نه تشخیصِ موبایل،
+            //    نه هیچ فیلترِ مفهومی. این فقط برای ضبط جلسات است؛ تسک‌ها،
+            //    یادداشت‌ها، فرمِ سندِ حسابداری و رکوردِ حسابداری همچنان
+            //    addNumericAfterWords را دارند (بدون تغییر).
+            const shown = meetRecAccum.trim();
             if (shown !== meetLastShown) {
                 meetLastShown = shown;
                 el.value = shown;
@@ -20838,72 +20856,70 @@ function meetSafeStart(attempt) {
         setTimeout(function() { if (meetRecActive && meetRecObj === myObj) meetSafeStart((attempt || 0) + 1); }, wait);
     }
 }
-// 🔧 v267 (BA-180 — الزام کاربر: «تایپ را از جمله به کلمات کاهش بده و
-//    سریعاً هر کلمه‌ای تشخیص دادی تایپ کن؛ تحت هیچ شرایطی هنگ نکن و هر
-//    کلمه متوجه نشدی .... بگذار») + 🔧 v273 (BA-186 — الزام کاربر:
-//    «کلمه‌به‌کلمه پردازش و تایپ کن و به کلمات قبل برنگرد تا اصلاح و
-//    حذفشان نکنی»): تعهد واژه‌به‌واژه append-only.
-//  • هر واژهٔ interim به‌محض رسیدن فوراً به متن می‌رود — هیچ واژه‌ای
-//    منتظر فاینالِ جمله نمی‌ماند (ریشهٔ کما: انتظارِ جمله‌محور بود).
-//  • 🔧 v273: هرگز به کلمات قبلی برنمی‌گردیم. شاخهٔ «بازنویسی دُم» که
-//    کروم فرضش را عوض می‌کرد و کلمهٔ قبلی را اصلاح/حذف می‌کرد، حذف شد —
-//    حالا هر واژهٔ تازه فقط append می‌شود؛ کلماتِ تعهدشدهٔ قبلی هرگز
-//    دست نمی‌خورند. گاردِ دلتا (LCP) تکرار را می‌گیرد؛ واژه‌ای که کروم
-//    در فاینال دور ریخت = نامفهوم → «....» در فاینال می‌نشیند.
-//  • فاینال فقط دلتا را می‌نشیند (بدون تکرار، بدون بازنویسیِ قبلی).
+// 🔧 v228 (BA-191 — الزام کاربر: «بر برنگ برنگذ برنگذرد»): مدلِ دُمِ زنده.
+//    کروم یک utterance را حرف‌به‌حرف رشد می‌دهد (بر→برنگ→برنگذرزد). هر
+//    interim، فقط دُمِ زندهٔ همین utterance را بازنویسی می‌کند (از
+//    utterStartLen تا انتها) — هرگز به کلماتِ قبلیِ تعهدشده برنمی‌گردد.
+//    فاینال، دُمِ زنده را تعهد می‌کند و پنجره را می‌بندد. این به‌طور ذاتی
+//    سیلِ پیشوندها («بر برنگ برنگذ») را حذف می‌کند: هر کلمه فقط یک‌بار، در
+//    پشتِهم رشد می‌کند، نه به‌عنوانِ واژه‌های جدا.
 function meetCommitInterimWords(idx, txt) {
-    const w = (txt || '').trim().split(/\s+/).filter(Boolean);
-    if (!w.length) return;
-    const accum0 = meetRecAccum;   // 🔧 v269: سنجشِ پیشرفتِ واقعیِ متن
-    // 🔧 v267: اگر دقیقاً همان واژه‌های تعهدشدهٔ «....»دار است، هیچ تغییری
-    //    نکن (کروم interimِ کهنه را تکرار می‌کند) — وگرنه نقشهٔ واژه‌ها دوباره
-    //    مسلح می‌شد و به جملهٔ بعدی «....»/تکرارِ کاذب می‌نشست.
+    const t = (txt || '').trim();
+    if (!t) return;
+    const accum0 = meetRecAccum;
+    // گاردِ بین‌نشستیِ (v266): اگر دقیقاً همانِ تعهدشدهٔ «....»دار است،
+    // نادیده بگیر (کروم interimِ کهنه را تکرار می‌کند).
     if (meetManualCommitText && (Date.now() - meetManualCommitAt) < MEET_MANUAL_GUARD_MS) {
         const mw0 = meetManualCommitText.split(/\s+/).filter(Boolean);
-        if (w.length === mw0.length && meetLcpWords(mw0, w) === mw0.length) return;
+        const w0 = t.split(/\s+/).filter(Boolean);
+        if (w0.length === mw0.length && meetLcpWords(mw0, w0) === mw0.length) return;
     }
-    if (idx !== meetUtterIdx) {          // جملهٔ تازه — قبلی خودبه‌خود فریز می‌شود
+    // utterance تازه — قبلی خودبه‌خود تعهد می‌شود (اگر دُمِ زنده دارد).
+    if (idx !== meetUtterIdx) {
+        if (meetUtterIdx >= 0 && meetLiveShown) {
+            // دُمِ زندهٔ قبلی را به‌عنوانِ تعهدشده نگه دار (بدون ....)
+            meetUtterMap.set(meetUtterIdx, meetUtterLiveText);
+            meetUtterLiveText = ''; meetLiveShown = false;
+        }
         meetUtterIdx = idx;
         meetUtterStartLen = meetRecAccum.length;
+        meetUtterLiveText = '';
+        meetLiveShown = false;
     }
-    let committed = meetUtterMap.get(idx) || [];
-    let fromManual = false;
-    if (!committed.length && meetManualCommitText && (Date.now() - meetManualCommitAt) < MEET_MANUAL_GUARD_MS) {
-        const mw = meetManualCommitText.split(/\s+/).filter(Boolean);
-        if (meetLcpWords(mw, w) === mw.length) { committed = mw; fromManual = true; }   // ادامهٔ جملهٔ «....»دار
-    }
-    // 🔧 v273: فقط append — هرگز بازنویسیِ کلمات قبلی نه. دلتای LCP را
-    //    می‌نشینیم؛ واژهٔ دورریختهٔ کروم به فاینال موکول می‌شود (.... در
-    //    فاینال، یا اصلاً چیزی اگر فاینال همان دلتا را تأیید کند).
-    const lcp = meetLcpWords(committed, w);
-    if (w.length > lcp) {
-        meetRecAccum += w.slice(lcp).join(' ') + ' ';   // هر واژهٔ تازه: فوری، فقط append
-    }
-    meetUtterMap.set(idx, w);
-    if (meetRecAccum !== accum0) meetLastProgressAt = Date.now();   // 🔧 v269: متن واقعاً پیشرفت کرد
+    // 🔑 دُمِ زنده: بازنویسیِ دُم (از utterStartLen) با متنِ تازه.
+    //    کلماتِ قبلیِ تعهدشده هرگز دست نمی‌خورند — فقط دُمِ همین utterance.
+    meetUtterLiveText = t;
+    meetRecAccum = meetRecAccum.slice(0, meetUtterStartLen) + t + ' ';
+    meetLiveShown = true;
+    if (meetRecAccum !== accum0) meetLastProgressAt = Date.now();
 }
 function meetCommitFinalWords(idx, txt) {
     const fin = (txt || '').trim();
     if (!fin) return;
-    const accum0 = meetRecAccum;   // 🔧 v269: سنجشِ پیشرفتِ واقعیِ متن
-    const fw = fin.split(/\s+/).filter(Boolean);
-    // 🔧 v273 (BA-186): append-only — به کلمات قبلی برنمی‌گردیم. شاخهٔ
-    //    «فاینال مرجع است → بازنویسی» حذف شد (کلمات قبلی را اصلاح/حذف
-    //    می‌کرد). حالا فقط: دلتا append، یا «....» اگر فاینال واژه‌ای را
-    //    دور ریخت. کلمهٔ تازه‌ای که فقط در فاینال آمد، append می‌شود.
-    const committed = meetUtterMap.get(idx);
-    if (committed && committed.length) {
-        const lcp = meetLcpWords(committed, fw);
+    const accum0 = meetRecAccum;
+    // اگر همین utterance دُمِ زنده داشت، آن را با فاینال جایگزین کن (تعهدِ نهایی).
+    if (idx === meetUtterIdx && meetLiveShown) {
+        // دُمِ زنده را با فاینال جایگزین کن — همان پنجره، فقط متن نهایی.
+        // اگر فاینال کوتاه‌تر از interim است (کروم واژه‌ای را دور ریخت)،
+        // باز هم فاینال را می‌پذیریم (به کلماتِ قبلیِ تعهدشده برنمی‌گردیم).
+        meetRecAccum = meetRecAccum.slice(0, meetUtterStartLen) + fin + ' ';
+        meetUtterMap.set(idx, fin);
+        meetUtterLiveText = ''; meetLiveShown = false;
+        meetUtterIdx = -1; meetUtterStartLen = 0;
+    } else if (meetUtterMap.has(idx)) {
+        // فاینالِ دیرهنگاب/تحویل‌دوباره — اگر متفاوت از تعهدشده است، فقط دلتا append.
+        const committed = meetUtterMap.get(idx);
+        const cw = committed.split(/\s+/).filter(Boolean);
+        const fw = fin.split(/\s+/).filter(Boolean);
+        const lcp = meetLcpWords(cw, fw);
         if (fw.length > lcp) {
-            meetRecAccum += fw.slice(lcp).join(' ') + ' ';   // فقط دلتا — بدون تکرار، بدون بازنویسیِ قبلی
-        } else if (fw.length < committed.length && lcp === fw.length) {
-            meetRecAccum = meetRecAccum.replace(/\s+$/, '') + '.... ';   // فاینال واژه‌های تعهدشده را دور ریخت = نامفهوم
-        }
-        // اگر fw === committed (lcp === fw.length === committed.length) هیچ تغییری نه — فاینال همانِ تعهدشده را تأیید کرد
-        meetUtterMap.delete(idx);
+            meetRecAccum += fw.slice(lcp).join(' ') + ' ';
+            meetUtterMap.set(idx, fin);
+        }   // اگر fw === committed، هیچ تغییری نه.
     } else if (meetManualCommitText && (Date.now() - meetManualCommitAt) < MEET_MANUAL_GUARD_MS) {
-        // گارد بین‌نشستی (v266): فاینالِ دیرهنگاب/تحویل‌دوبارهٔ جملهٔ تعهدشده
+        // گارد بین‌نشستی (v266): فاینالِ دیرهنگابِ جملهٔ تعهدشدهٔ «....»دار.
         const mw = meetManualCommitText.split(/\s+/).filter(Boolean);
+        const fw = fin.split(/\s+/).filter(Boolean);
         const lcp = meetLcpWords(mw, fw);
         if (fw.length > lcp) {
             meetRecAccum += fw.slice(lcp).join(' ') + ' ';
@@ -20912,19 +20928,29 @@ function meetCommitFinalWords(idx, txt) {
             meetManualCommitText = ''; meetManualCommitAt = 0;   // همین واژه‌ها با «....» تعهد شده‌اند
         }
     } else {
-        meetRecAccum += fin + ' ';   // نشستِ تازه — فاینال مستقیم (هیچ کلمهٔ قبلی‌ای برای بازنویسی نیست)
+        meetRecAccum += fin + ' ';   // نشستِ تازه — فاینال مستقیم
+        meetUtterMap.set(idx, fin);
     }
-    if (idx === meetUtterIdx) { meetUtterIdx = -1; meetUtterStartLen = 0; }   // جملهٔ جاری بسته شد
-    if (meetRecAccum !== accum0) meetLastProgressAt = Date.now();   // 🔧 v269
+    if (meetRecAccum !== accum0) meetLastProgressAt = Date.now();
 }
 function meetFreezeUtter() {
     if (meetUtterIdx >= 0) {
-        const cw = meetUtterMap.get(meetUtterIdx);
-        if (cw && cw.length) {   // جملهٔ بازِ واژه‌تعهدشده → گارد بین‌نشستی (تحویل‌دوبارهٔ کروم)
-            meetManualCommitText = cw.join(' ');
+        if (meetLiveShown && meetUtterLiveText) {
+            // 🔧 v228: دُمِ زندهٔ این utterance را به‌عنوانِ تعهدشده نگه دار
+            //    (بدون «....» — چیزی که کروم شنیده، تعهد می‌شود). گاردِ
+            //    بین‌نشستی برای تحویل‌دوبارهٔ کروم در نشستِ بعدی.
+            meetManualCommitText = meetUtterLiveText;
             meetManualCommitAt = Date.now();
+            meetUtterMap.set(meetUtterIdx, meetUtterLiveText);
+        } else {
+            const cw = meetUtterMap.get(meetUtterIdx);
+            if (cw && cw.length) {
+                meetManualCommitText = cw;
+                meetManualCommitAt = Date.now();
+            }
         }
         meetUtterMap.delete(meetUtterIdx);
+        meetUtterLiveText = ''; meetLiveShown = false;
     }
     meetUtterIdx = -1;
     meetUtterStartLen = 0;
@@ -20942,7 +20968,7 @@ function meetForceCommitUnintelligible() {
     meetInterimStuckAt = 0; meetInterimFirstAt = 0;
     const el = document.getElementById('meetingText');
     if (el) {
-        meetLastShown = addNumericAfterWords(meetRecAccum.trim()).trim();   // 🔧 v268: همگام با رندر ارزان
+        meetLastShown = meetRecAccum.trim();   // 🔧 v229 (BA-192): بدون فیلترِ عددی/مفهومی — متنِ خام
         el.value = meetLastShown;
         try { localStorage.setItem(MEET_DRAFT_KEY, el.value); } catch(e) {}
     }
@@ -21011,7 +21037,7 @@ function meetingStartRec() {
     if (meetRecAccum && !meetRecAccum.endsWith(' ')) meetRecAccum += ' ';
     meetRecIndices = new Set();
     meetManualCommitText = ''; meetManualCommitAt = 0;   // 🔧 v266: گارد دلتا تازه
-    meetUtterIdx = -1; meetUtterStartLen = 0; meetUtterMap.clear();   // 🔧 v267: واژه‌به‌واژه تازه
+    meetUtterIdx = -1; meetUtterStartLen = 0; meetUtterLiveText = ''; meetLiveShown = false; meetUtterMap.clear();   // 🔧 v228: دُمِ زندهٔ تازه
     meetStartArmedAt = 0; meetAudioOpenAt = 0; meetLastShown = ''; meetLastPersistAt = 0;   // 🔧 v268
     meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0; meetVoiceNow = false; meetVoiceLastAt = 0;   // 🔧 v269: ساعتِ تازهٔ پیشرفت‌سنج
     meetRecObj = buildMeetSR();   // 🔧 v244: نمونهٔ تازه در هر شروع
@@ -21039,7 +21065,7 @@ function meetingStopRec() {
     meetInterimFrozenText = '';
     meetInterimStuckAt = 0; meetInterimFirstAt = 0;
     meetManualCommitText = ''; meetManualCommitAt = 0;   // 🔧 v266
-    meetUtterIdx = -1; meetUtterStartLen = 0; meetUtterMap.clear();   // 🔧 v267
+    meetUtterIdx = -1; meetUtterStartLen = 0; meetUtterLiveText = ''; meetLiveShown = false; meetUtterMap.clear();   // 🔧 v228
     meetStartArmedAt = 0; meetAudioOpenAt = 0; meetLastShown = ''; meetLastPersistAt = 0;   // 🔧 v268
     meetLastProgressAt = 0; meetSessionVoiceAt = 0; meetVoiceNow = false; meetVoiceLastAt = 0;   // 🔧 v269
     // 🔧 v264: پیش‌نویس زنده — قبل از هر توقفی متن فعلی ذخیره شود (تایپ دستی
