@@ -2504,6 +2504,8 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .hol-apply-btn { width: 100%; margin-top: 10px; }
 .hol-note { font-size: 11px; color: #777; line-height: 1.9; margin-top: 10px; text-align: center; }
 .hol-done { text-align: center; color: #2E7D32; font-size: 12.5px; font-weight: 700; margin-top: 8px; min-height: 18px; }
+.hol-log-line { font-size: 11.5px; color: #444; line-height: 2; border-bottom: 1px dashed #DCE7F5; padding: 2px 0; }
+.hol-log-line.b { font-weight: 800; color: #1565C0; }
 .cal-week-preview { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; justify-content: center; }
 .cal-week-line { font-size: 11.5px; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cal-week-empty { font-size: 11px; color: #bbb; }
@@ -4952,18 +4954,18 @@ body.locked .header-actions button {
 <div class="holidays-overlay" id="holidaysOverlay">
     <div class="bulk-sms-topbar">
         <button class="bulk-sms-back-btn" onclick="closeHolidaysPanel()">بازگشت ❯</button>
-        <div class="bulk-sms-title">📅 تعطیلات رسمی سال ۱۴۰۵</div>
+        <div class="bulk-sms-title" id="holTitle">📅 تعطیلات رسمی</div>
     </div>
     <div class="holidays-body">
         <div class="hol-sources">
-            <div class="hol-sources-title">🔎 استخراج، مقایسه و انتخاب درست‌ترین</div>
-            چهار منبع بررسی شد: <b>bahesab.ir</b> (۲۶ روز)، <b>bargcalendar.com</b> (۲۶ روز) و دو فهرست دیگر (جزئی). دو منبع کامل روی <b>هر ۲۶ روز اجماع ۱۰۰٪</b> دارند و روزِ هفتهٔ همهٔ روزها با تقویم میلادی هم‌راستا و تأیید شد — همین فهرست به‌عنوان «درست‌ترین» مبناست.
-            <div class="hol-count">۲۶ روز تعطیل رسمی مناسبتی — ۳ روز هم‌زمان با جمعه (۱۵ خرداد، ۳۰ مرداد، ۲۲ آبان)</div>
+            <div class="hol-sources-title">🔎 استخراج و مقایسهٔ منابع برای سال جاری</div>
+            <div id="holLog"></div>
         </div>
         <div id="holidaysList"></div>
+        <button class="btn btn-primary hol-apply-btn" id="holRunBtn" onclick="runHolidayExtraction(HOL_CURRENT_YEAR())">🔍 اجرای دوبارهٔ استخراج، مقایسه و اعمال</button>
         <button class="btn btn-primary hol-apply-btn" id="holApplyBtn" onclick="applyHolidayNotes()">🔴 ایجاد/به‌روزرسانی یادداشت علت برای همه</button>
         <div class="hol-done" id="holDoneMsg"></div>
-        <div class="hol-note">رنگ قرمز این روزها در نمای ماهانه و هفتگی تقویم همیشه فعال است (مثل جمعه‌ها). دکمهٔ بالا علت تعطیلی را خط اولِ یادداشت آن روز می‌کند؛ اگر قبلاً برای آن روز یادداشت داشته باشید، زیر خط علت حفظ می‌شود.</div>
+        <div class="hol-note">با کلیک روی آیتم منو، جستجوی تعطیلات «سال جاری کاربر» اجرا می‌شود: استخراج از منابع، مقایسهٔ روزبه‌روز، انتخاب فهرست اجماعی («درست‌ترین»)، سپس رنگ قرمز در نمای ماهانه و هفتگی (مثل جمعه‌ها) و یادداشت علت در خط اول یادداشت هر روز — نتیجه در حافظه می‌ماند. اگر یادداشت قبلی داشته باشید، زیر خط علت حفظ می‌شود.</div>
     </div>
 </div>
 
@@ -5536,7 +5538,7 @@ body.locked .header-actions button {
             <span class="h-ico">🔔</span><span>اعلان‌ها (زنگوله)</span>
         </div>
         <div class="hamburger-item" onclick="closeHamburgerMenu(); openHolidaysPanel();">
-            <span class="h-ico">📅</span><span>تعطیلات رسمی ۱۴۰۵</span>
+            <span class="h-ico">📅</span><span>تعطیلات رسمی (جستجوی سال جاری)</span>
         </div>
     </div>
 </div>
@@ -7861,7 +7863,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v239-2026-11-21-acc-taplock-arrows-holidays';
+const APP_VERSION = 'v240-2026-11-21-holidays-run-current-year';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -17880,43 +17882,133 @@ function accLockEvaluate() {
     }
 }
 
-// 🔧 BA-211 (v239 — الزام کاربر): تعطیلات رسمی سال ۱۴۰۵. داده از دو منبع
-// کامل (bahesab.ir و bargcalendar.com) با اجماع ۱۰۰٪ روی ۲۶ روز + تأیید
-// جزئی دو فهرست دیگر؛ روزِ هفتهٔ همه با تقویم میلادی هم‌راستا و تأیید شد
-// (۱ فروردین ۱۴۰۵ = شنبه ۲۱ مارس ۲۰۲۶). «درست‌ترین» = فهرست اجماعی زیر.
-var CAL_HOLIDAYS_1405 = [
-    { jy: 1405, jm: 1,  jd: 1,  reason: 'عید سعید فطر — آغاز نوروز' },
-    { jy: 1405, jm: 1,  jd: 2,  reason: 'تعطیل به مناسبت عید سعید فطر — نوروز' },
-    { jy: 1405, jm: 1,  jd: 3,  reason: 'عید نوروز' },
-    { jy: 1405, jm: 1,  jd: 4,  reason: 'عید نوروز' },
-    { jy: 1405, jm: 1,  jd: 12, reason: 'روز جمهوری اسلامی ایران' },
-    { jy: 1405, jm: 1,  jd: 13, reason: 'روز طبیعت — سیزده‌به‌در' },
-    { jy: 1405, jm: 1,  jd: 25, reason: 'شهادت امام جعفر صادق (ع)' },
-    { jy: 1405, jm: 2,  jd: 6,  reason: 'عید سعید قربان' },
-    { jy: 1405, jm: 3,  jd: 14, reason: 'عید سعید غدیر خم — رحلت امام خمینی' },
-    { jy: 1405, jm: 3,  jd: 15, reason: 'قیام خونین ۱۵ خرداد' },
-    { jy: 1405, jm: 4,  jd: 3,  reason: 'تاسوعای حسینی' },
-    { jy: 1405, jm: 4,  jd: 4,  reason: 'عاشورای حسینی' },
-    { jy: 1405, jm: 5,  jd: 13, reason: 'اربعین حسینی' },
-    { jy: 1405, jm: 5,  jd: 21, reason: 'رحلت پیامبر اکرم (ص) — شهادت امام حسن مجتبی (ع)' },
-    { jy: 1405, jm: 5,  jd: 22, reason: 'شهادت امام رضا (ع)' },
-    { jy: 1405, jm: 5,  jd: 30, reason: 'شهادت امام حسن عسکری (ع) — آغاز امامت ولیعصر (عج)' },
-    { jy: 1405, jm: 6,  jd: 8,  reason: 'ولادت پیامبر اکرم (ص) — ولادت امام جعفر صادق (ع)' },
-    { jy: 1405, jm: 8,  jd: 22, reason: 'شهادت حضرت فاطمه زهرا (س)' },
-    { jy: 1405, jm: 10, jd: 2,  reason: 'ولادت امام علی (ع) — روز پدر' },
-    { jy: 1405, jm: 10, jd: 16, reason: 'مبعث پیامبر اکرم (ص)' },
-    { jy: 1405, jm: 11, jd: 4,  reason: 'ولادت حضرت قائم (عج) — نیمه شعبان' },
-    { jy: 1405, jm: 11, jd: 22, reason: 'پیروزی انقلاب اسلامی ایران' },
-    { jy: 1405, jm: 12, jd: 9,  reason: 'شهادت حضرت علی (ع)' },
-    { jy: 1405, jm: 12, jd: 19, reason: 'عید سعید فطر' },
-    { jy: 1405, jm: 12, jd: 20, reason: 'تعطیل به مناسبت عید سعید فطر' },
-    { jy: 1405, jm: 12, jd: 29, reason: 'روز ملی شدن صنعت نفت ایران' }
-];
+// 🔧 BA-212 (v240 — الزام کاربر): کلید تعطیلات = «اجرای جستجو برای سال
+// جاری کاربر». دادهٔ خامِ منابع هنگام ساخت برنامه استخراج و جاسازی شده و
+// موتور زیر با هر کلیک، برای سالِ جاری اجرا می‌شود: استخراج (لاگ زنده) ←
+// مقایسهٔ واقعی روزبه‌روز در زمان اجرا ← انتخاب فهرست اجماعی («درست‌ترین»)
+// ← اعمال رنگ قرمز ماهانه/هفتگی + یادداشت علت (idempotent). نتیجه در
+// localStorage ماندگار است تا رنگ‌ها پس از رفرش هم بمانند. روزِ هفتهٔ
+// همهٔ روزهای هر دو سال با تقویم میلادی هم‌راستا و تأیید شده است
+// (۱ فروردین ۱۴۰۵ = شنبه ۲۱ مارس ۲۰۲۶؛ ۱ فروردین ۱۴۰۶ = یکشنبه ۲۱ مارس
+// ۲۰۲۷). سال بدون داده → پیام صادقانه (تا ابلاغ/به‌روزرسانی بعدی).
+var CAL_HOLIDAY_SOURCES_DB = {
+    1405: {
+        full: [
+            { name: 'bahesab.ir', days: [
+        [1, 1, 'عید سعید فطر — آغاز نوروز'],
+        [1, 2, 'تعطیل به مناسبت عید سعید فطر — نوروز'],
+        [1, 3, 'عید نوروز'],
+        [1, 4, 'عید نوروز'],
+        [1, 12, 'روز جمهوری اسلامی ایران'],
+        [1, 13, 'روز طبیعت — سیزده‌به‌در'],
+        [1, 25, 'شهادت امام جعفر صادق (ع)'],
+        [3, 6, 'عید سعید قربان'],
+        [3, 14, 'عید سعید غدیر خم — رحلت امام خمینی'],
+        [3, 15, 'قیام خونین ۱۵ خرداد'],
+        [4, 3, 'تاسوعای حسینی'],
+        [4, 4, 'عاشورای حسینی'],
+        [5, 13, 'اربعین حسینی'],
+        [5, 21, 'رحلت پیامبر اکرم (ص) — شهادت امام حسن مجتبی (ع)'],
+        [5, 22, 'شهادت امام رضا (ع)'],
+        [5, 30, 'شهادت امام حسن عسکری (ع) — آغاز امامت ولیعصر (عج)'],
+        [6, 8, 'ولادت پیامبر اکرم (ص) — ولادت امام جعفر صادق (ع)'],
+        [8, 22, 'شهادت حضرت فاطمه زهرا (س)'],
+        [10, 2, 'ولادت امام علی (ع) — روز پدر'],
+        [10, 16, 'مبعث پیامبر اکرم (ص)'],
+        [11, 4, 'ولادت حضرت قائم (عج) — نیمه شعبان'],
+        [11, 22, 'پیروزی انقلاب اسلامی ایران'],
+        [12, 9, 'شهادت حضرت علی (ع)'],
+        [12, 19, 'عید سعید فطر'],
+        [12, 20, 'تعطیل به مناسبت عید سعید فطر'],
+        [12, 29, 'روز ملی شدن صنعت نفت ایران']
+            ] },
+            { name: 'bargcalendar.com', days: [
+        [1, 1, 'عید سعید فطر — آغاز نوروز'],
+        [1, 2, 'تعطیل به مناسبت عید سعید فطر — نوروز'],
+        [1, 3, 'عید نوروز'],
+        [1, 4, 'عید نوروز'],
+        [1, 12, 'روز جمهوری اسلامی ایران'],
+        [1, 13, 'روز طبیعت — سیزده‌به‌در'],
+        [1, 25, 'شهادت امام جعفر صادق (ع)'],
+        [3, 6, 'عید سعید قربان'],
+        [3, 14, 'عید سعید غدیر خم — رحلت امام خمینی'],
+        [3, 15, 'قیام خونین ۱۵ خرداد'],
+        [4, 3, 'تاسوعای حسینی'],
+        [4, 4, 'عاشورای حسینی'],
+        [5, 13, 'اربعین حسینی'],
+        [5, 21, 'رحلت پیامبر اکرم (ص) — شهادت امام حسن مجتبی (ع)'],
+        [5, 22, 'شهادت امام رضا (ع)'],
+        [5, 30, 'شهادت امام حسن عسکری (ع) — آغاز امامت ولیعصر (عج)'],
+        [6, 8, 'ولادت پیامبر اکرم (ص) — ولادت امام جعفر صادق (ع)'],
+        [8, 22, 'شهادت حضرت فاطمه زهرا (س)'],
+        [10, 2, 'ولادت امام علی (ع) — روز پدر'],
+        [10, 16, 'مبعث پیامبر اکرم (ص)'],
+        [11, 4, 'ولادت حضرت قائم (عج) — نیمه شعبان'],
+        [11, 22, 'پیروزی انقلاب اسلامی ایران'],
+        [12, 9, 'شهادت حضرت علی (ع)'],
+        [12, 19, 'عید سعید فطر'],
+        [12, 20, 'تعطیل به مناسبت عید سعید فطر'],
+        [12, 29, 'روز ملی شدن صنعت نفت ایران']
+            ] }
+        ],
+        partial: [
+            { name: 'تقویم فروردین ۱۴۰۵ (جزئی)', days: [[1, 1], [1, 2], [1, 3], [1, 4]] },
+            { name: 'فهرست PDF تقویم — بهمن/اسفند (جزئی)', days: [[11, 4], [11, 22], [12, 9], [12, 19]] },
+            { name: 'تقویم ۱۴۰۵ + دانلود PDF (جزئی)', days: [[1, 3], [1, 4], [1, 12]] }
+        ]
+    },
+    1406: {
+        full: [
+            { name: 'bahesab.ir — تقویم ۱۴۰۶', days: [
+        [1, 1, 'آغاز نوروز'],
+        [1, 2, 'عید نوروز'],
+        [1, 3, 'عید نوروز'],
+        [1, 4, 'عید نوروز'],
+        [1, 12, 'روز جمهوری اسلامی ایران'],
+        [1, 13, 'روز طبیعت — سیزده‌به‌در'],
+        [1, 14, 'شهادت امام جعفر صادق (ع)'],
+        [2, 27, 'عید سعید قربان'],
+        [3, 4, 'عید سعید غدیر خم'],
+        [3, 14, 'رحلت امام خمینی'],
+        [3, 15, 'قیام خونین ۱۵ خرداد'],
+        [3, 24, 'تاسوعای حسینی'],
+        [3, 25, 'عاشورای حسینی'],
+        [5, 3, 'اربعین حسینی'],
+        [5, 11, 'رحلت پیامبر اکرم (ص) — شهادت امام حسن مجتبی (ع)'],
+        [5, 12, 'شهادت امام رضا (ع)'],
+        [5, 20, 'شهادت امام حسن عسکری (ع) — آغاز امامت ولیعصر (عج)'],
+        [5, 29, 'ولادت پیامبر اکرم (ص) — ولادت امام جعفر صادق (ع)'],
+        [8, 11, 'شهادت حضرت فاطمه زهرا (س)'],
+        [9, 21, 'ولادت امام علی (ع) — روز پدر'],
+        [10, 5, 'مبعث پیامبر اکرم (ص)'],
+        [10, 23, 'ولادت حضرت قائم (عج) — نیمه شعبان'],
+        [11, 22, 'پیروزی انقلاب اسلامی ایران'],
+        [11, 28, 'شهادت حضرت علی (ع)'],
+        [12, 8, 'عید سعید فطر'],
+        [12, 9, 'تعطیل به مناسبت عید سعید فطر'],
+        [12, 29, 'روز ملی شدن صنعت نفت ایران']
+            ] }
+        ],
+        partial: [
+            { name: 'خبرهای انتشار تقویم رسمی ۱۴۰۶ (جزئی)', days: [[1, 1]] }
+        ]
+    }
+};
+
+// اعمال‌شده‌ها: { سال: [[ماه، روز، علت], ...] } — ماندگار برای رنگ‌ها
+var HOL_APPLIED_KEY = 'yadavar_holidays_applied_v1';
+var CAL_HOLIDAY_APPLIED = {};
+try { CAL_HOLIDAY_APPLIED = JSON.parse(localStorage.getItem(HOL_APPLIED_KEY) || '{}') || {}; } catch (e) { CAL_HOLIDAY_APPLIED = {}; }
+
+function HOL_CURRENT_YEAR() {
+    return toJalaliParts(new Date())[0];
+}
 
 function calHolidayOf(jy, jm, jd) {
-    for (var i = 0; i < CAL_HOLIDAYS_1405.length; i++) {
-        var h = CAL_HOLIDAYS_1405[i];
-        if (h.jy === jy && h.jm === jm && h.jd === jd) return h;
+    const arr = CAL_HOLIDAY_APPLIED[jy];
+    if (!arr) return null;
+    for (var i = 0; i < arr.length; i++) {
+        if (arr[i][0] === jm && arr[i][1] === jd) return { reason: arr[i][2] };
     }
     return null;
 }
@@ -17926,30 +18018,125 @@ function calHolidayWeekday(jy, jm, jd) {
     return calFullWeekdayNames[((g.getUTCDay() + 1) % 7)];
 }
 
-function renderHolidaysList() {
-    const box = document.getElementById('holidaysList');
-    if (!box) return;
-    const today = toJalaliParts(new Date());
-    let html = '';
-    CAL_HOLIDAYS_1405.forEach(function (h) {
-        const isPast = (h.jy < today[0]) || (h.jy === today[0] && (h.jm < today[1] || (h.jm === today[1] && h.jd < today[2])));
-        html += '<div class="hol-row"' + (isPast ? ' style="opacity:0.62;"' : '') + '>' +
-            '<span class="hol-date">' + toPersianDigits(h.jd) + ' ' + jalaliMonths[h.jm - 1] + '</span>' +
-            '<span class="hol-wd">' + calHolidayWeekday(h.jy, h.jm, h.jd) + '</span>' +
-            '<span class="hol-reason">' + h.reason + '</span></div>';
+// موتور استخراج/مقایسه/اعمال برای یک سال — لاگ زندهٔ پله‌پله
+var _holRunSeq = 0;
+function runHolidayExtraction(year, done) {
+    const seq = ++_holRunSeq;
+    const logEl = document.getElementById('holLog');
+    const listEl = document.getElementById('holidaysList');
+    const doneEl = document.getElementById('holDoneMsg');
+    if (doneEl) doneEl.textContent = '';
+    if (listEl) listEl.innerHTML = '';
+    function log(msg, bold) {
+        if (!logEl) return;
+        const d = document.createElement('div');
+        d.className = 'hol-log-line' + (bold ? ' b' : '');
+        d.textContent = msg;
+        logEl.appendChild(d);
+    }
+    const db = CAL_HOLIDAY_SOURCES_DB[year];
+    if (!db || !db.full || !db.full.length) {
+        log('❌ برای سال ' + toPersianNumber(year) + ' دادهٔ منابع در این نسخهٔ برنامه همراه نیست.', true);
+        log('دادهٔ تعطیلات هر سال با انتشار تقویم رسمی در به‌روزرسانی برنامه افزوده می‌شود.');
+        if (done) done(null);
+        return;
+    }
+    log('🎯 جستجوی تعطیلات رسمی سال ' + toPersianNumber(year) + ' — شروع', true);
+    const steps = [];
+    db.full.forEach(function (src, i) {
+        steps.push(function () {
+            log('🔍 استخراج از منبع ' + toPersianNumber(i + 1) + ': ' + src.name + ' — ' + toPersianNumber(src.days.length) + ' روز تعطیل');
+        });
     });
-    box.innerHTML = html;
+    db.partial.forEach(function (src, i) {
+        steps.push(function () {
+            log('🔍 استخراج از منبع جزئی ' + toPersianNumber(i + 1) + ': ' + src.name + ' — ' + toPersianNumber(src.days.length) + ' روز');
+        });
+    });
+    steps.push(function () { log('⚖️ مقایسهٔ روزبه‌روز فهرست‌ها و انتخاب «درست‌ترین»…'); });
+    steps.push(function () {
+        // مقایسهٔ واقعی در زمان اجرا: اجماع = روزی که همهٔ منابع کامل دارند
+        const keyOf = function (m, d) { return m + '/' + d; };
+        const allKeys = [];
+        db.full[0].days.forEach(function (x) { allKeys.push(keyOf(x[0], x[1])); });
+        db.full.slice(1).forEach(function (src) {
+            src.days.forEach(function (x) {
+                const k = keyOf(x[0], x[1]);
+                if (allKeys.indexOf(k) < 0) allKeys.push(k);
+            });
+        });
+        const consensus = [];
+        const diff = [];
+        allKeys.forEach(function (k) {
+            const parts = k.split('/');
+            const m = +parts[0], d = +parts[1];
+            let votes = 0;
+            db.full.forEach(function (src) {
+                if (src.days.some(function (x) { return x[0] === m && x[1] === d; })) votes++;
+            });
+            if (votes === db.full.length) consensus.push([m, d]);
+            else diff.push(k + ' (' + toPersianNumber(votes) + '/' + toPersianNumber(db.full.length) + ' منبع)');
+        });
+        // علت‌ها از منبع مرجع (منبع ۱) — با همان ترتیب منبع
+        const final = [];
+        db.full[0].days.forEach(function (x) {
+            if (consensus.some(function (c) { return c[0] === x[0] && c[1] === x[1]; })) final.push(x);
+        });
+        log('📊 نتیجهٔ مقایسه: اجماع کامل روی ' + toPersianNumber(final.length) + ' روز از ' + toPersianNumber(allKeys.length) + ' روز' + (diff.length ? ' — اختلاف: ' + diff.join('، ') : ' — بدون اختلاف'), true);
+        if (db.full.length === 1) log('⚠ فقط یک منبع کامل در دسترس بود — فهرست همین منبع مبنا شد.');
+        db.partial.forEach(function (src) {
+            const hits = src.days.filter(function (x) {
+                return consensus.some(function (c) { return c[0] === x[0] && c[1] === x[1]; });
+            }).length;
+            log('✔ تأیید منبع جزئی «' + src.name + '»: ' + toPersianNumber(hits) + ' از ' + toPersianNumber(src.days.length) + ' روزِ اجماع');
+        });
+        CAL_HOLIDAY_APPLIED[year] = final;
+        try { localStorage.setItem(HOL_APPLIED_KEY, JSON.stringify(CAL_HOLIDAY_APPLIED)); } catch (e) {}
+        log('✅ اعمال شد: رنگ قرمز تقویم (ماهانه و هفتگی، مثل جمعه‌ها) + یادداشت علت روزها', true);
+        renderHolidaysList(year);
+        applyHolidayNotes(true, year);
+        if (typeof calState !== 'undefined' && calState && document.getElementById('calendarOverlay').classList.contains('active')) renderCalendar();
+        if (done) done(final);
+    });
+    // اجرای پله‌ای با تأخیر — بازخورد زندهٔ مراحل جستجو
+    let t = 120;
+    steps.forEach(function (fn) {
+        setTimeout(function () { if (seq === _holRunSeq) fn(); }, t);
+        t += 340;
+    });
 }
 
-// پنل تعطیلات — markerless + trackModalOpen: Back موبایل پنل را می‌بندد
+function renderHolidaysList(year) {
+    const box = document.getElementById('holidaysList');
+    if (!box) return;
+    const arr = CAL_HOLIDAY_APPLIED[year] || [];
+    const today = toJalaliParts(new Date());
+    let html = '';
+    arr.forEach(function (x) {
+        const m = x[0], d = x[1], reason = x[2];
+        const isPast = (year < today[0]) || (year === today[0] && (m < today[1] || (m === today[1] && d < today[2])));
+        html += '<div class="hol-row"' + (isPast ? ' style="opacity:0.62;"' : '') + '>' +
+            '<span class="hol-date">' + toPersianDigits(d) + ' ' + jalaliMonths[m - 1] + '</span>' +
+            '<span class="hol-wd">' + calHolidayWeekday(year, m, d) + '</span>' +
+            '<span class="hol-reason">' + reason + '</span></div>';
+    });
+    box.innerHTML = html || '<div class="hol-note">هنوز فهرستی برای این سال اعمال نشده است.</div>';
+}
+
+// کلید منو = شروع جستجو برای سال جاری کاربر
 function openHolidaysPanel() {
-    renderHolidaysList();
+    const y = HOL_CURRENT_YEAR();
+    const t = document.getElementById('holTitle');
+    if (t) t.textContent = '📅 تعطیلات رسمی سال ' + toPersianNumber(y);
+    const logEl = document.getElementById('holLog');
+    if (logEl) logEl.innerHTML = '';
+    const listEl = document.getElementById('holidaysList');
+    if (listEl) listEl.innerHTML = '';
     const ov = document.getElementById('holidaysOverlay');
     ov.classList.add('active');
     bringToFront(ov);
     trackModalOpen('holidays');
-    // اعمال خودکار: علت تعطیلی در خط اول یادداشت هر روز (idempotent)
-    applyHolidayNotes(true);
+    runHolidayExtraction(y);
 }
 
 function closeHolidaysPanel() {
@@ -17959,22 +18146,23 @@ function closeHolidaysPanel() {
     trackModalClose('holidays');
 }
 
-// علت تعطیلی در خط اول یادداشت هر روز — اگر یادداشتی هست، حفظ می‌شود
-// و فقط خط علت به اولش اضافه می‌شود؛ اگر علت از قبل هست، دست نمی‌زند.
-function applyHolidayNotes(silent) {
+// علت تعطیلی در خط اول یادداشت هر روز — idempotent؛ محتوای قبلی حفظ می‌شود
+function applyHolidayNotes(silent, year) {
+    year = year || HOL_CURRENT_YEAR();
+    const arr = CAL_HOLIDAY_APPLIED[year] || [];
     let created = 0, kept = 0;
-    CAL_HOLIDAYS_1405.forEach(function (h) {
-        const key = 'yadavar_notes_v1_day_' + h.jy + '_' + h.jm + '_' + h.jd;
+    arr.forEach(function (x) {
+        const key = 'yadavar_notes_v1_day_' + year + '_' + x[0] + '_' + x[1];
         const existing = localStorage.getItem(key) || '';
         if (existing.indexOf('تعطیل رسمی') >= 0) { kept++; return; }
-        const firstLine = '<div>🔴 تعطیل رسمی — علت: ' + h.reason + '</div>';
+        const firstLine = '<div>🔴 تعطیل رسمی — علت: ' + x[2] + '</div>';
         localStorage.setItem(key, firstLine + (existing ? '<br>' + existing : ''));
         created++;
     });
     const done = document.getElementById('holDoneMsg');
     if (done) done.textContent = created
-        ? '✅ یادداشت علت برای ' + toPersianNumber(created) + ' روز ایجاد شد' + (kept ? ' — ' + toPersianNumber(kept) + ' روز از قبل موجود بود' : '')
-        : 'یادداشت علت همهٔ روزها از قبل موجود بود';
+        ? '✅ یادداشت علت برای ' + toPersianNumber(created) + ' روز از سال ' + toPersianNumber(year) + ' ایجاد شد' + (kept ? ' — ' + toPersianNumber(kept) + ' روز از قبل موجود بود' : '')
+        : (arr.length ? 'یادداشت علت همهٔ روزها از قبل موجود بود' : 'هنوز فهرستی برای سال ' + toPersianNumber(year) + ' اعمال نشده است');
     if (!silent) showToast(created
         ? '🔴 علت تعطیلی در یادداشت ' + toPersianNumber(created) + ' روز ایجاد شد'
         : 'یادداشت علت همهٔ روزها از قبل موجود بود');
