@@ -2460,6 +2460,15 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .cal-week-row.today .cal-week-num { color: #1976D2; }
 .cal-week-month { font-size: 9.5px; color: #999; }
 .cal-week-today-tag { font-size: 9px; background: #1976D2; color: #fff; border-radius: 8px; padding: 1px 6px; align-self: center; }
+/* 🔧 BA-204 (v236): جمعه‌ها قرمز — روز/تاریخ/ماهِ همان سلول قرمز می‌شود */
+.cal-week-row.friday { background: #FFF8F8; }
+.cal-week-row.friday .cal-week-wd,
+.cal-week-row.friday .cal-week-num,
+.cal-week-row.friday .cal-week-month { color: #D32F2F; }
+.cal-week-row.today.friday { background: #E3F2FD; }
+/* 🔧 BA-206 (v236): لمس اول فقط انتخاب — آبی؛ کلیک دوم روی انتخاب‌شده → یادداشت */
+.cal-week-row.sel { border: 2px solid #1976D2; background: #E3F2FD; }
+.cal-week-row.sel .cal-week-num { color: #1976D2; }
 .cal-week-preview { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; justify-content: center; }
 .cal-week-line { font-size: 11.5px; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cal-week-empty { font-size: 11px; color: #bbb; }
@@ -5821,7 +5830,7 @@ body.locked .header-actions button {
                 <div class="cal-title-row">
                     <button class="cal-today-btn" onclick="goToToday()">امروز</button>
                     <button class="cal-today-btn" id="calViewToggleBtn" onclick="calToggleView()" title="نمای هفتگی">🗓 هفته</button>
-                    <button class="cal-add-day-btn" onclick="openDayNotes()" title="یادداشت روز انتخاب‌شده" style="background: #FF9800;">📝</button>
+                    <button class="cal-add-day-btn" id="calNotesBtn" onclick="openDayNotes()" title="یادداشت روز انتخاب‌شده" style="background: #FF9800;">📝</button>
                     <button class="cal-add-day-btn" id="calAddDayBtn" onclick="addTaskForSelectedDay()" title="افزودن یادآور برای روز انتخاب‌شده">+</button>
                 </div>
             </div>
@@ -7756,7 +7765,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v234-2026-11-21-bulksms-gateway-auto';
+const APP_VERSION = 'v236-2026-11-21-week-ux-friday-select';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -12830,6 +12839,19 @@ function closeModalByType(type) {
         }
     }
     trackModalClose(type);
+    // 🔧 BA-202 (v235 — الزام کاربر: «از ویرایش یک یادداشت روز در صفحه
+    // تقویم با نمایش هفتگی که برمی‌گردیم صفحه هفتگی رفرش شود»): وقتی
+    // یادداشتِ روز بسته می‌شود و تقویم زیرین باز است (کلیک سطر روز در
+    // نمای هفتگی — BA-196؛ هم مسیر «بازگشت»/closeNotes و هم Back موبایل
+    // از popstate از همین تابع می‌گذرد)، نمای تقویم دوباره رندر شود —
+    // قبلاً یادداشتِ حذف/ویرایش‌شده در سطرِ همان روز تا جابه‌جایی هفته
+    // (◄/►) باقی می‌ماند. renderCalendar نمای فعلی (ماه/هفته) را حفظ
+    // می‌کند و پیش‌نمایش‌ها از localStorage تازه خوانده می‌شوند.
+    if (type === 'notes' && typeof renderCalendar === 'function' &&
+        typeof calState !== 'undefined' && calState) {
+        const calOvBA202 = document.getElementById('calendarOverlay');
+        if (calOvBA202 && calOvBA202.classList.contains('active')) renderCalendar();
+    }
     if (type === 'accDocForm') {
         // 🔧 v210: ضبط صوتی شرح سند حتماً متوقف شود (حتی با Back موبایل)
         if (typeof accDocStopRec === 'function') {
@@ -22301,7 +22323,8 @@ function goToToday() {
     calState = {
         year: jy, month: jm, selectedDay: jd,
         view: keepView,
-        weekStart: (keepView === 'week') ? calSaturdayOf(jy, jm, jd) : null
+        weekStart: (keepView === 'week') ? calSaturdayOf(jy, jm, jd) : null,
+        selJy: jy, selJm: jm, selJd: jd   // 🔧 BA-206: انتخاب آبی روی «امروز»
     };
     renderCalendar();
 }
@@ -22438,6 +22461,10 @@ function calUpdateViewBtn() {
         btn.textContent = '🗓 هفته';
         btn.title = 'نمای هفتگی (پیش‌نمایش یادداشت‌ها)';
     }
+    // 🔧 BA-205 (v236 — الزام کاربر): کلید یادداشت 📝 در حالت هفتگی پاک
+    // می‌شود (یادداشتِ روز از کلیک سطرها باز می‌شود)؛ در نمای ماه برمی‌گردد
+    const notesBtnBA205 = document.getElementById('calNotesBtn');
+    if (notesBtnBA205) notesBtnBA205.style.display = (calState.view === 'week') ? 'none' : '';
 }
 
 function calShiftWeek(delta) {
@@ -22475,6 +22502,14 @@ function calOpenDayNotesKeepCalendar(jy, jm, jd) {
     openNotes(dayKey, '📝 یادداشت — ' + dateStr);
 }
 
+// 🔧 BA-206 (v236): سه‌تاییِ روزِ انتخاب‌شدهٔ نمای هفتگی — فول‌بک: روزِ
+// انتخاب‌شدهٔ فعلی (امروز هنگام باز شدن تقویم)
+function calSelectedTriple() {
+    if (typeof calState === 'undefined' || !calState) return { jy: 0, jm: 0, jd: 0 };
+    if (typeof calState.selJd === 'number') return { jy: calState.selJy, jm: calState.selJm, jd: calState.selJd };
+    return { jy: calState.year, jm: calState.month, jd: calState.selectedDay };
+}
+
 function calRenderWeek(grid) {
     // 🔧 BA-199: مودال تمام‌صفحه + گریدِ عمودی — هر روز یک سطر کامل زیر
     // هم تا پایین صفحه (نه داخل grid ۷ستونهٔ ماه)
@@ -22505,18 +22540,34 @@ function calRenderWeek(grid) {
         const isToday = (jy === tJy && jm === tJm && jd === tJd);
 
         const row = document.createElement('div');
-        row.className = 'cal-week-row' + (isToday ? ' today' : '');
+        // 🔧 BA-204 (v236): سطرِ جمعه قرمز — 🔧 BA-206: روزِ انتخاب‌شده آبی
+        const selBA206 = calSelectedTriple();
+        const isSel = (selBA206.jy === jy && selBA206.jm === jm && selBA206.jd === jd);
+        row.className = 'cal-week-row' + (isToday ? ' today' : '') +
+            (i === 6 ? ' friday' : '') + (isSel ? ' sel' : '');
+        // 🔧 BA-206 (v236 — الزام کاربر): لمسِ اول فقط روز را انتخاب می‌کند
+        // (آبی می‌شود)؛ کلیک روی روزِ «انتخاب‌شده» به یادداشت آن می‌رود —
+        // قبلاً همان لمس اول مستقیم یادداشت را باز می‌کرد.
         row.onclick = (function (jy2, jm2, jd2) {
-            return function () { calOpenDayNotesKeepCalendar(jy2, jm2, jd2); };
+            return function () {
+                const cur = calSelectedTriple();
+                if (cur.jy === jy2 && cur.jm === jm2 && cur.jd === jd2) {
+                    calOpenDayNotesKeepCalendar(jy2, jm2, jd2);
+                } else {
+                    calState.selJy = jy2; calState.selJm = jm2; calState.selJd = jd2;
+                    calState.selectedDay = jd2; calState.year = jy2; calState.month = jm2;
+                    renderCalendar();
+                }
+            };
         })(jy, jm, jd);
 
         const dayCell = document.createElement('div');
         dayCell.className = 'cal-week-day';
         let cellHtml = '<div class="cal-week-wd">' + calFullWeekdayNames[i] + '</div>' +
             '<div class="cal-week-num">' + toPersianDigits(jd) + '</div>';
-        if (jm !== ws.jm || jy !== ws.jy) {
-            cellHtml += '<div class="cal-week-month">' + jalaliMonths[jm - 1] + '</div>';
-        }
+        // 🔧 BA-203 (v236): ماه در همهٔ خانه‌ها و همهٔ هفته‌ها — قبلاً فقط در
+        // هفته‌های بین‌ماهی برای روزهای ماهِ دوم نمایش داده می‌شد
+        cellHtml += '<div class="cal-week-month">' + jalaliMonths[jm - 1] + '</div>';
         if (isToday) cellHtml += '<div class="cal-week-today-tag">امروز</div>';
         dayCell.innerHTML = cellHtml;
 
