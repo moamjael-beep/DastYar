@@ -4887,6 +4887,7 @@ body.locked .header-actions button {
             <button class="contacts-action-btn" onclick="openTaskReport()">📋 گزارش کارها</button>
             <button class="contacts-action-btn" onclick="openContactReport()">📊 گزارش اشخاص</button>
             <button class="contacts-action-btn" onclick="openBulkSms()" style="background:#2E7D32;color:#fff;">📩 پیامک انبوه</button>
+            <button class="contacts-action-btn" id="importPhoneBtn" onclick="importPhoneContacts()" title="ایمپورت مخاطبین از دفتر تلفن گوشی" style="background:#1565C0;color:#fff;">📥 از دفتر تلفن</button>
         </div>
     </div>
     <div class="contacts-body" id="contactsBody">
@@ -7765,7 +7766,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v236-2026-11-21-week-ux-friday-select';
+const APP_VERSION = 'v237-2026-11-21-import-phone-contacts';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -16775,6 +16776,80 @@ function getContactCommissionPercent(c) {
 }
 
 // ─── ذخیره شخص ───
+
+// 🔧 BA-207 (v237 — الزام کاربر: کلید ایمپورت کل دفتر تلفن گوشی به بانک
+// اطلاعاتی اشخاص): با Contact Picker API اندروید — انتخابگر خودِ گوشی باز
+// می‌شود و کاربر می‌تواند همهٔ مخاطبین را یک‌جا انتخاب کند (multiple:true).
+// شماره‌ها نرمال می‌شوند (رقم فارسی/عربی → انگلیسی، حذف فاصله/خط تیره)،
+// مخاطبِ تکراری (هر شماره‌اش از قبل در بانک باشد) و بی‌شماره رد و در toast
+// شمرده می‌شود؛ لیست اشخاص بعد از ایمپورت بلافاصله رندر می‌شود. مرورگرهای
+// بدون این API (iOS/دسکتاپ/WebView) پیام راهنما می‌گیرند — داده تغییر نمی‌کند.
+function importPhoneContacts() {
+    if (!navigator.contacts || typeof navigator.contacts.select !== 'function') {
+        showToast('مرورگر فعلی دسترسی به دفتر تلفن ندارد — برنامه را با Chrome اندروید باز کنید');
+        return;
+    }
+    navigator.contacts.select(['name', 'tel'], { multiple: true }).then(function (picked) {
+        if (!picked || !picked.length) {
+            showToast('هیچ مخاطبی از دفتر تلفن انتخاب نشد');
+            return;
+        }
+        // نرمال‌سازی شماره: رقم فارسی/عربی → انگلیسی + فقط رقم و +
+        const normPhone = function (v) {
+            let n = toEnglishDigitsIfPersian(String(v || ''));
+            n = n.replace(/[٠-٩]/g, function (d) { return String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)); });
+            n = n.replace(/[^\d+]/g, '');
+            return n;
+        };
+        const contacts = getContacts();
+        const seen = {};   // شماره‌های موجود در بانک — برای تشخیص تکراری
+        contacts.forEach(function (c) {
+            (c.phones || []).forEach(function (p) {
+                const n = normPhone(p);
+                if (n) seen[n] = true;
+            });
+        });
+        let added = 0, dup = 0, noPhone = 0;
+        const base = Date.now();
+        picked.forEach(function (c, i) {
+            const name = (c.name && c.name[0] && String(c.name[0]).trim()) || 'بی‌نام';
+            const uniq = [];
+            (c.tel || []).forEach(function (t) {
+                const n = normPhone(t);
+                if (n && uniq.indexOf(n) < 0) uniq.push(n);
+            });
+            if (!uniq.length) { noPhone++; return; }            // بی‌شماره
+            if (uniq.some(function (p) { return seen[p]; })) { dup++; return; }  // تکراری
+            uniq.forEach(function (p) { seen[p] = true; });
+            contacts.push({
+                id: 'imp' + base + '_' + i,
+                name: name,
+                company: '',
+                position: '',
+                startDate: '',
+                birthDate: '',
+                commissions: [],
+                commissionPercent: '',
+                phones: uniq,
+                primaryPhone: uniq[0],
+                addresses: [],
+                notes: []
+            });
+            added++;
+        });
+        setContacts(contacts);
+        // 🔧 رندر فوری لیست اگر صفحهٔ اشخاص باز است
+        if (document.getElementById('contactsOverlay').classList.contains('active')) {
+            renderContactsList();
+        }
+        let msg = '📥 ' + toPersianNumber(added) + ' مخاطب اضافه شد';
+        if (dup) msg += ' — ' + toPersianNumber(dup) + ' تکراری رد شد';
+        if (noPhone) msg += ' — ' + toPersianNumber(noPhone) + ' بی‌شماره رد شد';
+        showToast(msg);
+    }).catch(function () {
+        showToast('دسترسی به دفتر تلفن لغو شد');
+    });
+}
 
 function saveContact() {
     const name = document.getElementById('contactName').value.trim();
