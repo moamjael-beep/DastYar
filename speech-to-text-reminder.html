@@ -3690,6 +3690,19 @@ body.locked .header-actions button {
 .bulk-sms-progress-hint { font-size: 10.5px; color: #555; margin-top: 4px; line-height: 1.7; }
 .bulk-sms-progress-btns { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 .bulk-sms-progress-btns .bulk-sms-mini-btn { flex: 1; min-width: 90px; }
+/* 🔧 BA-201 (v234): باکس ارسال خودکار با درگاه پیامک */
+.bulk-sms-gateway {
+    margin-top: 10px; padding: 10px;
+    background: #FFF8E1; border: 1px solid #FFD54F; border-radius: 8px;
+}
+.bulk-sms-gw-toggle-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #7A5C00; cursor: pointer; }
+.bulk-sms-gw-toggle-label input { width: 17px; height: 17px; accent-color: #F59E0B; }
+.bulk-sms-gw-fields { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.bulk-sms-gw-select, .bulk-sms-gw-input {
+    width: 100%; padding: 8px 10px; border: 1px solid #E0C36A; border-radius: 8px;
+    font-size: 13px; font-family: inherit; background: #fff; box-sizing: border-box;
+}
+.bulk-sms-gw-hint { font-size: 10.5px; color: #8a6d1a; line-height: 1.7; }
 
 /* ============ 👥 بانک اطلاعاتی اشخاص (CRM) ============ */
 .contacts-overlay {
@@ -4895,11 +4908,28 @@ body.locked .header-actions button {
             <textarea id="bulkSmsText" class="bulk-sms-text" placeholder="متن پیامک را اینجا بنویسید..." oninput="bulkSmsUpdateCount()"></textarea>
             <div class="bulk-sms-charcount" id="bulkSmsCharCount"></div>
             <button type="button" class="bulk-sms-send-btn" id="bulkSmsSendBtn" onclick="bulkSmsSend()">📤 ارسال به همهٔ انتخاب‌شدگان</button>
+            <!-- 🔧 BA-201 (v234): ارسال خودکار با درگاه پیامک — بدون زدن دکمهٔ ارسال دستی -->
+            <div class="bulk-sms-gateway" id="bulkSmsGatewayBox">
+                <label class="bulk-sms-gw-toggle-label">
+                    <input type="checkbox" id="bulkSmsGwEnabled" onchange="bulkSmsGwSaveCfg()">
+                    ⚡ ارسال خودکار (درگاه پیامک) — بدون زدن دستی
+                </label>
+                <div id="bulkSmsGwFields" class="bulk-sms-gw-fields" style="display:none;">
+                    <select id="bulkSmsGwProvider" class="bulk-sms-gw-select" onchange="bulkSmsGwSaveCfg()">
+                        <option value="kavenegar">کاوه‌نگار (کلید API)</option>
+                        <option value="smsir">SMS.ir (کلید API)</option>
+                        <option value="melipayamak">ملی‌پیامک (نام‌کاربری:رمز)</option>
+                    </select>
+                    <input id="bulkSmsGwKey" type="password" class="bulk-sms-gw-input" placeholder="کلید API (یا نام‌کاربری:رمز برای ملی‌پیامک)" oninput="bulkSmsGwSaveCfg()">
+                    <input id="bulkSmsGwSender" type="text" inputmode="numeric" class="bulk-sms-gw-input" placeholder="خط ارسال خدماتی (مثلاً 10008663)" oninput="bulkSmsGwSaveCfg()">
+                    <div class="bulk-sms-gw-hint">با درگاه، پیامک‌ها خودکار از خط خدماتیِ پنل شما (کاوه‌نگار / SMS.ir / ملی‌پیامک) از طریق اینترنت ارسال می‌شوند — هیچ دکمه‌ای در گوشی زده نمی‌شود. کلید را از پنل برنامه‌نویسانِ سرویس بگیرید.</div>
+                </div>
+            </div>
             <!-- 🔧 BA-200 (v233): پنل پیشرفت ارسال جداگانه — یک گیرنده در هر گام -->
             <div class="bulk-sms-progress" id="bulkSmsProgress" style="display:none;">
                 <div class="bulk-sms-progress-title">📤 ارسال جداگانه — <span id="bulkSmsProgressCount"></span></div>
                 <div class="bulk-sms-progress-person" id="bulkSmsProgressPerson"></div>
-                <div class="bulk-sms-progress-hint">در برنامهٔ پیامک فقط «ارسال» را بزنید؛ با برگشتن به برنامه، گیرندهٔ بعدی خودکار باز می‌شود (یا «بعدی» را بزنید).</div>
+                <div class="bulk-sms-progress-hint" id="bulkSmsProgressHint">در برنامهٔ پیامک فقط «ارسال» را بزنید؛ با برگشتن به برنامه، گیرندهٔ بعدی خودکار باز می‌شود (یا «بعدی» را بزنید).</div>
                 <div class="bulk-sms-progress-btns">
                     <button type="button" class="bulk-sms-mini-btn" onclick="bulkSmsOpenCurrent()">🔁 بازکردن دوباره</button>
                     <button type="button" class="bulk-sms-mini-btn" onclick="bulkSmsAdvance()">✅ بعدی</button>
@@ -7726,7 +7756,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v233-2026-11-21-week-fullpage-bulksms-seq';
+const APP_VERSION = 'v234-2026-11-21-bulksms-gateway-auto';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -15972,6 +16002,7 @@ function openBulkSms() {
     applyHeaderAlignedTop();   // 🔧 قانون BA-154: تراز زیر هدر اصلی
     bulkSmsFillFilters();
     renderBulkSmsList();
+    bulkSmsGwRestore();        // 🔧 BA-201: تنظیمات درگاه ذخیره‌شده
     const ov = document.getElementById('bulkSmsOverlay');
     ov.classList.add('active');
     bringToFront(ov);
@@ -16064,6 +16095,10 @@ function bulkSmsSend() {
         if (r.phone) items.push({ id: c.id, name: c.name || '', phone: r.phone, uri: r.uri });
     });
     if (items.length === 0) { showToast('هیچ شماره‌ای برای ارسال یافت نشد'); return; }
+    // 🔧 BA-201 (v234): اگر درگاه تنظیم و فعال باشد → ارسال کاملاً خودکار
+    // (هیچ دکمه‌ای دستی زده نمی‌شود)؛ وگرنه صف ارسال جداگانهٔ دستی (BA-200)
+    const gwCfg = bulkSmsGwSaveCfg();
+    if (bulkSmsGwReady(gwCfg)) { bulkSmsGatewaySend(gwCfg, items, text); return; }
     // 🔧 BA-200 (v233 — عکس کاربر): پیامکِ گروهی (sms:n1,n2) در Google
     // Messages حالت «Mass text» را باز می‌کند که یک‌بار «Add your number»
     // می‌خواهد و مسیر ارسال را می‌بندد. اکنون ارسالِ جداگانه است: هر گیرنده
@@ -16106,6 +16141,128 @@ function bulkSmsCancelQueue() {
     document.getElementById('bulkSmsProgress').style.display = 'none';
     document.getElementById('bulkSmsSendBtn').disabled = false;
     showToast('ارسال جداگانه لغو شد');
+}
+
+// 🔧 BA-201 (v234): ارسال کاملاً خودکار با درگاه پیامک — الزام کاربر:
+// «ارسال پیامک را هم خودش بزند. دستی نباشد». صفحهٔ وب نمی‌تواند دکمهٔ
+// ارسالِ پیامک‌سنج گوشی را بزند (محدودیت امنیتی اندروید)؛ درگاه API
+// پیامک‌ها را مستقیم از خط خدماتیِ پنل کاربر می‌فرستد — بدون هیچ تماس
+// دستی. شکلِ سه API طبق مستندات رسمی (رسیدی‌آزمایی‌شده):
+//   کاوه‌نگار: GET https://api.kavenegar.com/v1/{API-KEY}/sms/send.json
+//              ?receptor=n1,n2&sender=خط&message=متن  → return.status=200
+//   SMS.ir:  POST https://api.sms.ir/v1/send/bulk  هدر X-API-KEY
+//            {lineNumber, messageText, mobiles[]} → status=1
+//   ملی‌پیامک: POST https://rest.payamak-panel.com/api/SendSMS/SendSMS
+//            username/password/to(کاما)/from/text → Value.RetStatus=1
+var _BULK_SMS_GW_KEY = 'yadavar_bulk_sms_gateway_v1';
+function bulkSmsGwProviderName(p) { return p === 'kavenegar' ? 'کاوه‌نگار' : (p === 'smsir' ? 'SMS.ir' : 'ملی‌پیامک'); }
+function bulkSmsGwLoadCfg() {
+    try { return JSON.parse(localStorage.getItem(_BULK_SMS_GW_KEY)) || {}; } catch (e) { return {}; }
+}
+function bulkSmsGwSaveCfg() {
+    const cfg = {
+        enabled: document.getElementById('bulkSmsGwEnabled').checked,
+        provider: document.getElementById('bulkSmsGwProvider').value,
+        key: document.getElementById('bulkSmsGwKey').value.trim(),
+        sender: document.getElementById('bulkSmsGwSender').value.trim()
+    };
+    localStorage.setItem(_BULK_SMS_GW_KEY, JSON.stringify(cfg));
+    bulkSmsGwRenderFields();
+    return cfg;
+}
+function bulkSmsGwRestore() {
+    const c = bulkSmsGwLoadCfg();
+    if (!c.provider) return;
+    document.getElementById('bulkSmsGwEnabled').checked = !!c.enabled;
+    document.getElementById('bulkSmsGwProvider').value = c.provider;
+    document.getElementById('bulkSmsGwKey').value = c.key || '';
+    document.getElementById('bulkSmsGwSender').value = c.sender || '';
+    bulkSmsGwRenderFields();
+}
+function bulkSmsGwRenderFields() {
+    document.getElementById('bulkSmsGwFields').style.display =
+        document.getElementById('bulkSmsGwEnabled').checked ? 'flex' : 'none';
+}
+function bulkSmsGwReady(cfg) { return !!cfg.enabled && !!cfg.key && !!cfg.sender; }
+
+async function bulkSmsGatewayRequest(cfg, phones, text) {
+    if (cfg.provider === 'kavenegar') {
+        const url = 'https://api.kavenegar.com/v1/' + encodeURIComponent(cfg.key) +
+            '/sms/send.json?receptor=' + phones.join(',') +
+            '&sender=' + encodeURIComponent(cfg.sender) + '&message=' + encodeURIComponent(text);
+        const res = await fetch(url);
+        const j = await res.json();
+        const st = j && j.return && j.return.status;
+        if (st === 200) return { ok: true, detail: 'کاوه‌نگار — ' + toPersianNumber((j.entries || []).length) + ' پیام ثبت شد' };
+        return { ok: false, detail: 'کاوه‌نگار — خطای ' + toPersianNumber(st || 0) + ': ' + ((j.return && j.return.message) || 'پاسخ نامعتبر') };
+    }
+    if (cfg.provider === 'smsir') {
+        const res = await fetch('https://api.sms.ir/v1/send/bulk', {
+            method: 'POST',
+            headers: { 'X-API-KEY': cfg.key, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lineNumber: Number(cfg.sender), messageText: text, mobiles: phones })
+        });
+        const j = await res.json();
+        if (j && j.status === 1) return { ok: true, detail: 'SMS.ir — بستهٔ ارسال ثبت شد' };
+        return { ok: false, detail: 'SMS.ir — خطای ' + toPersianNumber((j && j.status) || 0) + ': ' + ((j && j.message) || 'پاسخ نامعتبر') };
+    }
+    // melipayamak — key = username:password
+    const parts = (cfg.key || '').split(':');
+    const body = new URLSearchParams({
+        username: parts[0] || '', password: parts.slice(1).join(':') || '',
+        to: phones.join(','), from: cfg.sender, text: text, isflash: 'false'
+    });
+    const res = await fetch('https://rest.payamak-panel.com/api/SendSMS/SendSMS', {
+        method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString()
+    });
+    const j = await res.json();
+    const rs = j && j.Value && j.Value.RetStatus;
+    if (rs === 1) return { ok: true, detail: 'ملی‌پیامک — ارسال ثبت شد' };
+    return { ok: false, detail: 'ملی‌پیامک — کد ' + toPersianNumber(rs || 0) };
+}
+
+function bulkSmsGatewaySend(cfg, items, text) {
+    const phones = items.map(function (i) { return i.phone; });
+    const panel = document.getElementById('bulkSmsProgress');
+    panel.style.display = 'block';
+    document.getElementById('bulkSmsSendBtn').disabled = true;
+    document.getElementById('bulkSmsProgressCount').textContent =
+        '⚡ ارسال خودکار در حال اجرا — ' + toPersianNumber(phones.length) + ' گیرنده';
+    document.getElementById('bulkSmsProgressPerson').textContent =
+        'درگاه: ' + bulkSmsGwProviderName(cfg.provider) + ' — خط ' + toPersianDigits(cfg.sender);
+    document.getElementById('bulkSmsProgressHint').textContent =
+        'نیازی به برنامهٔ پیامک گوشی نیست — ارسال از طریق اینترنت و خط خدماتی انجام می‌شود.';
+    bulkSmsGatewayRequest(cfg, phones, text).then(function (r) {
+        if (r.ok) {
+            document.getElementById('bulkSmsProgressCount').textContent =
+                '✅ ارسال خودکار انجام شد — ' + toPersianNumber(phones.length) + ' گیرنده';
+            document.getElementById('bulkSmsProgressPerson').textContent = r.detail;
+            showToast('همهٔ پیامک‌ها خودکار ارسال شد — ' + toPersianNumber(phones.length) + ' نفر از خط ' + toPersianDigits(cfg.sender));
+            setTimeout(function () {
+                if (_bulkSmsQueue) return;   // در این فاصله صف دستی باز شده؟ مزاحم نشو
+                document.getElementById('bulkSmsProgress').style.display = 'none';
+                document.getElementById('bulkSmsSendBtn').disabled = false;
+            }, 3000);
+        } else {
+            bulkSmsGatewayFail(cfg, items, text, r.detail);
+        }
+    }).catch(function (err) {
+        bulkSmsGatewayFail(cfg, items, text, 'اتصال به درگاه ممکن نشد (' + (err && err.message ? err.message : 'شبکه') + ')');
+    });
+}
+
+function bulkSmsGatewayFail(cfg, items, text, why) {
+    // شکست درگاه (کلید/اعتبار/CORS/شبکه) → باز شدن خودکار صف ارسال جداگانهٔ
+    // دستی (BA-200) تا ارسال هیچ‌وقت در مسیر بن‌بست نماند
+    showToast('درگاه جواب نداد — ارسال جداگانهٔ دستی باز شد');
+    document.getElementById('bulkSmsProgressCount').textContent = '⚠️ درگاه جواب نداد — ارسال جداگانهٔ دستی';
+    document.getElementById('bulkSmsProgressPerson').textContent = why;
+    document.getElementById('bulkSmsProgressHint').textContent =
+        'در برنامهٔ پیامک فقط «ارسال» را بزنید؛ با برگشتن به برنامه، گیرندهٔ بعدی خودکار باز می‌شود.';
+    _bulkSmsQueue = { items: items, idx: 0, text: text, gwFail: why };
+    setTimeout(function () {
+        if (_bulkSmsQueue && _bulkSmsQueue.gwFail) { delete _bulkSmsQueue.gwFail; bulkSmsOpenCurrent(); }
+    }, 1200);
 }
 
 // برگشت خودکار از برنامهٔ پیامک → گیرندهٔ بعدی
