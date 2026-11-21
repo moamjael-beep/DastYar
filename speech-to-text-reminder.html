@@ -7703,7 +7703,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v229-2026-11-19-meeting-no-numeric-filter';
+const APP_VERSION = 'v230-2026-11-21-meeting-reliability-patterns';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20549,7 +20549,7 @@ function meetingToggleMic() {
 let meetRecLastEventAt = 0;
 let meetWatchdogTimer = null;
 let meetRestartPending = null;    // فقط یک restart در انتظار
-const MEET_ZOMBIE_MS = 1800000;   // 🔧 v277 (BA-190): ۳۰ دقیقه (بود ۱۰min). سکوتِ خالص، هرچند طولانی، هرگز نشست را قطع نمی‌کند — میکروفون ساعت‌ها باز می‌ماند. زامبیِ واقعی نادر است؛ ۳۰min مطمئن می‌سازد هرگز نشستِ سالمِ ساکت تعویض نشود.
+const MEET_ZOMBIE_MS = 25000;     // 🔧 v230 (BA-193 — الزام کاربر: «کما همیشه گی» + تحقیقِ برنامه‌های تولیدی): ۲۵ثانیه (بود ۳۰min در v277). نشستِ گِل‌کرده (صفرِ رویداد — نه نتیجه، نه soundstart، نه onend) در ≤۲۵s خودکار تعویض می‌شود، نه بعد از ۳۰ دقیقهٔ مرده. مبنای امنیت: یادداشتِ میدانیِ v262/v268 — موتور سالم در سکوت هر ~۸-۱۰ثانیه onend می‌دهد و در گفتار نتایج می‌فرستد؛ پس هیچ نشستِ سالمی به ۲۵s رویدادِ صفر نمی‌رسد (حاشیهٔ امن ۲.۵×). الگوی تولیدی (تحقیق BA-193): watchdog رویدادمحور ۱۰-۱۵s. تعویض seamess است: دُمِ زنده فریز می‌شود، پیش‌نویس ذخیره است، فقط یک بوق میکروفون.
 const MEET_START_HUNG_MS = 2500;  // 🔧 v268: start() بدون onaudiostart بیشتر از این = شروعِ مرده → سریع-شکست
 // 🔧 v263 (BA-176): restart ملایم — ضدتروتل سرویس گفتار
 let meetQuickEnds = 0;            // دنبالهٔ «پایان‌های فوری» (نشست‌های رد‌شده)
@@ -20805,9 +20805,12 @@ function meetWatchdog() {
 // می‌کند؛ بعد از برگشت ممکن است نشست از قبل مرده باشد. بدون این قلاب،
 // بازیابی تا چرخهٔ watchdog (~۵s) و زامبی (۱۲s) طول می‌کشید = «برگشتم،
 // گیر کرده». هنگام visibility فوری بررسی و در صورت لزوم تعویض آنی.
-const MEET_VISIBILITY_KICK_MS = 1800000;   // 🔧 v277 (BA-190): ۳۰ دقیقه (بود ۱۰min). برگشت از پس‌زمینه، حتی بعد از ۳۰ دقیقه غیبت، نشست را تعویض نمی‌کند — میکروفون ساعت‌ها باز می‌ماند.
+const MEET_VISIBILITY_KICK_MS = 8000;      // 🔧 v230 (BA-193 — تحقیقِ برنامه‌های تولیدی: «مرگ در پس‌زمینه را پیش‌بینی کن»): ۸ثانیه (بود ۳۰min در v277). برگشت از پس‌زمینه: اندروید همه‌چیز را منجمد می‌کند و نشست معمولاً مرده است؛ اگر بعد از برگشت ۸s هیچ رویدادی نیامد، فوری تعویض (همان «برگشتم، گیر کرده» که v268 با kick فوری حل می‌کرد). نگاهِ کوتاهِ <۸s به برنامهٔ دیگر kick نمی‌زند (نشستِ کوتاه‌مدت معمولاً زنده می‌ماند). در هر برگشت، WakeLock هم دوباره گرفته می‌شود (MDN: هنگام hidden خودبه‌خود آزاد می‌شود).
 document.addEventListener('visibilitychange', function() {
     if (document.hidden || !meetRecActive || !meetRecObj) return;
+    // 🔧 v230 (BA-193): WakeLock هنگام hidden خودبه‌خود آزاد می‌شود (MDN) —
+    //    در هر برگشت به جلو، دوباره بگیر (ضبطِ کلاس = صفحه باید روشن بماند).
+    meetAcquireWakeLock();
     const idleV = Date.now() - (meetRecLastEventAt || 0);
     if (idleV > MEET_VISIBILITY_KICK_MS) {
         console.warn('[MeetingMic] visibility kick: idle ' + Math.round(idleV / 1000) + 's — instant swap');
@@ -21022,6 +21025,28 @@ function meetStuckCheck() {
         return;
     }
 }
+// 🔧 v230 (BA-193 — تحقیقِ برنامه‌های تولیدی الگوی #5): WakeLock مخصوص ضبط
+//    جلسه — خاموش‌شدنِ صفحه، محرکِ شناخته‌شدهٔ مرگِ تشخیصِ گفتار است
+//    (ضبطِ کلاسِ ۶۰-۹۰ دقیقه‌ای بدون آن نیمه‌شب خاموش می‌شود). مستقل از
+//    WakeLockِ تسک/حسابداری (متغیر جدا) تا آزادکردنِ یک بخش، ضبطِ بخشِ
+//    دیگر را تاریک نکند. MDN: هنگام hidden خودبه‌خود آزاد می‌شود →
+//    visibilitychange دوباره می‌گیرد. بدون wakeLock API (مرورگرهای قدیمی)
+//    ساکت رد می‌شود — ضبط بدون آن هم کار می‌کند، فقط شکننده‌تر است.
+let meetWakeLock = null;
+async function meetAcquireWakeLock() {
+    if (!('wakeLock' in navigator) || !meetRecActive) return;
+    try {
+        meetWakeLock = await navigator.wakeLock.request('screen');
+        console.log('[MeetingMic] WakeLock acquired — screen stays on during lecture');
+    } catch(e) { console.warn('[MeetingMic] WakeLock unavailable:', e.message); }
+}
+function meetReleaseWakeLock() {
+    if (meetWakeLock) {
+        try { meetWakeLock.release(); } catch(e) {}
+        meetWakeLock = null;
+        console.log('[MeetingMic] WakeLock released');
+    }
+}
 function meetingStartRec() {
     if (!isSpeechSupported()) {
         showToast('مرورگر شما از تبدیل صوت به متن پشتیبانی نمی‌کند. از Chrome یا Edge استفاده کنید.');
@@ -21042,6 +21067,7 @@ function meetingStartRec() {
     meetLastProgressAt = Date.now(); meetSessionVoiceAt = 0; meetVoiceNow = false; meetVoiceLastAt = 0;   // 🔧 v269: ساعتِ تازهٔ پیشرفت‌سنج
     meetRecObj = buildMeetSR();   // 🔧 v244: نمونهٔ تازه در هر شروع
     meetRecActive = true;
+    meetAcquireWakeLock();   // 🔧 v230 (BA-193): صفحه در طولِ کلاس خاموش نمی‌شود
     // 🔧 v262: متر حذف شد — بدون استریم میکروفونِ موازی (موتور صدا می‌گیرد)
     const btn = document.getElementById('meetingMicBtn');
     if (btn) { btn.classList.add('recording'); btn.textContent = '⏹'; }
@@ -21056,6 +21082,7 @@ function meetingStartRec() {
 
 function meetingStopRec() {
     meetRecActive = false;
+    meetReleaseWakeLock();   // 🔧 v230 (BA-193): اجازهٔ خاموش‌شدنِ صفحه برگشت
     // 🔧 v261: restart در انتظار هم لغو شود
     if (meetRestartPending) { clearTimeout(meetRestartPending); meetRestartPending = null; }
     // 🔧 v244: توقف watchdog
