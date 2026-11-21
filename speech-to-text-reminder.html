@@ -2469,6 +2469,41 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 /* 🔧 BA-206 (v236): لمس اول فقط انتخاب — آبی؛ کلیک دوم روی انتخاب‌شده → یادداشت */
 .cal-week-row.sel { border: 2px solid #1976D2; background: #E3F2FD; }
 .cal-week-row.sel .cal-week-num { color: #1976D2; }
+/* 🔧 BA-211 (v239): روزهای تعطیل رسمی — قرمز مثل جمعه‌ها در هر دو نما */
+.cal-day.holiday { color: #D32F2F; font-weight: 700; }
+.cal-day.today.holiday { color: #FFCDD2; }
+.cal-day.selected.holiday { color: #FFCDD2; }
+.cal-week-row.holiday { background: #FFF8F8; }
+.cal-week-row.holiday .cal-week-wd,
+.cal-week-row.holiday .cal-week-num,
+.cal-week-row.holiday .cal-week-month { color: #D32F2F; }
+.cal-week-row.today.holiday { background: #E3F2FD; }
+/* 🔧 BA-209 (v239): قفل لمسی حسابداری */
+.acc-lock-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 10500; display: none; direction: rtl; }
+.acc-lock-overlay.active { display: flex; align-items: center; justify-content: center; }
+.acc-lock-card { background: #fff; border-radius: 16px; padding: 22px 20px; width: 310px; max-width: 86vw; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
+.acc-lock-title { font-size: 17px; font-weight: 800; color: #1a1a1a; margin-bottom: 10px; }
+.acc-lock-hint { font-size: 12.5px; color: #555; line-height: 2; margin-bottom: 14px; }
+.acc-lock-groups { display: flex; justify-content: center; gap: 14px; margin-bottom: 12px; }
+.al-group { display: flex; gap: 6px; }
+.al-dot { width: 14px; height: 14px; border-radius: 50%; background: #e0e0e0; transition: background 0.15s; }
+.al-dot.on { background: #1976D2; }
+.acc-lock-msg { font-size: 12px; color: #1976D2; min-height: 18px; margin-bottom: 12px; }
+.acc-lock-cancel { background: #eee; border: none; border-radius: 10px; padding: 8px 22px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+/* 🔧 BA-211 (v239): پنل تعطیلات رسمی */
+.holidays-overlay { position: fixed; inset: 0; background: #f5f6f8; z-index: 9600; display: none; flex-direction: column; }
+.holidays-overlay.active { display: flex; }
+.holidays-body { flex: 1; overflow-y: auto; padding: 12px; }
+.hol-sources { background: #E8F0FE; border: 1px solid #C5DAF6; border-radius: 12px; padding: 10px 12px; font-size: 12px; color: #333; line-height: 1.9; margin-bottom: 12px; }
+.hol-sources-title { font-weight: 800; margin-bottom: 4px; color: #1565C0; }
+.hol-count { font-weight: 700; margin-top: 6px; }
+.hol-row { display: flex; gap: 10px; align-items: center; background: #FFF8F8; border: 1px solid #F3D9D9; border-radius: 10px; padding: 8px 12px; margin-bottom: 6px; }
+.hol-date { font-weight: 800; color: #D32F2F; white-space: nowrap; min-width: 112px; }
+.hol-wd { font-size: 11px; color: #888; white-space: nowrap; }
+.hol-reason { font-size: 12.5px; color: #333; flex: 1; }
+.hol-apply-btn { width: 100%; margin-top: 10px; }
+.hol-note { font-size: 11px; color: #777; line-height: 1.9; margin-top: 10px; text-align: center; }
+.hol-done { text-align: center; color: #2E7D32; font-size: 12.5px; font-weight: 700; margin-top: 8px; min-height: 18px; }
 .cal-week-preview { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; justify-content: center; }
 .cal-week-line { font-size: 11.5px; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cal-week-empty { font-size: 11px; color: #bbb; }
@@ -4680,7 +4715,7 @@ body.locked .header-actions button {
         <button class="icon-btn share-btn" id="contactsBtn" onclick="openContacts()" title="بانک اطلاعاتی اشخاص"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></button>
         <button class="icon-btn share-btn" id="notesBtn" onclick="openNotes()" title="یادداشت">📝</button>
         <!-- 🔧 v209: کلید حسابداری — بخش تمام‌صفحهٔ دارایی = بدهی + سرمایه -->
-        <button class="icon-btn share-btn" id="accBtn" onclick="openAccounting()" title="حسابداری">💼</button>
+        <button class="icon-btn share-btn" id="accBtn" onclick="openAccountingLocked()" title="حسابداری">💼</button>
         <!-- دکمه بازگردانی به هدر گروه‌ها منتقل شد (در منوی همبرگری هر گروه) -->
 <button class="icon-btn share-btn" id="resetOrderBtn" onclick="resetAllTaskPositions()" title="برگرداندن همه تسک‌ها به ترتیب اصلی" style="display:none;">↩</button>
         <!-- 🔧 v209: این سه دکمه به منوی همبرگری منتقل شدند؛ در DOM می‌مانند
@@ -4886,12 +4921,49 @@ body.locked .header-actions button {
             <button class="contacts-action-btn" onclick="openContactSearch()">🔍 جستجو</button>
             <button class="contacts-action-btn" onclick="openTaskReport()">📋 گزارش کارها</button>
             <button class="contacts-action-btn" onclick="openContactReport()">📊 گزارش اشخاص</button>
-            <button class="contacts-action-btn" onclick="openBulkSms()" style="background:#2E7D32;color:#fff;">📩 پیامک انبوه</button>
-            <button class="contacts-action-btn" id="importPhoneBtn" onclick="importPhoneContacts()" title="ایمپورت مخاطبین از دفتر تلفن گوشی" style="background:#1565C0;color:#fff;">📥 از دفتر تلفن</button>
+            <button class="contacts-action-btn" id="contactsMenuBtn" onclick="contactsToggleHamburger()" title="منوی اشخاص">☰</button>
         </div>
     </div>
     <div class="contacts-body" id="contactsBody">
         <!-- جدول اشخاص توسط JavaScript پر می‌شود -->
+    </div>
+</div>
+
+<!-- 🔧 BA-208 (v238 — الزام کاربر): منوی همبرگری منوی اشخاص — «پیامک انبوه»
+     و «از دفتر تلفن» در یک منو (عین الگوی منوی همبرگری اصلی v209). باز/بسته
+     با ☰ هدر اشخاص؛ Back موبایل هم فقط همین منو را می‌بندد و صفحهٔ اشخاص
+     می‌ماند. -->
+<div class="hamburger-overlay" id="contactsHamburgerOverlay" onclick="closeContactsHamburger()">
+    <div class="hamburger-card" onclick="event.stopPropagation()">
+        <div class="hamburger-item" onclick="closeContactsHamburger(); openBulkSms();">
+            <span class="h-ico">📩</span><span>پیامک انبوه</span>
+        </div>
+        <div class="hamburger-item" onclick="closeContactsHamburger(); importPhoneContacts();">
+            <span class="h-ico">📥</span><span>از دفتر تلفن</span>
+        </div>
+    </div>
+</div>
+
+<!-- 🔧 BA-211 (v239 — الزام کاربر): پنل تعطیلات رسمی سال ۱۴۰۵ — فهرست
+     استخراج‌شده از چند منبع معتبر: bahesab.ir و bargcalendar.com (دو منبع
+     کامل — اجماع ۱۰۰٪ روی ۲۶ روز) + تأیید جزئی دو فهرست دیگر؛ روزِ هفتهٔ
+     همه با تقویم میلادی هم‌راستا شد. رنگ قرمز این روزها در هر دو نمای
+     تقویم فعال است و علت تعطیلی در خط اول یادداشت روز ایجاد می‌شود. -->
+<div class="holidays-overlay" id="holidaysOverlay">
+    <div class="bulk-sms-topbar">
+        <button class="bulk-sms-back-btn" onclick="closeHolidaysPanel()">بازگشت ❯</button>
+        <div class="bulk-sms-title">📅 تعطیلات رسمی سال ۱۴۰۵</div>
+    </div>
+    <div class="holidays-body">
+        <div class="hol-sources">
+            <div class="hol-sources-title">🔎 استخراج، مقایسه و انتخاب درست‌ترین</div>
+            چهار منبع بررسی شد: <b>bahesab.ir</b> (۲۶ روز)، <b>bargcalendar.com</b> (۲۶ روز) و دو فهرست دیگر (جزئی). دو منبع کامل روی <b>هر ۲۶ روز اجماع ۱۰۰٪</b> دارند و روزِ هفتهٔ همهٔ روزها با تقویم میلادی هم‌راستا و تأیید شد — همین فهرست به‌عنوان «درست‌ترین» مبناست.
+            <div class="hol-count">۲۶ روز تعطیل رسمی مناسبتی — ۳ روز هم‌زمان با جمعه (۱۵ خرداد، ۳۰ مرداد، ۲۲ آبان)</div>
+        </div>
+        <div id="holidaysList"></div>
+        <button class="btn btn-primary hol-apply-btn" id="holApplyBtn" onclick="applyHolidayNotes()">🔴 ایجاد/به‌روزرسانی یادداشت علت برای همه</button>
+        <div class="hol-done" id="holDoneMsg"></div>
+        <div class="hol-note">رنگ قرمز این روزها در نمای ماهانه و هفتگی تقویم همیشه فعال است (مثل جمعه‌ها). دکمهٔ بالا علت تعطیلی را خط اولِ یادداشت آن روز می‌کند؛ اگر قبلاً برای آن روز یادداشت داشته باشید، زیر خط علت حفظ می‌شود.</div>
     </div>
 </div>
 
@@ -5432,6 +5504,26 @@ body.locked .header-actions button {
 
 <!-- 🔧 v209: منوی همبرگری هدر — بک‌آپ، بازیابی بک‌آپ، اعلان‌ها (زنگوله).
      هر آیتم اول منو را می‌بندد و بعد تابع اصلی همان دکمهٔ قبلی هدر را صدا می‌زند. -->
+<!-- 🔧 BA-209 (v239 — الزام کاربر): قفل لمسی حسابداری — الگوی نسبی
+     یک لمس • مکث • دو لمس • مکث • یک لمس • مکث • دو لمس. قاعدهٔ قبولی:
+     هر مکث دست‌کم دو برابرِ بزرگ‌ترین فاصلهٔ داخل لمس‌های دوبل — پس هر
+     سرعتی که ریتم را نشان دهد قبول است. هیچ unlock ذخیره نمی‌شود: هر بار
+     ورود به حسابداری قفل دوباره فعال است. Back موبایل فقط قفل را می‌بندد
+     (markerless + trackModalOpen — الگوی bulkSms). -->
+<div class="acc-lock-overlay" id="accLockOverlay" onclick="accLockTap()">
+    <div class="acc-lock-card">
+        <div class="acc-lock-title">🔒 قفل حسابداری</div>
+        <div class="acc-lock-hint">الگو: یک لمس • مکث • دو لمس • مکث • یک لمس • مکث • دو لمس<br>سرعت نسبی است — فقط ریتم مهم است؛ هر جا «دو لمس پشت‌سرهم» است، تند بزنید.</div>
+        <div class="acc-lock-groups">
+            <span class="al-group"><span class="al-dot"></span></span>
+            <span class="al-group"><span class="al-dot"></span><span class="al-dot"></span></span>
+            <span class="al-group"><span class="al-dot"></span></span>
+            <span class="al-group"><span class="al-dot"></span><span class="al-dot"></span></span>
+        </div>
+        <div class="acc-lock-msg" id="accLockMsg">آماده — هر جا از صفحه لمس کنید</div>
+        <button class="acc-lock-cancel" onclick="closeAccLock(); event.stopPropagation();">انصراف</button>
+    </div>
+</div>
 <div class="hamburger-overlay" id="hamburgerMenuOverlay" onclick="closeHamburgerMenu()">
     <div class="hamburger-card" onclick="event.stopPropagation()">
         <div class="hamburger-item" onclick="closeHamburgerMenu(); confirmBackup();">
@@ -5442,6 +5534,9 @@ body.locked .header-actions button {
         </div>
         <div class="hamburger-item" onclick="closeHamburgerMenu(); toggleNotifications();">
             <span class="h-ico">🔔</span><span>اعلان‌ها (زنگوله)</span>
+        </div>
+        <div class="hamburger-item" onclick="closeHamburgerMenu(); openHolidaysPanel();">
+            <span class="h-ico">📅</span><span>تعطیلات رسمی ۱۴۰۵</span>
         </div>
     </div>
 </div>
@@ -5825,7 +5920,7 @@ body.locked .header-actions button {
 <div class="modal-overlay" id="calendarOverlay">
     <div class="modal calendar-modal">
         <div class="calendar-header">
-            <button class="cal-nav-btn" onclick="changeMonth(-1)" title="ماه قبل">◄</button>
+            <button class="cal-nav-btn" onclick="changeMonth(-1)" title="ماه قبل">►</button>
             <div class="cal-title">
                 <div id="calMonthYear"></div>
                 <div class="cal-title-row">
@@ -5835,7 +5930,7 @@ body.locked .header-actions button {
                     <button class="cal-add-day-btn" id="calAddDayBtn" onclick="addTaskForSelectedDay()" title="افزودن یادآور برای روز انتخاب‌شده">+</button>
                 </div>
             </div>
-            <button class="cal-nav-btn" onclick="changeMonth(1)" title="ماه بعد">►</button>
+            <button class="cal-nav-btn" onclick="changeMonth(1)" title="ماه بعد">◄</button>
         </div>
         <div class="calendar-grid" id="calendarGrid"></div>
         <div class="calendar-day-tasks" id="calendarDayTasks">
@@ -7766,7 +7861,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v237-2026-11-21-import-phone-contacts';
+const APP_VERSION = 'v239-2026-11-21-acc-taplock-arrows-holidays';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -12796,6 +12891,11 @@ function closeModalByType(type) {
         'phoneAction': 'phoneActionOverlay',
         // 🔧 v209: منوی همبرگری + بخش حسابداری + فرم رکورد حسابداری
         'hamburger': 'hamburgerMenuOverlay',
+        // 🔧 BA-208 (v238): منوی همبرگری اشخاص
+        'contactsHamburger': 'contactsHamburgerOverlay',
+        // 🔧 BA-209/211 (v239): قفل لمسی حسابداری + پنل تعطیلات رسمی
+        'accLock': 'accLockOverlay',
+        'holidays': 'holidaysOverlay',
         'accounting': 'accountingOverlay',
         'accRecordForm': 'accRecordFormOverlay',
         // 🔧 v210: فرم شرح/تاریخ سند + منوی انتخاب شخص
@@ -16777,6 +16877,39 @@ function getContactCommissionPercent(c) {
 
 // ─── ذخیره شخص ───
 
+// 🔧 BA-208 (v238 — الزام کاربر): منوی همبرگری صفحهٔ اشخاص — «پیامک انبوه»
+// و «از دفتر تلفن» در یک منو. الگوی v209: overlay + نشانگر مودال در history
+// تا Back موبایل فقط منو را ببندد و صفحهٔ اشخاص بماند.
+function contactsToggleHamburger() {
+    const ov = document.getElementById('contactsHamburgerOverlay');
+    if (ov && ov.classList.contains('active')) {
+        closeContactsHamburger();
+    } else {
+        openContactsHamburger();
+    }
+}
+
+function openContactsHamburger() {
+    const ov = document.getElementById('contactsHamburgerOverlay');
+    if (!ov || ov.classList.contains('active')) return;
+    // زیر هدر اصلی باز شود (ارتفاع داینامیک هدر — قانون BA-154)
+    try {
+        const header = document.querySelector('.header');
+        if (header) ov.style.paddingTop = (header.offsetHeight + 6) + 'px';
+    } catch(e) {}
+    ov.classList.add('active');
+    bringToFront(ov);
+    navPush({ view: 'modal', type: 'contactsHamburger' });
+    trackModalOpen('contactsHamburger');
+}
+
+function closeContactsHamburger() {
+    const ov = document.getElementById('contactsHamburgerOverlay');
+    if (!ov || !ov.classList.contains('active')) return; // idempotent
+    closeModalByType('contactsHamburger');
+    navBack();
+}
+
 // 🔧 BA-207 (v237 — الزام کاربر: کلید ایمپورت کل دفتر تلفن گوشی به بانک
 // اطلاعاتی اشخاص): با Contact Picker API اندروید — انتخابگر خودِ گوشی باز
 // می‌شود و کاربر می‌تواند همهٔ مخاطبین را یک‌جا انتخاب کند (multiple:true).
@@ -17677,6 +17810,179 @@ function accNodeDocTotal(node, docId, section, records) {
 }
 
 // ─── باز و بستن بخش حسابداری ───
+
+// 🔧 BA-209 (v239 — الزام کاربر): قفل لمسی حسابداری — الگوی نسبی
+// ۱ لمس • مکث • ۲ لمس • مکث • ۱ لمس • مکث • ۲ لمس. فاصله‌ها ثبت و با
+// قاعدهٔ نسبی سنجیده می‌شوند: هر مکث (g1,g3,g4) باید دست‌کم ۲ برابرِ
+// بزرگ‌ترین فاصلهٔ داخل لمس‌های دوبل (g2,g5) باشد — پس هر سرعتی که ریتم
+// را نشان دهد قبول است. هیچ unlock ذخیره نمی‌شود: هر بار ورود قفل فعال
+// است (حتی بعد از یک ورود موفق). مکثِ بیش از ۴/۵ ثانیه = شروع دوباره.
+var _accLockTaps = [];
+
+function openAccountingLocked() {
+    _accLockTaps = [];
+    accLockRenderDots();
+    const msg = document.getElementById('accLockMsg');
+    if (msg) msg.textContent = 'آماده — هر جا از صفحه لمس کنید';
+    const ov = document.getElementById('accLockOverlay');
+    ov.classList.add('active');
+    bringToFront(ov);
+    trackModalOpen('accLock');
+}
+
+function closeAccLock() {
+    const ov = document.getElementById('accLockOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    ov.classList.remove('active');
+    trackModalClose('accLock');
+}
+
+function accLockRenderDots() {
+    const dots = document.querySelectorAll('#accLockOverlay .al-dot');
+    dots.forEach(function (d, i) {
+        d.classList.toggle('on', i < _accLockTaps.length);
+    });
+}
+
+function accLockTap() {
+    const ov = document.getElementById('accLockOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    const now = Date.now();
+    // مکث طولانی یعنی رها کردن الگو — شروع دوباره
+    if (_accLockTaps.length && now - _accLockTaps[_accLockTaps.length - 1] > 4500) {
+        _accLockTaps = [];
+        accLockRenderDots();
+    }
+    _accLockTaps.push(now);
+    accLockRenderDots();
+    if (_accLockTaps.length === 6) {
+        accLockEvaluate();
+    } else {
+        const msg = document.getElementById('accLockMsg');
+        if (msg) msg.textContent = toPersianNumber(_accLockTaps.length) + ' لمس — ادامه دهید…';
+    }
+}
+
+function accLockEvaluate() {
+    const g = [];
+    for (var i = 1; i < 6; i++) g.push(_accLockTaps[i] - _accLockTaps[i - 1]);
+    // ساختار الگو: [۱] مکث [۲] مکث [۱] مکث [۲] → g1,g3,g4 = مکث‌ها؛ g2,g5 = دوبل‌ها
+    const Lmin = Math.min(g[0], g[2], g[3]);
+    const Smax = Math.max(g[1], g[4]);
+    const msg = document.getElementById('accLockMsg');
+    if (Lmin >= 2 * Smax && Smax >= 25 && Lmin <= 4500) {
+        closeAccLock();
+        openAccounting();   // قفل markerless است — بدون تداخل history
+    } else {
+        _accLockTaps = [];
+        accLockRenderDots();
+        if (msg) msg.textContent = '❌ الگو درست نبود — دوباره از اول';
+    }
+}
+
+// 🔧 BA-211 (v239 — الزام کاربر): تعطیلات رسمی سال ۱۴۰۵. داده از دو منبع
+// کامل (bahesab.ir و bargcalendar.com) با اجماع ۱۰۰٪ روی ۲۶ روز + تأیید
+// جزئی دو فهرست دیگر؛ روزِ هفتهٔ همه با تقویم میلادی هم‌راستا و تأیید شد
+// (۱ فروردین ۱۴۰۵ = شنبه ۲۱ مارس ۲۰۲۶). «درست‌ترین» = فهرست اجماعی زیر.
+var CAL_HOLIDAYS_1405 = [
+    { jy: 1405, jm: 1,  jd: 1,  reason: 'عید سعید فطر — آغاز نوروز' },
+    { jy: 1405, jm: 1,  jd: 2,  reason: 'تعطیل به مناسبت عید سعید فطر — نوروز' },
+    { jy: 1405, jm: 1,  jd: 3,  reason: 'عید نوروز' },
+    { jy: 1405, jm: 1,  jd: 4,  reason: 'عید نوروز' },
+    { jy: 1405, jm: 1,  jd: 12, reason: 'روز جمهوری اسلامی ایران' },
+    { jy: 1405, jm: 1,  jd: 13, reason: 'روز طبیعت — سیزده‌به‌در' },
+    { jy: 1405, jm: 1,  jd: 25, reason: 'شهادت امام جعفر صادق (ع)' },
+    { jy: 1405, jm: 2,  jd: 6,  reason: 'عید سعید قربان' },
+    { jy: 1405, jm: 3,  jd: 14, reason: 'عید سعید غدیر خم — رحلت امام خمینی' },
+    { jy: 1405, jm: 3,  jd: 15, reason: 'قیام خونین ۱۵ خرداد' },
+    { jy: 1405, jm: 4,  jd: 3,  reason: 'تاسوعای حسینی' },
+    { jy: 1405, jm: 4,  jd: 4,  reason: 'عاشورای حسینی' },
+    { jy: 1405, jm: 5,  jd: 13, reason: 'اربعین حسینی' },
+    { jy: 1405, jm: 5,  jd: 21, reason: 'رحلت پیامبر اکرم (ص) — شهادت امام حسن مجتبی (ع)' },
+    { jy: 1405, jm: 5,  jd: 22, reason: 'شهادت امام رضا (ع)' },
+    { jy: 1405, jm: 5,  jd: 30, reason: 'شهادت امام حسن عسکری (ع) — آغاز امامت ولیعصر (عج)' },
+    { jy: 1405, jm: 6,  jd: 8,  reason: 'ولادت پیامبر اکرم (ص) — ولادت امام جعفر صادق (ع)' },
+    { jy: 1405, jm: 8,  jd: 22, reason: 'شهادت حضرت فاطمه زهرا (س)' },
+    { jy: 1405, jm: 10, jd: 2,  reason: 'ولادت امام علی (ع) — روز پدر' },
+    { jy: 1405, jm: 10, jd: 16, reason: 'مبعث پیامبر اکرم (ص)' },
+    { jy: 1405, jm: 11, jd: 4,  reason: 'ولادت حضرت قائم (عج) — نیمه شعبان' },
+    { jy: 1405, jm: 11, jd: 22, reason: 'پیروزی انقلاب اسلامی ایران' },
+    { jy: 1405, jm: 12, jd: 9,  reason: 'شهادت حضرت علی (ع)' },
+    { jy: 1405, jm: 12, jd: 19, reason: 'عید سعید فطر' },
+    { jy: 1405, jm: 12, jd: 20, reason: 'تعطیل به مناسبت عید سعید فطر' },
+    { jy: 1405, jm: 12, jd: 29, reason: 'روز ملی شدن صنعت نفت ایران' }
+];
+
+function calHolidayOf(jy, jm, jd) {
+    for (var i = 0; i < CAL_HOLIDAYS_1405.length; i++) {
+        var h = CAL_HOLIDAYS_1405[i];
+        if (h.jy === jy && h.jm === jm && h.jd === jd) return h;
+    }
+    return null;
+}
+
+function calHolidayWeekday(jy, jm, jd) {
+    const g = jalaliToGregorian(jy, jm, jd);
+    return calFullWeekdayNames[((g.getUTCDay() + 1) % 7)];
+}
+
+function renderHolidaysList() {
+    const box = document.getElementById('holidaysList');
+    if (!box) return;
+    const today = toJalaliParts(new Date());
+    let html = '';
+    CAL_HOLIDAYS_1405.forEach(function (h) {
+        const isPast = (h.jy < today[0]) || (h.jy === today[0] && (h.jm < today[1] || (h.jm === today[1] && h.jd < today[2])));
+        html += '<div class="hol-row"' + (isPast ? ' style="opacity:0.62;"' : '') + '>' +
+            '<span class="hol-date">' + toPersianDigits(h.jd) + ' ' + jalaliMonths[h.jm - 1] + '</span>' +
+            '<span class="hol-wd">' + calHolidayWeekday(h.jy, h.jm, h.jd) + '</span>' +
+            '<span class="hol-reason">' + h.reason + '</span></div>';
+    });
+    box.innerHTML = html;
+}
+
+// پنل تعطیلات — markerless + trackModalOpen: Back موبایل پنل را می‌بندد
+function openHolidaysPanel() {
+    renderHolidaysList();
+    const ov = document.getElementById('holidaysOverlay');
+    ov.classList.add('active');
+    bringToFront(ov);
+    trackModalOpen('holidays');
+    // اعمال خودکار: علت تعطیلی در خط اول یادداشت هر روز (idempotent)
+    applyHolidayNotes(true);
+}
+
+function closeHolidaysPanel() {
+    const ov = document.getElementById('holidaysOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    ov.classList.remove('active');
+    trackModalClose('holidays');
+}
+
+// علت تعطیلی در خط اول یادداشت هر روز — اگر یادداشتی هست، حفظ می‌شود
+// و فقط خط علت به اولش اضافه می‌شود؛ اگر علت از قبل هست، دست نمی‌زند.
+function applyHolidayNotes(silent) {
+    let created = 0, kept = 0;
+    CAL_HOLIDAYS_1405.forEach(function (h) {
+        const key = 'yadavar_notes_v1_day_' + h.jy + '_' + h.jm + '_' + h.jd;
+        const existing = localStorage.getItem(key) || '';
+        if (existing.indexOf('تعطیل رسمی') >= 0) { kept++; return; }
+        const firstLine = '<div>🔴 تعطیل رسمی — علت: ' + h.reason + '</div>';
+        localStorage.setItem(key, firstLine + (existing ? '<br>' + existing : ''));
+        created++;
+    });
+    const done = document.getElementById('holDoneMsg');
+    if (done) done.textContent = created
+        ? '✅ یادداشت علت برای ' + toPersianNumber(created) + ' روز ایجاد شد' + (kept ? ' — ' + toPersianNumber(kept) + ' روز از قبل موجود بود' : '')
+        : 'یادداشت علت همهٔ روزها از قبل موجود بود';
+    if (!silent) showToast(created
+        ? '🔴 علت تعطیلی در یادداشت ' + toPersianNumber(created) + ' روز ایجاد شد'
+        : 'یادداشت علت همهٔ روزها از قبل موجود بود');
+    // پیش‌نمایش هفتگی اگر تقویم باز است تازه شود
+    if (document.getElementById('calendarOverlay').classList.contains('active') && typeof calState !== 'undefined' && calState && calState.view === 'week') {
+        renderCalendar();
+    }
+}
 
 function openAccounting() {
     accState = { openDocId: null, openSection: null, openNodes: {}, openSummary: null, summaryOpenNodes: {}, sortDir: 'desc' };
@@ -22478,6 +22784,10 @@ function renderCalendar() {
         if (tasksByDay[day] && tasksByDay[day].size > 0) {
             el.classList.add('has-tasks');
         }
+        // 🔧 BA-211 (v239): تعطیل رسمی — قرمز مثل جمعه‌ها در نمای ماهانه
+        if (calHolidayOf(calState.year, calState.month, day)) {
+            el.classList.add('holiday');
+        }
         el.textContent = toPersianDigits(day);
         el.onclick = () => selectCalendarDay(day);
         grid.appendChild(el);
@@ -22618,8 +22928,11 @@ function calRenderWeek(grid) {
         // 🔧 BA-204 (v236): سطرِ جمعه قرمز — 🔧 BA-206: روزِ انتخاب‌شده آبی
         const selBA206 = calSelectedTriple();
         const isSel = (selBA206.jy === jy && selBA206.jm === jm && selBA206.jd === jd);
+        // 🔧 BA-211 (v239): تعطیل رسمی — قرمز مثل جمعه‌ها در نمای هفتگی
+        const holBA211 = calHolidayOf(jy, jm, jd);
         row.className = 'cal-week-row' + (isToday ? ' today' : '') +
-            (i === 6 ? ' friday' : '') + (isSel ? ' sel' : '');
+            (i === 6 ? ' friday' : '') + (isSel ? ' sel' : '') +
+            (holBA211 ? ' holiday' : '');
         // 🔧 BA-206 (v236 — الزام کاربر): لمسِ اول فقط روز را انتخاب می‌کند
         // (آبی می‌شود)؛ کلیک روی روزِ «انتخاب‌شده» به یادداشت آن می‌رود —
         // قبلاً همان لمس اول مستقیم یادداشت را باز می‌کرد.
