@@ -2478,18 +2478,8 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .cal-week-row.holiday .cal-week-num,
 .cal-week-row.holiday .cal-week-month { color: #D32F2F; }
 .cal-week-row.today.holiday { background: #E3F2FD; }
-/* 🔧 BA-209 (v239): قفل لمسی حسابداری */
-.acc-lock-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 10500; display: none; direction: rtl; }
-.acc-lock-overlay.active { display: flex; align-items: center; justify-content: center; }
-.acc-lock-card { background: #fff; border-radius: 16px; padding: 22px 20px; width: 310px; max-width: 86vw; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
-.acc-lock-title { font-size: 17px; font-weight: 800; color: #1a1a1a; margin-bottom: 10px; }
-.acc-lock-hint { font-size: 12.5px; color: #555; line-height: 2; margin-bottom: 14px; }
-.acc-lock-groups { display: flex; justify-content: center; gap: 14px; margin-bottom: 12px; }
-.al-group { display: flex; gap: 6px; }
-.al-dot { width: 14px; height: 14px; border-radius: 50%; background: #e0e0e0; transition: background 0.15s; }
-.al-dot.on { background: #1976D2; }
-.acc-lock-msg { font-size: 12px; color: #1976D2; min-height: 18px; margin-bottom: 12px; }
-.acc-lock-cancel { background: #eee; border: none; border-radius: 10px; padding: 8px 22px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+/* 🔧 BA-214 (v241): صفحهٔ قفل حسابداری حذف شد — قفل کاملاً نامرئی است
+   (شمارش بی‌صدا روی آیکن در accIconTap؛ هیچ UI ای وجود ندارد). */
 /* 🔧 BA-211 (v239): پنل تعطیلات رسمی */
 .holidays-overlay { position: fixed; inset: 0; background: #f5f6f8; z-index: 9600; display: none; flex-direction: column; }
 .holidays-overlay.active { display: flex; }
@@ -4717,7 +4707,7 @@ body.locked .header-actions button {
         <button class="icon-btn share-btn" id="contactsBtn" onclick="openContacts()" title="بانک اطلاعاتی اشخاص"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></button>
         <button class="icon-btn share-btn" id="notesBtn" onclick="openNotes()" title="یادداشت">📝</button>
         <!-- 🔧 v209: کلید حسابداری — بخش تمام‌صفحهٔ دارایی = بدهی + سرمایه -->
-        <button class="icon-btn share-btn" id="accBtn" onclick="openAccountingLocked()" title="حسابداری">💼</button>
+        <button class="icon-btn share-btn" id="accBtn" onclick="accIconTap()" title="حسابداری">💼</button>
         <!-- دکمه بازگردانی به هدر گروه‌ها منتقل شد (در منوی همبرگری هر گروه) -->
 <button class="icon-btn share-btn" id="resetOrderBtn" onclick="resetAllTaskPositions()" title="برگرداندن همه تسک‌ها به ترتیب اصلی" style="display:none;">↩</button>
         <!-- 🔧 v209: این سه دکمه به منوی همبرگری منتقل شدند؛ در DOM می‌مانند
@@ -5506,26 +5496,9 @@ body.locked .header-actions button {
 
 <!-- 🔧 v209: منوی همبرگری هدر — بک‌آپ، بازیابی بک‌آپ، اعلان‌ها (زنگوله).
      هر آیتم اول منو را می‌بندد و بعد تابع اصلی همان دکمهٔ قبلی هدر را صدا می‌زند. -->
-<!-- 🔧 BA-209 (v239 — الزام کاربر): قفل لمسی حسابداری — الگوی نسبی
-     یک لمس • مکث • دو لمس • مکث • یک لمس • مکث • دو لمس. قاعدهٔ قبولی:
-     هر مکث دست‌کم دو برابرِ بزرگ‌ترین فاصلهٔ داخل لمس‌های دوبل — پس هر
-     سرعتی که ریتم را نشان دهد قبول است. هیچ unlock ذخیره نمی‌شود: هر بار
-     ورود به حسابداری قفل دوباره فعال است. Back موبایل فقط قفل را می‌بندد
-     (markerless + trackModalOpen — الگوی bulkSms). -->
-<div class="acc-lock-overlay" id="accLockOverlay" onclick="accLockTap()">
-    <div class="acc-lock-card">
-        <div class="acc-lock-title">🔒 قفل حسابداری</div>
-        <div class="acc-lock-hint">الگو: یک لمس • مکث • دو لمس • مکث • یک لمس • مکث • دو لمس<br>سرعت نسبی است — فقط ریتم مهم است؛ هر جا «دو لمس پشت‌سرهم» است، تند بزنید.</div>
-        <div class="acc-lock-groups">
-            <span class="al-group"><span class="al-dot"></span></span>
-            <span class="al-group"><span class="al-dot"></span><span class="al-dot"></span></span>
-            <span class="al-group"><span class="al-dot"></span></span>
-            <span class="al-group"><span class="al-dot"></span><span class="al-dot"></span></span>
-        </div>
-        <div class="acc-lock-msg" id="accLockMsg">آماده — هر جا از صفحه لمس کنید</div>
-        <button class="acc-lock-cancel" onclick="closeAccLock(); event.stopPropagation();">انصراف</button>
-    </div>
-</div>
+<!-- 🔧 BA-214 (v241 — الزام کاربر): قفل حسابداری نامرئی است — هیچ صفحهٔ
+     قفلی وجود ندارد. رمز (ریتم نسبی لمس) بی‌صدا روی خودِ آیکن حسابداری
+     شمرده می‌شود؛ الگوی درست، حسابداری را بی‌صدا باز می‌کند. -->
 <div class="hamburger-overlay" id="hamburgerMenuOverlay" onclick="closeHamburgerMenu()">
     <div class="hamburger-card" onclick="event.stopPropagation()">
         <div class="hamburger-item" onclick="closeHamburgerMenu(); confirmBackup();">
@@ -7863,7 +7836,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v240-2026-11-21-holidays-run-current-year';
+const APP_VERSION = 'v241-2026-11-21-acc-lock-invisible';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -12895,8 +12868,7 @@ function closeModalByType(type) {
         'hamburger': 'hamburgerMenuOverlay',
         // 🔧 BA-208 (v238): منوی همبرگری اشخاص
         'contactsHamburger': 'contactsHamburgerOverlay',
-        // 🔧 BA-209/211 (v239): قفل لمسی حسابداری + پنل تعطیلات رسمی
-        'accLock': 'accLockOverlay',
+        // 🔧 BA-214 (v241): صفحهٔ قفل حسابداری حذف شد (قفل نامرئی است)
         'holidays': 'holidaysOverlay',
         'accounting': 'accountingOverlay',
         'accRecordForm': 'accRecordFormOverlay',
@@ -17813,73 +17785,36 @@ function accNodeDocTotal(node, docId, section, records) {
 
 // ─── باز و بستن بخش حسابداری ───
 
-// 🔧 BA-209 (v239 — الزام کاربر): قفل لمسی حسابداری — الگوی نسبی
-// ۱ لمس • مکث • ۲ لمس • مکث • ۱ لمس • مکث • ۲ لمس. فاصله‌ها ثبت و با
-// قاعدهٔ نسبی سنجیده می‌شوند: هر مکث (g1,g3,g4) باید دست‌کم ۲ برابرِ
-// بزرگ‌ترین فاصلهٔ داخل لمس‌های دوبل (g2,g5) باشد — پس هر سرعتی که ریتم
-// را نشان دهد قبول است. هیچ unlock ذخیره نمی‌شود: هر بار ورود قفل فعال
-// است (حتی بعد از یک ورود موفق). مکثِ بیش از ۴/۵ ثانیه = شروع دوباره.
+// 🔧 BA-214 (v241 — الزام کاربر): قفل حسابداری کاملاً نامرئی شد — «رمز
+// است که کسی نباید ببیند و بفهمد؛ هیچ صفحه‌ای نباید نشان داده شود؛
+// برنامه خودش در پس‌زمینه چک کند». شمارش فقط روی خودِ آیکن حسابداری
+// انجام می‌شود: لمس اول شمارش را فعال می‌کند، لمس‌های بعدی فقط روی همان
+// آیکن ثبت می‌شوند و اگر ریتم نسبی «۱ • مکث • ۲ • مکث • ۱ • مکث • ۲»
+// درست بود، حسابداری بی‌صدا باز می‌شود. در هیچ حالتی هیچ بازخورد دیداری
+// یا صوتی‌ای وجود ندارد — نه الگوی درست، نه نادرست، نه ریست؛ به دیگران
+// آیکن «بدون پاسخ» به نظر می‌رسد و از وجود قفل چیزی فهمیده نمی‌شود.
+// مکث بیش از ۴/۵ ثانیه بین لمس‌ها = ریست بی‌صدا. هیچ unlock ذخیره
+// نمی‌شود: هر بار ورود، قفل از نو فعال است. قاعدهٔ قبولی همان قاعدهٔ
+// نسبی v239 است: هر مکث (g1,g3,g4) دست‌کم ۲ برابرِ بزرگ‌ترین فاصلهٔ
+// داخل دوبل‌ها (g2,g5) — پس هر سرعتی که ریتم را نشان دهد قبول است.
 var _accLockTaps = [];
 
-function openAccountingLocked() {
-    _accLockTaps = [];
-    accLockRenderDots();
-    const msg = document.getElementById('accLockMsg');
-    if (msg) msg.textContent = 'آماده — هر جا از صفحه لمس کنید';
-    const ov = document.getElementById('accLockOverlay');
-    ov.classList.add('active');
-    bringToFront(ov);
-    trackModalOpen('accLock');
-}
-
-function closeAccLock() {
-    const ov = document.getElementById('accLockOverlay');
-    if (!ov || !ov.classList.contains('active')) return;
-    ov.classList.remove('active');
-    trackModalClose('accLock');
-}
-
-function accLockRenderDots() {
-    const dots = document.querySelectorAll('#accLockOverlay .al-dot');
-    dots.forEach(function (d, i) {
-        d.classList.toggle('on', i < _accLockTaps.length);
-    });
-}
-
-function accLockTap() {
-    const ov = document.getElementById('accLockOverlay');
-    if (!ov || !ov.classList.contains('active')) return;
+function accIconTap() {
     const now = Date.now();
-    // مکث طولانی یعنی رها کردن الگو — شروع دوباره
+    // مکث طولانی بین لمس‌ها = رها کردن رمز — شروع دوبارهٔ بی‌صدا
     if (_accLockTaps.length && now - _accLockTaps[_accLockTaps.length - 1] > 4500) {
         _accLockTaps = [];
-        accLockRenderDots();
     }
     _accLockTaps.push(now);
-    accLockRenderDots();
-    if (_accLockTaps.length === 6) {
-        accLockEvaluate();
-    } else {
-        const msg = document.getElementById('accLockMsg');
-        if (msg) msg.textContent = toPersianNumber(_accLockTaps.length) + ' لمس — ادامه دهید…';
-    }
-}
-
-function accLockEvaluate() {
+    if (_accLockTaps.length !== 6) return;
     const g = [];
     for (var i = 1; i < 6; i++) g.push(_accLockTaps[i] - _accLockTaps[i - 1]);
-    // ساختار الگو: [۱] مکث [۲] مکث [۱] مکث [۲] → g1,g3,g4 = مکث‌ها؛ g2,g5 = دوبل‌ها
+    _accLockTaps = [];
+    // ساختار رمز: [۱] مکث [۲] مکث [۱] مکث [۲] → g1,g3,g4 = مکث‌ها؛ g2,g5 = دوبل‌ها
     const Lmin = Math.min(g[0], g[2], g[3]);
     const Smax = Math.max(g[1], g[4]);
-    const msg = document.getElementById('accLockMsg');
-    if (Lmin >= 2 * Smax && Smax >= 25 && Lmin <= 4500) {
-        closeAccLock();
-        openAccounting();   // قفل markerless است — بدون تداخل history
-    } else {
-        _accLockTaps = [];
-        accLockRenderDots();
-        if (msg) msg.textContent = '❌ الگو درست نبود — دوباره از اول';
-    }
+    if (Lmin >= 2 * Smax && Smax >= 25 && Lmin <= 4500) openAccounting();
+    // الگوی نادرست: هیچ اتفاقی نمی‌افتد — کاملاً بی‌صدا
 }
 
 // 🔧 BA-212 (v240 — الزام کاربر): کلید تعطیلات = «اجرای جستجو برای سال
