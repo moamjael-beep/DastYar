@@ -1,1 +1,1 @@
-v242-2026-11-21-holidays-gate-overdue-red
+v244-2026-11-22-holidays-panel-navfix

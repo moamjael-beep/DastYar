@@ -5539,9 +5539,10 @@ body.locked .header-actions button {
 
 <!-- 🔧 v209: منوی همبرگری هدر — بک‌آپ، بازیابی بک‌آپ، اعلان‌ها (زنگوله).
      هر آیتم اول منو را می‌بندد و بعد تابع اصلی همان دکمهٔ قبلی هدر را صدا می‌زند. -->
-<!-- 🔧 BA-214 (v241 — الزام کاربر): قفل حسابداری نامرئی است — هیچ صفحهٔ
-     قفلی وجود ندارد. رمز (ریتم نسبی لمس) بی‌صدا روی خودِ آیکن حسابداری
-     شمرده می‌شود؛ الگوی درست، حسابداری را بی‌صدا باز می‌کند. -->
+<!-- 🔧 BA-214 (v241) + BA-217 (v243 — الزام کاربر): قفل حسابداری نامرئی
+     است — هیچ صفحهٔ قفلی وجود ندارد. رمز (۳۰ لمس متوالی) بی‌صدا روی
+     خودِ آیکن حسابداری شمرده می‌شود؛ رسیدن به ۳۰ لمس، حسابداری را
+     بی‌صدا باز می‌کند. -->
 <div class="hamburger-overlay" id="hamburgerMenuOverlay" onclick="closeHamburgerMenu()">
     <div class="hamburger-card" onclick="event.stopPropagation()">
         <div class="hamburger-item" onclick="closeHamburgerMenu(); confirmBackup();">
@@ -5553,8 +5554,8 @@ body.locked .header-actions button {
         <div class="hamburger-item" onclick="closeHamburgerMenu(); toggleNotifications();">
             <span class="h-ico">🔔</span><span>اعلان‌ها (زنگوله)</span>
         </div>
-        <div class="hamburger-item" onclick="closeHamburgerMenu(); openHolidaysPanel();">
-            <span class="h-ico">📅</span><span>تعطیلات رسمی (جستجوی سال جاری)</span>
+        <div class="hamburger-item" onclick="closeHamburgerMenuSilent(); openHolidaysPanel();">
+            <span class="h-ico">📅</span><span>تعطیلات رسمی (انتخاب سال و جستجو)</span>
         </div>
     </div>
 </div>
@@ -7879,7 +7880,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v242-2026-11-21-holidays-gate-overdue-red';
+const APP_VERSION = 'v244-2026-11-22-holidays-panel-navfix';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -17828,36 +17829,31 @@ function accNodeDocTotal(node, docId, section, records) {
 
 // ─── باز و بستن بخش حسابداری ───
 
-// 🔧 BA-214 (v241 — الزام کاربر): قفل حسابداری کاملاً نامرئی شد — «رمز
+// 🔧 BA-214 (v241 — الزام کاربر): قفل حسابداری کاملاً نامرئی است — «رمز
 // است که کسی نباید ببیند و بفهمد؛ هیچ صفحه‌ای نباید نشان داده شود؛
 // برنامه خودش در پس‌زمینه چک کند». شمارش فقط روی خودِ آیکن حسابداری
-// انجام می‌شود: لمس اول شمارش را فعال می‌کند، لمس‌های بعدی فقط روی همان
-// آیکن ثبت می‌شوند و اگر ریتم نسبی «۱ • مکث • ۲ • مکث • ۱ • مکث • ۲»
-// درست بود، حسابداری بی‌صدا باز می‌شود. در هیچ حالتی هیچ بازخورد دیداری
-// یا صوتی‌ای وجود ندارد — نه الگوی درست، نه نادرست، نه ریست؛ به دیگران
-// آیکن «بدون پاسخ» به نظر می‌رسد و از وجود قفل چیزی فهمیده نمی‌شود.
-// مکث بیش از ۴/۵ ثانیه بین لمس‌ها = ریست بی‌صدا. هیچ unlock ذخیره
-// نمی‌شود: هر بار ورود، قفل از نو فعال است. قاعدهٔ قبولی همان قاعدهٔ
-// نسبی v239 است: هر مکث (g1,g3,g4) دست‌کم ۲ برابرِ بزرگ‌ترین فاصلهٔ
-// داخل دوبل‌ها (g2,g5) — پس هر سرعتی که ریتم را نشان دهد قبول است.
-var _accLockTaps = [];
+// انجام می‌شود و در هیچ حالتی هیچ بازخورد دیداری یا صوتی‌ای وجود ندارد؛
+// به دیگران آیکن «بدون پاسخ» به نظر می‌رسد و از وجود قفل چیزی فهمیده
+// نمی‌شود. هیچ unlock ذخیره نمی‌شود: هر بار ورود، قفل از نو فعال است.
+//
+// 🔧 BA-217 (v243 — الزام کاربر): «قفل لمسی رمزی حسابداری به ۳۰ لمس
+// متوالی تغییر کند» — ریتم نسبی ۱-۲-۱-۲ (v239/v241) حذف شد؛ رمز اکنون
+// شمارش سادهٔ بی‌صدا است: ۳۰ لمس متوالی روی خودِ آیکن حسابداری،
+// حسابداری را بی‌صدا باز می‌کند. «متوالی» یعنی مکث بین لمس‌ها نباید بیش
+// از ۲ ثانیه شود؛ مکث طولانی‌تر = شروع دوبارهٔ بی‌صدای شمارنده (کسی که
+// وسط رمز مکث کند، از صفر شمرده می‌شود). پیشرفت شمارش، ریست و ورود
+// نادرست — همه کاملاً بی‌صدا هستند.
+var _accLockTaps = 0;
+var _accLockLastTap = 0;
 
 function accIconTap() {
     const now = Date.now();
-    // مکث طولانی بین لمس‌ها = رها کردن رمز — شروع دوبارهٔ بی‌صدا
-    if (_accLockTaps.length && now - _accLockTaps[_accLockTaps.length - 1] > 4500) {
-        _accLockTaps = [];
-    }
-    _accLockTaps.push(now);
-    if (_accLockTaps.length !== 6) return;
-    const g = [];
-    for (var i = 1; i < 6; i++) g.push(_accLockTaps[i] - _accLockTaps[i - 1]);
-    _accLockTaps = [];
-    // ساختار رمز: [۱] مکث [۲] مکث [۱] مکث [۲] → g1,g3,g4 = مکث‌ها؛ g2,g5 = دوبل‌ها
-    const Lmin = Math.min(g[0], g[2], g[3]);
-    const Smax = Math.max(g[1], g[4]);
-    if (Lmin >= 2 * Smax && Smax >= 25 && Lmin <= 4500) openAccounting();
-    // الگوی نادرست: هیچ اتفاقی نمی‌افتد — کاملاً بی‌صدا
+    // مکث بیش از ۲ ثانیه بین لمس‌ها = رها کردن رمز — شروع دوبارهٔ بی‌صدا
+    if (_accLockTaps > 0 && now - _accLockLastTap > 2000) _accLockTaps = 0;
+    _accLockTaps++;
+    _accLockLastTap = now;
+    if (_accLockTaps >= 30) { _accLockTaps = 0; openAccounting(); }
+    // کمتر از ۳۰ لمس: هیچ اتفاقی نمی‌افتد — کاملاً بی‌صدا
 }
 
 // 🔧 BA-212 (v240 — الزام کاربر): کلید تعطیلات = «اجرای جستجو برای سال
@@ -18119,6 +18115,10 @@ function renderHolidaysList(year) {
 // است (holRunYear) — نه خودکار.
 var HOL_CHOSEN_YEAR = null;
 function openHolidaysPanel() {
+    // 🔧 v244 (BA-218): idempotent — باز کردن دوبارهٔ پنلِ باز، استک مودال
+    // و تاریخچه را خراب نمی‌کند.
+    const ov0 = document.getElementById('holidaysOverlay');
+    if (ov0 && ov0.classList.contains('active')) return;
     const y = HOL_CURRENT_YEAR();
     HOL_CHOSEN_YEAR = null;
     const t = document.getElementById('holTitle');
@@ -18142,6 +18142,20 @@ function openHolidaysPanel() {
     const ov = document.getElementById('holidaysOverlay');
     ov.classList.add('active');
     bringToFront(ov);
+    // 🔧 v244 (BA-218 — گزارش کاربر: «تعطیلات رسمی کلیک می‌شود، صفحه باز
+    // شده پنهان می‌شود و روی صفحات نیست»): اگر پنل از آیتم منوی همبرگری
+    // باز می‌شود، ورودی فعلیِ تاریخچه marker منوی hamburger است؛ navBackِ
+    // منو یک popstate تأخیری می‌سازد که بعد از باز شدن پنل، مودالِ روی
+    // استک (یعنی خود پنل تعطیلات) را بی‌صدا می‌بست. الگوی اتمیک v212
+    // (جستجو/گزارش حسابداری): ورودی hamburger با navReplace به holidays
+    // تبدیل می‌شود — نه popstate ای ساخته می‌شود نه ورودی stale می‌ماند.
+    // در فراخوانی مستقیم (بدون منو) navPush عادی انجام می‌شود.
+    const curState = history.state;
+    if (curState && curState.view === 'modal' && curState.type === 'hamburger') {
+        navReplace({ view: 'modal', type: 'holidays' });
+    } else {
+        navPush({ view: 'modal', type: 'holidays' });
+    }
     trackModalOpen('holidays');
 }
 
@@ -18204,8 +18218,11 @@ function holBackToGate() {
 function closeHolidaysPanel() {
     const ov = document.getElementById('holidaysOverlay');
     if (!ov || !ov.classList.contains('active')) return;
-    ov.classList.remove('active');
-    trackModalClose('holidays');
+    // 🔧 v244 (BA-218): پنل حالا ورودی تاریخچهٔ خودش را دارد (navPush/
+    // navReplace در باز شدن) — بستن باید همان ورودی را هم پاپ کند
+    // (الگوی closeAccSearch)، وگرنه marker stale در تاریخچه می‌ماند.
+    closeModalByType('holidays');
+    navBack();
 }
 
 // علت تعطیلی در خط اول یادداشت هر روز — idempotent؛ محتوای قبلی حفظ می‌شود
@@ -21355,6 +21372,18 @@ function closeHamburgerMenu() {
     navBack();
 }
 
+// 🔧 v244 (BA-218): نسخهٔ silent — فقط closeModalByType بدون navBack
+// (الگوی accCloseHamburgerSilent v212). وقتی آیتم «تعطیلات رسمی»
+// بلافاصله پنل تعطیلات را باز می‌کند، navBack منو یک popstate تأخیری
+// می‌سازد که پنل تازه‌بازشده را می‌بندد. silent اینجا + navReplace در
+// openHolidaysPanel انتقال را اتمیک می‌کند: [.., hamburger] →
+// closeModalByType (بدون pop) → navReplace → [.., holidays].
+function closeHamburgerMenuSilent() {
+    const ov = document.getElementById('hamburgerMenuOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    closeModalByType('hamburger');
+}
+
 
 // ════════════════════════════════════════════════════════════════════
 // فرم جستجو با فیلترهای:
@@ -22162,11 +22191,19 @@ function openNotes(groupId, customTitle) {
         }
     }
     var notesOverlay = document.getElementById('notesOverlay');
+    // 🔧 v244 (BA-218): اگر یادداشت از قبل باز است، فقط محتوای جدید
+    // re-target می‌شود — navPush تکراری نه. push دوباره یعنی marker
+    // تکراری در تاریخچه: Back باید چند بار زده شود و popstate روی
+    // marker stale می‌افتد (همان کلاس باگ «پنل تعطیلات باز و فوری پنهان
+    // می‌شود» — مثال واقعی: لمس دوبارهٔ روزی که در تقویم انتخاب شده).
+    const notesWasActive = notesOverlay.classList.contains('active');
     notesOverlay.classList.add('active');
     bringToFront(notesOverlay);  // 🔧 v156: روی همه overlayها قرار بگیرد
     // 🔧 v216: marker مودال + track — Back موبایل یادداشت را می‌بندد
-    navPush({ view: 'modal', type: 'notes' });
-    trackModalOpen('notes');
+    if (!notesWasActive) {
+        navPush({ view: 'modal', type: 'notes' });
+        trackModalOpen('notes');
+    }
     // اسکرول به بالا
     setTimeout(() => {
         const body = document.querySelector('.notes-body');
@@ -22905,6 +22942,12 @@ const calWeekdayNames = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
 // are already defined above in the Jalali Date Conversion section.
 
 function openCalendar() {
+    // 🔧 v244 (BA-218): idempotent — اگر تقویم از قبل باز است، دوباره
+    // navPush نکن؛ marker تکراری در تاریخچه یعنی Back موبایل باید چند بار
+    // زده شود و popstate روی marker stale می‌افتد (همان کلاس باگ پنل
+    // تعطیلات). فقط وقتی بسته است باز و push می‌شود.
+    const calEl0 = document.getElementById('calendarOverlay');
+    if (calEl0 && calEl0.classList.contains('active')) return;
     applyHeaderAlignedTop();   // 🔧 BA-195: تراز زیر هدر اصلی (قانون BA-154)
     const today = new Date();
     const [jy, jm, jd] = toJalaliParts(today);
