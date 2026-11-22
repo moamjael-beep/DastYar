@@ -2478,6 +2478,29 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .cal-week-row.holiday .cal-week-num,
 .cal-week-row.holiday .cal-week-month { color: #D32F2F; }
 .cal-week-row.today.holiday { background: #E3F2FD; }
+/* 🔧 BA-215 (v242): دروازهٔ انتخاب سال + نوار پیشرفت + بنر نهایی */
+.hol-gate { background:#fff; border:1.5px solid #C5DAF6; border-radius:14px; padding:16px 14px; text-align:center; margin-bottom:12px; }
+.hol-gate-title { font-size:15px; font-weight:800; color:#1a1a1a; margin-bottom:8px; }
+.hol-gate-cur { font-size:13.5px; color:#444; margin-bottom:12px; }
+.hol-gate-cur b { color:#1976D2; font-size:19px; margin-right:4px; }
+.hol-gate-or { color:#888; font-size:12px; margin:10px 0 8px; }
+.hol-gate-row { display:flex; gap:8px; align-items:stretch; }
+.hol-gate-row input { flex:1; min-width:0; border:1.5px solid #ccc; border-radius:10px; padding:9px 12px; font-family:inherit; font-size:15px; text-align:center; direction:ltr; }
+.hol-gate-row input:focus { outline:none; border-color:#1976D2; }
+.hol-gate-run { background:#1976D2; color:#fff; border:none; border-radius:10px; padding:9px 18px; font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer; flex-shrink:0; }
+.hol-gate-hint { font-size:11px; color:#777; margin-top:10px; line-height:1.9; }
+.hol-progress-wrap { background:#fff; border:1.5px solid #C5DAF6; border-radius:12px; padding:10px 12px; margin-bottom:12px; }
+.hol-progress-top { display:flex; justify-content:space-between; align-items:center; font-size:12.5px; color:#333; margin-bottom:7px; font-weight:700; }
+.hol-progress-top span:last-child { color:#1976D2; font-variant-numeric:tabular-nums; }
+.hol-progress-bar { height:10px; background:#E3F0FC; border-radius:6px; overflow:hidden; }
+.hol-progress-fill { height:100%; width:0%; background:linear-gradient(90deg,#1976D2,#42A5F5); border-radius:6px; transition:width 0.3s ease; }
+.hol-final { display:none; background:#E8F5E9; border:1.5px solid #A5D6A7; color:#1B5E20; border-radius:12px; padding:12px 14px; font-size:13px; line-height:1.9; margin:10px 0 4px; text-align:center; }
+.hol-final.show { display:block; }
+/* 🔧 BA-216 (v242 — الزام کاربر): تسک‌های تاریخ‌گذشته در فهرست روزِ
+   تقویم — از مشکی به قرمز */
+.cal-task.overdue { background:#FFEBEE; }
+.cal-task.overdue .cal-task-text { color:#D32F2F; font-weight:600; }
+.cal-task.overdue .cal-task-time { color:#D32F2F; }
 /* 🔧 BA-214 (v241): صفحهٔ قفل حسابداری حذف شد — قفل کاملاً نامرئی است
    (شمارش بی‌صدا روی آیکن در accIconTap؛ هیچ UI ای وجود ندارد). */
 /* 🔧 BA-211 (v239): پنل تعطیلات رسمی */
@@ -4947,15 +4970,35 @@ body.locked .header-actions button {
         <div class="bulk-sms-title" id="holTitle">📅 تعطیلات رسمی</div>
     </div>
     <div class="holidays-body">
-        <div class="hol-sources">
-            <div class="hol-sources-title">🔎 استخراج و مقایسهٔ منابع برای سال جاری</div>
+        <!-- 🔧 BA-215 (v242 — الزام کاربر): پنل اول یک «دروازهٔ سال» است:
+             سال جاری نشان داده می‌شود؛ با تأیید کاربر یا تایپ سال دیگر،
+             فرآیند جستجو/اعمال با نوار پیشرفت اجرا و در پایان بنر نهایی می‌گیرد. -->
+        <div class="hol-gate" id="holGate">
+            <div class="hol-gate-title">جستجوی تعطیلات رسمی برای کدام سال؟</div>
+            <div class="hol-gate-cur">سال جاری شما: <b id="holGateCurYear">—</b></div>
+            <button class="btn btn-primary hol-apply-btn" onclick="holRunYear(HOL_CURRENT_YEAR())">✅ تأیید — اجرا برای سال جاری</button>
+            <div class="hol-gate-or">— یا سال دیگری را تایپ کنید —</div>
+            <div class="hol-gate-row">
+                <input id="holYearInput" type="number" inputmode="numeric" min="1300" max="1500" placeholder="مثلاً ۱۴۰۶">
+                <button class="hol-gate-run" onclick="holRunTypedYear()">اجرا</button>
+            </div>
+            <div class="hol-gate-hint">دادهٔ منابع هر سال با انتشار تقویم رسمی، در به‌روزرسانی برنامه افزوده می‌شود؛ برای سال بدون داده، پیام صادقانه می‌گیرید.</div>
+        </div>
+        <div class="hol-progress-wrap" id="holProgressWrap" style="display:none;">
+            <div class="hol-progress-top"><span id="holProgressLabel">شروع…</span><span id="holProgressPct">۰٪</span></div>
+            <div class="hol-progress-bar"><div class="hol-progress-fill" id="holProgressFill"></div></div>
+        </div>
+        <div class="hol-sources" id="holSourcesBox" style="display:none;">
+            <div class="hol-sources-title" id="holSourcesTitle">🔎 استخراج و مقایسهٔ منابع</div>
             <div id="holLog"></div>
         </div>
         <div id="holidaysList"></div>
-        <button class="btn btn-primary hol-apply-btn" id="holRunBtn" onclick="runHolidayExtraction(HOL_CURRENT_YEAR())">🔍 اجرای دوبارهٔ استخراج، مقایسه و اعمال</button>
-        <button class="btn btn-primary hol-apply-btn" id="holApplyBtn" onclick="applyHolidayNotes()">🔴 ایجاد/به‌روزرسانی یادداشت علت برای همه</button>
+        <div class="hol-final" id="holFinalMsg"></div>
+        <button class="btn btn-primary hol-apply-btn" id="holRunBtn" style="display:none;" onclick="holRunYear(HOL_CHOSEN_YEAR || HOL_CURRENT_YEAR())">🔍 اجرای دوبارهٔ استخراج، مقایسه و اعمال</button>
+        <button class="btn btn-primary hol-apply-btn" id="holGateBtn" style="display:none;" onclick="holBackToGate()">↩ تغییر سال</button>
+        <button class="btn btn-primary hol-apply-btn" id="holApplyBtn" onclick="applyHolidayNotes(false, HOL_CHOSEN_YEAR)">🔴 ایجاد/به‌روزرسانی یادداشت علت برای همه</button>
         <div class="hol-done" id="holDoneMsg"></div>
-        <div class="hol-note">با کلیک روی آیتم منو، جستجوی تعطیلات «سال جاری کاربر» اجرا می‌شود: استخراج از منابع، مقایسهٔ روزبه‌روز، انتخاب فهرست اجماعی («درست‌ترین»)، سپس رنگ قرمز در نمای ماهانه و هفتگی (مثل جمعه‌ها) و یادداشت علت در خط اول یادداشت هر روز — نتیجه در حافظه می‌ماند. اگر یادداشت قبلی داشته باشید، زیر خط علت حفظ می‌شود.</div>
+        <div class="hol-note">بعد از انتخاب سال (تأیید سال جاری یا تایپ سال دیگر)، فرآیند اجرا می‌شود: استخراج از منابع، مقایسهٔ روزبه‌روز، انتخاب فهرست اجماعی («درست‌ترین»)، سپس رنگ قرمز در نمای ماهانه و هفتگی (مثل جمعه‌ها) و یادداشت علت در خط اول یادداشت هر روز — روند پیشرفت زنده نمایش داده می‌شود و در پایان بنر «نهایی» می‌گیرید. نتیجه در حافظه می‌ماند و یادداشت قبلی زیر خط علت حفظ می‌شود.</div>
     </div>
 </div>
 
@@ -7836,7 +7879,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v241-2026-11-21-acc-lock-invisible';
+const APP_VERSION = 'v242-2026-11-21-holidays-gate-overdue-red';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -17973,6 +18016,12 @@ function runHolidayExtraction(year, done) {
     if (!db || !db.full || !db.full.length) {
         log('❌ برای سال ' + toPersianNumber(year) + ' دادهٔ منابع در این نسخهٔ برنامه همراه نیست.', true);
         log('دادهٔ تعطیلات هر سال با انتشار تقویم رسمی در به‌روزرسانی برنامه افزوده می‌شود.');
+        const fillEl0 = document.getElementById('holProgressFill');
+        if (fillEl0) fillEl0.style.width = '0%';
+        const pctEl0 = document.getElementById('holProgressPct');
+        if (pctEl0) pctEl0.textContent = '—';
+        const lblEl0 = document.getElementById('holProgressLabel');
+        if (lblEl0) lblEl0.textContent = 'دادهٔ این سال همراه برنامه نیست';
         if (done) done(null);
         return;
     }
@@ -18033,10 +18082,17 @@ function runHolidayExtraction(year, done) {
         if (typeof calState !== 'undefined' && calState && document.getElementById('calendarOverlay').classList.contains('active')) renderCalendar();
         if (done) done(final);
     });
-    // اجرای پله‌ای با تأخیر — بازخورد زندهٔ مراحل جستجو
+    // اجرای پله‌ای با تأخیر — بازخورد زندهٔ مراحل جستجو + نوار پیشرفت (BA-215)
+    const totalSteps = steps.length;
+    let doneSteps = 0;
     let t = 120;
     steps.forEach(function (fn) {
-        setTimeout(function () { if (seq === _holRunSeq) fn(); }, t);
+        setTimeout(function () {
+            if (seq !== _holRunSeq) return;
+            fn();
+            doneSteps++;
+            if (typeof holProgressSet === 'function') holProgressSet(doneSteps, totalSteps);
+        }, t);
         t += 340;
     });
 }
@@ -18058,20 +18114,91 @@ function renderHolidaysList(year) {
     box.innerHTML = html || '<div class="hol-note">هنوز فهرستی برای این سال اعمال نشده است.</div>';
 }
 
-// کلید منو = شروع جستجو برای سال جاری کاربر
+// 🔧 BA-215 (v242 — الزام کاربر): کلید منو فقط صفحه را باز می‌کند و
+// «سال جاری» را نشان می‌دهد؛ اجرا بعد از تأیید کاربر یا تایپ سال دیگر
+// است (holRunYear) — نه خودکار.
+var HOL_CHOSEN_YEAR = null;
 function openHolidaysPanel() {
     const y = HOL_CURRENT_YEAR();
+    HOL_CHOSEN_YEAR = null;
     const t = document.getElementById('holTitle');
-    if (t) t.textContent = '📅 تعطیلات رسمی سال ' + toPersianNumber(y);
-    const logEl = document.getElementById('holLog');
-    if (logEl) logEl.innerHTML = '';
-    const listEl = document.getElementById('holidaysList');
-    if (listEl) listEl.innerHTML = '';
+    if (t) t.textContent = '📅 تعطیلات رسمی';
+    const gate = document.getElementById('holGate');
+    if (gate) {
+        gate.style.display = '';
+        const gy = document.getElementById('holGateCurYear');
+        if (gy) gy.textContent = toPersianNumber(y);
+        const inp = document.getElementById('holYearInput');
+        if (inp) inp.value = '';
+    }
+    const logEl = document.getElementById('holLog'); if (logEl) logEl.innerHTML = '';
+    const listEl = document.getElementById('holidaysList'); if (listEl) listEl.innerHTML = '';
+    const doneEl = document.getElementById('holDoneMsg'); if (doneEl) doneEl.textContent = '';
+    const finEl = document.getElementById('holFinalMsg'); if (finEl) finEl.className = 'hol-final';
+    const pw = document.getElementById('holProgressWrap'); if (pw) pw.style.display = 'none';
+    const sb = document.getElementById('holSourcesBox'); if (sb) sb.style.display = 'none';
+    const rb = document.getElementById('holRunBtn'); if (rb) rb.style.display = 'none';
+    const gb = document.getElementById('holGateBtn'); if (gb) gb.style.display = 'none';
     const ov = document.getElementById('holidaysOverlay');
     ov.classList.add('active');
     bringToFront(ov);
     trackModalOpen('holidays');
-    runHolidayExtraction(y);
+}
+
+// اجرای فرآیند برای سال انتخابی — نوار پیشرفت زنده + بنر نهایی
+function holProgressSet(doneN, total) {
+    const fill = document.getElementById('holProgressFill');
+    const pct = document.getElementById('holProgressPct');
+    const lbl = document.getElementById('holProgressLabel');
+    const p = total ? Math.round(doneN * 100 / total) : 0;
+    if (fill) fill.style.width = p + '%';
+    if (pct) pct.textContent = toPersianNumber(p) + '٪';
+    if (lbl) lbl.textContent = (doneN >= total && total > 0) ? 'پایان مراحل' : ('مرحلهٔ ' + toPersianNumber(doneN) + ' از ' + toPersianNumber(total));
+}
+function holRunYear(y) {
+    y = parseInt(y, 10);
+    if (!y || y < 1300 || y > 1500) { showToast('سال را درست وارد کنید — مثلاً ۱۴۰۶'); return; }
+    HOL_CHOSEN_YEAR = y;
+    const gate = document.getElementById('holGate'); if (gate) gate.style.display = 'none';
+    const pw = document.getElementById('holProgressWrap'); if (pw) pw.style.display = '';
+    const sb = document.getElementById('holSourcesBox'); if (sb) sb.style.display = '';
+    const t = document.getElementById('holTitle'); if (t) t.textContent = '📅 تعطیلات رسمی سال ' + toPersianNumber(y);
+    const st = document.getElementById('holSourcesTitle'); if (st) st.textContent = '🔎 استخراج و مقایسهٔ منابع برای سال ' + toPersianNumber(y);
+    const logEl = document.getElementById('holLog'); if (logEl) logEl.innerHTML = '';
+    const listEl = document.getElementById('holidaysList'); if (listEl) listEl.innerHTML = '';
+    const doneEl = document.getElementById('holDoneMsg'); if (doneEl) doneEl.textContent = '';
+    const finEl = document.getElementById('holFinalMsg'); if (finEl) finEl.className = 'hol-final';
+    const rb = document.getElementById('holRunBtn'); if (rb) rb.style.display = '';
+    const gb = document.getElementById('holGateBtn'); if (gb) gb.style.display = '';
+    holProgressSet(0, 1);
+    runHolidayExtraction(y, function (final) {
+        holProgressSet(1, 1);
+        if (final) {
+            const finEl2 = document.getElementById('holFinalMsg');
+            if (finEl2) {
+                finEl2.innerHTML = '🏁 <b>فرآیند کامل شد — نهایی:</b> تعطیلات رسمی سال ' + toPersianNumber(y) +
+                    ' اعمال شد (' + toPersianNumber(final.length) + ' روز) — رنگ قرمز تقویم + یادداشت علت روزها.';
+                finEl2.className = 'hol-final show';
+            }
+        }
+    });
+}
+function holRunTypedYear() {
+    const inp = document.getElementById('holYearInput');
+    holRunYear(inp ? inp.value : '');
+}
+function holBackToGate() {
+    HOL_CHOSEN_YEAR = null;
+    const gate = document.getElementById('holGate'); if (gate) gate.style.display = '';
+    const pw = document.getElementById('holProgressWrap'); if (pw) pw.style.display = 'none';
+    const sb = document.getElementById('holSourcesBox'); if (sb) sb.style.display = 'none';
+    const listEl = document.getElementById('holidaysList'); if (listEl) listEl.innerHTML = '';
+    const doneEl = document.getElementById('holDoneMsg'); if (doneEl) doneEl.textContent = '';
+    const finEl = document.getElementById('holFinalMsg'); if (finEl) finEl.className = 'hol-final';
+    const rb = document.getElementById('holRunBtn'); if (rb) rb.style.display = 'none';
+    const gb = document.getElementById('holGateBtn'); if (gb) gb.style.display = 'none';
+    const t = document.getElementById('holTitle'); if (t) t.textContent = '📅 تعطیلات رسمی';
+    const gy = document.getElementById('holGateCurYear'); if (gy) gy.textContent = toPersianNumber(HOL_CURRENT_YEAR());
 }
 
 function closeHolidaysPanel() {
@@ -23218,8 +23345,12 @@ function renderCalendarDayTasks() {
             `<span class="cal-task-type ${t}">${getTaskTypeLabel(t)}</span>`
         ).join('');
 
+        // 🔧 BA-216 (v242 — الزام کاربر): تسک تاریخ‌گذشته (سررسیدش گذشته
+        // و هنوز فعال است) — قرمز، نه مشکی
+        const isOverdueTask = !item.done && item.cancelled != true && item.suspended != true &&
+            (new Date(item.deadline).getTime() < Date.now());
         const div = document.createElement('div');
-        div.className = 'cal-task';
+        div.className = 'cal-task' + (isOverdueTask ? ' overdue' : '');
         // Group badge: a small colored pill showing the task's group name.
         // Shown for EVERY task (including the default "همه کارها" group) so
         // the user can always see at-a-glance which group each calendar task
