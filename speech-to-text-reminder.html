@@ -766,31 +766,33 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .item.warning { background: linear-gradient(135deg, #FB8C00, #E65100); }
 .item.urgent { background: linear-gradient(135deg, #E53935, #B71C1C); }
 
-/* 🔧 BA-197 (v232 — الزام کاربر: «رنگ تسک هایی که از زمانشان گذشته از
-   قرمز پررنگ به قرمز کمرنگ تغییر کند نه مشکی»): چشمک تسک‌های گذشته
-   بین قرمز پررنگ (#E53935) و قرمز کمرنگ (#FFCDD2). متن هم هم‌زمان
-   سفید ↔ قرمز تیره می‌شود تا روی زمینهٔ کمرنگ خوانا بماند. */
-@keyframes overdueBlink {
-    0%, 100% {
-        background-color: #E53935;  /* قرمز پررنگ */
+/* 🔧 BA-220 (v245 — الزام کاربر: «تسک های تاریخ گذشته باید اول قرمز باشد
+   به تدریج به رنگ مشکی دربیاید و متوالی تکرار شود»): چرخهٔ پیوستهٔ رنگ —
+   شروع قرمز پررنگ (#E53935)، محو تدریجی به مشکی (#212121) تا ~۸۰٪ چرخه،
+   مکث کوتاه روی مشکی، و تکرار متوالی از قرمز (infinite). نسخهٔ قبلی
+   (BA-197/v232) چشمک قرمز ↔ قرمز کمرنگ بود و هرگز مشکی نمی‌شد. متن
+   سفید می‌ماند تا روی قرمز و مشکی خوانا بماند. */
+@keyframes overdueRedToBlack {
+    0% {
+        background-color: #E53935;  /* قرمز پررنگ — آغاز هر چرخه */
         color: #ffffff;
         box-shadow: 0 2px 14px rgba(229, 57, 53, 0.5);
     }
-    50% {
-        background-color: #FFCDD2;  /* قرمز کمرنگ */
-        color: #B71C1C;
-        box-shadow: 0 2px 18px rgba(229, 57, 53, 0.8);
+    80%, 100% {
+        background-color: #212121;  /* مشکی — پایان چرخه؛ سپس تکرار متوالی */
+        color: #ffffff;
+        box-shadow: 0 2px 14px rgba(0, 0, 0, 0.4);
     }
 }
 .item.overdue {
     background-color: #E53935; /* fallback — قرمز پررنگ */
     color: #ffffff;
-    animation: overdueBlink 3s ease-in-out infinite;
+    animation: overdueRedToBlack 4s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
     .item.overdue {
         animation: none;
-        background-color: #FFCDD2; /* قرمز کمرنگ — بدون چشمک */
+        background-color: #FFCDD2; /* قرمز کمرنگ ثابت — بدون چرخه */
         color: #B71C1C;
     }
 }
@@ -2496,15 +2498,22 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 .hol-progress-fill { height:100%; width:0%; background:linear-gradient(90deg,#1976D2,#42A5F5); border-radius:6px; transition:width 0.3s ease; }
 .hol-final { display:none; background:#E8F5E9; border:1.5px solid #A5D6A7; color:#1B5E20; border-radius:12px; padding:12px 14px; font-size:13px; line-height:1.9; margin:10px 0 4px; text-align:center; }
 .hol-final.show { display:block; }
-/* 🔧 BA-216 (v242 — الزام کاربر): تسک‌های تاریخ‌گذشته در فهرست روزِ
-   تقویم — از مشکی به قرمز */
+/* 🔧 BA-216 (v242): تسک‌های تاریخ‌گذشته در فهرست روزِ تقویم — قرمز.
+   🔧 BA-220 (v245): همان چرخهٔ «قرمز → تدریجی مشکی → تکرار متوالی» روی
+   متن/ساعت — زمینهٔ کمرنگ سطر می‌ماند و رنگ متن چرخه را طی می‌کند. */
 .cal-task.overdue { background:#FFEBEE; }
-.cal-task.overdue .cal-task-text { color:#D32F2F; font-weight:600; }
-.cal-task.overdue .cal-task-time { color:#D32F2F; }
+@keyframes overdueTextRedToBlack {
+    0% { color: #D32F2F; }
+    80%, 100% { color: #212121; }
+}
+.cal-task.overdue .cal-task-text { color:#D32F2F; font-weight:600; animation: overdueTextRedToBlack 4s ease-in-out infinite; }
+.cal-task.overdue .cal-task-time { color:#D32F2F; animation: overdueTextRedToBlack 4s ease-in-out infinite; }
 /* 🔧 BA-214 (v241): صفحهٔ قفل حسابداری حذف شد — قفل کاملاً نامرئی است
    (شمارش بی‌صدا روی آیکن در accIconTap؛ هیچ UI ای وجود ندارد). */
 /* 🔧 BA-211 (v239): پنل تعطیلات رسمی */
-.holidays-overlay { position: fixed; inset: 0; background: #f5f6f8; z-index: 9600; display: none; flex-direction: column; }
+.holidays-overlay { position: fixed; left: 0; right: 0; bottom: 0;
+    top: var(--header-h, 58px); /* 🔧 v245 (BA-219): قانون BA-154 — تراز و فیکس زیر هدر اصلی */
+    background: #f5f6f8; z-index: 9600; display: none; flex-direction: column; }
 .holidays-overlay.active { display: flex; }
 .holidays-body { flex: 1; overflow-y: auto; padding: 12px; }
 .hol-sources { background: #E8F0FE; border: 1px solid #C5DAF6; border-radius: 12px; padding: 10px 12px; font-size: 12px; color: #333; line-height: 1.9; margin-bottom: 12px; }
@@ -7880,7 +7889,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v244-2026-11-22-holidays-panel-navfix';
+const APP_VERSION = 'v245-2026-11-22-holidays-align-overdue-fade';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -18119,6 +18128,7 @@ function openHolidaysPanel() {
     // و تاریخچه را خراب نمی‌کند.
     const ov0 = document.getElementById('holidaysOverlay');
     if (ov0 && ov0.classList.contains('active')) return;
+    applyHeaderAlignedTop();   // 🔧 v245 (BA-219): قانون BA-154 — تراز زیر هدر اصلی
     const y = HOL_CURRENT_YEAR();
     HOL_CHOSEN_YEAR = null;
     const t = document.getElementById('holTitle');
