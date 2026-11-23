@@ -8029,7 +8029,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v246-2026-11-23-network-phase1';
+const APP_VERSION = 'v247-2026-11-23-net-setup-guide';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -18626,7 +18626,7 @@ function netSetupHtml() {
     let h = '<div class="net-strip">🛰️ شبکهٔ اختیاری — چت متنی دوطرفه، گروه تسک مشترک، پاس دادن تسک و تماس صوتی دوطرفه. بدون تنظیم، برنامه مثل قبل تک‌کاربره است.</div>';
     h += '<div class="net-card"><h4>۱) اتصال به پایگاه ابری (Supabase رایگان)</h4>'
         + '<div class="net-field"><label>آدرس پروژه (Project URL)</label><input id="netUrl" style="direction:ltr;text-align:left;" placeholder="https://xxxx.supabase.co" value="' + escA(st.url || '') + '"></div>'
-        + '<div class="net-field"><label>کلید عمومی (anon public key)</label><input id="netKey" style="direction:ltr;text-align:left;" placeholder="eyJhbGciOi…" value="' + escA(st.key || '') + '"></div>'
+        + '<div class="net-field"><label>کلید عمومی (Publishable یا anon)</label><input id="netKey" style="direction:ltr;text-align:left;" placeholder="sb_publishable_… یا eyJ…" value="' + escA(st.key || '') + '"></div>'
         + '<div class="net-field"><label>نام نمایشی من</label><input id="netName" placeholder="مثلاً مامان" value="' + escA(st.name || '') + '"></div>'
         + '<div class="net-field"><label>TURN اختیاری برای شبکه‌های بسته — فرمت: turn:user:pass@host:port</label><input id="netTurn" style="direction:ltr;text-align:left;" value="' + escA(st.turn || '') + '"></div>'
         + '<button class="net-btn" onclick="netSaveAndConnect()">ذخیره و اتصال</button> '
@@ -18634,7 +18634,7 @@ function netSetupHtml() {
         + '</div>';
     h += '<div class="net-guide"><b>راهنمای یک‌بارِ راه‌اندازی:</b><ol>'
         + '<li>در supabase.com یک پروژهٔ رایگان بسازید.</li>'
-        + '<li>از Settings → API دو مقدار «Project URL» و «anon public key» را کپی و در فرم بالا وارد کنید.</li>'
+        + '<li>از داشبورد پروژه دکمهٔ «Connect» بالای صفحه را بزنید: Project URL و کلید عمومی (Publishable) را نشان می‌دهد — یا از ⚙ Settings → API Keys. کلید service_role/secret را هرگز وارد نکنید.</li>'
         + '<li>یک بار در SQL Editor همان پروژه اسکریپت زیر را اجرا کنید (۴ جدول شبکه ساخته می‌شود).</li>'
         + '<li>برگردید به همین صفحه و «ذخیره و اتصال» را بزنید.</li></ol>'
         + '<textarea readonly id="netSqlTxt">' + escapeHtml(NET_SQL_HELP) + '</textarea>'

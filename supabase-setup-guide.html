@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>راهنمای اتصال شبکهٔ یادآور به Supabase</title>
+<style>
+  :root { --p:#1a237e; --ok:#2e7d32; --warn:#e65100; --bg:#f5f6f8; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:#263238;
+         font-family: Tahoma, "Noto Sans SC", sans-serif; line-height:2; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: clamp(12px, 4vw, 28px); }
+  header.hero { background: linear-gradient(135deg, var(--p), #283593); color:#fff;
+    border-radius: 16px; padding: clamp(16px, 5vw, 30px); margin-bottom: 18px; }
+  header.hero h1 { margin:0 0 6px; font-size: clamp(1.25rem, 5.5vw, 1.9rem); }
+  header.hero p { margin:0; font-size: clamp(.85rem, 3.4vw, 1rem); opacity:.92; }
+  .step { background:#fff; border:1px solid #e3e8ef; border-radius:14px;
+    padding: clamp(12px, 4vw, 20px); margin-bottom:14px; }
+  .step h2 { margin:0 0 10px; font-size: clamp(1rem, 4.4vw, 1.25rem); color:var(--p);
+    display:flex; align-items:center; gap:10px; }
+  .num { background:var(--p); color:#fff; width:34px; height:34px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0; }
+  .step ol { margin:6px 0 0; padding-right:22px; padding-left:0; font-size: clamp(.85rem, 3.6vw, .98rem); }
+  .step li { margin-bottom:8px; }
+  .btn-name { background:#e8eaf6; color:#283593; font-weight:800; padding:2px 9px;
+    border-radius:7px; white-space:nowrap; display:inline-block; font-size:.92em; }
+  .path { direction:ltr; unicode-bidi:isolate; display:inline-block; background:#f1f4f8;
+    padding:1px 8px; border-radius:6px; font-size:.9em; color:#37474f; font-weight:700; }
+  .code { direction:ltr; unicode-bidi:isolate; background:#263238; color:#aed581;
+    padding:1px 8px; border-radius:6px; font-family:monospace; font-size:.9em; display:inline-block; }
+  .warn { background:#FFF3E0; border-right:4px solid var(--warn); border-radius:10px;
+    padding:10px 14px; margin:10px 0; font-size: clamp(.82rem, 3.4vw, .95rem); }
+  .okbox { background:#E8F5E9; border-right:4px solid var(--ok); border-radius:10px;
+    padding:10px 14px; margin:10px 0; font-size: clamp(.82rem, 3.4vw, .95rem); }
+  pre { direction:ltr; text-align:left; background:#263238; color:#cfd8dc; border-radius:12px;
+    padding:14px; overflow-x:auto; font-size:11px; line-height:1.6; font-family:monospace; max-height:260px; }
+  .copybtn { border:none; background:var(--ok); color:#fff; font-weight:800; font-size:1rem;
+    padding:12px 22px; border-radius:12px; cursor:pointer; display:block; width:100%; max-width:320px; margin:10px auto; }
+  .copybtn:active { transform:scale(.98); }
+  table { width:100%; border-collapse:collapse; font-size: clamp(.8rem, 3.4vw, .92rem); }
+  th, td { border:1px solid #e3e8ef; padding:8px 10px; text-align:right; }
+  th { background:#f1f4f8; }
+  .tblwrap { overflow-x:auto; border-radius:10px; }
+  footer { text-align:center; color:#78909c; font-size:.8rem; padding:14px 0 30px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>🛰️ راهنمای کامل اتصال شبکهٔ یادآور</h1>
+  <p>۶ مرحلهٔ ساده — حدود ۱۰ دقیقه — فقط یک بار برای همیشه. برای چت دوطرفه، گروه تسک مشترک، پاس دادن تسک و تماس صوتی.</p>
+</header>
+
+<div class="step">
+  <h2><span class="num">۱</span> ساخت حساب در سایت (۲ دقیقه)</h2>
+  <ol>
+    <li>در مرورگر باز کنید: <span class="code">supabase.com</span></li>
+    <li>بالای صفحه دکمهٔ <span class="btn-name">Start your project</span> (یا <span class="btn-name">Sign In</span>) را بزنید.</li>
+    <li>ساده‌ترین راه: <span class="btn-name">Continue with Google</span> — با جیمیل خودتان وارد شوید.
+        (اگر گوگل ندارید: «Sign up» → ایمیل + پسورد → کد تأییدی که به ایمیلتان می‌آید را وارد کنید.)</li>
+    <li>اگر پرسید Organization چیست، همان پیش‌فرض (شخصی) را قبول کنید.</li>
+  </ol>
+</div>
+
+<div class="step">
+  <h2><span class="num">۲</span> ساخت پروژهٔ رایگان (۳ دقیقه)</h2>
+  <ol>
+    <li>در داشبورد، دکمهٔ سبز <span class="btn-name">New project</span> را بزنید.</li>
+    <li>در پنجرهٔ بازشده:
+      <br>• <b>Name</b> → بنویسید <span class="code">yadavar</span>
+      <br>• <b>Database Password</b> → دکمهٔ <span class="btn-name">Generate a password</span> را بزنید و آن پسورد را در یادداشت گوشی ذخیره کنید (فقط برای ورود به سایت است؛ در برنامه وارد نمی‌شود) و تیک «Saved my password» را بزنید.
+      <br>• <b>Region</b> → اگر گزینه بود <span class="code">Mumbai</span> یا <span class="code">Bahrain</span> (نزدیک‌تر به ایران)؛ نبود، هرکدام.
+    </li>
+    <li>دکمهٔ <span class="btn-name">Create new project</span> را بزنید و حدود ۲ دقیقه صبر کنید تا پروژه آماده شود.</li>
+  </ol>
+</div>
+
+<div class="step">
+  <h2><span class="num">۳</span> کپی دو مقدار لازم</h2>
+  <ol>
+    <li>داخل پروژه، بالای صفحه دکمهٔ <span class="btn-name">Connect</span> را بزنید. پنجره‌ای باز می‌شود که <b>Project URL</b> (شبیه <span class="code">https://abcd1234.supabase.co</span>) و <b>Publishable key</b> (شبیه <span class="code">sb_publishable_…</span>) را نشان می‌دهد.</li>
+    <li>کنار هر کدام دکمهٔ کپی 📋 هست — هر دو را کپی و در یادداشت گوشی ذخیره کنید.</li>
+    <li>اگر در آن پنجره نبود: منوی چپ، پایین صفحه، چرخ‌دندهٔ <span class="btn-name">⚙ Settings</span> → <span class="path">API Keys</span> → کنار Publishable key دکمهٔ کپی.</li>
+    <li>نکته: کلید قدیمی که با <span class="code">eyJ…</span> شروع می‌شود (برچسب anon) هم کار می‌کند؛ هر کدام را دیدید همان.</li>
+  </ol>
+  <div class="warn">⚠️ <b>کلید service_role یا secret را هرگز کپی و وارد نکنید.</b> فقط کلید «Publishable» یا «anon» مجاز است.</div>
+</div>
+
+<div class="step">
+  <h2><span class="num">۴</span> اجرای اسکریپت SQL (یک بار برای همیشه)</h2>
+  <ol>
+    <li>منوی چپ سایت → آیکون <span class="btn-name">SQL Editor</span> (شبیه <span class="code">&gt;_</span>) را بزنید.</li>
+    <li>دکمهٔ <span class="btn-name">New query</span> (+) را بزنید — یک کادر خالی باز می‌شود.</li>
+    <li>از دکمهٔ سبز پایینِ همین بخش، اسکریپت را کپی کنید (یا در خود برنامهٔ یادآور: منوی ☰ → 🛰️ شبکه → دکمهٔ «📋 کپی اسکریپت SQL») و داخل کادر پیست کنید.</li>
+    <li>دکمهٔ سبز <span class="btn-name">Run</span> (پایین صفحه) یا <span class="code">Ctrl+Enter</span> را بزنید.</li>
+  </ol>
+  <div class="okbox">✅ پیام «<b>Success. No rows returned</b>» یعنی موفق — ۴ جدول شبکه ساخته شد. این مرحله فقط یک بار لازم است.</div>
+  <div class="warn">اگر دوباره Run کنید و خطای «already exists» دیدید، عیبی ندارد — یعنی قبلاً ساخته شده.</div>
+  <button class="copybtn" onclick="copySql(this)">📋 کپی اسکریپت SQL</button>
+  <pre id="sqlTxt">-- یاداوار شبکه — یک بار در SQL Editor پروژهٔ Supabase اجرا شود
+create extension if not exists pgcrypto;
+create table if not exists net_groups (
+  id uuid primary key default gen_random_uuid(),
+  code text unique not null,
+  name text not null,
+  created_by text not null,
+  created_at timestamptz default now()
+);
+create table if not exists net_members (
+  group_id uuid references net_groups(id) on delete cascade,
+  user_id text not null,
+  display_name text not null,
+  joined_at timestamptz default now(),
+  primary key (group_id, user_id)
+);
+create table if not exists net_tasks (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid references net_groups(id) on delete cascade,
+  title text not null,
+  deadline date,
+  owner_id text not null,
+  owner_name text not null,
+  assignee_id text,
+  assignee_name text,
+  done boolean not null default false,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+create table if not exists net_messages (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid references net_groups(id) on delete cascade,
+  sender_id text not null,
+  sender_name text not null,
+  text text not null,
+  created_at timestamptz default now()
+);
+alter table net_groups enable row level security;
+alter table net_members enable row level security;
+alter table net_tasks enable row level security;
+alter table net_messages enable row level security;
+create policy "net_groups_all" on net_groups for all using (true) with check (true);
+create policy "net_members_all" on net_members for all using (true) with check (true);
+create policy "net_tasks_all" on net_tasks for all using (true) with check (true);
+create policy "net_messages_all" on net_messages for all using (true) with check (true);</pre>
+</div>
+
+<div class="step">
+  <h2><span class="num">۵</span> وصل کردن برنامهٔ یادآور</h2>
+  <ol>
+    <li>برنامهٔ یادآور را باز کنید (اگر نسخهٔ جدید نبود، دوبار رفرش کنید).</li>
+    <li>منوی ☰ (همبرگری) → <span class="btn-name">🛰️ شبکه</span></li>
+    <li>فرم را پر کنید:
+      <br>• <b>آدرس پروژه</b> → همان Project URL مرحلهٔ ۳
+      <br>• <b>کلید عمومی</b> → همان Publishable key مرحلهٔ ۳
+      <br>• <b>نام نمایشی</b> → مثلاً «مامان» یا «پدر» (همین نام در چت و اعضا دیده می‌شود)
+    </li>
+    <li>دکمهٔ <span class="btn-name">ذخیره و اتصال</span> را بزنید.</li>
+  </ol>
+  <div class="okbox">✅ وقتی بالای پنل نوشت «<b>متصل ✓</b>» همه‌چیز آماده است.</div>
+</div>
+
+<div class="step">
+  <h2><span class="num">۶</span> ساخت گروه و دعوت بقیه</h2>
+  <ol>
+    <li>در پنل شبکه، تب <span class="btn-name">👥 گروه‌ها</span> → نام گروه (مثلاً «خانواده») → دکمهٔ <span class="btn-name">ساخت گروه</span>.</li>
+    <li>یک <b>کد دعوت ۶ حرفی</b> نمایش داده می‌شود — آن را برای اعضای خانواده/همکاران بفرستید.</li>
+    <li>هر نفر روی گوشی خودش فقط مرحلهٔ ۵ را انجام می‌دهد، بعد: تب گروه‌ها → «عضویت با کد دعوت» → کد شما.</li>
+    <li>حالا: تب 💬 چت گروه، تب ✅ تسک‌های گروه (با «پاس دادن»)، و دکمهٔ 📞 تماس کنار اسم هر عضوِ آنلاین.</li>
+  </ol>
+  <div class="warn">برای تماس صوتی، مرورگر یک بار اجازهٔ میکروفون می‌پرسد → «اجازه دادن / Allow» بزنید.</div>
+</div>
+
+<div class="step">
+  <h2>🩺 اگر مشکل داشتید</h2>
+  <div class="tblwrap">
+  <table>
+    <tr><th>پیام</th><th>علت و راه‌حل</th></tr>
+    <tr><td>«اتصال ناموفق»</td><td>URL با <span class="code">https://</span> کامل باشد؛ کلید درست باشد (نه secret/service_role)؛ بعد در پنل «↻ اتصال دوباره»</td></tr>
+    <tr><td>«relation does not exist»</td><td>اسکریپت مرحلهٔ ۴ هنوز اجرا نشده — بروید SQL Editor و Run بزنید</td></tr>
+    <tr><td>اعضای دیگر دیده نمی‌شوند</td><td>کد دعوت را درست وارد کرده‌اند؟ تب گروه‌ها را ببندید و باز کنید</td></tr>
+    <tr><td>تماس وصل نمی‌شود</td><td>هر دو طرف اینترنت داشته باشند؛ اجازهٔ میکروفون داده شده باشد؛ شبکهٔ بسیار بسته → فیلد TURN اختیاری در تنظیمات</td></tr>
+    <tr><td>پروژه «Paused» شد</td><td>پلن رایگان بعد از حدود یک هفته بی‌استفاده پروژه را می‌خوابد — در داشبورد دکمهٔ <span class="btn-name">Restore project</span> را بزنید</td></tr>
+  </table>
+  </div>
+  <div class="okbox">🔒 <b>امنیت:</b> کلید عمومی معمولی است و لو رفتنش خطر ندارد (مثل شمارهٔ تلفن)؛ مرز امنیتی چت و تسک‌ها «کد دعوت گروه» است. پسورد مرحلهٔ ۲ فقط برای ورود به سایت است و هیچ‌وقت در برنامه وارد نمی‌شود.</div>
+</div>
+
+<footer>راهنمای برنامهٔ یادآور — نسخهٔ v247 — ساخته‌شده به‌صورت خودکار</footer>
+</div>
+<script>
+function copySql(btn) {
+  var t = document.getElementById('sqlTxt');
+  var txt = t.textContent;
+  function done() { var o = btn.textContent; btn.textContent = '✅ کپی شد'; setTimeout(function(){ btn.textContent = o; }, 1800); }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(done, function(){ fallback(); });
+  } else { fallback(); }
+  function fallback() {
+    var ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); done(); } catch(e) { alert('کپی نشد — متن داخل کادر را دستی انتخاب و کپی کنید'); }
+    document.body.removeChild(ta);
+  }
+}
+</script>
+</body>
+</html>

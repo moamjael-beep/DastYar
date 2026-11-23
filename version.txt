@@ -1,1 +1,1 @@
-v246-2026-11-23-network-phase1
+v247-2026-11-23-net-setup-guide
