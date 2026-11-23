@@ -98,6 +98,9 @@
      ──────────────────────────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" defer
         onerror="this.onerror=null; var fb=document.createElement('script'); fb.src='https://unpkg.com/sortablejs@1.15.0/Sortable.min.js'; fb.defer=true; document.head.appendChild(fb);"></script>
+<!-- 🔧 v246 (BA-222): کتابخانهٔ شبکه — اختیاری؛ اگر بارگیری نشود برنامه
+     بدون شبکه مثل قبل کار می‌کند و پنل شبکه پیام صادقانه می‌دهد -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <style>
 /* ════════════════════════════════════════════════════════════════════
    بخش ۱: استایل‌های CSS — ظاهر و چیدمان برنامه
@@ -4698,6 +4701,117 @@ body.locked .header-actions button {
     .phone-action-icon { font-size: 24px; }
     .phone-action-label { font-size: 10px; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   🔧 v246 (BA-222): شبکه (فاز ۱) — چت متنی دوطرفه، گروه تسک مشترک،
+   پاس دادن تسک، تماس صوتی دوطرفهٔ ۱:۱ (WebRTC). لایهٔ کاملاً اختیاری:
+   بدون تنظیم Supabase، برنامه دقیقاً مثل قبل تک‌کاربره است.
+   طبق قانون BA-154: بالای صفحه زیر هدر اصلی فیکس (top = --header-h)
+   و بدنه اسکرول‌پذیر. طبق الگوی BA-218: باز/بسته با استک مودال‌ها.
+   ════════════════════════════════════════════════════════════════════ */
+.net-overlay {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    top: var(--header-h, 58px); /* قانون BA-154 */
+    background: #f5f6f8; z-index: 9800;
+    display: none; flex-direction: column; direction: rtl;
+}
+.net-overlay.active { display: flex; }
+.net-topbar {
+    display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+    background: #fff; border-bottom: 1px solid #e5e5e5; flex-shrink: 0;
+}
+.net-back-btn {
+    border: none; background: #eef1f5; color: var(--primary, #1a237e);
+    font-weight: 800; padding: 7px 12px; border-radius: 9px; font-size: 13px;
+}
+.net-title { font-weight: 900; font-size: 15px; color: #263238; flex: 1; }
+.net-dot { font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 999px; background: #eceff1; color: #607d8b; white-space: nowrap; }
+.net-dot.on { background: #E8F5E9; color: #2E7D32; }
+.net-dot.err { background: #FFEBEE; color: #C62828; }
+.net-body { flex: 1; overflow-y: auto; padding: 12px 12px 90px; -webkit-overflow-scrolling: touch; }
+.net-strip {
+    background: #fff; border: 1px solid #e3e8ef; border-radius: 12px;
+    padding: 10px 12px; margin-bottom: 10px; font-size: 12.5px; color: #37474f;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.net-strip b { color: #263238; }
+.net-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.net-tab {
+    flex: 1; text-align: center; padding: 8px 6px; border-radius: 10px;
+    background: #fff; border: 1px solid #e3e8ef; font-weight: 800; font-size: 12.5px;
+    color: #546e7a;
+}
+.net-tab.active { background: var(--primary, #1a237e); color: #fff; border-color: var(--primary, #1a237e); }
+.net-card { background: #fff; border: 1px solid #e3e8ef; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+.net-card h4 { margin: 0 0 6px; font-size: 13px; color: #263238; }
+.net-field { margin-bottom: 8px; }
+.net-field label { display: block; font-size: 11.5px; font-weight: 800; color: #607d8b; margin-bottom: 4px; }
+.net-field input, .net-field select {
+    width: 100%; box-sizing: border-box; padding: 9px 10px; border: 1px solid #cfd8dc;
+    border-radius: 9px; font-size: 13px; background: #fbfcfe; color: #263238;
+}
+.net-field input:focus, .net-field select:focus { outline: none; border-color: var(--primary, #1a237e); }
+.net-btn {
+    display: inline-block; border: none; border-radius: 9px; padding: 9px 14px;
+    font-weight: 800; font-size: 12.5px; background: var(--primary, #1a237e); color: #fff;
+}
+.net-btn.secondary { background: #eceff1; color: #37474f; }
+.net-btn.danger { background: #c62828; color: #fff; }
+.net-btn.small { padding: 6px 10px; font-size: 11.5px; border-radius: 8px; }
+.net-row { display: flex; gap: 8px; align-items: center; }
+.net-row > * { flex: 1; }
+.net-badge {
+    display: inline-block; background: #E8EAF6; color: #283593; font-weight: 800;
+    font-size: 12px; letter-spacing: 2px; padding: 5px 12px; border-radius: 8px; direction: ltr;
+}
+.net-member-row { display: flex; align-items: center; gap: 8px; padding: 8px 4px; border-bottom: 1px solid #f0f2f5; }
+.net-member-row:last-child { border-bottom: none; }
+.net-member-name { font-weight: 800; font-size: 13px; color: #263238; flex: 1; }
+.net-online { font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: #E8F5E9; color: #2E7D32; }
+.net-offline { font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: #eceff1; color: #78909c; }
+.net-task-title { font-weight: 800; font-size: 13px; color: #263238; margin-bottom: 6px; }
+.net-task-title.done { text-decoration: line-through; color: #90a4ae; }
+.net-chip { display: inline-block; font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: #f1f4f8; color: #546e7a; margin: 0 0 4px 4px; }
+.net-chip.owner { background: #E3F2FD; color: #1565C0; }
+.net-chip.assignee { background: #E8F5E9; color: #2E7D32; }
+.net-chip.dl { background: #FFF3E0; color: #E65100; }
+.net-task-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.net-task-btns select { padding: 6px 8px; border: 1px solid #cfd8dc; border-radius: 8px; font-size: 11.5px; background: #fbfcfe; }
+.net-chat-list { display: flex; flex-direction: column; gap: 6px; padding-bottom: 6px; }
+.net-msg { max-width: 82%; padding: 7px 11px; border-radius: 13px; font-size: 12.5px; line-height: 1.7; word-break: break-word; }
+.net-msg.mine { align-self: flex-end; background: var(--primary, #1a237e); color: #fff; border-bottom-left-radius: 4px; }
+.net-msg.other { align-self: flex-start; background: #fff; color: #263238; border: 1px solid #e3e8ef; border-bottom-right-radius: 4px; }
+.net-msg-meta { font-size: 9.5px; opacity: 0.75; margin-top: 2px; }
+.net-chat-inputbar {
+    position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 8px;
+    padding: 10px 12px; background: #fff; border-top: 1px solid #e5e5e5;
+}
+.net-chat-inputbar input {
+    flex: 1; padding: 10px 12px; border: 1px solid #cfd8dc; border-radius: 999px;
+    font-size: 13px; background: #fbfcfe;
+}
+.net-guide { background: #fff; border: 1px dashed #b0bec5; border-radius: 12px; padding: 10px 12px; font-size: 12px; color: #455a64; line-height: 1.9; margin-top: 10px; }
+.net-guide ol { margin: 4px 0; padding-right: 18px; }
+.net-guide textarea {
+    width: 100%; box-sizing: border-box; min-height: 150px; direction: ltr; text-align: left;
+    font-size: 10.5px; font-family: monospace; border: 1px solid #cfd8dc; border-radius: 9px;
+    padding: 8px; background: #fafafa; color: #37474f; margin-top: 6px;
+}
+.net-empty { text-align: center; color: #90a4ae; font-size: 12px; padding: 18px 8px; }
+/* — تماس صوتی ۱:۱ (لایه روی پنل شبکه) — */
+.net-call-scrim { position: absolute; inset: 0; background: rgba(23,28,38,0.94); display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; z-index: 20; color: #fff; padding: 20px; text-align: center; }
+.net-call-scrim.show { display: flex; }
+.net-call-avatar { width: 84px; height: 84px; border-radius: 50%; background: var(--primary, #1a237e); display: flex; align-items: center; justify-content: center; font-size: 38px; }
+.net-call-name { font-weight: 900; font-size: 18px; }
+.net-call-status { font-size: 12.5px; opacity: 0.85; }
+.net-call-btns { display: flex; gap: 12px; margin-top: 10px; }
+.net-call-btn { width: 62px; height: 62px; border-radius: 50%; border: none; font-size: 26px; color: #fff; display: flex; align-items: center; justify-content: center; }
+.net-call-btn.accept { background: #2E7D32; }
+.net-call-btn.decline, .net-call-btn.end { background: #c62828; }
+.net-call-btn.mute { background: #455a64; }
+.net-call-btn.mute.on { background: #E65100; }
+@keyframes netRingPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+.net-call-scrim.ringing .net-call-avatar { animation: netRingPulse 1s ease-in-out infinite; }
 </style>
 </head>
 <body>
@@ -5014,6 +5128,29 @@ body.locked .header-actions button {
 <!-- 🔧 BA-198 (v232): پیامک انبوه — انتخاب اشخاص (تیک/انتخاب همه/فیلتر
      شرکت و سمت) + گرفتن یک متن + ارسال به همهٔ انتخاب‌شدگان.
      طبق قانون BA-154: بالای صفحه زیر هدر اصلی فیکس و بدنه اسکرول‌پذیر. -->
+<!-- 🔧 v246 (BA-222): پنل شبکه — چت دوطرفه + گروه تسک مشترک + پاس دادن +
+     تماس صوتی دوطرفهٔ ۱:۱. بدون تنظیم Supabase غیرفعال است (لایهٔ اختیاری). -->
+<div class="net-overlay" id="netOverlay">
+    <div class="net-topbar">
+        <button class="net-back-btn" onclick="closeNetPanel()">بازگشت ❯</button>
+        <div class="net-title">🛰️ شبکه</div>
+        <div class="net-dot" id="netDot">غیرفعال</div>
+    </div>
+    <div class="net-body" id="netBody"></div>
+    <div class="net-chat-inputbar" id="netChatBar" style="display:none;">
+        <input id="netChatInput" type="text" placeholder="پیام…"
+               onkeydown="if(event.key==='Enter'){netSendMsg();}">
+        <button class="net-btn" onclick="netSendMsg()">ارسال</button>
+    </div>
+    <div class="net-call-scrim" id="netCallScrim">
+        <div class="net-call-avatar" id="netCallAvatar">📞</div>
+        <div class="net-call-name" id="netCallName">—</div>
+        <div class="net-call-status" id="netCallStatus">—</div>
+        <div class="net-call-btns" id="netCallBtns"></div>
+        <audio id="netRemoteAudio" autoplay></audio>
+    </div>
+</div>
+
 <div class="bulk-sms-overlay" id="bulkSmsOverlay">
     <div class="bulk-sms-topbar">
         <button class="bulk-sms-back-btn" onclick="closeBulkSms()">بازگشت ❯</button>
@@ -5565,6 +5702,9 @@ body.locked .header-actions button {
         </div>
         <div class="hamburger-item" onclick="closeHamburgerMenuSilent(); openHolidaysPanel();">
             <span class="h-ico">📅</span><span>تعطیلات رسمی (انتخاب سال و جستجو)</span>
+        </div>
+        <div class="hamburger-item" onclick="closeHamburgerMenuSilent(); openNetPanel();">
+            <span class="h-ico">🛰️</span><span>شبکه (چت، تماس، گروه مشترک)</span>
         </div>
     </div>
 </div>
@@ -7889,7 +8029,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v245-2026-11-22-holidays-align-overdue-fade';
+const APP_VERSION = 'v246-2026-11-23-network-phase1';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -12949,6 +13089,8 @@ function closeModalByType(type) {
         'contactPicker': 'contactPickerOverlay',
         'contactActionMenu': 'contactActionMenuOverlay',
         'bellSettings': 'bellSettingsOverlay',
+        // 🔧 v246 (BA-222): پنل شبکه — Back موبایل آن را می‌بندد
+        'net': 'netOverlay',
     }[type];
     if (overlayId) {
         const el = document.getElementById(overlayId);
@@ -18233,6 +18375,813 @@ function closeHolidaysPanel() {
     // (الگوی closeAccSearch)، وگرنه marker stale در تاریخچه می‌ماند.
     closeModalByType('holidays');
     navBack();
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v246 (BA-222): شبکه (فاز ۱) — لایهٔ کاملاً اختیاری روی همان برنامهٔ
+//     تک‌فایلی. اجزا:
+//     ۱) تنظیمات Supabase (آدرس + کلید anon + نام نمایشی) — localStorage
+//     ۲) گروه مشترک با کد دعوت ۶ کاراکتری + لیست اعضا با وضعیت آنلاین (presence)
+//     ۳) چت متنی دوطرفه (ذخیره در جدول + broadcast لحظه‌ای)
+//     ۴) تسک‌های مشترک گروهی + «پاس دادن» تسک به عضو دیگر (با اطلاع)
+//     ۵) تماس صوتی دوطرفهٔ ۱:۱ با WebRTC — سیگنالینگ از کانال همان گروه
+//        (offer/answer/ICE/end/busy)؛ STUN گوگل + TURN اختیاری در تنظیمات.
+//     امنیت: کلید anon عمومی است؛ مرز دسترسی = کد دعوت گروه (RLS باز؛
+//     برای استفادهٔ خانوادگی/تیمی). جداول با راهنمای داخل پنل ساخته می‌شوند.
+//     بدون تنظیم، هیچ‌کدام فعال نیست و برنامه مثل قبل کار می‌کند.
+//     ناوبری: قانون BA-154 (top = --header-h) + الگوی BA-218 (navReplace
+//     هنگام باز شدن از منوی همبرگری، وگرنه navPush؛ بستن با navBack).
+// ════════════════════════════════════════════════════════════════════
+
+const NET_SQL_HELP = '-- یاداوار شبکه — یک بار در SQL Editor پروژهٔ Supabase اجرا شود\n' +
+'create extension if not exists pgcrypto;\n' +
+'create table if not exists net_groups (\n' +
+'  id uuid primary key default gen_random_uuid(),\n' +
+'  code text unique not null,\n' +
+'  name text not null,\n' +
+'  created_by text not null,\n' +
+'  created_at timestamptz default now()\n' +
+');\n' +
+'create table if not exists net_members (\n' +
+'  group_id uuid references net_groups(id) on delete cascade,\n' +
+'  user_id text not null,\n' +
+'  display_name text not null,\n' +
+'  joined_at timestamptz default now(),\n' +
+'  primary key (group_id, user_id)\n' +
+');\n' +
+'create table if not exists net_tasks (\n' +
+'  id uuid primary key default gen_random_uuid(),\n' +
+'  group_id uuid references net_groups(id) on delete cascade,\n' +
+'  title text not null,\n' +
+'  deadline date,\n' +
+'  owner_id text not null,\n' +
+'  owner_name text not null,\n' +
+'  assignee_id text,\n' +
+'  assignee_name text,\n' +
+'  done boolean not null default false,\n' +
+'  created_at timestamptz default now(),\n' +
+'  updated_at timestamptz default now()\n' +
+');\n' +
+'create table if not exists net_messages (\n' +
+'  id uuid primary key default gen_random_uuid(),\n' +
+'  group_id uuid references net_groups(id) on delete cascade,\n' +
+'  sender_id text not null,\n' +
+'  sender_name text not null,\n' +
+'  text text not null,\n' +
+'  created_at timestamptz default now()\n' +
+');\n' +
+'alter table net_groups enable row level security;\n' +
+'alter table net_members enable row level security;\n' +
+'alter table net_tasks enable row level security;\n' +
+'alter table net_messages enable row level security;\n' +
+'create policy "net_groups_all" on net_groups for all using (true) with check (true);\n' +
+'create policy "net_members_all" on net_members for all using (true) with check (true);\n' +
+'create policy "net_tasks_all" on net_tasks for all using (true) with check (true);\n' +
+'create policy "net_messages_all" on net_messages for all using (true) with check (true);\n';
+
+let NET_STATE = {
+    sb: null,          // کلاینت Supabase
+    ch: null,          // کانال Realtime گروه فعال
+    myName: '',
+    group: null,       // {id, code, name}
+    members: [], tasks: [], msgs: [],
+    online: {},        // {uid: true} از presence
+    tab: 'groups',
+    connecting: false,
+    call: { active:false, role:null, peerUid:'', peerName:'', pc:null, stream:null,
+            timerIv:null, ringT:null, muted:false, pending:null, iceBuf:[], state:'' }
+};
+
+function netMyUid() {
+    let u = localStorage.getItem('net_uid');
+    if (!u) {
+        u = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('u' + Date.now() + Math.floor(Math.random()*1000000));
+        localStorage.setItem('net_uid', u);
+    }
+    return u;
+}
+function netSettings() {
+    try { return JSON.parse(localStorage.getItem('net_settings') || 'null'); } catch(e) { return null; }
+}
+// درگاه کتابخانه — در حالت تستِ پروب، mock تزریق‌شده استفاده می‌شود
+function netLib() {
+    if (localStorage.getItem('net_test_mode') === '1' && window.__NET_MOCK_SUPABASE__) return window.__NET_MOCK_SUPABASE__;
+    return (typeof window.supabase !== 'undefined' && window.supabase && window.supabase.createClient) ? window.supabase : null;
+}
+function netIsConfigured() {
+    const st = netSettings();
+    return !!(st && st.url && st.key);
+}
+function netStatusSet(txt, cls) {
+    const d = document.getElementById('netDot');
+    if (d) { d.textContent = txt; d.className = 'net-dot' + (cls ? ' ' + cls : ''); }
+}
+function netActiveGroup() {
+    try { return JSON.parse(localStorage.getItem('net_active_group') || 'null'); } catch(e) { return null; }
+}
+function netSetActiveGroup(g) {
+    if (g) localStorage.setItem('net_active_group', JSON.stringify(g));
+    else localStorage.removeItem('net_active_group');
+    NET_STATE.group = g;
+}
+function netFaTime(iso) {
+    try { return new Date(iso).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }); } catch(e) { return ''; }
+}
+function escA(x) { return String(x === undefined || x === null ? '' : x).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+function netGenCode() {
+    const A = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    let c = '';
+    for (let i = 0; i < 6; i++) c += A[Math.floor(Math.random() * A.length)];
+    return c;
+}
+
+// ─── اتصال ───
+async function NET_connect() {
+    if (NET_STATE.sb) return true;
+    if (NET_STATE.connecting) return false;
+    const lib = netLib();
+    if (!lib) { netStatusSet('کتابخانه بارگیری نشده', 'err'); return false; }
+    const st = netSettings();
+    if (!st) return false;
+    NET_STATE.connecting = true;
+    netStatusSet('در حال اتصال…');
+    try {
+        NET_STATE.sb = lib.createClient(st.url, st.key);
+        NET_STATE.myName = st.name || 'کاربر';
+        const probe = await NET_STATE.sb.from('net_groups').select('id').limit(1);
+        if (probe.error) throw new Error(probe.error.message || 'اتصال ناموفق');
+        NET_STATE.connecting = false;
+        netStatusSet('متصل ✓', 'on');
+        await NET_subscribe();
+        return true;
+    } catch(e) {
+        NET_STATE.sb = null;
+        NET_STATE.connecting = false;
+        netStatusSet('اتصال ناموفق', 'err');
+        const ov = document.getElementById('netOverlay');
+        if (ov && ov.classList.contains('active')) showToast('⚠️ اتصال شبکه ناموفق: ' + (e.message || e));
+        return false;
+    }
+}
+
+// ─── کانال گروه (broadcast + presence) ───
+function NET_leaveChannel() {
+    if (NET_STATE.ch && NET_STATE.sb) {
+        try { NET_STATE.ch.untrack(); NET_STATE.sb.removeChannel(NET_STATE.ch); } catch(e) {}
+    }
+    NET_STATE.ch = null;
+}
+function NET_broadcast(event, payload) {
+    if (NET_STATE.ch) {
+        try { NET_STATE.ch.send({ type: 'broadcast', event: event, payload: payload }); } catch(e) {}
+    }
+}
+function NET_subscribe() {
+    NET_leaveChannel();
+    const g = netActiveGroup();
+    NET_STATE.group = g;
+    if (!g || !NET_STATE.sb) return;
+    const ch = NET_STATE.sb.channel('net-group-' + g.code);
+    ch.on('broadcast', { event: 'chat' }, function(m) {
+        const p = m && m.payload;
+        if (!p || !p.msg) return;
+        if (p.msg.sender_id === netMyUid()) return;
+        NET_STATE.msgs.push(p.msg);
+        if (NET_STATE.tab === 'chat') netRenderChatList();
+    });
+    ch.on('broadcast', { event: 'tasks-refresh' }, function() {
+        netLoadTasks().then(function() { if (NET_STATE.tab === 'tasks') netRenderTasksList(); });
+    });
+    ch.on('broadcast', { event: 'members-refresh' }, function() {
+        netLoadMembers().then(function() {
+            if (NET_STATE.tab === 'groups') netRenderMembersList();
+            if (NET_STATE.tab === 'tasks') { netRefillAssigneeSelect(); netRenderTasksList(); }
+        });
+    });
+    ch.on('broadcast', { event: 'call-signal' }, function(m) {
+        const p = m && m.payload;
+        if (p) NET_onCallSignal(p);
+    });
+    ch.on('presence', { event: 'sync' }, function() {
+        const map = {};
+        try {
+            const st = ch.presenceState();
+            Object.keys(st).forEach(function(k) {
+                (st[k] || []).forEach(function(pl) { if (pl && pl.uid) map[pl.uid] = true; });
+            });
+        } catch(e) {}
+        NET_STATE.online = map;
+        const ov = document.getElementById('netOverlay');
+        if (NET_STATE.tab === 'groups' && ov && ov.classList.contains('active')) netRenderMembersList();
+    });
+    ch.subscribe(function(status) {
+        if (status === 'SUBSCRIBED') {
+            try { ch.track({ uid: netMyUid(), name: NET_STATE.myName }); } catch(e) {}
+        }
+    });
+    NET_STATE.ch = ch;
+}
+
+// ─── باز/بستهٔ پنل (الگوی تعطیلات — BA-154 + BA-218) ───
+function openNetPanel() {
+    const ov = document.getElementById('netOverlay');
+    if (!ov || ov.classList.contains('active')) return;
+    applyHeaderAlignedTop();   // قانون BA-154 — تراز زیر هدر اصلی
+    ov.classList.add('active');
+    bringToFront(ov);
+    const curState = history.state;
+    if (curState && curState.view === 'modal' && curState.type === 'hamburger') {
+        navReplace({ view: 'modal', type: 'net' });   // الگوی اتمیک v212/BA-218
+    } else {
+        navPush({ view: 'modal', type: 'net' });
+    }
+    trackModalOpen('net');
+    netRender();
+    if (netIsConfigured()) NET_connect();
+}
+function closeNetPanel() {
+    const ov = document.getElementById('netOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    closeModalByType('net');
+    navBack();
+}
+
+// ─── رندر پنل ───
+function netRender() {
+    const body = document.getElementById('netBody');
+    if (!body) return;
+    if (!netIsConfigured()) {
+        netStatusSet('غیرفعال');
+        netChatBarHide();
+        body.innerHTML = netSetupHtml();
+        return;
+    }
+    if (!NET_STATE.sb) NET_connect();
+    body.innerHTML = netMainHtml();
+    netRenderTab();
+}
+function netSetupHtml() {
+    const st = netSettings() || {};
+    let h = '<div class="net-strip">🛰️ شبکهٔ اختیاری — چت متنی دوطرفه، گروه تسک مشترک، پاس دادن تسک و تماس صوتی دوطرفه. بدون تنظیم، برنامه مثل قبل تک‌کاربره است.</div>';
+    h += '<div class="net-card"><h4>۱) اتصال به پایگاه ابری (Supabase رایگان)</h4>'
+        + '<div class="net-field"><label>آدرس پروژه (Project URL)</label><input id="netUrl" style="direction:ltr;text-align:left;" placeholder="https://xxxx.supabase.co" value="' + escA(st.url || '') + '"></div>'
+        + '<div class="net-field"><label>کلید عمومی (anon public key)</label><input id="netKey" style="direction:ltr;text-align:left;" placeholder="eyJhbGciOi…" value="' + escA(st.key || '') + '"></div>'
+        + '<div class="net-field"><label>نام نمایشی من</label><input id="netName" placeholder="مثلاً مامان" value="' + escA(st.name || '') + '"></div>'
+        + '<div class="net-field"><label>TURN اختیاری برای شبکه‌های بسته — فرمت: turn:user:pass@host:port</label><input id="netTurn" style="direction:ltr;text-align:left;" value="' + escA(st.turn || '') + '"></div>'
+        + '<button class="net-btn" onclick="netSaveAndConnect()">ذخیره و اتصال</button> '
+        + '<button class="net-btn secondary" onclick="netForget()">پاک کردن تنظیمات</button>'
+        + '</div>';
+    h += '<div class="net-guide"><b>راهنمای یک‌بارِ راه‌اندازی:</b><ol>'
+        + '<li>در supabase.com یک پروژهٔ رایگان بسازید.</li>'
+        + '<li>از Settings → API دو مقدار «Project URL» و «anon public key» را کپی و در فرم بالا وارد کنید.</li>'
+        + '<li>یک بار در SQL Editor همان پروژه اسکریپت زیر را اجرا کنید (۴ جدول شبکه ساخته می‌شود).</li>'
+        + '<li>برگردید به همین صفحه و «ذخیره و اتصال» را بزنید.</li></ol>'
+        + '<textarea readonly id="netSqlTxt">' + escapeHtml(NET_SQL_HELP) + '</textarea>'
+        + '<button class="net-btn secondary small" onclick="netCopySQL()">📋 کپی اسکریپت SQL</button>'
+        + '</div>';
+    return h;
+}
+async function netSaveAndConnect() {
+    const g = function(id) { const el = document.getElementById(id); return el ? el.value : ''; };
+    const url = g('netUrl').trim(), key = g('netKey').trim();
+    const name = g('netName').trim(), turn = g('netTurn').trim();
+    if (!/^https:\/\/.+/.test(url)) { showToast('آدرس پروژه باید با https:// شروع شود'); return; }
+    if (!key) { showToast('کلید anon را وارد کنید'); return; }
+    if (!name) { showToast('نام نمایشی را وارد کنید'); return; }
+    localStorage.setItem('net_settings', JSON.stringify({ url: url, key: key, name: name, turn: turn }));
+    netMyUid();
+    const ok = await NET_connect();
+    if (ok) { netRender(); showToast('✅ شبکه وصل شد — حالا یک گروه بسازید یا با کد عضو شوید'); }
+}
+function netForget() {
+    localStorage.removeItem('net_settings');
+    NET_leaveChannel();
+    NET_STATE.sb = null;
+    NET_STATE.members = []; NET_STATE.tasks = []; NET_STATE.msgs = []; NET_STATE.online = {};
+    netStatusSet('غیرفعال');
+    netRender();
+    showToast('تنظیمات شبکه پاک شد');
+}
+function netCopySQL() {
+    const ta = document.getElementById('netSqlTxt');
+    if (!ta) return;
+    ta.select();
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value);
+        else document.execCommand('copy');
+        showToast('📋 اسکریپت SQL کپی شد');
+    } catch(e) { showToast('کپی خودکار نشد — دستی کپی کنید'); }
+}
+function netMainHtml() {
+    const st = netSettings() || {};
+    const g = NET_STATE.group || netActiveGroup();
+    let h = '<div class="net-strip">👤 <b>' + escapeHtml(st.name || 'کاربر') + '</b>'
+        + (g ? ' — گروه فعال: <b>' + escapeHtml(g.name) + '</b>' : ' — بدون گروه فعال')
+        + '<button class="net-btn secondary small" style="margin-right:auto;" onclick="netReconnect()">↻ اتصال دوباره</button></div>';
+    h += '<div class="net-tabs">'
+        + '<div class="net-tab' + (NET_STATE.tab === 'groups' ? ' active' : '') + '" onclick="netSetTab(\'groups\')">👥 گروه‌ها</div>'
+        + '<div class="net-tab' + (NET_STATE.tab === 'tasks' ? ' active' : '') + '" onclick="netSetTab(\'tasks\')">✅ تسک‌های گروه</div>'
+        + '<div class="net-tab' + (NET_STATE.tab === 'chat' ? ' active' : '') + '" onclick="netSetTab(\'chat\')">💬 چت گروه</div>'
+        + '</div>';
+    h += '<div id="netTabBody"></div>';
+    return h;
+}
+function netReconnect() {
+    NET_STATE.sb = null;
+    NET_connect().then(function(ok) {
+        if (ok) {
+            netLoadMembers().then(function() { if (NET_STATE.tab === 'groups') netRenderMembersList(); });
+            netLoadTasks().then(function() { if (NET_STATE.tab === 'tasks') netRenderTasksList(); });
+            netLoadMessages().then(function() { if (NET_STATE.tab === 'chat') netRenderChatList(); });
+        }
+    });
+}
+function netSetTab(t) { NET_STATE.tab = t; netRenderTab(); }
+function netRenderTab() {
+    const tb = document.getElementById('netTabBody');
+    if (!tb) return;
+    netChatBarHide();
+    if (NET_STATE.tab === 'groups') {
+        tb.innerHTML = netGroupsHtml();
+        netRenderMembersList();
+        netLoadMembers();
+    } else if (NET_STATE.tab === 'tasks') {
+        tb.innerHTML = netTasksHtml();
+        netRenderTasksList();
+        netLoadTasks();
+        netLoadMembers().then(function() { netRefillAssigneeSelect(); netRenderTasksList(); });
+    } else {
+        tb.innerHTML = netChatHtml();
+        netRenderChatList();
+        netLoadMessages().then(function() { netRenderChatList(); });
+        netChatBarShow();
+    }
+}
+
+// ─── تب گروه‌ها + اعضا ───
+function netGroupsHtml() {
+    const g = NET_STATE.group || netActiveGroup();
+    let h = '';
+    if (g) {
+        h += '<div class="net-card"><h4>گروه فعال: ' + escapeHtml(g.name) + '</h4>'
+            + '<div class="net-row"><span class="net-badge">' + escapeHtml(g.code) + '</span>'
+            + '<span style="font-size:11px;color:#78909c;">کد دعوت — برای عضوت دیگران</span></div>'
+            + '<div style="margin-top:8px;"><button class="net-btn secondary small" onclick="netLeaveGroup()">خروج از گروه</button></div></div>';
+        h += '<div class="net-card"><h4>اعضا (لمس 📞 برای تماس صوتی)</h4><div id="netMembersList"><div class="net-empty">در حال دریافت…</div></div></div>';
+    } else {
+        h += '<div class="net-card"><h4>ساخت گروه مشترک</h4>'
+            + '<div class="net-field"><label>نام گروه</label><input id="netGroupName" placeholder="مثلاً خانواده"></div>'
+            + '<button class="net-btn" onclick="netCreateGroup()">ساخت گروه</button></div>';
+        h += '<div class="net-card"><h4>عضویت با کد دعوت</h4>'
+            + '<div class="net-field"><label>کد دعوت</label><input id="netJoinCode" style="direction:ltr;text-align:center;letter-spacing:2px;" placeholder="مثلاً K7M2PQ"></div>'
+            + '<button class="net-btn" onclick="netJoinGroup()">عضویت</button></div>';
+    }
+    return h;
+}
+async function netLoadMembers() {
+    const g = NET_STATE.group || netActiveGroup();
+    if (!g || !NET_STATE.sb) return;
+    try {
+        const r = await NET_STATE.sb.from('net_members').select('*').eq('group_id', g.id);
+        if (!r.error) NET_STATE.members = r.data || [];
+    } catch(e) {}
+}
+function netRenderMembersList() {
+    const el = document.getElementById('netMembersList');
+    if (!el) return;
+    const me = netMyUid();
+    if (!NET_STATE.members.length) { el.innerHTML = '<div class="net-empty">هنوز عضوی نیست</div>'; return; }
+    el.innerHTML = NET_STATE.members.map(function(m) {
+        const on = !!NET_STATE.online[m.user_id];
+        const self = (m.user_id === me);
+        return '<div class="net-member-row">'
+            + '<span class="net-member-name">' + escapeHtml(m.display_name) + (self ? ' (من)' : '') + '</span>'
+            + '<span class="' + (on ? 'net-online' : 'net-offline') + '">' + (on ? 'آنلاین' : 'آفلاین') + '</span>'
+            + (self ? '' : '<button class="net-btn small" onclick="netCallMember(\'' + escA(m.user_id) + '\', \'' + escA(m.display_name) + '\')">📞 تماس</button>')
+            + '</div>';
+    }).join('');
+}
+function netRefillAssigneeSelect() {
+    const sel = document.getElementById('netTaskAssignee');
+    if (!sel) return;
+    const me = netMyUid();
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">خودم</option>' + NET_STATE.members
+        .filter(function(m) { return m.user_id !== me; })
+        .map(function(m) { return '<option value="' + escA(m.user_id) + '">' + escapeHtml(m.display_name) + '</option>'; })
+        .join('');
+    sel.value = cur;
+}
+async function netCreateGroup() {
+    const inp = document.getElementById('netGroupName');
+    const name = ((inp && inp.value) || '').trim();
+    if (!name) { showToast('نام گروه را بنویسید'); return; }
+    if (!NET_STATE.sb && !(await NET_connect())) return;
+    const code = netGenCode();
+    try {
+        const r = await NET_STATE.sb.from('net_groups').insert({ code: code, name: name, created_by: netMyUid() }).select();
+        if (r.error) throw new Error(r.error.message);
+        const g = r.data[0];
+        await NET_STATE.sb.from('net_members').insert({ group_id: g.id, user_id: netMyUid(), display_name: NET_STATE.myName });
+        netSetActiveGroup({ id: g.id, code: g.code, name: g.name });
+        await NET_subscribe();
+        await netLoadMembers();
+        netRenderTab();
+        showToast('✅ گروه ساخته شد — کد دعوت: ' + code);
+    } catch(e) { showToast('⚠️ ' + (e.message || e)); }
+}
+async function netJoinGroup() {
+    const inp = document.getElementById('netJoinCode');
+    const code = ((inp && inp.value) || '').trim().toUpperCase();
+    if (!code) { showToast('کد دعوت را وارد کنید'); return; }
+    if (!NET_STATE.sb && !(await NET_connect())) return;
+    try {
+        const r = await NET_STATE.sb.from('net_groups').select('*').eq('code', code).limit(1);
+        if (r.error) throw new Error(r.error.message);
+        const g = (r.data || [])[0];
+        if (!g) { showToast('⚠️ گروهی با این کد پیدا نشد'); return; }
+        const mem = await NET_STATE.sb.from('net_members').select('*').eq('group_id', g.id).eq('user_id', netMyUid()).limit(1);
+        if (!((mem.data || []).length)) {
+            await NET_STATE.sb.from('net_members').insert({ group_id: g.id, user_id: netMyUid(), display_name: NET_STATE.myName });
+            NET_broadcast('members-refresh', {});   // 🔧 v246: اعضای دیگر زنده ببینند
+        }
+        netSetActiveGroup({ id: g.id, code: g.code, name: g.name });
+        await NET_subscribe();
+        await netLoadMembers();
+        netRenderTab();
+        showToast('✅ به گروه «' + g.name + '» وصل شدید');
+    } catch(e) { showToast('⚠️ ' + (e.message || e)); }
+}
+async function netLeaveGroup() {
+    const g = NET_STATE.group || netActiveGroup();
+    if (!g) return;
+    if (NET_STATE.sb) {
+        try { await NET_STATE.sb.from('net_members').delete().eq('group_id', g.id).eq('user_id', netMyUid()); NET_broadcast('members-refresh', {}); } catch(e) {}
+    }
+    NET_leaveChannel();
+    netSetActiveGroup(null);
+    NET_STATE.members = []; NET_STATE.tasks = []; NET_STATE.msgs = []; NET_STATE.online = {};
+    netRenderTab();
+    showToast('از گروه خارج شدید');
+}
+
+// ─── تب تسک‌های مشترک + پاس دادن ───
+function netTasksHtml() {
+    const g = NET_STATE.group || netActiveGroup();
+    if (!g) return '<div class="net-empty">اول در تب «گروه‌ها» گروه بسازید یا عضو شوید</div>';
+    let h = '<div class="net-card"><h4>تسک جدید گروهی</h4>'
+        + '<div class="net-field"><label>عنوان</label><input id="netTaskTitle" placeholder="مثلاً خرید نان"></div>'
+        + '<div class="net-row">'
+        + '<div class="net-field"><label>مهلت (اختیاری)</label><input id="netTaskDeadline" type="date" style="direction:ltr;"></div>'
+        + '<div class="net-field"><label>مسئول (اختیاری)</label><select id="netTaskAssignee"><option value="">خودم</option></select></div>'
+        + '</div>'
+        + '<button class="net-btn" onclick="netAddTask()">افزودن به گروه</button></div>';
+    h += '<div id="netTasksList"></div>';
+    return h;
+}
+async function netLoadTasks() {
+    const g = NET_STATE.group || netActiveGroup();
+    if (!g || !NET_STATE.sb) return;
+    try {
+        const r = await NET_STATE.sb.from('net_tasks').select('*').eq('group_id', g.id).order('created_at', { ascending: true });
+        if (!r.error) NET_STATE.tasks = r.data || [];
+    } catch(e) {}
+}
+function netRenderTasksList() {
+    const el = document.getElementById('netTasksList');
+    if (!el) return;
+    const me = netMyUid();
+    if (!NET_STATE.tasks.length) { el.innerHTML = '<div class="net-empty">تسک مشترکی نیست</div>'; return; }
+    el.innerHTML = NET_STATE.tasks.map(function(t) {
+        const dl = t.deadline ? '<span class="net-chip dl">⏰ ' + escapeHtml(String(t.deadline)) + '</span>' : '';
+        const own = '<span class="net-chip owner">ساخت: ' + escapeHtml(t.owner_name || '') + '</span>';
+        const asg = t.assignee_name ? '<span class="net-chip assignee">مسئول: ' + escapeHtml(t.assignee_name) + '</span>' : '';
+        const passSel = '<select onchange="netPassTask(\'' + escA(t.id) + '\', this.value)">'
+            + '<option value="">📤 پاس دادن به…</option>'
+            + NET_STATE.members.filter(function(m) { return m.user_id !== me; })
+                .map(function(m) { return '<option value="' + escA(m.user_id) + '">' + escapeHtml(m.display_name) + '</option>'; })
+                .join('')
+            + '</select>';
+        const btns = [
+            '<button class="net-btn small ' + (t.done ? 'secondary' : '') + '" onclick="netToggleTaskDone(\'' + escA(t.id) + '\', ' + (t.done ? 'false' : 'true') + ')">' + (t.done ? '↩ برگرداندن' : '✓ انجام شد') + '</button>',
+            passSel
+        ];
+        if (t.owner_id === me) btns.push('<button class="net-btn small danger" onclick="netDeleteTask(\'' + escA(t.id) + '\')">حذف</button>');
+        return '<div class="net-card"><div class="net-task-title' + (t.done ? ' done' : '') + '">' + escapeHtml(t.title) + '</div>'
+            + own + asg + dl
+            + '<div class="net-task-btns">' + btns.join('') + '</div></div>';
+    }).join('');
+}
+async function netAddTaskCore(title, deadline, assigneeId) {
+    const g = NET_STATE.group || netActiveGroup();
+    if (!g || !NET_STATE.sb) { showToast('⚠️ گروه فعال نیست'); return null; }
+    const a = NET_STATE.members.find(function(m) { return m.user_id === assigneeId; });
+    try {
+        const r = await NET_STATE.sb.from('net_tasks').insert({
+            group_id: g.id, title: title, deadline: deadline || null,
+            owner_id: netMyUid(), owner_name: NET_STATE.myName,
+            assignee_id: a ? a.user_id : null, assignee_name: a ? a.display_name : null
+        }).select();
+        if (r.error) throw new Error(r.error.message);
+        NET_broadcast('tasks-refresh', {});
+        await netLoadTasks();
+        netRenderTasksList();
+        return r.data[0];
+    } catch(e) { showToast('⚠️ ' + (e.message || e)); return null; }
+}
+function netAddTask() {
+    const ti = document.getElementById('netTaskTitle');
+    const dl = document.getElementById('netTaskDeadline');
+    const as = document.getElementById('netTaskAssignee');
+    const title = ((ti && ti.value) || '').trim();
+    if (!title) { showToast('عنوان تسک را بنویسید'); return; }
+    netAddTaskCore(title, (dl && dl.value) || '', (as && as.value) || '').then(function(t) {
+        if (t && ti) ti.value = '';
+        if (t) showToast('✅ تسک به گروه اضافه شد');
+    });
+}
+async function netPassTask(id, uid) {
+    if (!id || !uid) return;
+    const a = NET_STATE.members.find(function(m) { return m.user_id === uid; });
+    if (!a) return;
+    try {
+        const r = await NET_STATE.sb.from('net_tasks')
+            .update({ assignee_id: a.user_id, assignee_name: a.display_name, updated_at: new Date().toISOString() })
+            .eq('id', id);
+        if (r.error) throw new Error(r.error.message);
+        NET_broadcast('tasks-refresh', {});
+        await netLoadTasks();
+        netRenderTasksList();
+        showToast('📤 تسک به «' + a.display_name + '» پاس داده شد');
+    } catch(e) { showToast('⚠️ ' + (e.message || e)); }
+}
+async function netToggleTaskDone(id, done) {
+    try {
+        const r = await NET_STATE.sb.from('net_tasks').update({ done: done, updated_at: new Date().toISOString() }).eq('id', id);
+        if (r.error) throw new Error(r.error.message);
+        NET_broadcast('tasks-refresh', {});
+        await netLoadTasks();
+        netRenderTasksList();
+    } catch(e) { showToast('⚠️ ' + (e.message || e)); }
+}
+async function netDeleteTask(id) {
+    try {
+        const r = await NET_STATE.sb.from('net_tasks').delete().eq('id', id);
+        if (r.error) throw new Error(r.error.message);
+        NET_broadcast('tasks-refresh', {});
+        await netLoadTasks();
+        netRenderTasksList();
+        showToast('تسک حذف شد');
+    } catch(e) { showToast('⚠️ ' + (e.message || e)); }
+}
+
+// ─── تب چت دوطرفه ───
+function netChatHtml() {
+    if (!(NET_STATE.group || netActiveGroup())) return '<div class="net-empty">اول عضو یک گروه شوید</div>';
+    return '<div class="net-chat-list" id="netChatList"></div>';
+}
+function netChatBarShow() {
+    const b = document.getElementById('netChatBar');
+    if (b && (NET_STATE.group || netActiveGroup())) b.style.display = 'flex';
+}
+function netChatBarHide() {
+    const b = document.getElementById('netChatBar');
+    if (b) b.style.display = 'none';
+}
+async function netLoadMessages() {
+    const g = NET_STATE.group || netActiveGroup();
+    if (!g || !NET_STATE.sb) return;
+    try {
+        const r = await NET_STATE.sb.from('net_messages').select('*')
+            .eq('group_id', g.id).order('created_at', { ascending: false }).limit(100);
+        if (!r.error) NET_STATE.msgs = (r.data || []).slice().reverse();
+    } catch(e) {}
+}
+function netRenderChatList() {
+    const el = document.getElementById('netChatList');
+    if (!el) return;
+    const me = netMyUid();
+    el.innerHTML = NET_STATE.msgs.map(function(m) {
+        const mine = (m.sender_id === me);
+        return '<div class="net-msg ' + (mine ? 'mine' : 'other') + '">'
+            + (mine ? '' : '<b style="font-size:11px;">' + escapeHtml(m.sender_name || '') + '</b><br>')
+            + escapeHtml(m.text)
+            + '<div class="net-msg-meta">' + netFaTime(m.created_at) + '</div></div>';
+    }).join('') || '<div class="net-empty">پیامی نیست — اولین پیام را بفرستید</div>';
+    const nb = document.getElementById('netBody');
+    if (nb) nb.scrollTop = nb.scrollHeight;
+}
+async function netSendText(text) {
+    const g = NET_STATE.group || netActiveGroup();
+    text = (text || '').trim();
+    if (!g || !NET_STATE.sb || !text) return null;
+    const row = { group_id: g.id, sender_id: netMyUid(), sender_name: NET_STATE.myName, text: text };
+    try {
+        const r = await NET_STATE.sb.from('net_messages').insert(row).select();
+        if (r.error) throw new Error(r.error.message);
+        const msg = r.data[0];
+        NET_STATE.msgs.push(msg);
+        NET_broadcast('chat', { msg: msg });
+        netRenderChatList();
+        return msg;
+    } catch(e) { showToast('⚠️ ارسال پیام ناموفق: ' + (e.message || e)); return null; }
+}
+function netSendMsg() {
+    const inp = document.getElementById('netChatInput');
+    if (!inp) return;
+    const t = inp.value.trim();
+    if (!t) return;
+    inp.value = '';
+    netSendText(t);
+}
+
+// ─── تماس صوتی دوطرفهٔ ۱:۱ (WebRTC + سیگنالینگ روی کانال گروه) ───
+function NET_iceServers() {
+    const ice = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
+    const st = netSettings() || {};
+    const t = (st.turn || '').trim();
+    if (t) {
+        const m = t.match(/^turn:([^:@]+):([^@]+)@(.+)$/);
+        if (m) ice.push({ urls: 'turn:' + m[3], username: m[1], credential: m[2] });
+        else ice.push({ urls: (t.indexOf('turn') === 0) ? t : 'turn:' + t });
+    }
+    return ice;
+}
+function NET_sendSignal(obj) { NET_broadcast('call-signal', obj); }
+function NET_newPC(peerUid) {
+    const pc = new RTCPeerConnection({ iceServers: NET_iceServers() });
+    pc.onicecandidate = function(ev) {
+        if (ev.candidate) NET_sendSignal({ kind: 'ice', to: peerUid, from: netMyUid(), candidate: ev.candidate });
+    };
+    pc.ontrack = function(ev) {
+        const a = document.getElementById('netRemoteAudio');
+        if (a && ev.streams && ev.streams[0]) { try { a.srcObject = ev.streams[0]; a.play && a.play(); } catch(e) {} }
+    };
+    pc.onconnectionstatechange = function() {
+        if ((pc.connectionState === 'failed' || pc.connectionState === 'disconnected') &&
+            NET_STATE.call.active && NET_STATE.call.pc === pc) {
+            netCallEnd('قطع شد');
+        }
+    };
+    return pc;
+}
+function netCallMember(uid, name) {
+    if (!NET_STATE.ch) { showToast('⚠️ اول عضو گروه شوید و اتصال برقرار باشد'); return; }
+    if (uid === netMyUid()) return;
+    const C = NET_STATE.call;
+    if (C.active || C.state) { showToast('⚠️ در حال حاضر یک تماس جاری است'); return; }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { showToast('⚠️ مرورگر از میکروفون پشتیبانی نمی‌کند'); return; }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+        C.active = true; C.role = 'caller'; C.peerUid = uid; C.peerName = name; C.stream = stream; C.muted = false; C.state = 'calling';
+        const pc = NET_newPC(uid);
+        stream.getAudioTracks().forEach(function(t) { pc.addTrack(t, stream); });
+        C.pc = pc;
+        return pc.createOffer().then(function(offer) { return pc.setLocalDescription(offer); }).then(function() {
+            NET_sendSignal({ kind: 'offer', to: uid, from: netMyUid(), fromName: NET_STATE.myName, sdp: C.pc.localDescription });
+            netCallShow('active', name, '🎧 در حال تماس… (منتظر پاسخ)');
+            C.ringT = setTimeout(function() { if (C.state === 'calling') netCallEnd('بی‌پاسخ'); }, 30000);
+        });
+    }).catch(function(e) {
+        showToast('⚠️ دسترسی به میکروفون داده نشد');
+        NET_callCleanup();
+    });
+}
+function NET_onCallSignal(p) {
+    if (!p || p.to !== netMyUid()) return;
+    const C = NET_STATE.call;
+    if (p.kind === 'offer') {
+        if (C.active || C.state) { NET_sendSignal({ kind: 'busy', to: p.from, from: netMyUid() }); return; }
+        C.active = true; C.role = 'callee'; C.peerUid = p.from; C.peerName = p.fromName || 'تماس ورودی';
+        C.pending = p; C.iceBuf = []; C.state = 'ringing';
+        const ov = document.getElementById('netOverlay');
+        if (ov && !ov.classList.contains('active')) openNetPanel();   // تماس ورودی حتی با پنل بسته دیده می‌شود
+        netCallShow('ringing', C.peerName, '🔔 تماس صوتی ورودی…');
+        C.ringT = setTimeout(function() {
+            if (C.state === 'ringing') {
+                NET_sendSignal({ kind: 'end', to: p.from, from: netMyUid(), reason: 'missed' });
+                NET_callCleanup();
+                showToast('تماس ورودی بی‌پاسخ ماند');
+            }
+        }, 30000);
+        return;
+    }
+    if (p.kind === 'answer') {
+        if (C.pc && C.state === 'calling') {
+            clearTimeout(C.ringT);
+            C.state = 'active';
+            C.pc.setRemoteDescription(p.sdp).catch(function() {});
+            netCallShow('active', C.peerName, '🎙️ در حال تماس…');
+            netCallStartTimer();
+        }
+        return;
+    }
+    if (p.kind === 'ice') {
+        if (C.pc) { try { C.pc.addIceCandidate(p.candidate); } catch(e) {} }
+        else if (C.pending) { (C.iceBuf = C.iceBuf || []).push(p.candidate); }
+        return;
+    }
+    if (p.kind === 'busy') { showToast('⚠️ خط طرف مقابل مشغول است'); NET_callCleanup(); return; }
+    if (p.kind === 'end') {
+        if (C.active || C.state) {
+            showToast('📞 تماس پایان یافت' + (p.reason === 'declined' ? ' (رد شد)' : p.reason === 'missed' ? ' (بی‌پاسخ)' : ''));
+        }
+        NET_callCleanup();
+        return;
+    }
+}
+function netCallAccept() {
+    const C = NET_STATE.call;
+    const p = C.pending;
+    if (!p) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast('⚠️ مرورگر از میکروفون پشتیبانی نمی‌کند');
+        netCallDecline();
+        return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+        C.stream = stream; C.muted = false; C.state = 'active';
+        const pc = NET_newPC(p.from);
+        stream.getAudioTracks().forEach(function(t) { pc.addTrack(t, stream); });
+        C.pc = pc;
+        return pc.setRemoteDescription(p.sdp)
+            .then(function() { return pc.createAnswer(); })
+            .then(function(ans) { return pc.setLocalDescription(ans); })
+            .then(function() {
+                NET_sendSignal({ kind: 'answer', to: p.from, from: netMyUid(), sdp: C.pc.localDescription });
+                (C.iceBuf || []).forEach(function(c) { try { C.pc.addIceCandidate(c); } catch(e) {} });
+                C.iceBuf = [];
+                netCallShow('active', C.peerName, '🎙️ در حال تماس…');
+                netCallStartTimer();
+            });
+    }).catch(function(e) {
+        showToast('⚠️ دسترسی به میکروفون داده نشد');
+        NET_sendSignal({ kind: 'end', to: C.peerUid, from: netMyUid(), reason: 'declined' });
+        NET_callCleanup();
+    });
+}
+function netCallDecline() {
+    const C = NET_STATE.call;
+    if (C.peerUid) NET_sendSignal({ kind: 'end', to: C.peerUid, from: netMyUid(), reason: 'declined' });
+    NET_callCleanup();
+    showToast('تماس رد شد');
+}
+function netCallEnd(reasonTxt) {
+    const C = NET_STATE.call;
+    if (C.peerUid) NET_sendSignal({ kind: 'end', to: C.peerUid, from: netMyUid(), reason: 'hangup' });
+    NET_callCleanup();
+    if (reasonTxt) showToast('📞 تماس پایان یافت (' + reasonTxt + ')');
+}
+function netCallStartTimer() {
+    const C = NET_STATE.call;
+    const t0 = Date.now();
+    if (C.timerIv) clearInterval(C.timerIv);
+    C.timerIv = setInterval(function() {
+        const sec = Math.floor((Date.now() - t0) / 1000);
+        const mm = Math.floor(sec / 60), ss = sec % 60;
+        const el = document.getElementById('netCallStatus');
+        if (el) el.textContent = '🎙️ در حال تماس… ' + mm + ':' + (ss < 10 ? '0' : '') + ss;
+    }, 1000);
+}
+function netCallToggleMute() {
+    const C = NET_STATE.call;
+    if (!C.stream) return;
+    C.muted = !C.muted;
+    C.stream.getAudioTracks().forEach(function(t) { t.enabled = !C.muted; });
+    netCallShow('active', C.peerName, C.muted ? '🔇 بی‌صدا' : '🎙️ در حال تماس…');
+}
+function netCallShow(mode, name, status) {
+    const sc = document.getElementById('netCallScrim');
+    if (!sc) return;
+    sc.classList.add('show');
+    sc.classList.toggle('ringing', mode === 'ringing');
+    const nEl = document.getElementById('netCallName');
+    const sEl = document.getElementById('netCallStatus');
+    const aEl = document.getElementById('netCallAvatar');
+    if (nEl) nEl.textContent = name || '—';
+    if (sEl) sEl.textContent = status || '';
+    if (aEl) aEl.textContent = mode === 'ringing' ? '🔔' : '📞';
+    const b = document.getElementById('netCallBtns');
+    if (!b) return;
+    if (mode === 'ringing') {
+        b.innerHTML = '<button class="net-call-btn accept" onclick="netCallAccept()">✓</button>'
+                    + '<button class="net-call-btn decline" onclick="netCallDecline()">✕</button>';
+    } else {
+        const C = NET_STATE.call;
+        b.innerHTML = '<button class="net-call-btn mute' + (C.muted ? ' on' : '') + '" onclick="netCallToggleMute()">' + (C.muted ? '🔇' : '🎤') + '</button>'
+                    + '<button class="net-call-btn end" onclick="netCallEnd()">✕</button>';
+    }
+}
+function NET_callCleanup() {
+    const C = NET_STATE.call;
+    if (C.timerIv) clearInterval(C.timerIv);
+    if (C.ringT) clearTimeout(C.ringT);
+    if (C.stream) { try { C.stream.getTracks().forEach(function(t) { t.stop(); }); } catch(e) {} }
+    if (C.pc) { try { C.pc.close(); } catch(e) {} }
+    NET_STATE.call = { active:false, role:null, peerUid:'', peerName:'', pc:null, stream:null,
+                       timerIv:null, ringT:null, muted:false, pending:null, iceBuf:[], state:'' };
+    const sc = document.getElementById('netCallScrim');
+    if (sc) sc.classList.remove('show', 'ringing');
 }
 
 // علت تعطیلی در خط اول یادداشت هر روز — idempotent؛ محتوای قبلی حفظ می‌شود
