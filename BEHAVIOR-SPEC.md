@@ -11,10 +11,10 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v256 — ۱۴۰۵ آذر ۲ (چند گروه هم‌زمان فعال + ساخت فوری گروه در صفحهٔ اصلی + ویرایش/حذف گروه توسط سازنده + مدیریت کامل تسک از صفحهٔ اصلی + تب تسک فقط‌نمایش — BA-237..241)
-#  نسخهٔ فعلی کد:  APP_VERSION = v256-2026-11-23-net-multi-group-main-mgmt
-#                  CACHE_NAME  = yadavar-cache-v256
-#                  version.txt = v256-2026-11-23-net-multi-group-main-mgmt
+#  آخرین به‌روزرسانی: v257 — ۱۴۰۵ آذر ۲ (تسک شبکه‌ای با فرم خود برنامه + مسئول انجام در ایجاد/ویرایش + تمام فیلدهای وضعیت در سرور + انتقال تسک عادی به شبکه + رفع باگ ویرایش نام گروه + تب اعضا + قفل خروج سازنده/حذف عضو — BA-242..248)
+#  نسخهٔ فعلی کد:  APP_VERSION = v257-2026-11-23-net-native-tasks-members-tab
+#                  CACHE_NAME  = yadavar-cache-v257
+#                  version.txt = v257-2026-11-23-net-native-tasks-members-tab
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -1430,6 +1430,29 @@
 #   از openNetPanel) → NET_connect دوباره false بی‌صدا → خروج بدون هیچ
 #   پیام. اصلاح: netEnsureConnected (صبر تا ۱۰ ثانیه برای اتصال در جریان،
 #   بعد NET_connect) + پیام صریح «اتصال برقرار نشد — جعبهٔ خطا را ببینید».
+#   BA-242 (v257 — فیلدهای کامل تسک در سرور): SQL HELP پنج ALTER جدید
+#   (net_tasks: completed_at/cancelled/suspended/urgent/pinned)؛
+#   netSyncTaskFromMain همهٔ فلگ‌ها را می‌فرستد (toggleDone/cancelled/
+#   suspended/urgent/pin همگی از همین مسیر)؛ netSyncGroupTasks فلگ‌ها +
+#   netAssigneeId + completedAt را در آینه دوطرفه نگه می‌دارد.
+#   BA-243 (فرم خود برنامه): فرم بالای گروه حذف شد؛ مودال اصلی ردیف
+#   «📤 مسئول انجام» دارد (taskNetAssigneeRow/taskNetAssignee) که
+#   startAdding (گروه مقصد netCode) و editTask (پیش‌فرض netAssigneeId)
+#   نشانش می‌دهند؛ saveItem ساخت → netCreateTaskFromMain(item, assignee)
+#   و ویرایش → netUpdateTaskFromMain(item, assignee)؛ netAddTaskCore
+#   پیش‌فرض مسئول = ایجادکننده (خود کاربر)؛ netAssigneeMembersFor از
+#   اعضای فعال یا حافظهٔ گروه.
+#   BA-244 (انتقال به شبکه): changeTaskGroup اگر گروه جدید netCode و تسک
+#   netId ندارد → netCreateTaskFromMain با groupOverride (اعضای همان گروه
+#   از net_groups_v1) — ایجادکننده/مسئول = کاربر.
+#   BA-245 (رفع باگ ویرایش نام): update فقط {name} — ستون updated_at در
+#   net_groups نیست و باعث خطای PostgREST می‌شد؛ دکمهٔ ✏️ هم فقط برای
+#   سازنده؛ broadcast group-renamed + poll نام‌ها را زنده می‌رساند.
+#   BA-246 (تب اعضا): تب دوم «🧑‍🤝‍🧑 اعضا» = netMembersTabHtml +
+#   netRenderMembersList (کلید tab: members)؛ کارت اعضا از تب گروه‌ها
+#   حذف؛ netTasksHtml/netRenderTasksList/netRefillAssigneeSelect حذف.
+#   BA-247/248: netLeaveMyGroup برای سازنده قفل («حذف کنید»)؛
+#   netDeleteGroup برای عضو قفل («فقط خروج»)؛ دکمهٔ گروه غیرفعال «✅ فعال».
 #   BA-237 (v256 — چند گروه هم‌زمان): net_groups_v1 (localStorage) لیست
 #   گروه‌های عضوشده {code,id,name,isOwner,members?}؛ netSyncGroupTasks هر
 #   گروه را جدا هم‌گام می‌کند؛ netLoadTasksAll همهٔ گروه‌ها را می‌کشد +
@@ -2801,6 +2824,12 @@
 #
 #   فایل‌های نسخه: APP_VERSION / version.txt →
 #   v244-2026-11-15-align-keepalive-yt-multi؛ CACHE_NAME → yadavar-cache-v244.
+#
+### v257 (۱۴۰۵ آذر ۲) — فرم خود برنامه برای تسک شبکه‌ای + تب اعضا + رفع ویرایش نام (BA-242..248)
+#   رگرسیون: پروب ۱۳۴ چک — K26 بدون updated_at، K27 تغییر-گروه→شبکه با
+#   مسئول=سازنده + ویرایش/ساخت با مسئول، K28 تب اعضا + «فعال»، K29 فلگ‌ها
+#   دوطرفه + completedAt آینه — صفر شکست. (K3/K6/K8 به سطح state/آینهٔ DB
+#   منتقل شدند چون لیست تسک‌های پنل حذف شد.)
 #
 ### v256 (۱۴۰۵ آذر ۲) — چند گروه هم‌زمان + مدیریت تسک از صفحهٔ اصلی + ویرایش/حذف گروه (BA-237..241)
 #   رگرسیون: پروب ۱۳۳ چک — K24 چند-گروهی، K25 ساخت فوری + 🛰️، K26
