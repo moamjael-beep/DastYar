@@ -1258,6 +1258,9 @@ body { padding-bottom: 30px; padding-top: 62px; /* 🔧 v151: فضا برای ه
 }
 .btn-primary { background: var(--primary); color: white; }
 .btn-secondary { background: #e0e0e0; color: var(--text); }
+/* 🔧 N-3 (v261): هدر بخش زیرگروه در نمای تسک‌های گروه */
+.task-section-header { padding: 10px 8px 6px; font-size: 13px; font-weight: 700; color: #546e7a; border-bottom: 2px solid #eceff1; margin: 4px 0 4px; background: #fafbfc; border-radius: 8px; }
+.task-section-header.task-section-root { color: #455a64; background: #f4f6f8; }
 .btn-danger { background: var(--red); color: white; }
 
 /* ════════════════════════════════════════════════════════════════
@@ -5198,6 +5201,25 @@ body.locked .header-actions button {
     </div>
 </div>
 
+<!-- 🔧 N-5b (v261): چت خصوصی ۱:۱ — همان زبان طراحی و قابلیت‌های چت گروهی -->
+<div class="net-overlay" id="netPvOverlay">
+    <div class="net-topbar">
+        <button class="net-back-btn" onclick="netPvClose()">بازگشت ❯</button>
+        <div class="net-title" id="netPvTitle">💬 چت خصوصی</div>
+    </div>
+    <div class="net-body" id="netPvList" style="padding-bottom:76px;"></div>
+    <div class="net-chat-inputbar" style="position:absolute; bottom:0; left:0; right:0;">
+        <input id="netPvInput" type="text" placeholder="پیام خصوصی…"
+               onkeydown="if(event.key==='Enter'){netPvSend();}">
+        <button class="net-btn" onclick="document.getElementById('netPvImgInput').click()" title="ارسال عکس">📷</button>
+        <input type="file" id="netPvImgInput" accept="image/*" style="display:none;" onchange="netPvSendFilePick(this.files && this.files[0]); this.value='';">
+        <button class="net-btn" id="netPvVoiceClipBtn" onclick="netPvVoiceClipToggle()" title="پیام صوتی">🎙</button>
+        <button class="net-btn" onclick="netPvPickFile()" title="ارسال فایل/ویدیو">📎</button>
+        <input type="file" id="netPvFileInput" style="display:none;" onchange="netPvSendFilePick(this.files && this.files[0]); this.value='';">
+        <button class="net-btn" onclick="netPvSend()">ارسال</button>
+    </div>
+</div>
+
 <div class="bulk-sms-overlay" id="bulkSmsOverlay">
     <div class="bulk-sms-topbar">
         <button class="bulk-sms-back-btn" onclick="closeBulkSms()">بازگشت ❯</button>
@@ -5753,6 +5775,19 @@ body.locked .header-actions button {
         <div class="hamburger-item" onclick="closeHamburgerMenuSilent(); openNetPanel();">
             <span class="h-ico">🛰️</span><span>شبکه (چت، تماس، گروه مشترک)</span>
         </div>
+        <!-- 🔧 N-2 (v261): فیلتر نمایش انواع تسک — سراسری، با تیک برای هر وضعیت -->
+        <div style="border-top:1px solid #e3e6ea; padding:8px 12px 4px;">
+            <div style="font-size:12.5px; font-weight:700; color:#37474f; margin-bottom:6px;">🔎 نمایش کارها (سراسری)</div>
+            <div id="tvfGlobalBox"></div>
+            <div style="font-size:10.5px; color:#90a4ae; margin-top:4px;">در هر گروه می‌توانید جداگانه باز/بسته کنید (منوی ☰ گروه)</div>
+        </div>
+    </div>
+</div>
+
+<!-- 🔧 N-2/N-3 (v261): پنل فیلتر نمایش گروهی + مدیریت زیرگروه‌های گروه -->
+<div class="hamburger-overlay" id="tvfOverlay" onclick="closeTvfPanel()">
+    <div class="hamburger-card" onclick="event.stopPropagation()" style="min-width:250px; max-width:88vw;">
+        <div id="tvfPanelBody"></div>
     </div>
 </div>
 
@@ -8076,7 +8111,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v259-2026-11-23-net-chat-media-edit-notify';
+const APP_VERSION = 'v261-2026-11-23-mic-autoclose-taskfilter-subgroups-call-pv';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -9891,7 +9926,8 @@ function addGroup(name, color) {
         // 🆕 فیلدهای جدید برای شخصی‌سازی هدر گروه:
         headerIcon: '📋',         // آیکون اموجی پیش‌فرض
         headerImage: '',          // عکس آپلود‌شده (data URL) — اگر خالی باشد، آیکون نمایش داده می‌شود
-        showInAll: true           // آیا تسک‌های این گروه در «همه کارها» نمایش داده شوند؟
+        showInAll: true,          // آیا تسک‌های این گروه در «همه کارها» نمایش داده شوند؟
+        subgroups: []             // 🔧 N-3 (v261): زیرگروه‌های دوسطحی — بی‌نهایت، بدون زیرمجموعه
     };
     groups.push(newGroup);
     setGroups(groups);
@@ -9908,6 +9944,7 @@ function migrateGroupFields() {
         if (!g.headerIcon) { g.headerIcon = '📋'; changed = true; }
         if (g.headerImage === undefined) { g.headerImage = ''; changed = true; }
         if (g.showInAll === undefined) { g.showInAll = true; changed = true; }
+        if (!Array.isArray(g.subgroups)) { g.subgroups = []; changed = true; }   // 🔧 N-3 (v261)
     });
     if (changed) setGroups(groups);
     return changed;
@@ -9939,6 +9976,245 @@ function deleteGroup(id) {
 
 function getGroupById(id) {
     return getGroups().find(g => g.id === id) || { id: 'all', name: 'همه کارها', color: '#4CAF50' };
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// 🔧 N-2 (v261): فیلتر نمایش انواع تسک — با تیک برای هر وضعیت
+//   • سراسری (منوی همبرگری): روی کل برنامه اعمال می‌شود.
+//   • گروهی (منوی ☰ داخل هر گروه): فقط همان گروه؛ روی سراسری override
+//     می‌کند — اگر سراسری باز باشد ولی در گروهی نوعی بسته شود، فقط همان‌جا
+//     پنهان می‌شود. «فعال» = نه done، نه cancelled، نه suspended.
+// ═════════════════════════════════════════════════════════════════════
+const TASK_VIEW_STATES = [
+    { k: 'active',    label: 'فعال' },
+    { k: 'done',      label: 'انجام شده' },
+    { k: 'cancelled', label: 'لغو شده' },
+    { k: 'suspended', label: 'معلق' }
+];
+function taskViewFilterRead(key) {
+    try { const v = JSON.parse(localStorage.getItem(key) || 'null'); return (v && typeof v === 'object') ? v : null; } catch(e) { return null; }
+}
+function taskViewFilterGlobal() {
+    const f = taskViewFilterRead('task_view_filter') || {};
+    return { active: f.active !== false, done: f.done !== false, cancelled: f.cancelled !== false, suspended: f.suspended !== false };
+}
+function taskViewFilterGroup(gid) { return taskViewFilterRead('task_view_filter_' + gid); }
+// فیلتر مؤثر یک گروه: سراسری + فلگ‌های override گروهی
+function taskViewFilterFor(gid) {
+    const g = taskViewFilterGlobal();
+    const o = taskViewFilterGroup(gid) || {};
+    const eff = {};
+    TASK_VIEW_STATES.forEach(s => { eff[s.k] = (o[s.k] !== undefined) ? !!o[s.k] : g[s.k]; });
+    return eff;
+}
+// وضعیت یک تسک از دید فیلتر: 'active' | 'done' | 'cancelled' | 'suspended'
+function taskStateOf(it) {
+    if (it.cancelled == true) return 'cancelled';
+    if (it.done == true) return 'done';
+    if (it.suspended == true) return 'suspended';
+    return 'active';
+}
+// آیا تسک با فیلتر نمایش دیده می‌شود؟ در نمای یک گروه، فیلتر همان گروه؛
+// در «همه کارها»/«فوری» هر تسک با فیلتر مؤثر گروه خودش سنجیده می‌شود.
+function taskViewAllows(currentGid, it) {
+    const gid = (currentGid && currentGid !== 'all' && currentGid !== 'urgent') ? currentGid : (it.groupId || 'all');
+    const f = taskViewFilterFor(gid);
+    return f[taskStateOf(it)] !== false;
+}
+function taskViewFilterSetGlobal(k, on) {
+    const f = taskViewFilterGlobal(); f[k] = !!on;
+    localStorage.setItem('task_view_filter', JSON.stringify(f));
+    rerenderAfterTaskFilter();
+}
+function taskViewFilterSetGroup(gid, k, on) {
+    const f = taskViewFilterGroup(gid) || {}; f[k] = !!on;
+    localStorage.setItem('task_view_filter_' + gid, JSON.stringify(f));
+    rerenderAfterTaskFilter();
+}
+function taskViewFilterResetGroup(gid) {
+    localStorage.removeItem('task_view_filter_' + gid);
+    rerenderAfterTaskFilter();
+}
+function rerenderAfterTaskFilter() {
+    try {
+        if (typeof currentView !== 'undefined' && currentView === 'tasks' && typeof currentGroupId !== 'undefined') renderTasksView(currentGroupId);
+        else if (typeof currentView !== 'undefined' && currentView === 'groups') renderGroupsView();
+    } catch(e) {}
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// 🔧 N-3 (v261): زیرگروه‌های دوسطحی
+//   • هر گروه اصلی بی‌نهایت زیرگروه دارد (group.subgroups = [{id,name,createdAt}])
+//   • زیرگروه زیرمجموعه نمی‌گیرد (فقط دو سطح: گروه → زیرگروه)
+//   • تسک‌ها optional field subgroupId دارند؛ بدون آن = ریشهٔ گروه
+//   • در نمای گروه: اول بخش‌های زیرگروه‌ها (با هدر)، بعد تسک‌های ریشه
+//   • تگ‌گذاری‌ها فقط با گروه اصلی کار می‌کنند (زیرگروه در تگ‌ها نمی‌آید)
+// ═════════════════════════════════════════════════════════════════════
+function groupSubgroups(gid) {
+    const g = getGroups().find(x => x.id === gid);
+    return (g && Array.isArray(g.subgroups)) ? g.subgroups : [];
+}
+function subgroupById(gid, sgid) {
+    return groupSubgroups(gid).find(s => s.id === sgid) || null;
+}
+function addSubgroupToGroup(gid, name) {
+    name = (name || '').trim();
+    if (!name) return null;
+    const groups = getGroups();
+    const g = groups.find(x => x.id === gid);
+    if (!g) return null;
+    if (!Array.isArray(g.subgroups)) g.subgroups = [];
+    if (g.subgroups.length >= 500) return null;   // سقف منطقی برای کارایی
+    const sg = { id: 'sg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7), name: name, createdAt: Date.now() };
+    g.subgroups.push(sg);
+    setGroups(groups);
+    return sg;
+}
+function renameSubgroupOfGroup(gid, sgid, name) {
+    name = (name || '').trim();
+    if (!name) return false;
+    const groups = getGroups();
+    const g = groups.find(x => x.id === gid);
+    if (!g || !Array.isArray(g.subgroups)) return false;
+    const sg = g.subgroups.find(s => s.id === sgid);
+    if (!sg) return false;
+    sg.name = name;
+    setGroups(groups);
+    return true;
+}
+function deleteSubgroupOfGroup(gid, sgid) {
+    // تسک‌های زیرگروه به ریشهٔ گروه برمی‌گردند؛ زیرگروه حذف می‌شود
+    const groups = getGroups();
+    const g = groups.find(x => x.id === gid);
+    if (!g || !Array.isArray(g.subgroups)) return false;
+    const before = g.subgroups.length;
+    g.subgroups = g.subgroups.filter(s => s.id !== sgid);
+    if (g.subgroups.length === before) return false;
+    const items = getDB();
+    let moved = 0;
+    items.forEach(it => { if (it.groupId === gid && it.subgroupId === sgid) { it.subgroupId = null; moved++; } });
+    setDB(items);
+    setGroups(groups);
+    return true;
+}
+function subgroupNameOf(gid, sgid) {
+    const sg = subgroupById(gid, sgid);
+    return sg ? sg.name : '';
+}
+function changeTaskSubgroup(taskId, sgid) {
+    const items = getDB();
+    const it = items.find(x => x.id === taskId);
+    if (!it) return;
+    it.subgroupId = sgid || null;
+    setDB(items);
+    showToast('زیرگروه تسک به‌روزرسانی شد ✓');
+    if (typeof currentView !== 'undefined' && currentView === 'tasks') renderTasksView(currentGroupId);
+    // سینک شبکه — زیرگروه جزو «تمام جزئیات» است (N-3)
+    if (it.netId && typeof netSyncTaskFromMain === 'function') { try { netSyncTaskFromMain(it); } catch(e) {} }
+}
+
+// ─── N-2: رندر تیک‌های فیلتر — سراسری (همبرگری) و گروهی (پنل ☰ گروه) ───
+function renderTvfGlobalBox() {
+    const el = document.getElementById('tvfGlobalBox');
+    if (!el) return;
+    const f = taskViewFilterGlobal();
+    el.innerHTML = TASK_VIEW_STATES.map(s =>
+        '<label style="display:flex;align-items:center;gap:8px;padding:5px 2px;font-size:13.5px;color:#37474f;cursor:pointer;">'
+        + '<input type="checkbox" ' + (f[s.k] ? 'checked' : '') + ' onchange="taskViewFilterSetGlobal(\'' + s.k + '\', this.checked)">'
+        + s.label + '</label>').join('');
+}
+function openTvfPanel(gid) {
+    const ov = document.getElementById('tvfOverlay');
+    if (!ov) return;
+    ov.dataset.gid = gid || '';
+    renderTvfPanelBody();
+    ov.classList.add('active');
+    bringToFront(ov);
+}
+function closeTvfPanel() {
+    const ov = document.getElementById('tvfOverlay');
+    if (ov) { ov.classList.remove('active'); ov.dataset.gid = ''; }
+}
+function renderTvfPanelBody() {
+    const ov = document.getElementById('tvfOverlay');
+    const body = document.getElementById('tvfPanelBody');
+    if (!ov || !body) return;
+    const gid = ov.dataset.gid || '';
+    const g = getGroupById(gid);
+    const eff = taskViewFilterFor(gid);
+    const ovr = taskViewFilterGroup(gid) || {};
+    body.innerHTML = '<div style="font-size:13.5px; font-weight:700; color:#37474f; padding:8px 12px 2px;">🔎 فیلتر نمایش کارها'
+        + (gid ? ' — ' + escapeHtml(g.name) : '') + '</div>'
+        + '<div style="padding:0 12px 6px;">'
+        + TASK_VIEW_STATES.map(s =>
+            '<label style="display:flex;align-items:center;gap:8px;padding:6px 2px;font-size:13.5px;color:#37474f;cursor:pointer;">'
+            + '<input type="checkbox" ' + (eff[s.k] ? 'checked' : '') + ' onchange="taskViewFilterSetGroup(\'' + escA(gid) + '\',\'' + s.k + '\', this.checked)">'
+            + s.label + (ovr[s.k] === undefined ? ' <span style="font-size:10px;color:#90a4ae;">(سراسری)</span>' : ' <span style="font-size:10px;color:#1976d2;">(همین گروه)</span>')
+            + '</label>').join('')
+        + '</div>'
+        + '<div style="display:flex; gap:6px; padding:4px 12px 10px;">'
+        + '<button class="btn-secondary" style="flex:1;" onclick="taskViewFilterResetGroup(\'' + escA(gid) + '\'); renderTvfPanelBody(); showToast(\'بازگشت به فیلتر سراسری\')">↩ سراسری</button>'
+        + '<button class="btn-primary" style="flex:1;" onclick="closeTvfPanel()">تأیید</button>'
+        + '</div>';
+}
+
+// ─── N-3: مدیریت زیرگروه‌های یک گروه (افزودن/تغییر نام/حذف) ───
+function openSubgroupsPanel(gid) {
+    const ov = document.getElementById('tvfOverlay');
+    if (!ov) return;
+    ov.dataset.gid = gid || '';
+    ov.dataset.mode = 'sub';
+    renderSubgroupsPanelBody();
+    ov.classList.add('active');
+    bringToFront(ov);
+}
+function closeSubgroupsPanel() { closeTvfPanel(); }
+function renderSubgroupsPanelBody() {
+    const ov = document.getElementById('tvfOverlay');
+    const body = document.getElementById('tvfPanelBody');
+    if (!ov || !body) return;
+    const gid = ov.dataset.gid || '';
+    const g = getGroupById(gid);
+    const subs = groupSubgroups(gid);
+    let h = '<div style="font-size:13.5px; font-weight:700; color:#37474f; padding:8px 12px 2px;">🗂 زیرگروه‌های «' + escapeHtml(g.name) + '»</div>'
+        + '<div style="padding:0 12px 4px; font-size:11px; color:#90a4ae;">زیرگروه زیرمجموعه نمی‌گیرد (دو سطح: گروه ← زیرگروه). تسک‌های بی‌زیرگروه، ریشهٔ گروه‌اند و زیر بخش‌های زیرگروه نمایش داده می‌شوند.</div>'
+        + '<div style="padding:2px 12px 6px;">';
+    subs.forEach(s => {
+        const cnt = getDB().filter(i => i.groupId === gid && i.subgroupId === s.id).length;
+        h += '<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #eef1f4;">'
+            + '<span style="flex:1;font-size:13px;color:#37474f;">' + escapeHtml(s.name) + ' <span style="font-size:10.5px;color:#90a4ae;">(' + toPersianDigits(cnt) + ' کار)</span></span>'
+            + '<button class="net-btn small secondary" onclick="renameSubgroupUi(\'' + escA(gid) + '\',\'' + escA(s.id) + '\')">✏️</button>'
+            + '<button class="net-btn small danger" onclick="if(confirm(\'حذف زیرگروه؟ تسک‌هایش به ریشهٔ گروه برمی‌گردند.\')){ deleteSubgroupOfGroup(\'' + escA(gid) + '\',\'' + escA(s.id) + '\'); renderSubgroupsPanelBody(); }">🗑</button>'
+            + '</div>';
+    });
+    if (!subs.length) h += '<div style="font-size:12px;color:#90a4ae;padding:6px 0;">هنوز زیرگروهی نیست.</div>';
+    h += '</div>'
+        + '<div style="display:flex; gap:6px; padding:4px 12px 10px;">'
+        + '<input id="tvfNewSub" placeholder="نام زیرگروه جدید" style="flex:1; font-size:13px; padding:7px 8px; border:1px solid #cfd8dc; border-radius:8px;">'
+        + '<button class="btn-primary" onclick="addSubgroupUi(\'' + escA(gid) + '\')">＋</button>'
+        + '<button class="btn-secondary" onclick="closeTvfPanel()">تأیید</button>'
+        + '</div>';
+    body.innerHTML = h;
+}
+function addSubgroupUi(gid) {
+    const inp = document.getElementById('tvfNewSub');
+    const name = ((inp && inp.value) || '').trim();
+    if (!name) { showToast('نام زیرگروه را بنویسید'); return; }
+    const sg = addSubgroupToGroup(gid, name);
+    if (!sg) { showToast('⚠️ زیرگروه ساخته نشد'); return; }
+    showToast('زیرگروه «' + name + '» ساخته شد ✓');
+    renderSubgroupsPanelBody();
+    if (typeof currentView !== 'undefined' && currentView === 'tasks') renderTasksView(currentGroupId);
+}
+function renameSubgroupUi(gid, sgid) {
+    const cur = subgroupNameOf(gid, sgid);
+    const name = prompt('نام جدید زیرگروه:', cur);
+    if (name === null) return;
+    if (renameSubgroupOfGroup(gid, sgid, name)) {
+        showToast('زیرگروه تغییر نام یافت ✓');
+        renderSubgroupsPanelBody();
+        if (typeof currentView !== 'undefined' && currentView === 'tasks') renderTasksView(currentGroupId);
+    }
 }
 
 // Rename an existing group (used by the edit button on the group's tasks header).
@@ -13158,6 +13434,8 @@ function closeModalByType(type) {
         'bellSettings': 'bellSettingsOverlay',
         // 🔧 v246 (BA-222): پنل شبکه — Back موبایل آن را می‌بندد
         'net': 'netOverlay',
+        // 🔧 N-5b (v261): چت خصوصی — Back موبایل آن را می‌بندد
+        'netPv': 'netPvOverlay',
     }[type];
     if (overlayId) {
         const el = document.getElementById(overlayId);
@@ -13188,6 +13466,13 @@ function closeModalByType(type) {
         typeof calState !== 'undefined' && calState) {
         const calOvBA202 = document.getElementById('calendarOverlay');
         if (calOvBA202 && calOvBA202.classList.contains('active')) renderCalendar();
+    }
+    if (type === 'notes') {
+        // 🔧 N (v261): بستن خودکار میک یادداشت با بسته‌شدن صفحه — حتی از
+        // مسیرهایی که مستقیم closeModalByType می‌زنند و از closeNotes رد نمی‌شوند
+        if (typeof _notesRecording !== 'undefined' && _notesRecording && typeof toggleNotesRecording === 'function') {
+            try { toggleNotesRecording(); } catch(e) {}
+        }
     }
     if (type === 'accDocForm') {
         // 🔧 v210: ضبط صوتی شرح سند حتماً متوقف شود (حتی با Back موبایل)
@@ -13749,6 +14034,11 @@ function renderTasksView(groupId) {
         items = items.filter(i => i.groupId === groupId);
     }
 
+    // 🔧 N-2 (v261): فیلتر نمایش انواع تسک — سراسری + override گروهی.
+    // در نمای «همه کارها»/«فوری» هر تسک با فیلتر مؤثر گروه خودش می‌آید.
+    const _rawBeforeFilter = items.length;
+    items = items.filter(i => taskViewAllows(groupId, i));
+
     // 🔧 v133: مرتب‌سازی با ۴ حالت تسک
     // ترتیب از بالا به پایین:
     //   ۱. فعال (نه done، نه cancelled، نه suspended)
@@ -13855,6 +14145,12 @@ function renderTasksView(groupId) {
                 <button class="group-menu-item" onclick="openGroupSettings('${group.id}')">
                     <span class="menu-icon">⚙️</span> تنظیمات گروه (نام، رنگ، آیکون، نمایش)
                 </button>
+                <button class="group-menu-item" onclick="closeGroupMenu(); openTvfPanel('${group.id}')">
+                    <span class="menu-icon">🔎</span> فیلتر نمایش کارها (فعال/انجام/لغو/معلق)
+                </button>
+                <button class="group-menu-item" onclick="closeGroupMenu(); openSubgroupsPanel('${group.id}')">
+                    <span class="menu-icon">🗂️</span> زیرگروه‌های گروه
+                </button>
                 <button class="group-menu-item" onclick="closeGroupMenu(); resetAllTaskPositions()">
                     <span class="menu-icon">↩</span> بازگردانی ترتیب اصلی تسک‌ها
                 </button>
@@ -13908,11 +14204,18 @@ function renderTasksView(groupId) {
     }
 
     if (items.length === 0) {
-        container.innerHTML += '<div class="empty"><div class="empty-icon">📝</div><div>هیچ کاری در این گروه نیست<br>دکمه + را بزنید</div></div>';
+        if (_rawBeforeFilter > 0) {
+            // 🔧 N-2 (v261): تسک هست ولی فیلتر نمایش همه را پنهان کرده
+            container.innerHTML += '<div class="empty"><div class="empty-icon">🔎</div><div>همهٔ کارها بر اساس فیلتر نمایش پنهان‌اند<br>(منوی ☰ گروه یا همبرگری اصلی)</div></div>';
+        } else {
+            container.innerHTML += '<div class="empty"><div class="empty-icon">📝</div><div>هیچ کاری در این گروه نیست<br>دکمه + را بزنید</div></div>';
+        }
         return;
     }
 
-    items.forEach((item) => {
+    // 🔧 N-3 (v261): رندر با بخش‌های زیرگروه — اول بخش‌های زیرگروه‌ها
+    // (به‌ترتیب ساخت)، بعد تسک‌های ریشه (بدون زیرگروه) زیر آن‌ها.
+    const renderOneTask = (item) => {
         const level = getUrgencyLevel(item.deadline, item.done, item.cancelled, item.suspended);
         const div = document.createElement('div');
         // 🔧 اگر تسک پین شده، کلاس pinned-task اضافه کن (نوار آبی در سمت راست)
@@ -13982,6 +14285,7 @@ function renderTasksView(groupId) {
             <div class="detail-row"><span class="detail-label">انجام شد:</span><span class="detail-value">${item.completedAt ? toPersianDigits(toJalaliFull(item.completedAt)) : 'هنوز انجام نشده'}</span></div>
             ${item.completedAt ? `<div class="detail-row"><span class="detail-label">روز انجام:</span><span class="detail-value">${toJalaliLong(item.completedAt)}</span></div>` : ''}
             <div class="detail-row group-selector-row"><span class="detail-label">گروه:</span><select class="group-selector" onchange="changeTaskGroup('${item.id}', this.value)">${groupOpts}</select></div>
+            ${taskSubgroupSelectorHtml(item)}
             ${(() => { const _ng = getGroupById(item.groupId || ''); const _code = _ng && _ng.netCode; if (_code && item.netId) { const _members = netAssigneeMembersFor(_code); const _isCreator = item.netOwnerId === netMyUid() || item.netOwner === NET_STATE.myName; const _isAssignee = (item.netAssigneeId || '') === netMyUid(); if ((_isCreator || _isAssignee) && _members.length) { const _cur = item.netAssigneeId || ''; const _inList = _cur && _members.some(m => m.user_id === _cur); const _opts = (!_cur ? '<option value="" selected>— انتخاب عضو —</option>' : '') + _members.map(m => '<option value="' + escA(m.user_id) + '"' + (m.user_id === _cur ? ' selected' : '') + '>' + escapeHtml(m.display_name) + (m.user_id === netMyUid() ? ' (من)' : '') + '</option>').join('') + ((_cur && !_inList) ? '<option value="' + escA(_cur) + '" selected>' + escapeHtml(item.netAssignee || 'عضو') + '</option>' : ''); return '<div class="detail-row"><span class="detail-label">📤 مسئول انجام:</span><select class="group-selector" data-tid="' + escA(item.id) + '" onchange="if(this.value) netChangeAssignee(this.getAttribute(\'data-tid\'), this.value)">' + _opts + '</select></div>'; } if (item.netAssignee) { return '<div class="detail-row"><span class="detail-label">📤 مسئول انجام:</span><span class="detail-value">' + escapeHtml(item.netAssignee) + '</span></div>'; } } return ''; })()}
             <div class="detail-row urgent-toggle-row"><span class="detail-label">🚨 فوری:</span><label class="urgent-checkbox-label"><input type="checkbox" class="urgent-checkbox" ${item.urgent ? 'checked' : ''} onchange="toggleTaskUrgent('${item.id}')"> <span>این تسک در گروه «کارهای فوری» نمایش داده شود</span></label></div>
             ${(() => { const tc = item.contactId ? getContactById(item.contactId) : null; return `<div class="detail-row detail-contact-row"><span class="detail-label">👤 شخص:</span><span class="detail-value">${tc ? escapeHtml(tc.name) + (tc.company ? ' — ' + escapeHtml(tc.company) : '') + (tc.primaryPhone ? ' • ' + escapeHtml(tc.primaryPhone) : '') : 'بدون شخص'}</span><button class="detail-contact-edit-btn" onclick="event.stopPropagation(); changeTaskContact('${item.id}')" title="${tc ? 'ویرایش/تغییر شخص' : 'افزودن شخص'}">✏️</button></div>`; })()}
@@ -14012,7 +14316,29 @@ function renderTasksView(groupId) {
             toggleExpand(item.id);
         });
         container.appendChild(div);
-    });
+    };
+    const usesSubSections = (groupId !== 'all' && groupId !== 'urgent' && groupSubgroups(groupId).length > 0);
+    if (usesSubSections) {
+        groupSubgroups(groupId).forEach(sg => {
+            const list = items.filter(i => i.subgroupId === sg.id);
+            if (!list.length) return;
+            const h = document.createElement('div');
+            h.className = 'task-section-header';
+            h.textContent = '🗂 ' + sg.name + ' — ' + toPersianDigits(list.length) + ' کار';
+            container.appendChild(h);
+            list.forEach(renderOneTask);
+        });
+        const rootList = items.filter(i => !i.subgroupId || !subgroupById(groupId, i.subgroupId));
+        if (rootList.length) {
+            const h = document.createElement('div');
+            h.className = 'task-section-header task-section-root';
+            h.textContent = '📋 بدون زیرگروه — ' + toPersianDigits(rootList.length) + ' کار';
+            container.appendChild(h);
+            rootList.forEach(renderOneTask);
+        }
+    } else {
+        items.forEach(renderOneTask);
+    }
     setTimeout(initSortable, 0);
 }
 
@@ -14045,10 +14371,24 @@ function changeTaskGroup(taskId, newGroupId) {
     const item = items.find(i => i.id === taskId);
     if (item) {
         item.groupId = newGroupId;
+        item.subgroupId = null;   // 🔧 N-3: با تغییر گروه، زیرگروه قبلی بی‌معناست
         // 🔧 BA-244: تسک عادی به گروه شبکه‌ای منتقل شد → به شبکه هم اضافه شود
         // (ایجادکننده و مسئول پیش‌فرض = خود کاربر)
         { const _ng = getGroupById(newGroupId); if (_ng && _ng.netCode && !item.netId) { item.netCode = _ng.netCode; netCreateTaskFromMain(item, null); } }
         setDB(items); setTimeout(() => fullRender(), 100); showToast('گروه تغییر کرد'); }
+}
+
+// 🔧 N-3 (v261): سلکتور زیرگروه در جزئیات تسک — فقط وقتی گروه زیرگروه دارد
+// یا تسک زیرگروهی دارد که الان حذف شده (برای نمایش وضعیت فعلی)
+function taskSubgroupSelectorHtml(item) {
+    const gid = item.groupId || 'all';
+    const subs = groupSubgroups(gid);
+    const cur = item.subgroupId || '';
+    if (!subs.length && !cur) return '';
+    const opts = '<option value=""' + (!cur ? ' selected' : '') + '>— بدون زیرگروه (ریشه) —</option>'
+        + subs.map(s => '<option value="' + escA(s.id) + '"' + (s.id === cur ? ' selected' : '') + '>' + escapeHtml(s.name) + '</option>').join('');
+    const extra = (cur && !subgroupById(gid, cur)) ? '<option value="' + escA(cur) + '" selected>' + escapeHtml('زیرگروه حذف‌شده') + '</option>' : '';
+    return '<div class="detail-row"><span class="detail-label">🗂 زیرگروه:</span><select class="group-selector" onchange="changeTaskSubgroup(\'' + escA(item.id) + '\', this.value)">' + opts + extra + '</select></div>';
 }
 
 function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
@@ -18558,6 +18898,9 @@ const NET_SQL_HELP = '-- یاداوار شبکه — یک بار در SQL Editor
 'alter table net_messages add column if not exists fsize bigint;\n' +
 'alter table net_messages add column if not exists dur int;\n' +
 'alter table net_messages add column if not exists edited_at timestamptz;\n' +
+'-- ─── v261: زیرگروه تسک (دو سطح: گروه ← زیرگروه؛ زیرگروه زیرمجموعه نمی‌گیرد) ───\n' +
+'alter table net_tasks add column if not exists subgroup_id text;\n' +
+'alter table net_tasks add column if not exists subgroup_name text;\n' +
 'alter table net_messages add column if not exists deleted boolean default false;\n' +
 'create table if not exists net_msg_hides (\n' +
 '  msg_id uuid references net_messages(id) on delete cascade,\n' +
@@ -18607,7 +18950,11 @@ let NET_STATE = {
     tab: 'groups',
     connecting: false,
     call: { active:false, role:null, peerUid:'', peerName:'', pc:null, stream:null,
-            timerIv:null, ringT:null, muted:false, pending:null, iceBuf:[], state:'' }
+            timerIv:null, ringT:null, muted:false, pending:null, iceBuf:[], state:'' },
+    // 🔧 N-5 (v261): کانال سیگنال شخصی (تماس/چت خصوصی مستقل از گروه فعال)
+    sig: { mine: null, chs: {} },
+    // 🔧 N-5b (v261): چت خصوصی ۱:۱ — تمام قابلیت‌های چت گروهی
+    pv: { peer: null, peerName: '', msgs: [] }
 };
 
 function netMyUid() {
@@ -19043,11 +19390,13 @@ function NET_subscribe() {
     });
     ch.subscribe(function(status) {
         if (status === 'SUBSCRIBED') {
-            try { ch.track({ uid: netMyUid(), name: NET_STATE.myName, mic: NET_STATE.voice.in ? NET_STATE.voice.mic : false }); } catch(e) {}
+            // 🔧 N-4 (v261): lis=false — تازه آنلاین شده هنوز در جلسهٔ صوتی نیست
+            try { ch.track({ uid: netMyUid(), name: NET_STATE.myName, mic: NET_STATE.voice.in ? NET_STATE.voice.mic : false, lis: !!NET_STATE.voice.in }); } catch(e) {}
         }
     });
     NET_STATE.ch = ch;
     netEnsureSideChannels();   // L-5 (BA-252): همهٔ گروه‌های عضو آنلاین می‌مانند
+    netSigEnsureMine();        // 🔧 N-5 (v261): کانال سیگنال شخصی — تماس/چت خصوصی
     netStartGroupPoll();   // BA-237: هم‌گام‌سازی دوره‌ای همهٔ گروه‌ها
     netLoadTasksAll();
     const ag = NET_STATE.group || netActiveGroup();
@@ -19450,9 +19799,11 @@ function netRenderMembersList() {
         const self = (m.user_id === me);
         const badge = ghMode ? '' : '<span class="' + (on ? 'net-online' : 'net-offline') + '">' + (on ? 'آنلاین' : 'آفلاین') + '</span>';
         const call = (ghMode || self) ? '' : '<button class="net-btn small" onclick="netCallMember(\'' + escA(m.user_id) + '\', \'' + escA(m.display_name) + '\')">📞 تماس</button>';
+        // 🔧 N-5b (v261): کلید چت خصوصی با هر عضو — تمام قابلیت‌های چت گروهی
+        const pv = self ? '' : '<button class="net-btn small secondary" onclick="netPvOpen(\'' + escA(m.user_id) + '\', \'' + escA(m.display_name) + '\')">💬 چت</button>';
         return '<div class="net-member-row">'
             + '<span class="net-member-name">' + escapeHtml(m.display_name) + (self ? ' (من)' : '') + '</span>'
-            + badge + call
+            + badge + pv + call
             + '</div>';
     }).join('');
 }
@@ -19610,6 +19961,10 @@ function netTaskSharedFields(item) {
         repeat: (item.repeat && item.repeat.type && item.repeat.type !== 'none')
             ? JSON.stringify({ type: item.repeat.type, value: item.repeat.value, endDate: item.repeat.endDate || '' })
             : null,
+        // 🔧 N-3 (v261): زیرگروه هم جزو «تمام جزئیات» — id + نام (نام برای
+        // طرفی که گروه اصلی همان را ندارد)
+        subgroup_id: item.subgroupId || null,
+        subgroup_name: item.subgroupId ? (subgroupNameOf(item.groupId, item.subgroupId) || null) : null,
         done: !!item.done,
         completed_at: item.done ? (item.completedAt || null) : null,
         cancelled: item.cancelled == true,
@@ -19796,6 +20151,7 @@ function netSyncGroupTasks(g, tasks) {
                     completedAt: t.done ? (t.completed_at || t.created_at || new Date().toISOString()) : null,
                     cancelled: !!t.cancelled, suspended: !!t.suspended, urgent: !!t.urgent, pinned: !!t.pinned,
                     repeat: netParseRepeat(t.repeat),
+                    subgroupId: t.subgroup_id || null,   // 🔧 N-3 (v261)
                     netOwner: t.owner_name || '', netOwnerId: t.owner_id || '',
                     netAssignee: t.assignee_name || '', netAssigneeId: t.assignee_id || '',
                     createdAt: t.created_at || new Date().toISOString() };
@@ -19816,6 +20172,9 @@ function netSyncGroupTasks(g, tasks) {
                 // 🔧 K4: تکرار و سازنده هم دوطرفه
                 const _rep = netParseRepeat(t.repeat);
                 if (JSON.stringify(it.repeat || null) !== JSON.stringify(_rep)) { it.repeat = _rep; changed = true; }
+                // 🔧 N-3 (v261): زیرگروه دوطرفه — id + اگر گروه اصلی سمت این
+                // کاربر زیرگروه را ندارد، نام سرور مرجع نمایش می‌شود
+                if ((it.subgroupId || null) !== (t.subgroup_id || null)) { it.subgroupId = t.subgroup_id || null; changed = true; }
                 if ((it.netOwner || '') !== (t.owner_name || '') || (it.netOwnerId || '') !== (t.owner_id || '')) { it.netOwner = t.owner_name || ''; it.netOwnerId = t.owner_id || ''; changed = true; }
             }
         });
@@ -20585,7 +20944,13 @@ function netRenderChatHeader() {
     const el = document.getElementById('netChatHeader');
     if (!el) return;
     const on = NET_STATE.online || {};
-    const names = Object.keys(on).map(function(uid) {
+    // 🔧 N-4 (v261): فقط حاضران واقعی — عضوی که در چت نیست، با «ترک چت»
+    // غیرفعال از جلسه خارج شده، یا صدای صحبت‌کنندگان را نمی‌شنود
+    // (voice.in=false → lis=false) از فهرست حذف می‌شود.
+    const names = Object.keys(on).filter(function(uid) {
+        const o = on[uid] || {};
+        return o.lis === true || (o.lis === undefined && NET_STATE.voice.in && uid === netMyUid());
+    }).map(function(uid) {
         const o = on[uid] || {};
         const mic = o.mic ? ' 🎙' : '';
         return '<span class="net-presence-chip">' + escapeHtml(o.name || 'کاربر') + mic + '</span>';
@@ -20658,7 +21023,9 @@ async function netVoiceEnter() {
     NET_STATE.voice.in = true;
     NET_STATE.voice.mic = false;
     NET_STATE.voice.pcs = {};
-    try { NET_STATE.ch.track({ uid: netMyUid(), name: NET_STATE.myName, mic: false }); } catch(e) {}
+    // 🔧 N-4 (v261): فلگ شنیداری در presence — چیپ «حاضر در چت» فقط
+    // اعضایی را نشان می‌دهد که واقعاً صدای چت را می‌شنوند (voice.in=true)
+    try { NET_STATE.ch.track({ uid: netMyUid(), name: NET_STATE.myName, mic: false, lis: true }); } catch(e) {}
     NET_broadcast('voice-join', { uid: netMyUid(), name: NET_STATE.myName });
     netRenderChatHeader();
 }
@@ -20671,7 +21038,7 @@ function netVoiceLeave(silent) {
     NET_STATE.voice.mic = false;   // L-1: میک پیش‌فرض بسته — بعد از خروج هم
     NET_STATE.voice.pcs = {};
     NET_STATE.voice.stream = null;
-    try { if (NET_STATE.ch) NET_STATE.ch.track({ uid: netMyUid(), name: NET_STATE.myName, mic: false }); } catch(e) {}
+    try { if (NET_STATE.ch) NET_STATE.ch.track({ uid: netMyUid(), name: NET_STATE.myName, mic: false, lis: false }); } catch(e) {}   // 🔧 N-4: از فهرست حاضران خارج شو
     netRenderChatHeader();
     if (!silent) showToast('از گفتگوی صوتی خارج شدید');
 }
@@ -20833,7 +21200,296 @@ function NET_iceServers() {
     }
     return ice;
 }
-function NET_sendSignal(obj) { NET_broadcast('call-signal', obj); }
+// 🔧 N-5 (v261): رفع «تماس در طرف مقابل ظاهر نمی‌شود» — سیگنال‌ها دو مسیره
+// شدند: کانال گروهِ فعال (قدیمی) + کانال سیگنال شخصیِ گیرنده. قبلاً اگر
+// طرف مقابل گروه دیگری را باز بود یا در صفحهٔ اصلی بود، offer هرگز نمی‌رسید.
+function NET_sendSignal(obj) {
+    NET_broadcast('call-signal', obj);   // مسیر قدیمی — کانال گروه فعال
+    if (obj && obj.to) netSigSendTo(obj.to, 'call-signal', obj);   // مسیر شخصی
+}
+// ─── N-5a: زیرساخت کانال سیگنال شخصی ───
+function netSigChannelName(uid) { return 'net-sig-' + uid; }
+function netSigEnsureMine() {
+    if (!NET_STATE.sb || NET_STATE.sig.mine) return;
+    try {
+        const c = NET_STATE.sb.channel(netSigChannelName(netMyUid()));
+        c.on('broadcast', { event: 'call-signal' }, function(m) { const p = m && m.payload; if (p) NET_onCallSignal(p); });
+        c.on('broadcast', { event: 'pv' }, function(m) { const p = m && m.payload; if (p) NET_onPv(p); });
+        c.subscribe(function() {});
+        NET_STATE.sig.mine = c;
+    } catch(e) {}
+}
+function netSigSendTo(uid, event, payload) {
+    return new Promise(function(resolve) {
+        if (!NET_STATE.sb || !uid) { resolve(false); return; }
+        const existing = NET_STATE.sig.chs[uid];
+        if (existing && existing._sigReady) {
+            try { existing.send({ type: 'broadcast', event: event, payload: payload }); resolve(true); } catch(e) { resolve(false); }
+            return;
+        }
+        const c = NET_STATE.sb.channel(netSigChannelName(uid));
+        NET_STATE.sig.chs[uid] = c;
+        let sent = false;
+        const doSend = function() {
+            if (sent) return;
+            sent = true; c._sigReady = true;
+            try { c.send({ type: 'broadcast', event: event, payload: payload }); resolve(true); } catch(e) { resolve(false); }
+        };
+        const t = setTimeout(doSend, 1500);   // حتی اگر SUBSCRIBED دیر آمد، بفرست
+        try { c.subscribe(function(status) { if (status === 'SUBSCRIBED') { clearTimeout(t); doSend(); } }); }
+        catch(e) { clearTimeout(t); doSend(); }
+    });
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// 🔧 N-5b (v261): چت خصوصی ۱:۱ — تمام قابلیت‌های چت گروهی:
+// متن، عکس، پیام صوتی ضبطی، ویدیو/فایل، ویرایش پیام خود، حذف برای همه،
+// حذف برای من، لایت‌باکس عکس با ذخیره، نوتیف، زمان‌بندی فارسی.
+// تاریخچه در localStorage هر طرف (net_pv_<peerUid>)؛ پیوست‌ها همان باست
+// net-chat؛ رسانی با کانال سیگنال شخصی (event 'pv').
+// ═════════════════════════════════════════════════════════════════════
+function netPvKey(uid) { return 'net_pv_' + uid; }
+function netPvHidesKey(uid) { return 'net_pv_hides_' + uid; }
+function netPvLoad(uid) { try { const a = JSON.parse(localStorage.getItem(netPvKey(uid)) || '[]'); return Array.isArray(a) ? a : []; } catch(e) { return []; } }
+function netPvSave(uid, arr) { try { localStorage.setItem(netPvKey(uid), JSON.stringify(arr.slice(-300))); } catch(e) {} }
+function netPvHides(uid) { try { const a = JSON.parse(localStorage.getItem(netPvHidesKey(uid)) || '[]'); return Array.isArray(a) ? a : []; } catch(e) { return []; } }
+function netPvHideAdd(uid, id) { const h = netPvHides(uid); if (h.indexOf(id) < 0) { h.push(id); try { localStorage.setItem(netPvHidesKey(uid), JSON.stringify(h)); } catch(e) {} } }
+function netPvRefreshLocal() {
+    const uid = NET_STATE.pv.peer;
+    if (!uid) return;
+    // مثل چت گروهی: پیام حذف‌شده با پلاکهولد «🚫» می‌ماند؛ فقط «حذف برای من» فیلتر می‌شود
+    NET_STATE.pv.msgs = netPvLoad(uid).filter(function(m) { return netPvHides(uid).indexOf(m.id) < 0; });
+}
+function netPvOpen(uid, name) {
+    if (!NET_STATE.sb) { showToast('⚠️ اول به شبکه وصل شوید'); return; }
+    if (uid === netMyUid()) return;
+    NET_STATE.pv.peer = uid;
+    NET_STATE.pv.peerName = name || 'گفتگو';
+    netPvRefreshLocal();
+    const ov = document.getElementById('netPvOverlay');
+    if (!ov) return;
+    const t = document.getElementById('netPvTitle');
+    if (t) t.textContent = '💬 چت خصوصی — ' + NET_STATE.pv.peerName;
+    ov.classList.add('active');
+    bringToFront(ov);
+    navPush({ view: 'modal', type: 'netPv' });
+    trackModalOpen('netPv');
+    netSigEnsureMine();
+    netPvRender();
+}
+function netPvClose() {
+    const ov = document.getElementById('netPvOverlay');
+    if (!ov || !ov.classList.contains('active')) return;
+    closeModalByType('netPv');
+    navBack();
+}
+function netPvRender() {
+    const el = document.getElementById('netPvList');
+    if (!el) return;
+    const me = netMyUid();
+    el.innerHTML = NET_STATE.pv.msgs.map(function(m) {
+        const mine = (m.sender_id === me);
+        const body = netMsgBodyHtml(m);
+        const edited = (m.edited_at && !m.deleted) ? ' <span class="net-msg-edited" title="ویرایش‌شده">✎</span>' : '';
+        return '<div class="net-msg ' + (mine ? 'mine' : 'other') + '">'
+            + body
+            + '<div class="net-msg-meta">' + netFaTime(m.created_at) + edited + netPvMenuBtn(m, mine) + '</div></div>';
+    }).join('') || '<div class="net-empty">پیامی نیست — اولین پیام خصوصی را بفرستید</div>';
+    el.scrollTop = el.scrollHeight;
+}
+function netPvMenuBtn(m, mine) {
+    if (m.deleted) return '';
+    if (mine) return '<button class="net-msg-menu" data-mid="' + escA(m.id) + '" onclick="netPvMsgMenu(this.getAttribute(\'data-mid\'))" title="ویرایش/حذف">⋮</button>';
+    return '<button class="net-msg-menu" data-mid="' + escA(m.id) + '" onclick="netPvMsgMenu(this.getAttribute(\'data-mid\'))" title="حذف برای من">🚫</button>';
+}
+function netPvMsgMenu(mid) {
+    const m = NET_STATE.pv.msgs.find(function(x) { return x.id === mid; });
+    if (!m) return;
+    const mine = m.sender_id === netMyUid();
+    const editable = mine && !m.deleted && !m.img && !m.url;
+    let h = '<div class="net-msg-menu-box">';
+    h += '<div class="net-msg-menu-title">' + escapeHtml((m.text || '').slice(0, 40) || (m.fname || 'پیوست')) + '</div>';
+    if (editable) h += '<button class="net-btn small" onclick="netPvEditBox(\'' + escA(mid) + '\')">✏️ ویرایش</button>';
+    if (mine) h += '<button class="net-btn small danger" onclick="netPvDeleteForAll(\'' + escA(mid) + '\')">🗑 حذف برای همه</button>';
+    if (!mine) h += '<button class="net-btn small danger" onclick="netPvHideForMe(\'' + escA(mid) + '\')">🚫 حذف برای من</button>';
+    h += '<button class="net-btn small secondary" onclick="netMsgMenuClose()">انصراف</button></div>';
+    let ov = document.getElementById('netMsgMenuOv');
+    if (!ov) {
+        ov = document.createElement('div');
+        ov.id = 'netMsgMenuOv';
+        ov.className = 'net-msg-menu-ov';
+        ov.onclick = function() { netMsgMenuClose(); };
+        document.body.appendChild(ov);
+    }
+    ov.innerHTML = h;
+    ov.classList.add('open');
+}
+function netPvEditBox(mid) {
+    netMsgMenuClose();
+    const m = NET_STATE.pv.msgs.find(function(x) { return x.id === mid; });
+    if (!m) return;
+    const nt = prompt('متن جدید پیام:', m.text || '');
+    if (nt === null || !nt.trim() || nt === m.text) return;
+    m.text = nt.trim();
+    m.edited_at = new Date().toISOString();
+    const arr = netPvLoad(NET_STATE.pv.peer);
+    const mm = arr.find(function(x) { return x.id === mid; });
+    if (mm) { mm.text = m.text; mm.edited_at = m.edited_at; netPvSave(NET_STATE.pv.peer, arr); }
+    netPvRender();
+    netSigSendTo(NET_STATE.pv.peer, 'pv', { t: 'edit', from: netMyUid(), id: mid, text: m.text });
+}
+function netPvDeleteForAll(mid) {
+    netMsgMenuClose();
+    const m = NET_STATE.pv.msgs.find(function(x) { return x.id === mid; });
+    if (!m) return;
+    if (!confirm('این پیام برای همه حذف شود؟')) return;
+    m.deleted = true;
+    const arr = netPvLoad(NET_STATE.pv.peer);
+    const mm = arr.find(function(x) { return x.id === mid; });
+    if (mm) { mm.deleted = true; netPvSave(NET_STATE.pv.peer, arr); }
+    netPvRefreshLocal();
+    netPvRender();
+    netSigSendTo(NET_STATE.pv.peer, 'pv', { t: 'del', from: netMyUid(), id: mid });
+}
+function netPvHideForMe(mid) {
+    netMsgMenuClose();
+    if (!confirm('این پیام فقط برای شما حذف شود؟')) return;
+    netPvHideAdd(NET_STATE.pv.peer, mid);
+    netPvRefreshLocal();
+    netPvRender();
+}
+function netPvNotify(m) {
+    try { showToast('💬 ' + (m.sender_name || '') + ': ' + ((m.text || '').slice(0, 40) || 'پیوست')); } catch(e) {}
+}
+// دریافت رویدادهای چت خصوصی (روی کانال سیگنال شخصی خودم)
+function NET_onPv(p) {
+    if (!p || !p.t) return;
+    if (p.t === 'msg') {
+        const m = p.msg;
+        if (!m || !m.id || m.sender_id === netMyUid()) return;
+        const uid = m.sender_id;
+        const arr = netPvLoad(uid);
+        if (arr.some(function(x) { return x.id === m.id; })) return;
+        arr.push(m);
+        netPvSave(uid, arr);
+        if (NET_STATE.pv.peer === uid) {
+            netPvRefreshLocal();
+            netPvRender();
+        } else {
+            netPvNotify(m);
+        }
+    } else if (p.t === 'edit' && p.from) {
+        const arr = netPvLoad(p.from);
+        const m = arr.find(function(x) { return x.id === p.id; });
+        if (m) {
+            m.text = p.text; m.edited_at = new Date().toISOString();
+            netPvSave(p.from, arr);
+            if (NET_STATE.pv.peer === p.from) { netPvRefreshLocal(); netPvRender(); }
+        }
+    } else if (p.t === 'del' && p.from) {
+        const arr = netPvLoad(p.from);
+        const m = arr.find(function(x) { return x.id === p.id; });
+        if (m) {
+            m.deleted = true;
+            netPvSave(p.from, arr);
+            if (NET_STATE.pv.peer === p.from) { netPvRefreshLocal(); netPvRender(); }
+        }
+    }
+}
+// ارسال متن خصوصی
+async function netPvSend() {
+    const inp = document.getElementById('netPvInput');
+    const t = ((inp && inp.value) || '').trim();
+    if (!t || !NET_STATE.pv.peer) return;
+    if (inp) inp.value = '';
+    const msg = { id: 'pvm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        sender_id: netMyUid(), sender_name: NET_STATE.myName, text: t, kind: 'text',
+        created_at: new Date().toISOString(), deleted: false };
+    const arr = netPvLoad(NET_STATE.pv.peer);
+    arr.push(msg);
+    netPvSave(NET_STATE.pv.peer, arr);
+    netPvRefreshLocal();
+    netPvRender();
+    await netSigSendTo(NET_STATE.pv.peer, 'pv', { t: 'msg', msg: msg });
+}
+// بارگذاری پیوست در همان باست net-chat و ارسال خصوصی
+async function netPvUpload(blob, kind, dur, ext) {
+    if (!blob || !NET_STATE.sb) return null;
+    if (blob.size > 50 * 1024 * 1024) { showToast('⚠️ فایل بزرگ‌تر از ۵۰ مگابایت است'); return null; }
+    const path = 'chat/' + netMyUid() + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + (ext || 'dat');
+    const up = await NET_STATE.sb.storage.from('net-chat').upload(path, blob, { cacheControl: '3600', upsert: false });
+    if (up.error) throw new Error(up.error.message);
+    const pub = NET_STATE.sb.storage.from('net-chat').getPublicUrl(path);
+    const url = pub && pub.data && pub.data.publicUrl;
+    if (!url) throw new Error('لینک پیوست ساخته نشد');
+    return { kind: kind, url: url, fsize: blob.size, dur: dur || 0 };
+}
+async function netPvSendAttachment(blob, kind, dur, ext) {
+    if (!blob || !NET_STATE.pv.peer) return;
+    try {
+        const up = await netPvUpload(blob, kind, dur, ext);
+        if (!up) return;
+        const msg = { id: 'pvm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+            sender_id: netMyUid(), sender_name: NET_STATE.myName, text: '', kind: up.kind, url: up.url,
+            fname: (kind === 'voice') ? ('پیام-صوتی.' + (ext || 'webm')) : null, fsize: up.fsize, dur: up.dur,
+            created_at: new Date().toISOString(), deleted: false };
+        const arr = netPvLoad(NET_STATE.pv.peer);
+        arr.push(msg);
+        netPvSave(NET_STATE.pv.peer, arr);
+        netPvRefreshLocal();
+        netPvRender();
+        await netSigSendTo(NET_STATE.pv.peer, 'pv', { t: 'msg', msg: msg });
+        showToast('✅ پیوست ارسال شد');
+    } catch(e) {
+        const m = (e && e.message) || String(e);
+        showToast('⚠️ ارسال پیوست ناموفق: ' + m + (m.indexOf('bucket') >= 0 || m.indexOf('row-level') >= 0 ? ' — اسکریپت SQL جدید (باست net-chat) را اجرا کنید' : ''));
+    }
+}
+function netPvPickFile() {
+    const inp = document.getElementById('netPvFileInput');
+    if (inp) inp.click();
+}
+async function netPvSendFilePick(file) {
+    if (!file) return;
+    let kind = 'file';
+    if (file.type && file.type.indexOf('video/') === 0) kind = 'video';
+    else if (file.type && file.type.indexOf('audio/') === 0) kind = 'voice';
+    else if (file.type && file.type.indexOf('image/') === 0) kind = 'image';
+    const ext = (file.name && file.name.split('.').pop()) || 'bin';
+    await netPvSendAttachment(file, kind, 0, ext);
+}
+// پیام صوتی ضبطی خصوصی — الگوی netVoiceClipToggle، ارسال مسیر خصوصی
+let _netPvClipRec = null, _netPvClipChunks = [], _netPvClipStream = null, _netPvClipT0 = 0;
+async function netPvVoiceClipToggle() {
+    const btn = document.getElementById('netPvVoiceClipBtn');
+    if (_netPvClipRec) {
+        try { _netPvClipRec.stop(); } catch(e) {}
+        return;
+    }
+    if (!NET_STATE.sb) { showToast('⚠️ اول به شبکه وصل شوید'); return; }
+    if (!NET_STATE.pv.peer) return;
+    if (!navigator.mediaDevices || !window.MediaRecorder) { showToast('⚠️ مرورگر از ضبط صدا پشتیبانی نمی‌کند'); return; }
+    try { _netPvClipStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch(e) { showToast('⚠️ اجازهٔ میکروفون داده نشد'); return; }
+    const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+    try { _netPvClipRec = new MediaRecorder(_netPvClipStream, mime ? { mimeType: mime } : undefined); }
+    catch(e) { try { _netPvClipStream.getTracks().forEach(function(t) { t.stop(); }); } catch(e2) {} return; }
+    _netPvClipChunks = [];
+    _netPvClipT0 = Date.now();
+    _netPvClipRec.ondataavailable = function(ev) { if (ev.data && ev.data.size) _netPvClipChunks.push(ev.data); };
+    _netPvClipRec.onstop = async function() {
+        const dur = Math.max(1, Math.round((Date.now() - _netPvClipT0) / 1000));
+        const blob = new Blob(_netPvClipChunks, { type: _netPvClipRec.mimeType || 'audio/webm' });
+        try { _netPvClipStream.getTracks().forEach(function(t) { t.stop(); }); } catch(e) {}
+        _netPvClipStream = null; _netPvClipRec = null;
+        if (btn) btn.textContent = '🎙';
+        if (blob.size < 1500) { showToast('پیام صوتی خیلی کوتاه بود'); return; }
+        await netPvSendAttachment(blob, 'voice', dur, 'webm');
+    };
+    _netPvClipRec.start();
+    if (btn) btn.textContent = '⏺';
+    showToast('🎙 در حال ضبط… دوباره لمس کنید تا ارسال شود');
+}
 function NET_newPC(peerUid) {
     const pc = new RTCPeerConnection({ iceServers: NET_iceServers() });
     pc.onicecandidate = function(ev) {
@@ -20876,6 +21532,8 @@ function NET_onCallSignal(p) {
     if (!p || p.to !== netMyUid()) return;
     const C = NET_STATE.call;
     if (p.kind === 'offer') {
+        // 🔧 N-5 (v261): dedupe — همان offer از دو مسیر (گروه + شخصی) می‌رسد
+        if (C.state === 'ringing' && C.peerUid === p.from) return;
         if (C.active || C.state) { NET_sendSignal({ kind: 'busy', to: p.from, from: netMyUid() }); return; }
         C.active = true; C.role = 'callee'; C.peerUid = p.from; C.peerName = p.fromName || 'تماس ورودی';
         C.pending = p; C.iceBuf = []; C.state = 'ringing';
@@ -20928,7 +21586,7 @@ function NET_onCallSignal(p) {
         if (vpc2) { try { vpc2.addIceCandidate(p.candidate); } catch(e) {} }
         return;
     }
-    if (p.kind === 'busy') { showToast('⚠️ خط طرف مقابل مشغول است'); NET_callCleanup(); return; }
+    if (p.kind === 'busy') { if (C.active || C.state) showToast('⚠️ خط طرف مقابل مشغول است'); NET_callCleanup(); return; }
     if (p.kind === 'end') {
         if (C.active || C.state) {
             showToast('📞 تماس پایان یافت' + (p.reason === 'declined' ? ' (رد شد)' : p.reason === 'missed' ? ' (بی‌پاسخ)' : ''));
@@ -24169,6 +24827,7 @@ function openHamburgerMenu() {
     bringToFront(ov);
     navPush({ view: 'modal', type: 'hamburger' });
     trackModalOpen('hamburger');
+    renderTvfGlobalBox();   // 🔧 N-2 (v261): تیک‌های فیلتر سراسری همیشه تازه
 }
 
 function closeHamburgerMenu() {
@@ -24972,6 +25631,7 @@ function getNotesKey(groupId) {
 
 // باز کردن صفحه یادداشت — با groupId اختیاری
 function openNotes(groupId, customTitle) {
+    _notesPersistFlush(false);   // M (v260): فقط تایمر معلق تایپ دستی → کلید گروه قبلی
     _notesTargetGroup = groupId || null;
     const content = document.getElementById('notesContent');
     // 🔧 v232: ریست انتخاب کاربر — پنل تازه باز شده، placeholder focus نباید
@@ -25024,10 +25684,8 @@ function closeNotes() {
     // 🔧 v216: idempotent — اگر یادداشت باز نیست، پاپ نزن
     const ntOv = document.getElementById('notesOverlay');
     if (!ntOv || !ntOv.classList.contains('active')) return;
-    // ذخیره یادداشت‌ها برای گروه فعلی
-    const content = document.getElementById('notesContent');
-    const key = getNotesKey(_notesTargetGroup);
-    localStorage.setItem(key, content.innerHTML);
+    // ذخیره یادداشت‌ها برای گروه فعلی (M v260: flush همیشه هنگام بستن — مثل قبل)
+    _notesPersistFlush(true);
     // توقف ضبط اگر فعال است
     if (_notesRecording) {
         toggleNotesRecording();
@@ -25054,8 +25712,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const content = document.getElementById('notesContent');
         if (content) {
             content.addEventListener('input', function() {
-                const key = getNotesKey(_notesTargetGroup);
-                localStorage.setItem(key, content.innerHTML);
+                // 🔧 M (v260): ذخیره با debounce — قبلاً به‌ازای هر کلید کل
+                // innerHTML سریال و نوشته می‌شد و در یادداشت‌های بزرگ هم تایپ
+                // دستی و هم ترکیب صوت+تایپ سنگین بود. ۵۰۰ms بعد از آخرین تغییر.
+                clearTimeout(_notesInputSaveT);
+                _notesInputSaveT = setTimeout(function() {
+                    localStorage.setItem(getNotesKey(_notesTargetGroup), content.innerHTML);
+                }, 500);
             });
             // 🔧 v232: هر تعامل مکانیکی واقعی کاربر با محتوا را علامت بزن
             // (کلیک یا کلید) — تا selectionchange بداند این انتخاب واقعی است،
@@ -25097,6 +25760,10 @@ let _notesLiveMode = 'dateEnd';     // 'dateEnd' | 'cursor' | 'dateNew' — حا
 let _notesLiveCursorRange = null;   // در حالت 'cursor': کرسر فریز‌شده برای درج در همان نقطه
 let _notesLiveAnchorBefore = null;  // گره‌ای که متن زنده قبل از آن اضافه می‌شود (null = انتهای محتوا)
 let _notesLiveFirstPhrase = true;   // اولین عبارت این ضبط؟ (برای درج <br> جداکنندهٔ اول)
+let _notesInterimNode = null;       // 🔧 M (v260): گرهٔ متن موقت زنده — مثل تسک‌ها کلمه‌به‌کلمه همان لحظهٔ گفتن دیده می‌شود؛ فقط textContent عوض می‌شود (بدون serialize)
+let _notesInterimSepBr = null;      // جداکنندهٔ <br> که با اولین interim ساخته و هنگام پاک‌سازی جمع می‌شود
+let _notesPersistT = null;          // تایمر ذخیرهٔ debounce
+let _notesInputSaveT = null;        // تایمر ذخیرهٔ تایپ دستی (debounce)
 
 // 🔧 v234: محاسبهٔ لنگر در شروع ضبط — یک‌بار اجرا می‌شود و _notesLiveMode
 // و گره‌های لازم را تنظیم می‌کند. _notesAccumulatedText همچنان برای سازگاری
@@ -25150,6 +25817,103 @@ function _notesComputeLiveAnchor() {
     }
 }
 
+// 🔧 M (v260): ذخیره با کنترل فوریت —
+//  • هر «عبارت نهایی» صوتی → فوری (الزام v234: اگر ضبط به‌زور بسته شد متن حفظ شود)
+//  • interim صوتی → هیچ (سبکی — فقط textContent عوض می‌شود)
+//  • تایپ دستی → debounce ۵۰۰ms (قبلاً به‌ازای هر کلید کل سند serialize می‌شد)
+function _notesPersistSoon(delay) {
+    if (_notesPersistT) clearTimeout(_notesPersistT);
+    _notesPersistT = setTimeout(function() {
+        _notesPersistT = null;
+        var content = document.getElementById('notesContent');
+        if (content) localStorage.setItem(getNotesKey(_notesTargetGroup), content.innerHTML);
+    }, delay || 700);
+}
+// force=true: همیشه بنویس (توقف ضبط/بستن یادداشت)؛ force=false: فقط اگر تایمر
+// معلق داریم (تعویض گروه در openNotes — بدون تایمر، seed بیرونی را نمی‌پوشاند)
+function _notesPersistFlush(force) {
+    if (!force && !_notesPersistT) return;
+    if (_notesPersistT) { clearTimeout(_notesPersistT); _notesPersistT = null; }
+    var content = document.getElementById('notesContent');
+    if (content) localStorage.setItem(getNotesKey(_notesTargetGroup), content.innerHTML);
+}
+// 🔧 M (v260): گرهٔ interim زنده در محل لنگر — همان‌جا که عبارت نهایی می‌نشیند.
+// بازخورد زندهٔ کلمات مثل تسک‌ها (v240): کلمات همان لحظهٔ گفتن ظاهر می‌شوند،
+// بدون سریال‌سازی innerHTML و بدون نوشتن localStorage برای هر به‌روزرسانی interim.
+function _notesEnsureInterimNode() {
+    var content = document.getElementById('notesContent');
+    if (!content) return null;
+    if (_notesInterimNode && content.contains(_notesInterimNode)) return _notesInterimNode;
+    if (_notesLiveMode === 'cursor' && _notesLiveCursorRange) {
+        // درج داخل محدودهٔ کرسر فریز‌شده — نهایی‌شدن بعداً <br> و گسترش range را می‌سازد
+        var tn = document.createTextNode('');
+        _notesLiveCursorRange.insertNode(tn);
+        _notesInterimNode = tn;
+        _notesInterimSepBr = null;
+        return _notesInterimNode;
+    }
+    if (_notesLiveFirstPhrase) {
+        var sepBr = document.createElement('br');
+        // M: اگر لنگر با ویرایش کاربر/undo از DOM جدا شده، به انتهای محتوا برگرد
+        if (_notesLiveAnchorBefore && !content.contains(_notesLiveAnchorBefore)) _notesLiveAnchorBefore = null;
+        if (_notesLiveAnchorBefore) {
+            content.insertBefore(sepBr, _notesLiveAnchorBefore);
+        } else {
+            var lastChild = content.lastChild;
+            if (!lastChild || lastChild.nodeName !== 'BR') content.appendChild(sepBr);
+        }
+        _notesInterimSepBr = sepBr;
+        _notesLiveFirstPhrase = false;
+    }
+    var node = document.createTextNode('');
+    if (_notesLiveAnchorBefore) content.insertBefore(node, _notesLiveAnchorBefore);
+    else content.appendChild(node);
+    _notesInterimNode = node;
+    return node;
+}
+function _notesSetInterim(text) {
+    var node = _notesEnsureInterimNode();
+    if (node) node.textContent = text || '';
+}
+// متن interim را نهایی کن: همان گره متن نهایی می‌گیرد (بدون جابه‌جایی DOM)
+function _notesCommitInterim(finalText) {
+    var content = document.getElementById('notesContent');
+    var node = (_notesInterimNode && content && content.contains(_notesInterimNode)) ? _notesInterimNode : null;
+    var text = addNumericAfterWords(finalText);
+    if (node) {
+        node.textContent = text + ' ';
+        if (_notesLiveMode === 'cursor' && _notesLiveCursorRange) {
+            // مثل _notesAppendLivePhrase در حالت کرسر: <br> بعد از متن + گسترش محدودهٔ زنده
+            var br = document.createElement('br');
+            if (node.nextSibling) node.parentNode.insertBefore(br, node.nextSibling);
+            else node.parentNode.appendChild(br);
+            _notesLiveCursorRange = document.createRange();
+            _notesLiveCursorRange.setStartAfter(br);
+            _notesLiveCursorRange.collapse(true);
+        }
+    } else {
+        _notesAppendLivePhrase(finalText);   // interim نمی‌رسید — مسیر قدیمی
+    }
+    _notesInterimNode = null;
+    _notesInterimSepBr = null;
+    _notesAccumulatedText += finalText + ' ';
+}
+// interim معلق را هنگام توقف ضبط جمع کن (سیکل وسط حرف قطع شده باشد)
+function _notesCommitPendingInterim() {
+    var content = document.getElementById('notesContent');
+    if (_notesInterimNode && content && content.contains(_notesInterimNode)) {
+        var t = (_notesInterimNode.textContent || '').trim();
+        if (t) {
+            _notesCommitInterim(t);
+        } else {
+            // interim خالی — گره و جداکنندهٔ بی‌مصرف را جمع کن
+            if (_notesInterimNode.parentNode) _notesInterimNode.parentNode.removeChild(_notesInterimNode);
+            if (_notesInterimSepBr && _notesInterimSepBr.parentNode) _notesInterimSepBr.parentNode.removeChild(_notesInterimSepBr);
+            _notesInterimNode = null; _notesInterimSepBr = null;
+        }
+    }
+}
+
 // 🔧 v234: افزودن یک عبارت نهایی به‌صورت زنده در محل لنگر.
 // مراقب جداکنندهٔ <br> اول هستیم: اولین عبارت پس از آخرین خط بلوک، یک <br>
 // می‌خواهد تا روی خط جدید بیفتد. عبارت‌های بعدی همان‌طور به خط می‌چسبند.
@@ -25176,6 +25940,8 @@ function _notesAppendLivePhrase(rawText) {
         return;
     }
     // حالت‌های dateEnd / dateNew — اضافه‌کردن در انتهای بلوک امروز
+    // M: اگر لنگر با ویرایش کاربر/undo از DOM جدا شده، به انتهای محتوا برگرد
+    if (_notesLiveAnchorBefore && !content.contains(_notesLiveAnchorBefore)) _notesLiveAnchorBefore = null;
     if (_notesLiveFirstPhrase) {
         // اولین عبارت: یک <br> جداکنندهٔ ابتدایی اضافه کن تا روی خط جدید بیفتد
         var sepBr = document.createElement('br');
@@ -25276,13 +26042,14 @@ function toggleNotesRecording() {
         }
         // 🔧 v234: متن در حین ضبط به‌صورت زنده در محتوا نوشته شده (مثل تیتر
         // اسناد حسابداری). در اینجا فقط کارهای پایانی را انجام می‌دهیم:
-        // persist نهایی، ریست لنگر، بازگردانی اسکرول، و Toast.
+        // interim معلق نهایی می‌شود، persist نهایی، ریست لنگر، بازگردانی اسکرول، و Toast.
+        _notesCommitPendingInterim();   // M (v260): حرفِ ناتمامِ interim از دست نرود
         var content = document.getElementById('notesContent');
         var notesBody = document.querySelector('.notes-body');
         var savedScroll = notesBody ? notesBody.scrollTop : 0;
         if (_notesAccumulatedText.trim() && content) {
             // 🔧 persist نهایی — متن از قبل در DOM است، فقط localStorage را هم‌گام کن.
-            localStorage.setItem(getNotesKey(_notesTargetGroup), content.innerHTML);
+            _notesPersistFlush(true);
             showToast('یادداشت ثبت شد ✓');
         }
         // 🔧 ریست حالت لنگر برای ضبط بعدی
@@ -25317,6 +26084,8 @@ function toggleNotesRecording() {
     // 🔧 ریست متن جمع‌آوری‌شده و ایندکس‌ها
     _notesAccumulatedText = '';
     _notesAddedIndices = new Set();
+    _notesInterimNode = null;     // M (v260): interim ضبط قبلی جمع شده است
+    _notesInterimSepBr = null;
     // 🔧 v234: محاسبهٔ لنگر برای نمایش زنده (قبل از شروع سیکل تشخیص صوت).
     // اگر روز جدید است، بلوک تاریخ اینجا ساخته می‌شود و لنگر بعد از آن.
     _notesComputeLiveAnchor();
@@ -25333,35 +26102,40 @@ function _notesStartRecognitionCycle() {
     _notesRecognition = new SpeechRecognition();
     _notesRecognition.lang = 'fa-IR';
     _notesRecognition.continuous = true;
-    // 🔧 interimResults = false تا فقط نتایج نهایی دریافت شوند (بدون تکرار)
-    _notesRecognition.interimResults = false;
+    // 🔧 M (v260): interimResults=true — مثل تسک‌ها (v240) کلمات همان لحظهٔ
+    // گفتن دیده می‌شوند؛ قبلاً false بود و متن فقط بعد از نهایی‌شدن عبارت
+    // می‌آمد و کاربر «کندی» حس می‌کرد. interimها فقط textContent یک گره را
+    // عوض می‌کنند — سبک و بی‌لگ.
+    _notesRecognition.interimResults = true;
     // 🔧 ریست ایندکس‌های پردازش‌شده برای هر سیکل جدید
     _notesAddedIndices = new Set();
 
     _notesRecognition.onresult = function(event) {
-        // 🔧 v234: نمایش زنده — هر عبارت نهایی به‌محض رسیدن، در محل لنگر به
-        // محتوا اضافه می‌شود (مانند تیتر اسناد حسابداری). _notesAccumulatedText
-        // هم برای سازگاری به‌روز می‌شود. فقط یک‌بار برای هر ایندکس (جلوگیری از تکرار).
-        var wroteLive = false;
+        var interimText = '';
+        var wroteFinal = false;
         for (let i = 0; i < event.results.length; i++) {
-            if (event.results[i].isFinal && !_notesAddedIndices.has(i)) {
-                var phrase = event.results[i][0].transcript;
-                _notesAccumulatedText += phrase + ' ';
-                _notesAddedIndices.add(i);
-                if (_notesRecording) {
-                    _notesAppendLivePhrase(phrase);
-                    wroteLive = true;
+            var r = event.results[i];
+            if (!r || !r[0]) continue;   // M: گارد رویداد ناقص — ضبط نشکند
+            if (r.isFinal) {
+                if (!_notesAddedIndices.has(i)) {
+                    var phrase = r[0].transcript;
+                    _notesAddedIndices.add(i);
+                    if (_notesRecording) {
+                        _notesCommitInterim(phrase);   // M: interim معلق همین عبارت می‌شود
+                        wroteFinal = true;
+                    } else {
+                        _notesAccumulatedText += phrase + ' ';
+                    }
                 }
+            } else {
+                interimText += r[0].transcript;
             }
         }
-        // 🔧 persist زنده — همانند تیتر حسابداری، هر بار که متن زنده می‌نویسیم،
-        // localStorage را هم به‌روز می‌کنیم تا اگر ضبط به‌زور بسته شد، متن حفظ شود.
-        if (wroteLive) {
-            var content = document.getElementById('notesContent');
-            if (content) {
-                localStorage.setItem(getNotesKey(_notesTargetGroup), content.innerHTML);
-            }
-        }
+        // M: نمایش زندهٔ عبارتِ در حال گفتن — فقط تغییر textContent
+        if (_notesRecording && interimText) _notesSetInterim(interimText);
+        // M: persist — عبارت نهایی فوری ذخیره می‌شود (الزام v234: مقاومت در
+        // برابر بسته‌شدن به‌زور). interimها سبک‌اند و ذخیره ندارند.
+        if (wroteFinal) _notesPersistFlush(true);
     };
 
     _notesRecognition.onerror = function(event) {
