@@ -8033,7 +8033,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v249-2026-11-23-net-error-hint';
+const APP_VERSION = 'v250-2026-11-23-net-deep-probe';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -18455,6 +18455,7 @@ let NET_STATE = {
     ch: null,          // کانال Realtime گروه فعال
     myName: '',
     lastErr: null,     // BA-225: آخرین خطای اتصال {raw, hint}
+    showSetup: false,  // BA-226: true → فرم اتصال حتی با تنظیمات ذخیره‌شده نشان داده می‌شود
     group: null,       // {id, code, name}
     members: [], tasks: [], msgs: [],
     online: {},        // {uid: true} از presence
@@ -18537,6 +18538,26 @@ function netDiagPatch() {
     if (firstStrip) firstStrip.insertAdjacentHTML('afterend', netDiagHtml());
     else body.insertAdjacentHTML('afterbegin', netDiagHtml());
 }
+// BA-226: تشخیص عمیق — وقتی supabase-js خطای «بدون پیام» می‌دهد، یک
+// درخواست REST خام می‌زنیم تا وضعیت واقعی HTTP و متن خطا معلوم شود
+// (کلید نامعتبر / آدرس اشتباه / صفحهٔ مسدودسازی HTML / قطع اینترنت).
+async function netDeepProbe(st) {
+    const opts = { headers: { apikey: st.key, Authorization: 'Bearer ' + st.key } };
+    try { opts.signal = AbortSignal.timeout(8000); } catch(e3) {}
+    try {
+        const res = await fetch(String(st.url).replace(/\/+$/, '') + '/rest/v1/net_groups?select=id&limit=1', opts);
+        const txt = await res.text();
+        let body = '';
+        try { const j = JSON.parse(txt); body = (j && (j.message || j.hint || j.details || (typeof j.error === 'string' ? j.error : ''))) || txt.slice(0, 180); }
+        catch(e2) { body = txt.slice(0, 180); }
+        if (res.ok) return 'دسترسی REST مستقیم برقرار است (HTTP ' + res.status + ') ولی پاسخ کتابخانه خوانده نشد';
+        if (res.status === 401 || res.status === 403) return 'HTTP ' + res.status + ' — کلید عمومی رد شد: ' + body;
+        if (res.status === 404) return 'HTTP 404 — آدرس پروژه اشتباه است: ' + body;
+        return 'HTTP ' + res.status + ' — ' + body;
+    } catch(e) {
+        return 'درخواست مستقیم هم شکست خورد (' + String((e && e.message) || e) + ') — اینترنت به آدرس پروژه نمی‌رسد';
+    }
+}
 async function NET_connect() {
     if (NET_STATE.sb) return true;
     if (NET_STATE.connecting) return false;
@@ -18550,7 +18571,11 @@ async function NET_connect() {
         NET_STATE.sb = lib.createClient(st.url, st.key);
         NET_STATE.myName = st.name || 'کاربر';
         const probe = await NET_STATE.sb.from('net_groups').select('id').limit(1);
-        if (probe.error) throw new Error(probe.error.message || 'اتصال ناموفق');
+        if (probe.error) {
+            const er = probe.error || {};
+            const m = er.message || er.details || er.hint || er.code || '';
+            throw new Error(m || '__EMPTY_NET_ERR__');
+        }
         NET_STATE.connecting = false;
         NET_STATE.lastErr = null;
         netStatusSet('متصل ✓', 'on');
@@ -18560,8 +18585,10 @@ async function NET_connect() {
     } catch(e) {
         NET_STATE.sb = null;
         NET_STATE.connecting = false;
-        const raw = String((e && e.message) || e);
-        const hint = netErrHint(raw);
+        let raw = String((e && e.message) || e);
+        if (raw === '__EMPTY_NET_ERR__') raw = 'سرور بدون پیام خطا جواب داد — ' + await netDeepProbe(st);
+        let hint = netErrHint(raw);
+        if (!hint) hint = 'دلیل دقیق از سرور نرسید. به ترتیب چک کنید: ۱) در فرم اتصال «↺ پیش‌فرض» را بزنید؛ ۲) اسکریپت SQL در همین پروژه اجرا شده باشد؛ ۳) اینترنت را عوض کنید و «↻ اتصال دوباره» بزنید.';
         NET_STATE.lastErr = { raw: raw, hint: hint };
         netStatusSet('اتصال ناموفق', 'err');
         netDiagPatch();
@@ -18657,9 +18684,8 @@ function closeNetPanel() {
 function netRender() {
     const body = document.getElementById('netBody');
     if (!body) return;
-    if (!netIsConfigured()) {
-        netStatusSet('غیرفعال');
-        netChatBarHide();
+    if (!netIsConfigured() || NET_STATE.showSetup) {
+        if (!netIsConfigured()) { netStatusSet('غیرفعال'); netChatBarHide(); }
         body.innerHTML = netSetupHtml();
         return;
     }
@@ -18671,6 +18697,9 @@ function netSetupHtml() {
     const st = netSettings() || {};
     let h = '<div class="net-strip">🛰️ شبکهٔ اختیاری — چت متنی دوطرفه، گروه تسک مشترک، پاس دادن تسک و تماس صوتی دوطرفه. بدون تنظیم، برنامه مثل قبل تک‌کاربره است.</div>';
     h += netDiagHtml();
+    if (netIsConfigured()) {
+        h += '<div class="net-strip">⚙️ در حال ویرایش تنظیمات اتصال — <button class="net-btn secondary small" onclick="netShowMain()">↩ بازگشت به نمای اصلی</button></div>';
+    }
     h += '<div class="net-card"><h4>۱) اتصال به پایگاه ابری (Supabase رایگان)</h4>'
         + '<div class="net-field"><label>آدرس پروژه (Project URL)</label><input id="netUrl" style="direction:ltr;text-align:left;" placeholder="https://xxxx.supabase.co" value="' + escA(st.url || NET_DEFAULTS.url) + '"></div>'
         + '<div class="net-field"><label>کلید عمومی (Publishable یا anon)</label><input id="netKey" style="direction:ltr;text-align:left;" placeholder="sb_publishable_… یا eyJ…" value="' + escA(st.key || NET_DEFAULTS.key) + '"></div>'
@@ -18686,12 +18715,14 @@ function netSetupHtml() {
         + '<li>دو مقدار قدم قبل به‌صورت پیش‌فرض داخل همین فرم قرار داده شده‌اند — اگر از همین پروژهٔ ابری استفاده می‌کنید فقط «نام نمایشی» را بنویسید؛ دکمهٔ «↺ پیش‌فرض» مقادیر اصلی را برمی‌گرداند.</li>'
         + '<li>یک بار در SQL Editor همان پروژه اسکریپت زیر را اجرا کنید (۴ جدول شبکه ساخته می‌شود).</li>'
         + '<li>برگردید به همین صفحه و «ذخیره و اتصال» را بزنید.</li>'
-        + '<li>اگر اتصال ناموفق شد، جعبهٔ قرمز «آخرین خطای اتصال» بالای همین صفحه دلیل دقیق و راه‌حل فارسی را نشان می‌دهد؛ دکمهٔ «↻ اتصال دوباره» هم داخل همان جعبه هست.</li></ol>'
+        + '<li>اگر اتصال ناموفق شد، جعبهٔ قرمز «آخرین خطای اتصال» بالای همین صفحه دلیل دقیق و راه‌حل فارسی را نشان می‌دهد؛ اگر پیام خطا خالی باشد، خود برنامه با درخواست مستقیم وضعیت واقعی سرور را پیدا می‌کند. برای برگشتن به فرم اتصال از نمای اصلی، دکمهٔ «⚙ تنظیمات اتصال» بالای تب‌ها هست.</li></ol>'
         + '<textarea readonly id="netSqlTxt">' + escapeHtml(NET_SQL_HELP) + '</textarea>'
         + '<button class="net-btn secondary small" onclick="netCopySQL()">📋 کپی اسکریپت SQL</button>'
         + '</div>';
     return h;
 }
+function netShowSetup() { NET_STATE.showSetup = true; netRender(); }
+function netShowMain() { NET_STATE.showSetup = false; netRender(); }
 async function netSaveAndConnect() {
     const g = function(id) { const el = document.getElementById(id); return el ? el.value : ''; };
     const url = g('netUrl').trim(), key = g('netKey').trim();
@@ -18702,12 +18733,13 @@ async function netSaveAndConnect() {
     localStorage.setItem('net_settings', JSON.stringify({ url: url, key: key, name: name, turn: turn }));
     netMyUid();
     const ok = await NET_connect();
-    if (ok) { netRender(); showToast('✅ شبکه وصل شد — حالا یک گروه بسازید یا با کد عضو شوید'); }
+    if (ok) { NET_STATE.showSetup = false; netRender(); showToast('✅ شبکه وصل شد — حالا یک گروه بسازید یا با کد عضو شوید'); }
 }
 function netForget() {
     localStorage.removeItem('net_settings');
     NET_leaveChannel();
     NET_STATE.sb = null;
+    NET_STATE.showSetup = false;
     NET_STATE.members = []; NET_STATE.tasks = []; NET_STATE.msgs = []; NET_STATE.online = {};
     netStatusSet('غیرفعال');
     netRender();
@@ -18734,7 +18766,8 @@ function netMainHtml() {
     const g = NET_STATE.group || netActiveGroup();
     let h = '<div class="net-strip">👤 <b>' + escapeHtml(st.name || 'کاربر') + '</b>'
         + (g ? ' — گروه فعال: <b>' + escapeHtml(g.name) + '</b>' : ' — بدون گروه فعال')
-        + '<button class="net-btn secondary small" style="margin-right:auto;" onclick="netReconnect()">↻ اتصال دوباره</button></div>';
+        + '<button class="net-btn secondary small" style="margin-right:auto;" onclick="netReconnect()">↻ اتصال دوباره</button> '
+        + '<button class="net-btn secondary small" onclick="netShowSetup()">⚙ تنظیمات اتصال</button></div>';
     h += netDiagHtml();
     h += '<div class="net-tabs">'
         + '<div class="net-tab' + (NET_STATE.tab === 'groups' ? ' active' : '') + '" onclick="netSetTab(\'groups\')">👥 گروه‌ها</div>'
