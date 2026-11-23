@@ -4734,6 +4734,10 @@ body.locked .header-actions button {
     padding: 10px 12px; margin-bottom: 10px; font-size: 12.5px; color: #37474f;
     display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
+.net-strip.err {
+    background: #fdecea; border-color: #f3c1ba; color: #b71c1c;
+    display: block; line-height: 2;
+}
 .net-strip b { color: #263238; }
 .net-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
 .net-tab {
@@ -8029,7 +8033,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v248-2026-11-23-net-defaults';
+const APP_VERSION = 'v249-2026-11-23-net-error-hint';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -18450,6 +18454,7 @@ let NET_STATE = {
     sb: null,          // کلاینت Supabase
     ch: null,          // کانال Realtime گروه فعال
     myName: '',
+    lastErr: null,     // BA-225: آخرین خطای اتصال {raw, hint}
     group: null,       // {id, code, name}
     members: [], tasks: [], msgs: [],
     online: {},        // {uid: true} از presence
@@ -18503,6 +18508,35 @@ function netGenCode() {
 }
 
 // ─── اتصال ───
+// BA-225: تبدیل خطای خام اتصال به راهنمای فارسی actionable
+function netErrHint(msg) {
+    const m = String(msg || '');
+    if (/does not exist|relation/i.test(m)) return 'جدول‌های شبکه در این پروژه ساخته نشده‌اند — اسکریپت SQL باید در همان پروژه‌ای اجرا شود که URL آن در فرم بالا هست. اگر چند پروژه در داشبورد دارید، پروژهٔ درست را از لیست بالای صفحه انتخاب کنید و در SQL Editor همان پروژه اسکریپت را Run کنید.';
+    if (/invalid api key|invalid key|jws|jwt|unauthorized|401|forbidden/i.test(m)) return 'کلید عمومی اشتباه یا ناقص است — در فرم بالا دکمهٔ «↺ پیش‌فرض» را بزنید، یا کلید را از ⚙ Settings → API Keys دوباره کپی کنید (نه service_role/secret).';
+    if (/failed to fetch|networkerror|network error|fetch failed|load failed|timeout|timed out|offline/i.test(m)) return 'اینترنت به supabase.co نمی‌رسد — «↻ اتصال دوباره» را بزنید؛ اگر نشد اینترنت دیگری امتحان کنید (Wi-Fi/دادهٔ موبایل جابه‌جا شود).';
+    if (/schema cache|permission|row-level|rls|policy/i.test(m)) return 'سیاست‌های دسترسی روی جدول‌ها کامل نیست — اسکریپت SQL را یک بار دیگر کامل Run کنید (پیام already exists مهم نیست).';
+    return '';
+}
+function netDiagHtml() {
+    const le = NET_STATE.lastErr;
+    if (!le) return '';
+    return '<div class="net-strip err"><b>⚠️ آخرین خطای اتصال:</b> ' + escapeHtml(le.raw)
+        + (le.hint ? '<br>💡 ' + escapeHtml(le.hint) : '')
+        + '<br><button class="net-btn secondary small" style="margin-top:6px;" onclick="netReconnect()">↻ اتصال دوباره</button></div>';
+}
+// BA-225: پچ هدفمند جعبهٔ خطا بدون netRender — چون netRender وقتی sb=null
+// دوباره NET_connect را صدا می‌زند و صدا زدن آن از داخل NET_connect حلقهٔ
+// بی‌نهایت می‌سازد.
+function netDiagPatch() {
+    const body = document.getElementById('netBody');
+    if (!body) return;
+    const old = body.querySelector('.net-strip.err');
+    if (old) old.remove();
+    if (!NET_STATE.lastErr) return;
+    const firstStrip = body.querySelector('.net-strip');
+    if (firstStrip) firstStrip.insertAdjacentHTML('afterend', netDiagHtml());
+    else body.insertAdjacentHTML('afterbegin', netDiagHtml());
+}
 async function NET_connect() {
     if (NET_STATE.sb) return true;
     if (NET_STATE.connecting) return false;
@@ -18518,15 +18552,21 @@ async function NET_connect() {
         const probe = await NET_STATE.sb.from('net_groups').select('id').limit(1);
         if (probe.error) throw new Error(probe.error.message || 'اتصال ناموفق');
         NET_STATE.connecting = false;
+        NET_STATE.lastErr = null;
         netStatusSet('متصل ✓', 'on');
+        netDiagPatch();
         await NET_subscribe();
         return true;
     } catch(e) {
         NET_STATE.sb = null;
         NET_STATE.connecting = false;
+        const raw = String((e && e.message) || e);
+        const hint = netErrHint(raw);
+        NET_STATE.lastErr = { raw: raw, hint: hint };
         netStatusSet('اتصال ناموفق', 'err');
+        netDiagPatch();
         const ov = document.getElementById('netOverlay');
-        if (ov && ov.classList.contains('active')) showToast('⚠️ اتصال شبکه ناموفق: ' + (e.message || e));
+        if (ov && ov.classList.contains('active')) showToast('⚠️ اتصال ناموفق — ' + (hint ? 'دلیل و راه‌حل بالای پنل نشان داده شد' : raw));
         return false;
     }
 }
@@ -18630,6 +18670,7 @@ function netRender() {
 function netSetupHtml() {
     const st = netSettings() || {};
     let h = '<div class="net-strip">🛰️ شبکهٔ اختیاری — چت متنی دوطرفه، گروه تسک مشترک، پاس دادن تسک و تماس صوتی دوطرفه. بدون تنظیم، برنامه مثل قبل تک‌کاربره است.</div>';
+    h += netDiagHtml();
     h += '<div class="net-card"><h4>۱) اتصال به پایگاه ابری (Supabase رایگان)</h4>'
         + '<div class="net-field"><label>آدرس پروژه (Project URL)</label><input id="netUrl" style="direction:ltr;text-align:left;" placeholder="https://xxxx.supabase.co" value="' + escA(st.url || NET_DEFAULTS.url) + '"></div>'
         + '<div class="net-field"><label>کلید عمومی (Publishable یا anon)</label><input id="netKey" style="direction:ltr;text-align:left;" placeholder="sb_publishable_… یا eyJ…" value="' + escA(st.key || NET_DEFAULTS.key) + '"></div>'
@@ -18644,7 +18685,8 @@ function netSetupHtml() {
         + '<li>از داشبورد پروژه دکمهٔ «Connect» بالای صفحه را بزنید: Project URL و کلید عمومی (Publishable) را نشان می‌دهد — یا از ⚙ Settings → API Keys. کلید service_role/secret را هرگز وارد نکنید.</li>'
         + '<li>دو مقدار قدم قبل به‌صورت پیش‌فرض داخل همین فرم قرار داده شده‌اند — اگر از همین پروژهٔ ابری استفاده می‌کنید فقط «نام نمایشی» را بنویسید؛ دکمهٔ «↺ پیش‌فرض» مقادیر اصلی را برمی‌گرداند.</li>'
         + '<li>یک بار در SQL Editor همان پروژه اسکریپت زیر را اجرا کنید (۴ جدول شبکه ساخته می‌شود).</li>'
-        + '<li>برگردید به همین صفحه و «ذخیره و اتصال» را بزنید.</li></ol>'
+        + '<li>برگردید به همین صفحه و «ذخیره و اتصال» را بزنید.</li>'
+        + '<li>اگر اتصال ناموفق شد، جعبهٔ قرمز «آخرین خطای اتصال» بالای همین صفحه دلیل دقیق و راه‌حل فارسی را نشان می‌دهد؛ دکمهٔ «↻ اتصال دوباره» هم داخل همان جعبه هست.</li></ol>'
         + '<textarea readonly id="netSqlTxt">' + escapeHtml(NET_SQL_HELP) + '</textarea>'
         + '<button class="net-btn secondary small" onclick="netCopySQL()">📋 کپی اسکریپت SQL</button>'
         + '</div>';
@@ -18693,6 +18735,7 @@ function netMainHtml() {
     let h = '<div class="net-strip">👤 <b>' + escapeHtml(st.name || 'کاربر') + '</b>'
         + (g ? ' — گروه فعال: <b>' + escapeHtml(g.name) + '</b>' : ' — بدون گروه فعال')
         + '<button class="net-btn secondary small" style="margin-right:auto;" onclick="netReconnect()">↻ اتصال دوباره</button></div>';
+    h += netDiagHtml();
     h += '<div class="net-tabs">'
         + '<div class="net-tab' + (NET_STATE.tab === 'groups' ? ' active' : '') + '" onclick="netSetTab(\'groups\')">👥 گروه‌ها</div>'
         + '<div class="net-tab' + (NET_STATE.tab === 'tasks' ? ' active' : '') + '" onclick="netSetTab(\'tasks\')">✅ تسک‌های گروه</div>'
