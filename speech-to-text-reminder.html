@@ -4786,6 +4786,20 @@ body.locked .header-actions button {
 .net-msg.mine { align-self: flex-end; background: var(--primary, #1a237e); color: #fff; border-bottom-left-radius: 4px; }
 .net-msg.other { align-self: flex-start; background: #fff; color: #263238; border: 1px solid #e3e8ef; border-bottom-right-radius: 4px; }
 .net-msg-meta { font-size: 9.5px; opacity: 0.75; margin-top: 2px; }
+/* BA-232..236 — چت صوتی گروهی، حضور، عکس، ترک چت */
+.net-chat-header { background:#0e2a33; border-bottom:1px solid #1d4a56; padding:8px 10px; }
+.net-presence-row { font-size:11.5px; color:#b2ebf2; display:flex; flex-wrap:wrap; gap:4px; align-items:center; }
+.net-presence-label { color:#78909c; }
+.net-presence-chip { background:#173f4a; border-radius:10px; padding:2px 8px; }
+.net-empty-inline { color:#607d8b; }
+.net-voice-row { margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; }
+.net-msg-img { max-width:70%; max-height:220px; border-radius:10px; display:block; cursor:zoom-in; margin-top:4px; }
+.net-unread { background:#E53935; color:#fff; border-radius:9px; padding:0 6px; font-size:10px; margin-right:4px; }
+.net-lightbox { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.92); z-index:99999; align-items:center; justify-content:center; }
+.net-lightbox.open { display:flex; }
+.net-lightbox img { max-width:92%; max-height:92%; border-radius:8px; }
+.net-group-chip { background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.45); color:#fff; border-radius:9px; padding:1px 7px; font-size:10.5px; }
+.item-net-tag { background:#E0F2F1; color:#00695C; border-radius:9px; padding:1px 7px; font-size:10.5px; margin:0 3px; white-space:nowrap; }
 .net-chat-inputbar {
     position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 8px;
     padding: 10px 12px; background: #fff; border-top: 1px solid #e5e5e5;
@@ -5144,6 +5158,8 @@ body.locked .header-actions button {
     <div class="net-chat-inputbar" id="netChatBar" style="display:none;">
         <input id="netChatInput" type="text" placeholder="پیام…"
                onkeydown="if(event.key==='Enter'){netSendMsg();}">
+        <button class="net-btn" onclick="netPickImage()" title="ارسال عکس">📷</button>
+        <input type="file" id="netImgInput" accept="image/*" style="display:none;" onchange="netSendImage(this.files && this.files[0]); this.value='';">
         <button class="net-btn" onclick="netSendMsg()">ارسال</button>
     </div>
     <div class="net-call-scrim" id="netCallScrim">
@@ -8033,7 +8049,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v254-2026-11-23-net-github-backend';
+const APP_VERSION = 'v255-2026-11-23-net-group-voice-images';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -13640,7 +13656,8 @@ function renderGroupsView() {
             div.style.background = `linear-gradient(135deg, ${group.color}, ${group.color}DD)`;
         }
         const iconHtml = getGroupIconHtml(group);
-        div.innerHTML = `<div class="group-item-row">${iconHtml}<span class="group-name">${escapeHtml(group.name)}</span>${buildGroupBadges(groupItems, {}, group.id)}</div>`;
+        const netChip = group.netCode ? `<span class="net-group-chip">🛰️ شبکه</span>` : '';
+        div.innerHTML = `<div class="group-item-row">${iconHtml}<span class="group-name">${escapeHtml(group.name)}</span>${netChip}${buildGroupBadges(groupItems, {}, group.id)}</div>`;
         div.onclick = () => openGroupView(group.id);
         container.appendChild(div);
     });
@@ -13865,6 +13882,10 @@ function renderTasksView(groupId) {
         if (item.cancelled == true) { const m = document.createElement('div'); m.className='item-done-mark'; m.textContent='✕'; m.style.color='#E53935'; row.appendChild(m); }
         if (item.suspended == true) { const m = document.createElement('div'); m.className='item-done-mark'; m.textContent='⏸'; m.style.color='#FFB74D'; row.appendChild(m); }
         const textEl = document.createElement('div'); textEl.className='item-text'; textEl.textContent=item.text; row.appendChild(textEl);
+        // 🔧 BA-236: عناصر شبکه روی تسک‌های همگام‌شده از پنل شبکه
+        if (item.netCode) { const nt = document.createElement('span'); nt.className='item-net-tag'; nt.textContent='🛰️'; row.appendChild(nt); }
+        if (item.netAssignee) { const na = document.createElement('span'); na.className='item-net-tag'; na.textContent='👤 ' + item.netAssignee; row.appendChild(na); }
+        else if (item.netOwner) { const no = document.createElement('span'); no.className='item-net-tag'; no.textContent='🛰️ ' + item.netOwner; row.appendChild(no); }
         // Group tag: show the task's group name as a colored badge — ONLY in
         // the "همه کارها" view (where all groups are mixed together). In a
         // specific group's view, every task belongs to the same group, so
@@ -14089,6 +14110,7 @@ function toggleDone(id) {
     }
 
     setDB(items);
+    if (item.netId) netSyncTaskFromMain(item);   // BA-236: تغییر «انجام شد» به شبکه هم برسد
     // 🔧 حفظ موقعیت اسکرول — صفحه نپرد
     var savedScrollY = window.scrollY;
     expandedId = null;
@@ -18451,7 +18473,8 @@ const NET_SQL_HELP = '-- یاداوار شبکه — یک بار در SQL Editor
 'create policy "net_messages_all" on net_messages for all using (true) with check (true);\n' +
 'grant usage on schema public to anon, authenticated;\n' +
 'grant select, insert, update, delete on all tables in schema public to anon, authenticated;\n' +
-'alter default privileges in schema public grant all on tables to anon, authenticated;\n';
+'alter default privileges in schema public grant all on tables to anon, authenticated;\n' +
+'alter table net_messages add column if not exists img text;\n';
 
 let NET_STATE = {
     sb: null,          // کلاینت Supabase
@@ -18462,6 +18485,9 @@ let NET_STATE = {
     gh: false,         // BA-231: بک‌اند گیت‌هاب (Gist) فعال
     ghdb: null,        // BA-231: محتوای JSON داخل Gist
     ghPoll: null,      // BA-231: شناسهٔ interval نظرسنجی ۴ ثانیه‌ای
+    voice: { in: false, mic: true, pcs: {}, stream: null, members: {} },  // BA-232: گفتگوی صوتی گروهی
+    unread: 0,         // BA-233: پیام‌های خوانده‌نشدهٔ چت
+    lastMsgKey: null,  // BA-233: کلید آخرین پیام برای جلوگیری از نوتیف تکراری
     group: null,       // {id, code, name}
     members: [], tasks: [], msgs: [],
     online: {},        // {uid: true} از presence
@@ -18654,6 +18680,9 @@ function ghStartPoll() {
                 NET_STATE.members = gr.members || [];
                 NET_STATE.tasks = gr.tasks || [];
                 NET_STATE.msgs = (gr.messages || []).slice(-100);
+                netSyncToMain();
+                const lastM = (gr.messages || [])[(gr.messages || []).length - 1];
+                if (lastM) netNotifyMsg(lastM);
                 const ov = document.getElementById('netOverlay');
                 if (ov && ov.classList.contains('active')) {
                     if (NET_STATE.tab === 'groups') netRenderMembersList();
@@ -18773,6 +18802,7 @@ function NET_broadcast(event, payload) {
 }
 function NET_subscribe() {
     if (ghEnabled()) { ghStartPoll(); return; }
+    if (NET_STATE.voice.in) netVoiceLeave(true);   // BA-232: تغییر کانال → جلسهٔ صوتی قبلی منحل
     NET_leaveChannel();
     const g = netActiveGroup();
     NET_STATE.group = g;
@@ -18783,6 +18813,7 @@ function NET_subscribe() {
         if (!p || !p.msg) return;
         if (p.msg.sender_id === netMyUid()) return;
         NET_STATE.msgs.push(p.msg);
+        netNotifyMsg(p.msg);
         if (NET_STATE.tab === 'chat') netRenderChatList();
     });
     ch.on('broadcast', { event: 'tasks-refresh' }, function() {
@@ -18794,6 +18825,32 @@ function NET_subscribe() {
             if (NET_STATE.tab === 'tasks') { netRefillAssigneeSelect(); netRenderTasksList(); }
         });
     });
+    ch.on('broadcast', { event: 'voice-join' }, function(m) {
+        const p = m && m.payload;
+        if (!p || !p.uid || p.uid === netMyUid()) return;
+        netVoiceOnPeerJoined(p.uid, p.name);
+    });
+    ch.on('broadcast', { event: 'voice-here' }, function(m) {
+        const p = m && m.payload;
+        if (!p || !p.uid || p.uid === netMyUid()) return;
+        if (!NET_STATE.voice.members[p.uid]) {
+            NET_STATE.voice.members[p.uid] = { name: p.name || 'کاربر', mic: !!p.mic };
+            netRenderChatHeader();
+            if (NET_STATE.voice.in && netMyUid() < p.uid) netVoiceOfferTo(p.uid);
+        }
+    });
+    ch.on('broadcast', { event: 'voice-leave' }, function(m) {
+        const p = m && m.payload;
+        if (!p || !p.uid) return;
+        netVoiceOnPeerLeft(p.uid);
+    });
+    ch.on('broadcast', { event: 'voice-mic' }, function(m) {
+        const p = m && m.payload;
+        if (!p || !p.uid) return;
+        if (NET_STATE.voice.members[p.uid]) { NET_STATE.voice.members[p.uid].mic = !!p.on; netRenderChatHeader(); }
+        const on = NET_STATE.online || {};
+        if (on[p.uid]) { on[p.uid].mic = !!p.on; netRenderChatHeader(); }
+    });
     ch.on('broadcast', { event: 'call-signal' }, function(m) {
         const p = m && m.payload;
         if (p) NET_onCallSignal(p);
@@ -18803,16 +18860,17 @@ function NET_subscribe() {
         try {
             const st = ch.presenceState();
             Object.keys(st).forEach(function(k) {
-                (st[k] || []).forEach(function(pl) { if (pl && pl.uid) map[pl.uid] = true; });
+                (st[k] || []).forEach(function(pl) { if (pl && pl.uid) map[pl.uid] = { name: (pl.name || 'کاربر'), mic: !!pl.mic }; });
             });
         } catch(e) {}
         NET_STATE.online = map;
+        if (document.getElementById('netChatHeader')) netRenderChatHeader();
         const ov = document.getElementById('netOverlay');
         if (NET_STATE.tab === 'groups' && ov && ov.classList.contains('active')) netRenderMembersList();
     });
     ch.subscribe(function(status) {
         if (status === 'SUBSCRIBED') {
-            try { ch.track({ uid: netMyUid(), name: NET_STATE.myName }); } catch(e) {}
+            try { ch.track({ uid: netMyUid(), name: NET_STATE.myName, mic: NET_STATE.voice.in ? NET_STATE.voice.mic : false }); } catch(e) {}
         }
     });
     NET_STATE.ch = ch;
@@ -18838,6 +18896,7 @@ function openNetPanel() {
 function closeNetPanel() {
     const ov = document.getElementById('netOverlay');
     if (!ov || !ov.classList.contains('active')) return;
+    if (NET_STATE.voice.in && !netStayChat()) netVoiceLeave(true);   // BA-235
     closeModalByType('net');
     navBack();
 }
@@ -18926,6 +18985,9 @@ function netForget() {
     ghStopPoll();
     NET_STATE.sb = null;
     NET_STATE.gh = false; NET_STATE.ghdb = null;
+    netVoiceLeave(true);   // BA-232: پاک‌سازی کامل صوت هنگام قطع اتصال
+    NET_STATE.voice = { in: false, mic: true, pcs: {}, stream: null, members: {} };
+    NET_STATE.unread = 0; NET_STATE.lastMsgKey = null;
     NET_STATE.showSetup = false;
     NET_STATE.members = []; NET_STATE.tasks = []; NET_STATE.msgs = []; NET_STATE.online = {};
     netStatusSet('غیرفعال');
@@ -18959,7 +19021,7 @@ function netMainHtml() {
     h += '<div class="net-tabs">'
         + '<div class="net-tab' + (NET_STATE.tab === 'groups' ? ' active' : '') + '" onclick="netSetTab(\'groups\')">👥 گروه‌ها</div>'
         + '<div class="net-tab' + (NET_STATE.tab === 'tasks' ? ' active' : '') + '" onclick="netSetTab(\'tasks\')">✅ تسک‌های گروه</div>'
-        + '<div class="net-tab' + (NET_STATE.tab === 'chat' ? ' active' : '') + '" onclick="netSetTab(\'chat\')">💬 چت گروه</div>'
+        + '<div class="net-tab' + (NET_STATE.tab === 'chat' ? ' active' : '') + '" onclick="netSetTab(\'chat\')">💬 چت گروه' + (NET_STATE.unread ? '<span class="net-unread">' + toPersianNumber(NET_STATE.unread) + '</span>' : '') + '</div>'
         + '</div>';
     h += '<div id="netTabBody"></div>';
     return h;
@@ -18974,7 +19036,12 @@ function netReconnect() {
         }
     });
 }
-function netSetTab(t) { NET_STATE.tab = t; netRenderTab(); }
+function netSetTab(t) {
+    if (t !== 'chat' && NET_STATE.voice.in && !netStayChat()) netVoiceLeave(true);   // BA-235
+    NET_STATE.tab = t;
+    if (t === 'chat') NET_STATE.unread = 0;
+    netRenderTab();
+}
 function netRenderTab() {
     const tb = document.getElementById('netTabBody');
     if (!tb) return;
@@ -19131,6 +19198,7 @@ async function netJoinGroup() {
 async function netLeaveGroup() {
     const g = NET_STATE.group || netActiveGroup();
     if (!g) return;
+    netVoiceLeave(true);   // BA-232: با خروج از گروه، گفتگوی صوتی هم بسته می‌شود
     if (ghEnabled()) {
         try {
             const db = await ghGet();
@@ -19174,11 +19242,11 @@ function netTasksHtml() {
 async function netLoadTasks() {
     const g = NET_STATE.group || netActiveGroup();
     if (!g) return;
-    if (ghEnabled()) { const gr = ghGroup(g.code); NET_STATE.tasks = (gr && gr.tasks) || []; return; }
+    if (ghEnabled()) { const gr = ghGroup(g.code); NET_STATE.tasks = (gr && gr.tasks) || []; netSyncToMain(); return; }
     if (!NET_STATE.sb) return;
     try {
         const r = await NET_STATE.sb.from('net_tasks').select('*').eq('group_id', g.id).order('created_at', { ascending: true });
-        if (!r.error) NET_STATE.tasks = r.data || [];
+        if (!r.error) { NET_STATE.tasks = r.data || []; netSyncToMain(); }
     } catch(e) {}
 }
 function netRenderTasksList() {
@@ -19327,7 +19395,8 @@ async function netDeleteTask(id) {
 // ─── تب چت دوطرفه ───
 function netChatHtml() {
     if (!(NET_STATE.group || netActiveGroup())) return '<div class="net-empty">اول عضو یک گروه شوید</div>';
-    return '<div class="net-chat-list" id="netChatList"></div>';
+    return '<div id="netChatHeader" class="net-chat-header"><div class="net-empty">در حال آماده‌سازی…</div></div>'
+        + '<div class="net-chat-list" id="netChatList"></div>';
 }
 function netChatBarShow() {
     const b = document.getElementById('netChatBar');
@@ -19352,26 +19421,30 @@ function netRenderChatList() {
     const el = document.getElementById('netChatList');
     if (!el) return;
     const me = netMyUid();
+    netRenderChatHeader();
     el.innerHTML = NET_STATE.msgs.map(function(m) {
         const mine = (m.sender_id === me);
+        const imgHtml = m.img ? '<img class="net-msg-img" src="' + m.img + '" alt="عکس" onclick="netOpenLightbox(this.src)">' : '';
         return '<div class="net-msg ' + (mine ? 'mine' : 'other') + '">'
             + (mine ? '' : '<b style="font-size:11px;">' + escapeHtml(m.sender_name || '') + '</b><br>')
-            + escapeHtml(m.text)
+            + imgHtml
+            + (m.text ? escapeHtml(m.text) : '')
             + '<div class="net-msg-meta">' + netFaTime(m.created_at) + '</div></div>';
     }).join('') || '<div class="net-empty">پیامی نیست — اولین پیام را بفرستید</div>';
     const nb = document.getElementById('netBody');
     if (nb) nb.scrollTop = nb.scrollHeight;
 }
-async function netSendText(text) {
+async function netSendText(text, img) {
     const g = NET_STATE.group || netActiveGroup();
     text = (text || '').trim();
-    if (!g || !text) return null;
+    if (!g || (!text && !img)) return null;
     if (ghEnabled()) {
         try {
             const db = await ghGet();
             const gr = db.groups[g.code];
             if (!gr) throw new Error('گروه در Gist نیست');
             const msg = { group_id: g.code, sender_id: netMyUid(), sender_name: NET_STATE.myName, text: text, created_at: new Date().toISOString() };
+            if (img) msg.img = img;
             gr.messages = gr.messages || [];
             gr.messages.push(msg);
             if (gr.messages.length > 200) gr.messages = gr.messages.slice(-200);
@@ -19384,6 +19457,7 @@ async function netSendText(text) {
     }
     if (!NET_STATE.sb) return null;
     const row = { group_id: g.id, sender_id: netMyUid(), sender_name: NET_STATE.myName, text: text };
+    if (img) row.img = img;
     try {
         const r = await NET_STATE.sb.from('net_messages').insert(row).select();
         if (r.error) throw new Error(r.error.message);
@@ -19401,6 +19475,249 @@ function netSendMsg() {
     if (!t) return;
     inp.value = '';
     netSendText(t);
+}
+
+// ─── BA-232..236: چت صوتی گروهی، عکس، نوتیف، ترک چت، همگام با گروه‌های اصلی ───
+// BA-235: کلید «ترک چت» — فعال: با رفتن به هر جای برنامه صدا/نوتیف ادامه؛
+// غیرفعال: با خروج از چت فقط نوتیف می‌آید و صدا قطع می‌شود.
+function netStayChat() {
+    try { return localStorage.getItem('net_stay_chat') === '1'; } catch(e) { return false; }
+}
+function netToggleStayChat() {
+    localStorage.setItem('net_stay_chat', netStayChat() ? '0' : '1');
+    netRenderChatHeader();
+    showToast(netStayChat() ? '🚪 ترک چت فعال شد — با خروج از چت، صدا و نوتیف ادامه می‌یابد' : '🚪 ترک چت غیرفعال شد — با خروج از چت فقط نوتیف می‌آید و صدا قطع می‌شود');
+}
+// BA-233: نوار حضور بالای چت — اسامی آنلاین‌ها + نشان میکروفون باز
+function netRenderChatHeader() {
+    const el = document.getElementById('netChatHeader');
+    if (!el) return;
+    const on = NET_STATE.online || {};
+    const names = Object.keys(on).map(function(uid) {
+        const o = on[uid] || {};
+        const mic = o.mic ? ' 🎙' : '';
+        return '<span class="net-presence-chip">' + escapeHtml(o.name || 'کاربر') + mic + '</span>';
+    }).join(' ');
+    const v = NET_STATE.voice;
+    let btns = '';
+    if (!ghEnabled()) {
+        btns = '<button class="net-btn small' + (v.in ? ' secondary' : '') + '" onclick="' + (v.in ? 'netVoiceLeave()' : 'netVoiceJoin()') + '">' + (v.in ? '🔊 خروج از صوت' : '🎙 صوتی گروهی') + '</button>'
+            + (v.in ? '<button class="net-btn small' + (v.mic ? '' : ' secondary') + '" onclick="netVoiceMicToggle()">' + (v.mic ? '🎙 میک: باز' : '🔇 میک: بسته') + '</button>' : '');
+    }
+    const stay = netStayChat();
+    btns += '<button class="net-btn small' + (stay ? '' : ' secondary') + '" onclick="netToggleStayChat()">🚪 ترک چت: ' + (stay ? 'فعال' : 'غیرفعال') + '</button>';
+    el.innerHTML = '<div class="net-presence-row"><span class="net-presence-label">حاضر در چت:</span>' + (names || '<span class="net-empty-inline">—</span>') + '</div>'
+        + '<div class="net-voice-row">' + btns + '</div>';
+}
+// BA-232: گفتگوی صوتی گروهی — mesh WebRTC؛ صوت هر عضو به همهٔ اعضای حاضر.
+// عنصر audio هر طرف مقصد به body اضافه می‌شود تا با بستن پنل صدا قطع نشود.
+function netVoiceEnsureAudio(uid) {
+    let a = document.getElementById('netVoiceAudio-' + uid);
+    if (!a) {
+        a = document.createElement('audio');
+        a.id = 'netVoiceAudio-' + uid;
+        a.autoplay = true;
+        a.setAttribute('playsinline', '');
+        a.style.display = 'none';
+        document.body.appendChild(a);
+    }
+    return a;
+}
+function netVoiceNewPC(peerUid) {
+    const pc = new RTCPeerConnection({ iceServers: NET_iceServers() });
+    pc.onicecandidate = function(ev) {
+        if (ev.candidate) NET_sendSignal({ kind: 'voice-ice', to: peerUid, from: netMyUid(), candidate: ev.candidate });
+    };
+    pc.ontrack = function(ev) {
+        const a = netVoiceEnsureAudio(peerUid);
+        if (ev.streams && ev.streams[0]) { try { a.srcObject = ev.streams[0]; if (a.play) a.play(); } catch(e) {} }
+    };
+    pc.onconnectionstatechange = function() {
+        if (pc.connectionState === 'failed') netVoiceClosePeer(peerUid);
+    };
+    return pc;
+}
+async function netVoiceOfferTo(peerUid) {
+    try {
+        const pc = netVoiceNewPC(peerUid);
+        NET_STATE.voice.pcs[peerUid] = pc;
+        if (NET_STATE.voice.stream) NET_STATE.voice.stream.getAudioTracks().forEach(function(t) { pc.addTrack(t, NET_STATE.voice.stream); });
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        NET_sendSignal({ kind: 'voice-offer', to: peerUid, from: netMyUid(), fromName: NET_STATE.myName, sdp: pc.localDescription });
+    } catch(e) {}
+}
+function netVoiceClosePeer(peerUid) {
+    const pc = NET_STATE.voice.pcs[peerUid];
+    if (pc) { try { pc.close(); } catch(e) {} delete NET_STATE.voice.pcs[peerUid]; }
+    const a = document.getElementById('netVoiceAudio-' + peerUid);
+    if (a) { try { a.srcObject = null; } catch(e) {} if (a.remove) a.remove(); }
+}
+async function netVoiceJoin() {
+    if (ghEnabled()) { showToast('⚠️ در بک‌اند گیت‌هاب صوت گروهی نیست — بک‌اند Supabase را انتخاب کنید'); return; }
+    if (!(await netEnsureConnected())) { showToast('⚠️ اتصال برقرار نشد — جعبهٔ خطا را ببینید'); return; }
+    if (!NET_STATE.ch) { showToast('⚠️ اول عضو یک گروه شوید'); return; }
+    if (NET_STATE.voice.in) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { showToast('⚠️ مرورگر از میکروفون پشتیبانی نمی‌کند'); return; }
+    try { NET_STATE.voice.stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch(e) { showToast('⚠️ اجازهٔ میکروفون داده نشد'); return; }
+    NET_STATE.voice.in = true;
+    NET_STATE.voice.mic = true;
+    NET_STATE.voice.pcs = {};
+    try { NET_STATE.ch.track({ uid: netMyUid(), name: NET_STATE.myName, mic: true }); } catch(e) {}
+    NET_broadcast('voice-join', { uid: netMyUid(), name: NET_STATE.myName });
+    netRenderChatHeader();
+    showToast('🎙 به گفتگوی صوتی گروه پیوستید — صدای همهٔ حاضرین شنیده می‌شود');
+}
+function netVoiceLeave(silent) {
+    if (!NET_STATE.voice.in) return;
+    NET_broadcast('voice-leave', { uid: netMyUid() });
+    Object.keys(NET_STATE.voice.pcs).forEach(function(k) { netVoiceClosePeer(k); });
+    if (NET_STATE.voice.stream) { try { NET_STATE.voice.stream.getTracks().forEach(function(t) { t.stop(); }); } catch(e) {} }
+    NET_STATE.voice.in = false;
+    NET_STATE.voice.mic = true;
+    NET_STATE.voice.pcs = {};
+    NET_STATE.voice.stream = null;
+    try { if (NET_STATE.ch) NET_STATE.ch.track({ uid: netMyUid(), name: NET_STATE.myName, mic: false }); } catch(e) {}
+    netRenderChatHeader();
+    if (!silent) showToast('از گفتگوی صوتی خارج شدید');
+}
+async function netVoiceMicToggle() {
+    if (!NET_STATE.voice.in) return;
+    NET_STATE.voice.mic = !NET_STATE.voice.mic;
+    if (NET_STATE.voice.stream) NET_STATE.voice.stream.getAudioTracks().forEach(function(t) { t.enabled = NET_STATE.voice.mic; });
+    NET_broadcast('voice-mic', { uid: netMyUid(), on: NET_STATE.voice.mic });
+    try { if (NET_STATE.ch) NET_STATE.ch.track({ uid: netMyUid(), name: NET_STATE.myName, mic: NET_STATE.voice.mic }); } catch(e) {}
+    netRenderChatHeader();
+    showToast(NET_STATE.voice.mic ? '🎙 میکروفون باز شد' : '🔇 میکروفون بسته شد');
+}
+// BA-232: مذاکرهٔ بدون‌برخورد — فقط عضوِ uid کوچک‌تر به بزرگ‌تر offer می‌دهد
+function netVoiceOnPeerJoined(uid, name) {
+    NET_STATE.voice.members[uid] = { name: name || 'کاربر', mic: true };
+    if (NET_STATE.voice.in) NET_broadcast('voice-here', { uid: netMyUid(), name: NET_STATE.myName, mic: NET_STATE.voice.mic });
+    netRenderChatHeader();
+    if (NET_STATE.voice.in && netMyUid() < uid) netVoiceOfferTo(uid);
+}
+function netVoiceOnPeerLeft(uid) {
+    delete NET_STATE.voice.members[uid];
+    netVoiceClosePeer(uid);
+    netRenderChatHeader();
+}
+// BA-234: ارسال عکس در چت — فشرده‌سازی سمت کاربر (حداکثر ۷۲۰px) به‌صورت data URL
+function netPickImage() {
+    const inp = document.getElementById('netImgInput');
+    if (inp) inp.click();
+}
+function netCompressImage(file) {
+    return new Promise(function(resolve, reject) {
+        const r = new FileReader();
+        r.onload = function() {
+            const img = new Image();
+            img.onload = function() {
+                let w = img.width, h = img.height;
+                const max = 720;
+                if (w > max || h > max) { const k = Math.min(max / w, max / h); w = Math.round(w * k); h = Math.round(h * k); }
+                const c = document.createElement('canvas');
+                c.width = w; c.height = h;
+                c.getContext('2d').drawImage(img, 0, 0, w, h);
+                let out = c.toDataURL('image/jpeg', 0.7);
+                if (out.length > 500000) out = c.toDataURL('image/jpeg', 0.45);
+                resolve(out);
+            };
+            img.onerror = function() { reject(new Error('تصویر خوانده نشد')); };
+            img.src = r.result;
+        };
+        r.onerror = function() { reject(new Error('فایل خوانده نشد')); };
+        r.readAsDataURL(file);
+    });
+}
+async function netSendImage(file) {
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) { showToast('⚠️ عکس خیلی بزرگ است (حداکثر ۸ مگابایت)'); return; }
+    try {
+        const dataUrl = await netCompressImage(file);
+        const msg = await netSendText('📷 عکس', dataUrl);
+        if (msg) showToast('✅ عکس ارسال شد');
+    } catch(e) { showToast('⚠️ ارسال عکس ناموفق: ' + ((e && e.message) || e)); }
+}
+function netOpenLightbox(src) {
+    let lb = document.getElementById('netLightbox');
+    if (!lb) {
+        lb = document.createElement('div');
+        lb.id = 'netLightbox';
+        lb.className = 'net-lightbox';
+        lb.onclick = function() { lb.classList.remove('open'); };
+        document.body.appendChild(lb);
+    }
+    lb.innerHTML = '<img src="' + src + '" alt="عکس چت">';
+    lb.classList.add('open');
+}
+// BA-233: نوتیف پیام جدید وقتی کاربر داخل چت نیست (پنل بسته یا تب دیگر)
+function netNotifyMsg(msg) {
+    if (!msg || msg.sender_id === netMyUid()) return false;
+    const key = (msg.sender_id || '') + '|' + (msg.created_at || '') + '|' + (msg.text || '');
+    if (NET_STATE.lastMsgKey === key) return false;
+    NET_STATE.lastMsgKey = key;
+    const ov = document.getElementById('netOverlay');
+    const viewingChat = !!(ov && ov.classList.contains('active') && NET_STATE.tab === 'chat');
+    if (!viewingChat) {
+        NET_STATE.unread = (NET_STATE.unread || 0) + 1;
+        showToast('💬 ' + (msg.sender_name || 'کاربر') + ': ' + String(msg.text || '').slice(0, 60));
+        const ov2 = document.getElementById('netOverlay');
+        if (ov2 && ov2.classList.contains('active')) netRender();
+    }
+    return true;
+}
+// BA-236: همگام‌سازی گروه و تسک‌های شبکه با گروه‌ها/تسک‌های اصلی برنامه —
+// گروه شبکه یک گروه واقعی برنامه می‌شود (🛰️) و تسک‌هایش دقیقاً مثل
+// بقیهٔ تسک‌ها در نمای گروه نمایش داده می‌شوند.
+function netSyncToMain() {
+    const g = NET_STATE.group || netActiveGroup();
+    if (!g || (!NET_STATE.sb && !NET_STATE.gh)) return;
+    try {
+        const groups = JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]');
+        let lg = groups.find(function(x) { return x.netCode === g.code; });
+        if (!lg) {
+            lg = { id: 'net_' + g.code, name: g.name, color: '#00897B', headerIcon: '🛰️', netCode: g.code, showInAll: true };
+            groups.push(lg);
+        } else if (lg.name !== g.name) { lg.name = g.name; }
+        localStorage.setItem(GROUPS_KEY, JSON.stringify(groups));
+        const items = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+        let changed = false;
+        (NET_STATE.tasks || []).forEach(function(t) {
+            let it = items.find(function(x) { return x.netId === t.id; });
+            if (!it) {
+                it = { id: 'nt_' + t.id, netId: t.id, netCode: g.code, groupId: lg.id,
+                    text: t.title, deadline: t.deadline || null, done: !!t.done,
+                    netOwner: t.owner_name || '', netAssignee: t.assignee_name || '',
+                    createdAt: t.created_at || new Date().toISOString() };
+                items.push(it);
+                changed = true;
+            } else {
+                if (it.text !== t.title) { it.text = t.title; changed = true; }
+                if ((it.deadline || null) !== (t.deadline || null)) { it.deadline = t.deadline || null; changed = true; }
+                if (!!it.done !== !!t.done) { it.done = !!t.done; it.completedAt = it.done ? (t.completed_at || new Date().toISOString()) : null; changed = true; }
+                if ((it.netAssignee || '') !== (t.assignee_name || '')) { it.netAssignee = t.assignee_name || ''; changed = true; }
+            }
+        });
+        if (changed) localStorage.setItem(DB_KEY, JSON.stringify(items));
+    } catch(e) {}
+}
+// BA-236: تغییر «انجام شد» از نمای اصلی برنامه به شبکه هم برسد
+async function netSyncTaskFromMain(item) {
+    if (!item || !item.netId) return;
+    const g = NET_STATE.group || netActiveGroup();
+    if (ghEnabled() && g) {
+        await ghMutateTask(g.code, function(gr) {
+            (gr.tasks || []).forEach(function(x) { if (x.id === item.netId) { x.done = !!item.done; x.updated_at = new Date().toISOString(); } });
+        });
+        return;
+    }
+    if (!NET_STATE.sb) return;
+    try {
+        await NET_STATE.sb.from('net_tasks').update({ done: !!item.done, updated_at: new Date().toISOString() }).eq('id', item.netId);
+        NET_broadcast('tasks-refresh', {});
+    } catch(e) {}
 }
 
 // ─── تماس صوتی دوطرفهٔ ۱:۱ (WebRTC + سیگنالینگ روی کانال گروه) ───
@@ -19486,6 +19803,28 @@ function NET_onCallSignal(p) {
     if (p.kind === 'ice') {
         if (C.pc) { try { C.pc.addIceCandidate(p.candidate); } catch(e) {} }
         else if (C.pending) { (C.iceBuf = C.iceBuf || []).push(p.candidate); }
+        return;
+    }
+    if (p.kind === 'voice-offer') {
+        if (!NET_STATE.voice.in) return;
+        try {
+            const pc = netVoiceNewPC(p.from);
+            NET_STATE.voice.pcs[p.from] = pc;
+            if (NET_STATE.voice.stream) NET_STATE.voice.stream.getAudioTracks().forEach(function(t) { pc.addTrack(t, NET_STATE.voice.stream); });
+            pc.setRemoteDescription(p.sdp).then(function() { return pc.createAnswer(); }).then(function(ans) { return pc.setLocalDescription(ans); }).then(function() {
+                NET_sendSignal({ kind: 'voice-answer', to: p.from, from: netMyUid(), sdp: pc.localDescription });
+            }).catch(function() {});
+        } catch(e) {}
+        return;
+    }
+    if (p.kind === 'voice-answer') {
+        const vpc = NET_STATE.voice.pcs[p.from];
+        if (vpc) { try { vpc.setRemoteDescription(p.sdp); } catch(e) {} }
+        return;
+    }
+    if (p.kind === 'voice-ice') {
+        const vpc2 = NET_STATE.voice.pcs[p.from];
+        if (vpc2) { try { vpc2.addIceCandidate(p.candidate); } catch(e) {} }
         return;
     }
     if (p.kind === 'busy') { showToast('⚠️ خط طرف مقابل مشغول است'); NET_callCleanup(); return; }

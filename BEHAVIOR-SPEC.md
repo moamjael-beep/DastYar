@@ -11,10 +11,10 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v254 — ۱۴۰۵ آذر ۲ (رفع اشکال «ساخت گروه» — خروج بی‌صدا هنگام اتصال در جریان، BA-230؛ + بک‌اند موازی اختیاری گیت‌هاب Gist با نظرسنجی ۴ ثانیه‌ای، BA-231)
-#  نسخهٔ فعلی کد:  APP_VERSION = v254-2026-11-23-net-github-backend
-#                  CACHE_NAME  = yadavar-cache-v254
-#                  version.txt = v254-2026-11-23-net-github-backend
+#  آخرین به‌روزرسانی: v255 — ۱۴۰۵ آذر ۲ (چت صوتی گروهی + حاضران/میک بالای چت + ارسال عکس + کلید «ترک چت» + ادغام گروه/تسک شبکه در گروه‌های اصلی — BA-232..236)
+#  نسخهٔ فعلی کد:  APP_VERSION = v255-2026-11-23-net-group-voice-images
+#                  CACHE_NAME  = yadavar-cache-v255
+#                  version.txt = v255-2026-11-23-net-group-voice-images
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -1430,6 +1430,32 @@
 #   از openNetPanel) → NET_connect دوباره false بی‌صدا → خروج بدون هیچ
 #   پیام. اصلاح: netEnsureConnected (صبر تا ۱۰ ثانیه برای اتصال در جریان،
 #   بعد NET_connect) + پیام صریح «اتصال برقرار نشد — جعبهٔ خطا را ببینید».
+#   BA-232 (v255 — چت صوتی گروهی): netVoiceJoin/Leave/MicToggle + mesh
+#   WebRTC روی کانال گروه؛ مذاکرهٔ بدون‌برخورد (فقط uid کوچک‌تر offer
+#   می‌دهد؛ voice-here برای آگاهی تازه‌وارد)؛ عنصر audio هر peer به body
+#   (با بستن پنل صدا ادامه یابد)؛ kinds جدید voice-offer/answer/ice در
+#   NET_onCallSignal؛ join/leave/mic با broadcast؛ با تغییر کانال یا خروج
+#   از گروه یا netForget صوت تخریب می‌شود. فقط بک‌اند Supabase.
+#   BA-233 (نوار حضور + نوتیف): presence payload حالا {name,mic}؛
+#   netChatHeader بالای چت: اسامی آنلاین + 🎙 برای میک باز؛ netNotifyMsg:
+#   پیام دیگران وقتی در چت نیستیم → toast + شمارندهٔ unread روی تب چت
+#   (با ورود به چت صفر) + dedupe با lastMsgKey؛ gh poll هم نوتیف می‌زند.
+#   BA-234 (عکس): ستون img در net_messages (alter table … add column if
+#   not exists — به NET_SQL_HELP و راهنما اضافه شد؛ کاربر باید یک بار Run
+#   کند) + دکمهٔ 📷 در نوار چت + netCompressImage (canvas ≤720px، JPEG
+#   q0.7 و در صورت بزرگ‌بودن q0.45، ≤500KB) + رندر net-msg-img +
+#   لایت‌باکس netOpenLightbox؛ بک‌اند gh هم img را در JSON نگه می‌دارد.
+#   BA-235 (ترک چت): net_stay_chat در localStorage؛ دکمهٔ «🚪 ترک چت» در
+#   هدر چت؛ فعال: خروج از چت/پنل، ارسال/دریافت صوت ادامه؛ غیرفعال:
+#   netSetTab خارج از chat و closeNetPanel → netVoiceLeave(true)؛ نوتیف
+#   در هر دو حالت می‌آید.
+#   BA-236 (ادغام با برنامهٔ اصلی): netSyncToMain — گروه شبکه → گروه
+#   واقعی (id=net_<code>، netCode، headerIcon 🛰️، رنگ #00897B) در
+#   GROUPS_KEY و تسک‌ها → تسک واقعی (id=nt_<netId>، netId،
+#   netOwner/netAssignee) در DB_KEY؛ renderGroupsView نشان «🛰️ شبکه» و
+#   renderTasksView نشان‌های 🛰️/👤 روی تسک‌های شبکه‌ای؛ toggleDone با
+#   netId → netSyncTaskFromMain (تیک به شبکه برمی‌گردد؛ gh و sb).
+#   صدا زدن sync: netLoadTasks (هر دو بک‌اند) و gh poll.
 #   BA-231 (همان v254 — بک‌اند موازی انتخابی گیت‌هاب): فرم اتصال حالا
 #   «بک‌اند» دارد (☁️ Supabase / 🐙 گیت‌هاب Gist). ماژول gh: ghGet/ghSave
 #   (Gist API، فایل yadavar-net.json، PAT با دسترسی gist)، ghCreateGist
@@ -2751,6 +2777,13 @@
 #
 #   فایل‌های نسخه: APP_VERSION / version.txt →
 #   v244-2026-11-15-align-keepalive-yt-multi؛ CACHE_NAME → yadavar-cache-v244.
+#
+### v255 (۱۴۰۵ آذر ۲) — چت صوتی گروهی + عکس + ترک چت + ادغام با گروه‌های اصلی (BA-232..236)
+#   رگرسیون: پروب ۱۲۸ چک — K19a-d صوت (با شبیه‌ساز RTC/GUM)، K20a/b عکس
+#   (sb/gh)، K21 ترک چت، K22 sync دوطرفه، K23 نوتیف+dedupe — صفر شکست.
+#   نکتهٔ تست: stub کانال باید بعد از NET_connect جایگزین شود (اتصال کانال
+#   ماک می‌گذارد)؛ ghdb بین سناریوها reset شود؛ stream ماک باید همان
+#   آبجکت track را در هر getAudioTracks برگرداند.
 #
 ### v254 (۱۴۰۵ آذر ۲) — رفع «ساخت گروه» + بک‌اند موازی گیت‌هاب (BA-230/231)
 #   رگرسیون: پروب ۱۱۹ چک — K16 (صبر برای اتصال در جریان)، K17a-d (چرخهٔ
