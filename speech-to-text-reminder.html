@@ -8033,7 +8033,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v251-2026-11-23-net-504-hint';
+const APP_VERSION = 'v253-2026-11-23-net-real-url-grant';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -18401,7 +18401,7 @@ function closeHolidaysPanel() {
 // BA-224: پروژهٔ ابری خانواده — به‌صورت پیش‌فرض در فرم پنل شبکه پر می‌شود.
 // کلید publishable عمومی است و لو رفتنش خطر ندارد؛ مرز امنیتی = کد دعوت گروه.
 const NET_DEFAULTS = {
-    url: 'https://uxedgotofmxgzoltwdxz.supabase.co',
+    url: 'https://uuedqototmxgzoltwdxc.supabase.co',
     key: 'sb_publishable_SrK_j002xlTRy58VAl3v3Q_XEB0aAsi'
 };
 const NET_SQL_HELP = '-- یاداوار شبکه — یک بار در SQL Editor پروژهٔ Supabase اجرا شود\n' +
@@ -18448,7 +18448,10 @@ const NET_SQL_HELP = '-- یاداوار شبکه — یک بار در SQL Editor
 'create policy "net_groups_all" on net_groups for all using (true) with check (true);\n' +
 'create policy "net_members_all" on net_members for all using (true) with check (true);\n' +
 'create policy "net_tasks_all" on net_tasks for all using (true) with check (true);\n' +
-'create policy "net_messages_all" on net_messages for all using (true) with check (true);\n';
+'create policy "net_messages_all" on net_messages for all using (true) with check (true);\n' +
+'grant usage on schema public to anon, authenticated;\n' +
+'grant select, insert, update, delete on all tables in schema public to anon, authenticated;\n' +
+'alter default privileges in schema public grant all on tables to anon, authenticated;\n';
 
 let NET_STATE = {
     sb: null,          // کلاینت Supabase
@@ -18474,7 +18477,15 @@ function netMyUid() {
     return u;
 }
 function netSettings() {
-    try { return JSON.parse(localStorage.getItem('net_settings') || 'null'); } catch(e) { return null; }
+    // BA-229: مهاجرت یک‌بارهٔ URL مردهٔ قدیمی (ref غلط تایپی) به پیش‌فرض جدید
+    try {
+        const st = JSON.parse(localStorage.getItem('net_settings') || 'null');
+        if (st && st.url && st.url.indexOf('uxedgotofmxgzoltwdxz') >= 0) {
+            st.url = NET_DEFAULTS.url;
+            localStorage.setItem('net_settings', JSON.stringify(st));
+        }
+        return st;
+    } catch(e) { return null; }
 }
 // درگاه کتابخانه — در حالت تستِ پروب، mock تزریق‌شده استفاده می‌شود
 function netLib() {
@@ -18514,8 +18525,10 @@ function netErrHint(msg) {
     const m = String(msg || '');
     if (/does not exist|relation/i.test(m)) return 'جدول‌های شبکه در این پروژه ساخته نشده‌اند — اسکریپت SQL باید در همان پروژه‌ای اجرا شود که URL آن در فرم بالا هست. اگر چند پروژه در داشبورد دارید، پروژهٔ درست را از لیست بالای صفحه انتخاب کنید و در SQL Editor همان پروژه اسکریپت را Run کنید.';
     if (/invalid api key|invalid key|jws|jwt|unauthorized|401|forbidden/i.test(m)) return 'کلید عمومی اشتباه یا ناقص است — در فرم بالا دکمهٔ «↺ پیش‌فرض» را بزنید، یا کلید را از ⚙ Settings → API Keys دوباره کپی کنید (نه service_role/secret).';
+    if (/DNS وجود ندارد/i.test(m)) return 'آدرس (Project URL) غلط است یا پروژه حذف شده — آدرس و کلید را دقیقاً از داشبورد کپی کنید: دکمهٔ Connect بالای داشبورد یا ⚙ Settings → Data API؛ اگر پروژه در داشبورد نیست، پروژهٔ جدید بسازید و اسکریپت SQL را در آن اجرا کنید.';
     if (/failed to fetch|networkerror|network error|fetch failed|load failed|timeout|timed out|offline/i.test(m)) return 'اینترنت به supabase.co نمی‌رسد — «↻ اتصال دوباره» را بزنید؛ اگر نشد اینترنت دیگری امتحان کنید (Wi-Fi/دادهٔ موبایل جابه‌جا شود).';
-    if (/schema cache|permission|row-level|rls|policy/i.test(m)) return 'سیاست‌های دسترسی روی جدول‌ها کامل نیست — اسکریپت SQL را یک بار دیگر کامل Run کنید (پیام already exists مهم نیست).';
+    if (/permission denied for table/i.test(m)) return 'مجوز نقش عمومی به جدول‌ها داده نشده — در SQL Editor همین پروژه این سه خط را Run کنید: grant usage on schema public to anon, authenticated; grant select, insert, update, delete on all tables in schema public to anon, authenticated; alter default privileges in schema public grant all on tables to anon, authenticated; — بعد «↻ اتصال دوباره» را بزنید.';
+    if (/schema cache|row-level|rls|policy/i.test(m)) return 'سیاست‌های دسترسی روی جدول‌ها کامل نیست — اسکریپت SQL را یک بار دیگر کامل Run کنید (پیام already exists مهم نیست).';
     if (/http 50[234]|gateway time|bad gateway|service unavailable/i.test(m)) return 'سرور Supabase در دسترس بود ولی خود پایگاه‌دادهٔ پروژه به‌موقع جواب نداد (HTTP 502/503/504). معمولاً موقتی است — به ترتیب: ۱) ۲–۳ دقیقه صبر کنید و «↻ اتصال دوباره» را بزنید؛ ۲) در داشبورد Supabase وضعیت پروژه را چک کنید — اگر کنار نام پروژه نوشته Paused بود دکمهٔ Restore project را بزنید؛ ۳) اینترنت را عوض کنید (Wi-Fi ↔ دادهٔ موبایل) و دوباره امتحان کنید؛ ۴) اگر ادامه داشت وضعیت سرویس را در status.supabase.com ببینید.';
     return '';
 }
@@ -18556,7 +18569,17 @@ async function netDeepProbe(st) {
         if (res.status === 404) return 'HTTP 404 — آدرس پروژه اشتباه است: ' + body;
         return 'HTTP ' + res.status + ' — ' + body;
     } catch(e) {
-        return 'درخواست مستقیم هم شکست خورد (' + String((e && e.message) || e) + ') — اینترنت به آدرس پروژه نمی‌رسد';
+        // BA-228: تفکیک «دامنهٔ پروژه اصلاً وجود ندارد» از «اینترنت قطع» —
+        // با یک درخواست کنترلی به یک پروژهٔ دیگر روی همان supabase.co
+        let ctrl = false;
+        try {
+            const o = { mode: 'no-cors' };
+            try { o.signal = AbortSignal.timeout(6000); } catch(e4) {}
+            await fetch('https://obuldanrptloktxcffvn.supabase.co/rest/v1/', o);
+            ctrl = true;   // هر وضعیتی که برگردد یعنی دامنه‌های supabase.co در دسترس‌اند
+        } catch(e5) { ctrl = false; }
+        if (ctrl) return 'دامنهٔ پروژه در DNS وجود ندارد — آدرس اشتباه تایپ شده یا پروژه حذف/ناقص ساخته شده است. از داشبورد Supabase: دکمهٔ Connect بالای صفحه یا ⚙ Settings → Data API، «Project URL» و کلید Publishable را دقیق کپی کنید و در فرم جایگذاری کنید؛ اگر پروژه در داشبورد نیست، پروژهٔ جدید بسازید و اسکریپت SQL را در آن اجرا کنید.';
+        return 'درخواست مستقیم هم شکست خورد (' + String((e && e.message) || e) + ') — اینترنت به supabase.co نمی‌رسد؛ اینترنت دیگری امتحان کنید';
     }
 }
 async function NET_connect() {
@@ -18587,7 +18610,10 @@ async function NET_connect() {
         NET_STATE.sb = null;
         NET_STATE.connecting = false;
         let raw = String((e && e.message) || e);
-        if (raw === '__EMPTY_NET_ERR__') raw = 'سرور بدون پیام خطا جواب داد — ' + await netDeepProbe(st);
+        if (raw === '__EMPTY_NET_ERR__' || /failed to fetch|networkerror|network error|fetch failed|load failed|timeout|timed out/i.test(raw)) {
+            const deep = await netDeepProbe(st);
+            raw = (raw === '__EMPTY_NET_ERR__' ? 'سرور بدون پیام خطا جواب داد — ' : raw + ' ⇐ ') + deep;
+        }
         let hint = netErrHint(raw);
         if (!hint) hint = 'دلیل دقیق از سرور نرسید. به ترتیب چک کنید: ۱) در فرم اتصال «↺ پیش‌فرض» را بزنید؛ ۲) اسکریپت SQL در همین پروژه اجرا شده باشد؛ ۳) اینترنت را عوض کنید و «↻ اتصال دوباره» بزنید.';
         NET_STATE.lastErr = { raw: raw, hint: hint };

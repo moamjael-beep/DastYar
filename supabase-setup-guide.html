@@ -143,7 +143,12 @@ alter table net_messages enable row level security;
 create policy "net_groups_all" on net_groups for all using (true) with check (true);
 create policy "net_members_all" on net_members for all using (true) with check (true);
 create policy "net_tasks_all" on net_tasks for all using (true) with check (true);
-create policy "net_messages_all" on net_messages for all using (true) with check (true);</pre>
+create policy "net_messages_all" on net_messages for all using (true) with check (true);
+
+-- مجوز نقش‌های عمومی (در پروژه‌های جدید لازم است)
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on all tables in schema public to anon, authenticated;
+alter default privileges in schema public grant all on tables to anon, authenticated;</pre>
 </div>
 
 <div class="step">
@@ -180,16 +185,18 @@ create policy "net_messages_all" on net_messages for all using (true) with check
     <tr><td>«اتصال ناموفق»</td><td>از نسخهٔ v249 یک جعبهٔ قرمز بالای پنل شبکه «دلیل دقیق + راه‌حل فارسی» را نشان می‌دهد — متنش را بخوانید و طبق آن عمل کنید؛ بعد «↻ اتصال دوباره». اگر پیام خطا خالی بود، از نسخهٔ v250 خود برنامه یک درخواست مستقیم به سرور می‌زند و وضعیت واقعی (401/404/قطع اینترنت) را نشان می‌دهد</td></tr>
     <tr><td>راهی به فرم اتصال نیست</td><td>در نمای اصلی پنل، بالای تب‌ها دکمهٔ <span class="btn-name">⚙ تنظیمات اتصال</span> هست؛ برای برگشتن، داخل فرم «↩ بازگشت به نمای اصلی» را بزنید (از نسخهٔ v250)</td></tr>
     <tr><td>«HTTP 504» یا 502/503</td><td>سرور در دسترس بود ولی پایگاه‌دادهٔ پروژه به‌موقع جواب نداد — معمولاً موقتی؛ چند دقیقه صبر کنید و «↻ اتصال دوباره» بزنید؛ در داشبورد اگر پروژه Paused بود دکمهٔ <span class="btn-name">Restore project</span>؛ اینترنت را عوض کنید؛ وضعیت سرویس: status.supabase.com (از نسخهٔ v251 این راهنما خودش زیر جعبهٔ قرمز نشان داده می‌شود)</td></tr>
+    <tr><td>«در DNS وجود ندارد»</td><td>آدرس پروژه غلط تایپ شده یا پروژه حذف/ناقص است — آدرس و کلید را دقیقاً از داشبورد کپی کنید: دکمهٔ <span class="btn-name">Connect</span> یا ⚙ Settings → Data API؛ اگر پروژه در داشبورد نیست، پروژهٔ جدید بسازید و اسکریپت را در آن اجرا کنید (از نسخهٔ v252)</td></tr>
     <tr><td>«relation does not exist»</td><td>اسکریپت مرحلهٔ ۴ هنوز اجرا نشده — بروید SQL Editor و Run بزنید</td></tr>
     <tr><td>اعضای دیگر دیده نمی‌شوند</td><td>کد دعوت را درست وارد کرده‌اند؟ تب گروه‌ها را ببندید و باز کنید</td></tr>
     <tr><td>تماس وصل نمی‌شود</td><td>هر دو طرف اینترنت داشته باشند؛ اجازهٔ میکروفون داده شده باشد؛ شبکهٔ بسیار بسته → فیلد TURN اختیاری در تنظیمات</td></tr>
     <tr><td>پروژه «Paused» شد</td><td>پلن رایگان بعد از حدود یک هفته بی‌استفاده پروژه را می‌خوابد — در داشبورد دکمهٔ <span class="btn-name">Restore project</span> را بزنید</td></tr>
+    <tr><td>«permission denied for table»</td><td>مجوز نقش عمومی به جدول‌ها داده نشده — سه خط GRANT انتهای اسکریپت مرحلهٔ ۴ را در SQL Editor اجرا کنید و در برنامه «↻ اتصال دوباره» بزنید (از نسخهٔ v253)</td></tr>
   </table>
   </div>
   <div class="okbox">🔒 <b>امنیت:</b> کلید عمومی معمولی است و لو رفتنش خطر ندارد (مثل شمارهٔ تلفن)؛ مرز امنیتی چت و تسک‌ها «کد دعوت گروه» است. پسورد مرحلهٔ ۲ فقط برای ورود به سایت است و هیچ‌وقت در برنامه وارد نمی‌شود.</div>
 </div>
 
-<footer>راهنمای برنامهٔ یادآور — نسخهٔ v251 — ساخته‌شده به‌صورت خودکار</footer>
+<footer>راهنمای برنامهٔ یادآور — نسخهٔ v253 — ساخته‌شده به‌صورت خودکار</footer>
 </div>
 <script>
 function copySql(btn) {
