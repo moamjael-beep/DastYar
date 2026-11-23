@@ -125,6 +125,13 @@ create table if not exists net_tasks (
   assignee_id text,
   assignee_name text,
   done boolean not null default false,
+  completed_at timestamptz,
+  cancelled boolean default false,
+  suspended boolean default false,
+  urgent boolean default false,
+  pinned boolean default false,
+  repeat text,
+  deleted boolean default false,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -149,7 +156,47 @@ create policy "net_messages_all" on net_messages for all using (true) with check
 grant usage on schema public to anon, authenticated;
 grant select, insert, update, delete on all tables in schema public to anon, authenticated;
 alter default privileges in schema public grant all on tables to anon, authenticated;
-alter table net_messages add column if not exists img text;</pre>
+alter table net_messages add column if not exists img text;
+alter table net_tasks add column if not exists completed_at timestamptz;
+alter table net_tasks add column if not exists cancelled boolean default false;
+alter table net_tasks add column if not exists suspended boolean default false;
+alter table net_tasks add column if not exists urgent boolean default false;
+alter table net_tasks add column if not exists pinned boolean default false;
+alter table net_tasks add column if not exists repeat text;
+alter table net_tasks add column if not exists deleted boolean default false;
+
+-- ─── v259: پیوست‌های چت (صوت/فایل/ویدیو) + ویرایش/حذف پیام ───
+alter table net_messages add column if not exists kind text default 'text';
+alter table net_messages add column if not exists url text;
+alter table net_messages add column if not exists fname text;
+alter table net_messages add column if not exists fsize bigint;
+alter table net_messages add column if not exists dur int;
+alter table net_messages add column if not exists edited_at timestamptz;
+alter table net_messages add column if not exists deleted boolean default false;
+create table if not exists net_msg_hides (
+  msg_id uuid references net_messages(id) on delete cascade,
+  user_id text not null,
+  hidden_at timestamptz default now(),
+  primary key (msg_id, user_id)
+);
+alter table net_msg_hides enable row level security;
+create policy "net_msg_hides_all" on net_msg_hides for all using (true) with check (true);
+-- باست پیوست‌های چت (فضای رایگان Supabase: ~۱ گیگ فضا، ۵ گیگ پهنای‌باند ماهانه، حداکثر ۵۰ مگ هر فایل)
+insert into storage.buckets (id, name, public) values ('net-chat', 'net-chat', true) on conflict (id) do nothing;
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='objects' and policyname='net-chat-read') then
+    create policy "net-chat-read" on storage.objects for select using (bucket_id = 'net-chat');
+  end if;
+  if not exists (select 1 from pg_policies where tablename='objects' and policyname='net-chat-insert') then
+    create policy "net-chat-insert" on storage.objects for insert with check (bucket_id = 'net-chat');
+  end if;
+  if not exists (select 1 from pg_policies where tablename='objects' and policyname='net-chat-update') then
+    create policy "net-chat-update" on storage.objects for update using (bucket_id = 'net-chat');
+  end if;
+  if not exists (select 1 from pg_policies where tablename='objects' and policyname='net-chat-delete') then
+    create policy "net-chat-delete" on storage.objects for delete using (bucket_id = 'net-chat');
+  end if;
+end $$;</pre>
 </div>
 
 <div class="step">
@@ -173,7 +220,7 @@ alter table net_messages add column if not exists img text;</pre>
     <li>در پنل شبکه، تب <span class="btn-name">👥 گروه‌ها</span> → کارت «ساخت گروه جدید» → نام گروه → <span class="btn-name">ساخت گروه</span>. گروه بلافاصله با نشان 🛰️ در صفحهٔ اصلی برنامه هم ساخته می‌شود.</li>
     <li>یک <b>کد دعوت ۶ حرفی</b> نمایش داده می‌شود — آن را برای اعضای خانواده/همکاران بفرستید.</li>
     <li><b>پیوستن:</b> هر نفر مرحلهٔ ۵ را انجام می‌دهد، بعد در تب گروه‌ها کارت «پیوستن با کد دعوت» → کد را وارد → دکمهٔ <span class="btn-name">🔑 پیوستن به گروه</span>. این کارت همیشه در تب گروه‌ها هست — حتی اگر قبلاً گروه داشته باشید.</li>
-    <li><b>چند گروه:</b> می‌توانید عضو چند گروه باشید؛ همه فعال‌اند و در لیست گروه‌های صفحهٔ اصلی همه را می‌بینید. برای چت/صوتِ هر گروه، در تب گروه‌ها دکمهٔ <span class="btn-name">✅ فعال</span> همان گروه را بزنید — آن گروه به بالا می‌آید و فعال می‌شود.</li>
+    <li><b>چند گروه:</b> می‌توانید عضو چند گروه باشید؛ همه فعال‌اند و در لیست گروه‌های صفحهٔ اصلی همه را می‌بینید. کلید جداگانهٔ «فعال» برداشته شده است — <b>لمس خودِ گروه</b> در تب گروه‌ها آن را فعال می‌کند و به بالای لیست می‌آورد (از v258).</li>
     <li><b>مدیریت گروه (فقط سازنده):</b> فقط سازنده دکمهٔ «✏️ ویرایش» (تغییر نام — بلافاصله روی سرور و صفحهٔ اصلی همهٔ اعضا عوض می‌شود) و «🗑 حذف گروه» را دارد و نمی‌تواند از گروه خارج شود. عضو عادی نمی‌تواند حذف کند — فقط «🚪 خروج» دارد.</li>
     <li>حالا: تب 💬 چت گروه (صوتی گروهی + عکس)، و دکمهٔ 📞 تماس کنار اسم هر عضوِ آنلاین.</li>
     <li><b>اعضا:</b> تب دوم پنل شبکه «🧑‍🤝‍🧑 اعضا» است — اعضای گروه فعال با وضعیت آنلاین و دکمهٔ تماس. (تسک‌ها در پنل نمایش داده نمی‌شوند؛ همه‌چیز در صفحهٔ اصلی برنامه است.)</li>
@@ -201,8 +248,10 @@ alter table net_messages add column if not exists img text;</pre>
     <li><b>ارسال عکس:</b> دکمهٔ 📷 کنار فیلد پیام — عکس خودکار فشرده می‌شود و ارسال می‌شود؛ با لمس، تمام‌صفحه باز می‌شود.</li>
     <li><b>ترک چت:</b> دکمهٔ <span class="btn-name">🚪 ترک چت</span> — فعال: با رفتن به هر جای برنامه، ارسال/دریافت صدا و نوتیف چت ادامه می‌یابد؛ غیرفعال: با خروج از چت فقط نوتیف می‌آید و صدا قطع می‌شود.</li>
     <li><b>نوتیف و شمارنده:</b> پیام جدید وقتی داخل چت نیستید با پیام شناور می‌آید و شمارندهٔ قرمز روی تب چت می‌نشیند.</li>
-    <li><b>گروه شبکه در برنامهٔ اصلی:</b> گروه شبکه و تسک‌هایش با نشان 🛰️ در لیست گروه‌ها و تسک‌های اصلی برنامه ظاهر می‌شوند — دقیقاً مثل بقیهٔ گروه‌ها. ساخت و ویرایش با دکمهٔ <span class="btn-name">+</span> و «✏️ ویرایش» خود برنامه انجام می‌شود؛ در فرم، ردیف «📤 مسئول انجام» (گروه شبکه‌ای) هست و «📤 پاس دادن به» در جزئیات هر تسک. تیک «انجام شد»، لغو، تعلیق، فوری و پین هم همگی روی سرور ذخیره و به همهٔ اعضا می‌رسند (از v257).</li>
-    <li>اگر قبلاً اسکریپت SQL را اجرا کرده‌اید، <b>شش خط آخر آن</b> (<span class="btn-name">alter table net_messages … img</span> و پنج <span class="btn-name">alter table net_tasks …</span>) را یک بار دیگر در SQL Editor اجرا کنید تا ارسال عکس و فیلدهای کامل وضعیت تسک فعال شود (از v257).</li>
+    <li><b>گروه شبکه در برنامهٔ اصلی:</b> گروه شبکه و تسک‌هایش با نشان 🛰️ در لیست گروه‌ها و تسک‌های اصلی برنامه ظاهر می‌شوند — دقیقاً مثل بقیهٔ گروه‌ها. ساخت و ویرایش با دکمهٔ <span class="btn-name">+</span> و «✏️ ویرایش» خود برنامه انجام می‌شود؛ در فرم، ردیف «📤 مسئول انجام» (گروه شبکه‌ای) هست و در جزئیات هر تسک هم <b>ایجادکننده یا مسئولِ فعلی</b> می‌تواند مسئول را عوض کند (از v258). همهٔ جزئیات تسک روی سرور ذخیره و به همهٔ اعضا می‌رسد: متن، زمان ساخت، سررسید، تکرار، گروه، مسئول، فوری، پین، انجام‌شده، معلق، لغو و حذف — اما «شخصِ مرتبط» هر کاربر شخصی می‌ماند و ارسال نمی‌شود.</li>
+    <li><b>حذف گروه دارای تسکٔ فعال:</b> گروهی که تسکٔ فعال (انجام‌نشده، لغو‌نشده، معلق‌نشده) دارد قابل حذف نیست — اول تسک‌ها را انجام/لغو/معلق یا حذف کنید (از v258).</li>
+    <li>اگر قبلاً اسکریپت SQL را اجرا کرده‌اید، کل اسکریپت را یک بار دیگر در SQL Editor اجرا کنید (اجرای دوباره بی‌ضرر است) تا ستون‌های <span class="btn-name">repeat</span> و <span class="btn-name">deleted</span> به net_tasks اضافه شود — سینک کامل جزئیات تسک از v258 به آن‌ها نیاز دارد.</li>
+    <li><b>از v259 — چت کامل:</b> کلید «🎙 صوتی گروهی» برداشته شد؛ ورود به چت <b>خودکار صدای اعضا را می‌آورد</b> و کلید «🔇 میک: بسته» پیش‌فرض بسته است (فقط کاربر بازش می‌کند). عکس‌ها با کلیک باز و با «💾 ذخیرهٔ عکس» ذخیره می‌شوند. دکمه‌های <span class="btn-name">🎙</span> (پیام صوتی ضبطی)، <span class="btn-name">📎</span> (فایل/ویدیو) به چت اضافه شده‌اند — پیوست‌ها در باست <span class="btn-name">net-chat</span> پروژهٔ Supabase ذخیره می‌شوند (اجرای کل اسکریپت SQL برای ساخت باست و ستون‌های جدید لازم است). فرستنده می‌تواند پیام را «✏️ ویرایش» یا «🗑 حذف برای همه» کند؛ برای پیام دیگران «🚫 حذف برای من» فقط از نمای خودتان پاک می‌کند. برنامه با هر ورود/آپدیت خودش به شبکه وصل می‌شود، همهٔ گروه‌های عضو همیشه آنلاین‌اند و پیام/تماس هر گروه، هم در نوار زیر هدر برنامه و هم به‌صورت اعلان گوشی/مرورگر می‌آید (اجازهٔ Notification را یک بار بدهید).</li>
   </ol>
 </div>
 

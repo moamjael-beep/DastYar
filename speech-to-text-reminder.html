@@ -4794,6 +4794,22 @@ body.locked .header-actions button {
 .net-empty-inline { color:#607d8b; }
 .net-voice-row { margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; }
 .net-msg-img { max-width:70%; max-height:220px; border-radius:10px; display:block; cursor:zoom-in; margin-top:4px; }
+/* ─── v259 (L): پیوست‌های چت، منوی پیام، نوار نوتیف ─── */
+.net-msg-voice { margin-top:4px; font-size:12px; }
+.net-msg-voice audio { width:200px; max-width:60vw; height:34px; margin-top:2px; display:block; }
+.net-msg-video { max-width:70%; max-height:240px; border-radius:10px; display:block; margin-top:4px; background:#000; }
+.net-msg-file { display:inline-block; margin-top:4px; background:#E3F2FD; color:#0D47A1; border-radius:9px; padding:6px 10px; font-size:12.5px; text-decoration:none; }
+.net-msg-deleted { color:#9E9E9E; font-style:italic; font-size:12.5px; }
+.net-msg-edited { color:#757575; font-size:10px; }
+.net-msg-menu { background:none; border:none; font-size:14px; cursor:pointer; padding:0 3px; color:#607D8B; }
+.net-msg-menu-ov { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.45); z-index:99990; align-items:center; justify-content:center; }
+.net-msg-menu-ov.open { display:flex; }
+.net-msg-menu-box { background:#fff; border-radius:14px; padding:14px 16px; min-width:230px; max-width:86vw; box-shadow:0 6px 24px rgba(0,0,0,.3); text-align:center; }
+.net-msg-menu-box .net-btn { display:block; width:100%; margin-top:8px; }
+.net-msg-menu-title { font-size:12.5px; color:#555; margin-bottom:6px; word-break:break-word; }
+.net-msg-edit-ta { width:100%; min-height:70px; border:1px solid #ddd; border-radius:8px; padding:8px; font-family:inherit; font-size:13.5px; margin-bottom:6px; resize:vertical; }
+.net-lightbox-btns { position:absolute; bottom:22px; display:flex; gap:10px; }
+.net-lightbox-btns .net-btn { box-shadow:0 2px 8px rgba(0,0,0,.4); }
 .net-unread { background:#E53935; color:#fff; border-radius:9px; padding:0 6px; font-size:10px; margin-right:4px; }
 .net-lightbox { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.92); z-index:99999; align-items:center; justify-content:center; }
 .net-lightbox.open { display:flex; }
@@ -5168,6 +5184,9 @@ body.locked .header-actions button {
                onkeydown="if(event.key==='Enter'){netSendMsg();}">
         <button class="net-btn" onclick="netPickImage()" title="ارسال عکس">📷</button>
         <input type="file" id="netImgInput" accept="image/*" style="display:none;" onchange="netSendImage(this.files && this.files[0]); this.value='';">
+        <button class="net-btn" id="netVoiceClipBtn" onclick="netVoiceClipToggle()" title="پیام صوتی">🎙</button>
+        <button class="net-btn" onclick="netPickFile()" title="ارسال فایل/ویدیو">📎</button>
+        <input type="file" id="netFileInput" style="display:none;" onchange="netSendFilePick(this.files && this.files[0]); this.value='';">
         <button class="net-btn" onclick="netSendMsg()">ارسال</button>
     </div>
     <div class="net-call-scrim" id="netCallScrim">
@@ -8057,7 +8076,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v257-2026-11-23-net-native-tasks-members-tab';
+const APP_VERSION = 'v259-2026-11-23-net-chat-media-edit-notify';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -12283,7 +12302,8 @@ function saveItem() {
             setDB(items);
             if (items[idx].netId) {
                 const _nas = document.getElementById('taskNetAssignee');
-                netUpdateTaskFromMain(items[idx], _nas && _nas.value !== '' ? _nas.value : null);   // BA-243: متن/سررسید/مسئول به شبکه
+                // 🔧 '' در فرم یعنی «خودم» — مستقیم پاس می‌شود تا مسئول به خود کاربر برگردد
+                netUpdateTaskFromMain(items[idx], _nas ? _nas.value : undefined);   // K4: متن/سررسید/تکرار/وضعیت‌ها/مسئول به شبکه
             }
             // Recalculate positions for the group (the deadline may have
             // changed, so the task might need to move to a new position).
@@ -12905,6 +12925,7 @@ function togglePinTask(taskId) {
         // pinnedOrder را به‌صورت خودکار در recalcPinnedOrder تنظیم می‌کنیم
     }
     setDB(items);
+    if (item.netId) netSyncTaskFromMain(item);   // K4: پین به شبکه هم برسد
     // محاسبهٔ مجدد ترتیب پین‌ها در این گروه
     recalcPinnedOrder(item.groupId || 'all');
     // 🔧 حفظ موقعیت اسکرول — صفحه به بالای گروه نپرد
@@ -13961,7 +13982,7 @@ function renderTasksView(groupId) {
             <div class="detail-row"><span class="detail-label">انجام شد:</span><span class="detail-value">${item.completedAt ? toPersianDigits(toJalaliFull(item.completedAt)) : 'هنوز انجام نشده'}</span></div>
             ${item.completedAt ? `<div class="detail-row"><span class="detail-label">روز انجام:</span><span class="detail-value">${toJalaliLong(item.completedAt)}</span></div>` : ''}
             <div class="detail-row group-selector-row"><span class="detail-label">گروه:</span><select class="group-selector" onchange="changeTaskGroup('${item.id}', this.value)">${groupOpts}</select></div>
-            ${(() => { const _ng = getGroupById(item.groupId || ''); const _code = _ng && _ng.netCode; const _g = NET_STATE.group || netActiveGroup(); if (_code && _g && _g.code === _code && (NET_STATE.members || []).length) { return '<div class="detail-row"><span class="detail-label">📤 پاس دادن به:</span><select class="group-selector" onchange="if(this.value) netPassTask(\\\'' + item.netId + '\\\', this.value)"><option value="">— انتخاب عضو —</option>' + NET_STATE.members.filter(m => m.user_id !== netMyUid()).map(m => '<option value="' + escA(m.user_id) + '">' + escapeHtml(m.display_name) + '</option>').join('') + '</select></div>'; } if (item.netAssignee) { return '<div class="detail-row"><span class="detail-label">📤 مسئول:</span><span class="detail-value">' + escapeHtml(item.netAssignee) + '</span></div>'; } return ''; })()}
+            ${(() => { const _ng = getGroupById(item.groupId || ''); const _code = _ng && _ng.netCode; if (_code && item.netId) { const _members = netAssigneeMembersFor(_code); const _isCreator = item.netOwnerId === netMyUid() || item.netOwner === NET_STATE.myName; const _isAssignee = (item.netAssigneeId || '') === netMyUid(); if ((_isCreator || _isAssignee) && _members.length) { const _cur = item.netAssigneeId || ''; const _inList = _cur && _members.some(m => m.user_id === _cur); const _opts = (!_cur ? '<option value="" selected>— انتخاب عضو —</option>' : '') + _members.map(m => '<option value="' + escA(m.user_id) + '"' + (m.user_id === _cur ? ' selected' : '') + '>' + escapeHtml(m.display_name) + (m.user_id === netMyUid() ? ' (من)' : '') + '</option>').join('') + ((_cur && !_inList) ? '<option value="' + escA(_cur) + '" selected>' + escapeHtml(item.netAssignee || 'عضو') + '</option>' : ''); return '<div class="detail-row"><span class="detail-label">📤 مسئول انجام:</span><select class="group-selector" data-tid="' + escA(item.id) + '" onchange="if(this.value) netChangeAssignee(this.getAttribute(\'data-tid\'), this.value)">' + _opts + '</select></div>'; } if (item.netAssignee) { return '<div class="detail-row"><span class="detail-label">📤 مسئول انجام:</span><span class="detail-value">' + escapeHtml(item.netAssignee) + '</span></div>'; } } return ''; })()}
             <div class="detail-row urgent-toggle-row"><span class="detail-label">🚨 فوری:</span><label class="urgent-checkbox-label"><input type="checkbox" class="urgent-checkbox" ${item.urgent ? 'checked' : ''} onchange="toggleTaskUrgent('${item.id}')"> <span>این تسک در گروه «کارهای فوری» نمایش داده شود</span></label></div>
             ${(() => { const tc = item.contactId ? getContactById(item.contactId) : null; return `<div class="detail-row detail-contact-row"><span class="detail-label">👤 شخص:</span><span class="detail-value">${tc ? escapeHtml(tc.name) + (tc.company ? ' — ' + escapeHtml(tc.company) : '') + (tc.primaryPhone ? ' • ' + escapeHtml(tc.primaryPhone) : '') : 'بدون شخص'}</span><button class="detail-contact-edit-btn" onclick="event.stopPropagation(); changeTaskContact('${item.id}')" title="${tc ? 'ویرایش/تغییر شخص' : 'افزودن شخص'}">✏️</button></div>`; })()}
             <div class="item-actions">${
@@ -14212,6 +14233,7 @@ function toggleCancelled(id) {
     }
 
     setDB(items);
+    if (item.netId) netSyncTaskFromMain(item);   // K4: لغو/بازگردانی به شبکه هم برسد
     var savedScrollY = window.scrollY;
     expandedId = null;
     if (typeof sortableInstance !== 'undefined' && sortableInstance) {
@@ -14267,6 +14289,7 @@ function toggleSuspended(id) {
     }
 
     setDB(items);
+    if (item.netId) netSyncTaskFromMain(item);   // K4: تعلیق/بازگردانی به شبکه هم برسد
     var savedScrollY = window.scrollY;
     expandedId = null;
     if (typeof sortableInstance !== 'undefined' && sortableInstance) {
@@ -14299,6 +14322,7 @@ function toggleTaskUrgent(id) {
         item.urgent = true;
     }
     setDB(items);
+    if (item.netId) netSyncTaskFromMain(item);   // K4: فوری به شبکه هم برسد
     // 🔧 حفظ موقعیت اسکرول — صفحه به بالای گروه نپرد
     var savedScrollY = window.scrollY;
     if (typeof sortableInstance !== 'undefined' && sortableInstance) {
@@ -18460,6 +18484,11 @@ const NET_DEFAULTS = {
     key: 'sb_publishable_SrK_j002xlTRy58VAl3v3Q_XEB0aAsi'
 };
 const NET_SQL_HELP = '-- یاداوار شبکه — یک بار در SQL Editor پروژهٔ Supabase اجرا شود\n' +
+'-- (اجرای دوباره بی‌ضرر است؛ همهٔ ستون‌ها با if not exists ساخته می‌شوند)\n' +
+'-- 🔧 نسخهٔ جدید: رکورد تسک شبکه «تمام جزئیات تسک معمولی» را دارد:\n' +
+'-- متن، زمان ساخت، سررسید، تکرار، گروه، مسئول، فوری، پین، انجام‌شده،\n' +
+'-- معلق، لغو و حذف. اگر جدول‌ها را قبلاً ساخته‌اید، همین اسکریپت را یک\n' +
+'-- بار دیگر اجرا کنید تا ستون‌های repeat و deleted به net_tasks اضافه شود.\n' +
 'create extension if not exists pgcrypto;\n' +
 'create table if not exists net_groups (\n' +
 '  id uuid primary key default gen_random_uuid(),\n' +
@@ -18485,6 +18514,13 @@ const NET_SQL_HELP = '-- یاداوار شبکه — یک بار در SQL Editor
 '  assignee_id text,\n' +
 '  assignee_name text,\n' +
 '  done boolean not null default false,\n' +
+'  completed_at timestamptz,\n' +
+'  cancelled boolean default false,\n' +
+'  suspended boolean default false,\n' +
+'  urgent boolean default false,\n' +
+'  pinned boolean default false,\n' +
+'  repeat text,\n' +
+'  deleted boolean default false,\n' +
 '  created_at timestamptz default now(),\n' +
 '  updated_at timestamptz default now()\n' +
 ');\n' +
@@ -18512,7 +18548,41 @@ const NET_SQL_HELP = '-- یاداوار شبکه — یک بار در SQL Editor
 'alter table net_tasks add column if not exists cancelled boolean default false;\n' +
 'alter table net_tasks add column if not exists suspended boolean default false;\n' +
 'alter table net_tasks add column if not exists urgent boolean default false;\n' +
-'alter table net_tasks add column if not exists pinned boolean default false;\n';
+'alter table net_tasks add column if not exists pinned boolean default false;\n' +
+'alter table net_tasks add column if not exists repeat text;\n' +
+'alter table net_tasks add column if not exists deleted boolean default false;\n' +
+'-- ─── v259: پیوست‌های چت (صوت/فایل/ویدیو) + ویرایش/حذف پیام ───\n' +
+'alter table net_messages add column if not exists kind text default \'text\';\n' +
+'alter table net_messages add column if not exists url text;\n' +
+'alter table net_messages add column if not exists fname text;\n' +
+'alter table net_messages add column if not exists fsize bigint;\n' +
+'alter table net_messages add column if not exists dur int;\n' +
+'alter table net_messages add column if not exists edited_at timestamptz;\n' +
+'alter table net_messages add column if not exists deleted boolean default false;\n' +
+'create table if not exists net_msg_hides (\n' +
+'  msg_id uuid references net_messages(id) on delete cascade,\n' +
+'  user_id text not null,\n' +
+'  hidden_at timestamptz default now(),\n' +
+'  primary key (msg_id, user_id)\n' +
+');\n' +
+'alter table net_msg_hides enable row level security;\n' +
+'create policy "net_msg_hides_all" on net_msg_hides for all using (true) with check (true);\n' +
+'-- باست پیوست‌های چت (فضای رایگان Supabase: ~۱ گیگ فضا، ۵ گیگ پهنای‌باند ماهانه، حداکثر ۵۰ مگ هر فایل)\n' +
+'insert into storage.buckets (id, name, public) values (\'net-chat\', \'net-chat\', true) on conflict (id) do nothing;\n' +
+'do $$ begin\n' +
+'  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-read\') then\n' +
+'    create policy "net-chat-read" on storage.objects for select using (bucket_id = \'net-chat\');\n' +
+'  end if;\n' +
+'  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-insert\') then\n' +
+'    create policy "net-chat-insert" on storage.objects for insert with check (bucket_id = \'net-chat\');\n' +
+'  end if;\n' +
+'  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-update\') then\n' +
+'    create policy "net-chat-update" on storage.objects for update using (bucket_id = \'net-chat\');\n' +
+'  end if;\n' +
+'  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-delete\') then\n' +
+'    create policy "net-chat-delete" on storage.objects for delete using (bucket_id = \'net-chat\');\n' +
+'  end if;\n' +
+'end $$;\n';
 
 let NET_STATE = {
     sb: null,          // کلاینت Supabase
@@ -18523,9 +18593,14 @@ let NET_STATE = {
     gh: false,         // BA-231: بک‌اند گیت‌هاب (Gist) فعال
     ghdb: null,        // BA-231: محتوای JSON داخل Gist
     ghPoll: null,      // BA-231: شناسهٔ interval نظرسنجی ۴ ثانیه‌ای
-    voice: { in: false, mic: true, pcs: {}, stream: null, members: {} },  // BA-232: گفتگوی صوتی گروهی
+    voice: { in: false, mic: false, pcs: {}, stream: null, members: {} },  // BA-232 + L-1(BA-251): میک پیش‌فرض بسته
     unread: 0,         // BA-233: پیام‌های خوانده‌نشدهٔ چت
-    lastMsgKey: null,  // BA-233: کلید آخرین پیام برای جلوگیری از نوتیف تکراری
+    lastMsgAt: {},     // L-5 (BA-252): آخرین پیام دیده‌شدهٔ هر گروه (پشتیبان پول)
+    notifKeys: {},     // L-5 (BA-252): کلیدهای پیام‌های نوتیف‌شده — ضد دوباره‌نوتیف
+    unreadByGroup: {}, // L-5 (BA-252): تعداد پیام خوانده‌نشدهٔ هر گروه {code: n}
+    lastMsgAt: {},     // L-5 (BA-252): آخرین پیام دیده‌شدهٔ هر گروه (پشتیبان پول)
+    sideChs: {},       // L-5 (BA-252): کانال‌های جانبی همهٔ گروه‌های عضو
+    lastNotifCode: null, // L-5 (BA-252): گروه آخرین نوتیف — با لمس نوار هدر باز می‌شود
     group: null,       // {id, code, name}
     members: [], tasks: [], msgs: [],
     online: {},        // {uid: true} از presence
@@ -18565,6 +18640,28 @@ function netIsConfigured() {
     if (st.backend === 'gh') return !!(st.ghToken && st.gistId);
     return !!(st.url && st.key);
 }
+// L-5 (BA-252): اتصال خودکار پیوسته — با هر ورود به برنامه، بعد از آپدیت،
+// و در طول باز بودن برنامه هر لحظه آنلاین بماند (اتصال دوبارهٔ خودکار).
+function netAutoConnectStart() {
+    if (netAutoConnectStart._done) return;
+    // گارد تست: probeها با net_autoconnect_off=1 اتصال خودکار را خاموش می‌کنند
+    try { if (localStorage.getItem('net_autoconnect_off') === '1') return; } catch(e) {}
+    netAutoConnectStart._done = true;
+    setTimeout(function() {
+        try { if (netIsConfigured() && !NET_STATE.sb && !NET_STATE.gh && !NET_STATE.connecting) NET_connect(); } catch(e) {}
+    }, 1200);
+    setInterval(function() {
+        try {
+            if (!document.hidden && netIsConfigured() && !NET_STATE.sb && !NET_STATE.gh && !NET_STATE.connecting) NET_connect();
+        } catch(e) {}
+    }, 60000);
+    document.addEventListener('visibilitychange', function() {
+        try {
+            if (!document.hidden && netIsConfigured() && !NET_STATE.sb && !NET_STATE.gh && !NET_STATE.connecting) NET_connect();
+        } catch(e) {}
+    });
+}
+document.addEventListener('DOMContentLoaded', function() { try { netAutoConnectStart(); } catch(e) {} });
 function netStatusSet(txt, cls) {
     const d = document.getElementById('netDot');
     if (d) { d.textContent = txt; d.className = 'net-dot' + (cls ? ' ' + cls : ''); }
@@ -18727,7 +18824,7 @@ function ghStartPoll() {
                     netSyncGroupTasks({ code: gm2.code, name: (gr2 && gr2.name) || gm2.name }, (gr2 && gr2.tasks) || []);
                 });
                 const lastM = (gr.messages || [])[(gr.messages || []).length - 1];
-                if (lastM) netNotifyMsg(lastM);
+                if (lastM) netNotifyIncoming(g.code, lastM);   // L-5: همان مسیر نوتیف جدید
                 const ov = document.getElementById('netOverlay');
                 if (ov && ov.classList.contains('active')) {
                     if (NET_STATE.tab === 'groups') netRenderMembersList();
@@ -18851,15 +18948,33 @@ function NET_subscribe() {
     NET_leaveChannel();
     const g = netActiveGroup();
     NET_STATE.group = g;
-    if (!g || !NET_STATE.sb) return;
+    if (!NET_STATE.sb) return;
+    // L-5 (BA-252): حتی بدون گروهِ فعال هم همهٔ گروه‌های عضو کانال جانبی
+    // می‌گیرند و نظرسنجی شروع می‌شود — تا نوتیف پیام/تماس همان لحظهٔ
+    // اتصال خودکارِ بوت فعال باشد.
+    netEnsureSideChannels();
+    netStartGroupPoll();
+    if (!g) return;
     const ch = NET_STATE.sb.channel('net-group-' + g.code);
     ch.on('broadcast', { event: 'chat' }, function(m) {
         const p = m && m.payload;
         if (!p || !p.msg) return;
         if (p.msg.sender_id === netMyUid()) return;
         NET_STATE.msgs.push(p.msg);
-        netNotifyMsg(p.msg);
+        NET_STATE.lastMsgAt[g.code] = p.msg.created_at || NET_STATE.lastMsgAt[g.code];
+        netNotifyIncoming(g.code, p.msg);   // L-5: نوتیف هدر + سیستم حتی برای گروه فعال
         if (NET_STATE.tab === 'chat') netRenderChatList();
+    });
+    // L-4 (BA-251): ویرایش پیام — بلافاصله روی نسخهٔ بقیهٔ اعضا
+    ch.on('broadcast', { event: 'chat-edit' }, function(m) {
+        const p = m && m.payload;
+        if (!p || !p.id) return;
+        const x = NET_STATE.msgs.find(function(y) { return y.id === p.id; });
+        if (x) { x.text = p.text; x.edited_at = p.edited_at; if (NET_STATE.tab === 'chat') netRenderChatList(); }
+    });
+    // L-4: حذف برای همه — نسخهٔ محلی بقیه هم تازه شود
+    ch.on('broadcast', { event: 'chat-refresh' }, function() {
+        netLoadMessages().then(function() { if (NET_STATE.tab === 'chat') netRenderChatList(); });
     });
     ch.on('broadcast', { event: 'tasks-refresh' }, function() {
         netLoadTasksAll().then(function() {
@@ -18876,6 +18991,7 @@ function NET_subscribe() {
         const p = m && m.payload;
         if (!p || !p.uid || p.uid === netMyUid()) return;
         netVoiceOnPeerJoined(p.uid, p.name);
+        netNotifyCall(g.code, p.name);   // L-5 (BA-252): تماس/گفتگوی ورودی → نوتیف
     });
     ch.on('broadcast', { event: 'voice-here' }, function(m) {
         const p = m && m.payload;
@@ -18931,10 +19047,161 @@ function NET_subscribe() {
         }
     });
     NET_STATE.ch = ch;
+    netEnsureSideChannels();   // L-5 (BA-252): همهٔ گروه‌های عضو آنلاین می‌مانند
     netStartGroupPoll();   // BA-237: هم‌گام‌سازی دوره‌ای همهٔ گروه‌ها
     netLoadTasksAll();
     const ag = NET_STATE.group || netActiveGroup();
     if (ag) netEnsureGroupInMain(ag);   // BA-238: مهاجرت کاربران قدیمی
+}
+
+// ─── L-5 (BA-252): همیشه‌آنلاین روی همهٔ گروه‌ها + نوتیف پیام/تماس/پیوست ───
+// علاوه بر کانال گروهِ فعال، برای «هر گروهی که عضو آن هستیم» یک کانال جانبی
+// باز می‌شود تا پیام/عکس/فایل/تماسِ هر گروه فوراً نوتیف بدهد — حتی وقتی
+// کاربر در چت گروه دیگری یا در صفحهٔ اصلی برنامه است.
+function netEnsureSideChannels() {
+    if (!NET_STATE.sb) return;
+    const want = {};
+    netMyGroups().forEach(function(m) { want[m.code] = m; });
+    const activeCode = (NET_STATE.group || netActiveGroup() || {}).code;
+    // حذف کانال‌های گروه‌های ترک‌شده/حذف‌شده
+    Object.keys(NET_STATE.sideChs).forEach(function(code) {
+        if (!want[code]) {
+            try { NET_STATE.sb.removeChannel(NET_STATE.sideChs[code]); } catch(e) {}
+            delete NET_STATE.sideChs[code];
+        }
+    });
+    Object.keys(want).forEach(function(code) {
+        if (code === activeCode || NET_STATE.sideChs[code]) return;
+        const m = want[code];
+        const c = NET_STATE.sb.channel('net-side-' + code);
+        c.on('broadcast', { event: 'chat' }, function(msg) {
+            const p = msg && msg.payload;
+            if (!p || !p.msg) return;
+            NET_STATE.lastMsgAt[code] = p.msg.created_at || NET_STATE.lastMsgAt[code];
+            netNotifyIncoming(code, p.msg);
+        });
+        c.on('broadcast', { event: 'chat-refresh' }, function() {
+            // پیام حذف‌شده/ویرایش‌شدهٔ گروه غیرفعال — هنگام باز شدن چت تازه می‌شود
+            delete NET_STATE.lastMsgAt[code];
+        });
+        c.on('broadcast', { event: 'voice-join' }, function(msg) {
+            const p = msg && msg.payload;
+            if (!p || !p.uid || p.uid === netMyUid()) return;
+            netNotifyCall(code, p.name);
+        });
+        c.on('broadcast', { event: 'group-deleted' }, function(msg) {
+            const p = msg && msg.payload;
+            if (!p || !p.code) return;
+            netRemoveGroupEverywhere(p.code, p.name || '');
+        });
+        c.on('broadcast', { event: 'group-renamed' }, function(msg) {
+            const p = msg && msg.payload;
+            if (!p || !p.code) return;
+            netAfterGroupRenamed(p.code, p.name || '');
+        });
+        c.subscribe(function() {});
+        NET_STATE.sideChs[code] = c;
+    });
+}
+// پاک‌سازی کانال‌های جانبی (هنگام قطع اتصال)
+function netCloseSideChannels() {
+    if (!NET_STATE.sb) { NET_STATE.sideChs = {}; return; }
+    Object.keys(NET_STATE.sideChs).forEach(function(code) {
+        try { NET_STATE.sb.removeChannel(NET_STATE.sideChs[code]); } catch(e) {}
+    });
+    NET_STATE.sideChs = {};
+}
+// پیش‌نمایش پیام برای نوتیف
+function netMsgPreview(m) {
+    if (!m) return '';
+    if (m.deleted) return '🚫 پیامی حذف شد';
+    if (m.img) return '🖼 عکس';
+    if (m.kind === 'voice') return '🎙 پیام صوتی';
+    if (m.kind === 'video') return '🎬 ویدیو';
+    if (m.kind === 'file') return '📎 ' + (m.fname || 'فایل');
+    if (m.kind === 'image') return '🖼 عکس';
+    return String(m.text || '').slice(0, 80);
+}
+// L-5 (BA-252): نوتیف پیام جدید از هر گروهی که عضو آن هستیم — هدر + اعلان سیستم.
+// هم از کانال Realtime می‌آید هم از نظرسنجی؛ کلید یکتا جلوی دوباره‌نوتیف را می‌گیرد.
+function netNotifyIncoming(code, msg) {
+    if (!msg || msg.sender_id === netMyUid()) return;
+    const key = code + '|' + (msg.sender_id || '') + '|' + (msg.created_at || '') + '|' + (msg.text || '') + '|' + (msg.url || '') + (msg.img ? '|img' : '');
+    NET_STATE.notifKeys = NET_STATE.notifKeys || {};
+    if (NET_STATE.notifKeys[key]) return;
+    NET_STATE.notifKeys[key] = 1;
+    const ks = Object.keys(NET_STATE.notifKeys);
+    if (ks.length > 300) delete NET_STATE.notifKeys[ks[0]];
+    const ov = document.getElementById('netOverlay');
+    const viewing = !!(ov && ov.classList.contains('active') && NET_STATE.tab === 'chat'
+        && NET_STATE.group && NET_STATE.group.code === code);
+    if (viewing) return;   // خودش داخل چت است و می‌بیند
+    NET_STATE.unreadByGroup[code] = (NET_STATE.unreadByGroup[code] || 0) + 1;
+    NET_STATE.unread = (NET_STATE.unread || 0) + 1;
+    NET_STATE.lastNotifCode = code;
+    const mine = netMyGroups().find(function(x) { return x.code === code; });
+    const gname = (mine && mine.name) || 'گروه';
+    netNotifStripRender();
+    netSysNotify('💬 ' + (msg.sender_name || 'کاربر') + ' — ' + gname, netMsgPreview(msg));
+    if (ov && ov.classList.contains('active')) { try { netRender(); } catch(e) {} }
+}
+// نوتیف تماس/ورود به گفتگوی صوتی یک گروه
+function netNotifyCall(code, name) {
+    const ov = document.getElementById('netOverlay');
+    const viewing = !!(ov && ov.classList.contains('active') && NET_STATE.tab === 'chat'
+        && NET_STATE.group && NET_STATE.group.code === code);
+    if (viewing) return;
+    const mine = netMyGroups().find(function(x) { return x.code === code; });
+    const gname = (mine && mine.name) || 'گروه';
+    netSysNotify('📞 تماس ورودی — ' + gname, (name || 'یک عضو') + ' وارد گفتگوی صوتی شد');
+    try { _playNotifSoundBySetting(); } catch(e) {}
+}
+// اعلان سیستم (اندروید/ویندوز/مرورگر) + بنر داخل برنامه
+async function netSysNotify(title, body) {
+    try { showInpageNotifBanner({ title: title, body: body }); } catch(e) {}
+    try {
+        if (('Notification' in window) && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
+            const reg = await navigator.serviceWorker.getRegistration();
+            if (reg) {
+                await reg.showNotification(title, {
+                    body: body, tag: 'net-' + Date.now(), dir: 'rtl', lang: 'fa-IR',
+                    icon: 'icon-192.png', badge: 'favicon-32.png', requireInteraction: false, silent: false
+                });
+            }
+        }
+    } catch(e) {}
+}
+// نوار نوتیف زیر هدر برنامه — «🔔 شبکه: ۳ پیام جدید …» با لمس به همان گروه می‌رود
+function netNotifStripRender() {
+    let strip = document.getElementById('netNotifStrip');
+    if (!strip) {
+        strip = document.createElement('div');
+        strip.id = 'netNotifStrip';
+        strip.style.cssText = 'display:none;position:fixed;top:calc(var(--header-h,56px) + 6px);right:8px;left:8px;z-index:1250;'
+            + 'background:#1a237e;color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;cursor:pointer;'
+            + 'box-shadow:0 3px 10px rgba(0,0,0,.35);direction:rtl;';
+        strip.onclick = function() { netNotifStripOpen(); };
+        document.body.appendChild(strip);
+    }
+    let total = 0, last = null;
+    Object.keys(NET_STATE.unreadByGroup).forEach(function(code) {
+        total += NET_STATE.unreadByGroup[code];
+        if (NET_STATE.unreadByGroup[code] > 0) last = code;
+    });
+    if (total <= 0) { strip.style.display = 'none'; return; }
+    if (last) NET_STATE.lastNotifCode = last;
+    const mine = netMyGroups().find(function(x) { return x.code === NET_STATE.lastNotifCode; });
+    const gname = (mine && mine.name) || 'گروه';
+    strip.innerHTML = '🔔 <b>' + toPersianNumber(total) + '</b> پیام/رویداد جدید شبکه — آخرین در «' + escapeHtml(gname) + '» — لمس کنید';
+    strip.style.display = 'block';
+}
+function netNotifStripOpen() {
+    const code = NET_STATE.lastNotifCode;
+    if (code) netTouchGroup(code);   // بالا آمدن + فعال شدن همان گروه (K1)
+    openNetPanel();
+    netSetTab('chat');
+    NET_STATE.unreadByGroup[code] = 0;
+    netNotifStripRender();
 }
 
 // ─── باز/بستهٔ پنل (الگوی تعطیلات — BA-154 + BA-218) ───
@@ -19043,14 +19310,17 @@ async function netSaveAndConnect() {
 function netForget() {
     localStorage.removeItem('net_settings');
     NET_leaveChannel();
+    netCloseSideChannels();   // L-5: کانال‌های جانبی هم بسته شوند
     ghStopPoll();
     netStopGroupPoll();   // BA-237
     localStorage.removeItem('net_groups_v1');
     NET_STATE.sb = null;
     NET_STATE.gh = false; NET_STATE.ghdb = null;
     netVoiceLeave(true);   // BA-232: پاک‌سازی کامل صوت هنگام قطع اتصال
-    NET_STATE.voice = { in: false, mic: true, pcs: {}, stream: null, members: {} };
-    NET_STATE.unread = 0; NET_STATE.lastMsgKey = null;
+    NET_STATE.voice = { in: false, mic: false, pcs: {}, stream: null, members: {} };
+    NET_STATE.unread = 0;
+    NET_STATE.unreadByGroup = {}; NET_STATE.lastMsgAt = {}; NET_STATE.notifKeys = {};
+    netNotifStripRender();
     NET_STATE.showSetup = false;
     NET_STATE.members = []; NET_STATE.tasks = []; NET_STATE.msgs = []; NET_STATE.online = {};
     netStatusSet('غیرفعال');
@@ -19102,7 +19372,12 @@ function netReconnect() {
 function netSetTab(t) {
     if (t !== 'chat' && NET_STATE.voice.in && !netStayChat()) netVoiceLeave(true);   // BA-235
     NET_STATE.tab = t;
-    if (t === 'chat') NET_STATE.unread = 0;
+    if (t === 'chat') {
+        NET_STATE.unread = 0;
+        // L-5: چت این گروه باز شد — شمارندهٔ خوانده‌نشده‌اش صفر و نوار هدر تازه شود
+        const ag = NET_STATE.group || netActiveGroup();
+        if (ag) { NET_STATE.unreadByGroup[ag.code] = 0; netNotifStripRender(); }
+    }
     netRenderTab();
 }
 function netRenderTab() {
@@ -19121,6 +19396,7 @@ function netRenderTab() {
         netRenderChatList();
         netLoadMessages().then(function() { netRenderChatList(); });
         netChatBarShow();
+        netVoiceEnter();   // L-1 (BA-251): ورود خودکار شنیداری — صدای اعضا همان لحظه می‌آید
     }
 }
 
@@ -19128,18 +19404,19 @@ function netRenderTab() {
 function netGroupsHtml() {
     const g = NET_STATE.group || netActiveGroup();
     const mine = netMyGroups();
-    let h = '<div class="net-card"><h4>گروه‌های من (' + toPersianNumber(mine.length) + ') — همه فعال‌اند و در صفحهٔ اصلی برنامه هم هستند</h4>';
+    let h = '<div class="net-card"><h4>گروه‌های من (' + toPersianNumber(mine.length) + ') — لمس هر گروه آن را فعال می‌کند و به بالای لیست می‌برد</h4>';
     if (!mine.length) h += '<div class="net-empty">هنوز گروهی ندارید — گروه بسازید یا با کد دعوت عضو شوید</div>';
     mine.forEach(function(m) {
         const active = g && g.code === m.code;
-        h += '<div class="net-member-row">'
-            + '<span class="net-member-name">' + escapeHtml(m.name) + (m.isOwner ? ' <span class="net-chip owner">سازنده</span>' : '') + (active ? ' <span class="net-online">فعال</span>' : '') + '</span>'
+        // K1 (BA-249): کلید «✅ فعال» کاملاً برداشته شد — لمس خودِ ردیف گروه
+        // آن را فعال می‌کند و به بالای لیست می‌آورد (netTouchGroup).
+        h += '<div class="net-member-row" style="cursor:pointer;" onclick="netTouchGroup(\'' + escA(m.code) + '\')">'
+            + '<span class="net-member-name">' + escapeHtml(m.name) + (m.isOwner ? ' <span class="net-chip owner">سازنده</span>' : '') + (active ? ' <span class="net-online">فعال</span>' : '') + ((NET_STATE.unreadByGroup[m.code] || 0) > 0 ? ' <span class="net-unread">' + toPersianNumber(NET_STATE.unreadByGroup[m.code]) + '</span>' : '') + '</span>'
             + '<span class="net-badge">' + escapeHtml(m.code) + '</span>'
-            + (!active ? '<button class="net-btn small" onclick="netSwitchGroup(\'' + escA(m.code) + '\')">✅ فعال</button>' : '')
             + (m.isOwner
-                ? '<button class="net-btn small secondary" onclick="netEditGroupName(\'' + escA(m.code) + '\')">✏️ ویرایش</button>'
-                    + '<button class="net-btn small danger" onclick="netDeleteGroup(\'' + escA(m.code) + '\')">🗑 حذف گروه</button>'
-                : '<button class="net-btn small secondary" onclick="netLeaveMyGroup(\'' + escA(m.code) + '\')">🚪 خروج</button>')
+                ? '<button class="net-btn small secondary" onclick="event.stopPropagation(); netEditGroupName(\'' + escA(m.code) + '\')">✏️ ویرایش</button>'
+                    + '<button class="net-btn small danger" onclick="event.stopPropagation(); netDeleteGroup(\'' + escA(m.code) + '\')">🗑 حذف گروه</button>'
+                : '<button class="net-btn small secondary" onclick="event.stopPropagation(); netLeaveMyGroup(\'' + escA(m.code) + '\')">🚪 خروج</button>')
             + '</div>';
     });
     h += '</div>';
@@ -19321,7 +19598,39 @@ async function ghMutateTask(code, fn) {
         return true;
     } catch(e) { showToast('⚠️ ' + ((e && e.message) || e)); return false; }
 }
-async function netAddTaskCore(title, deadline, assigneeId, groupOverride) {
+// K4 (BA-250): فیلدهای مشترک تسک شبکه‌ای — «تمام جزئیات یک تسک معمولی»:
+// متن، سررسید، تکرار، انجام‌شده(+زمان)، معلق، لغو، فوری، پین، حذف.
+// 🔒 K5: فیلدهای شخصی هر کاربر («شخص مرتبط/contactId»، زمان‌های محلی پین و
+// غیره) هرگز به سرور فرستاده نمی‌شوند و سینک هم آن‌ها را بازنویسی نمی‌کند —
+// برنامه و اشخاص هر شخص مال خودش است و برای سازنده تعریف محلی‌اش دست‌نخورده می‌ماند.
+function netTaskSharedFields(item) {
+    return {
+        title: item.text,
+        deadline: item.deadline ? String(item.deadline).slice(0, 10) : null,
+        repeat: (item.repeat && item.repeat.type && item.repeat.type !== 'none')
+            ? JSON.stringify({ type: item.repeat.type, value: item.repeat.value, endDate: item.repeat.endDate || '' })
+            : null,
+        done: !!item.done,
+        completed_at: item.done ? (item.completedAt || null) : null,
+        cancelled: item.cancelled == true,
+        suspended: item.suspended == true,
+        urgent: item.urgent == true,
+        pinned: item.pinned == true,
+        deleted: false,
+        updated_at: new Date().toISOString()
+    };
+}
+// K4: رشتهٔ JSON «تکرار» سرور → شیء repeat برنامه (نامعتبر → null)
+function netParseRepeat(s) {
+    try {
+        const o = (typeof s === 'string') ? JSON.parse(s) : s;
+        if (o && o.type && o.type !== 'none') {
+            return { type: String(o.type), value: parseInt(o.value, 10) || 1, endDate: o.endDate ? String(o.endDate) : '' };
+        }
+    } catch(e) {}
+    return null;
+}
+async function netAddTaskCore(title, deadline, assigneeId, groupOverride, extra) {
     const g = groupOverride || NET_STATE.group || netActiveGroup();
     if (!g) { showToast('⚠️ گروه فعال نیست'); return null; }
     // 🔧 BA-244: برای گروه غیرفعال، اعضا از حافظهٔ همان گروه
@@ -19339,6 +19648,7 @@ async function netAddTaskCore(title, deadline, assigneeId, groupOverride) {
                 owner_id: netMyUid(), owner_name: NET_STATE.myName,
                 assignee_id: asg.id, assignee_name: asg.name,
                 done: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+            if (extra) Object.assign(t, extra);   // K4: تمام جزئیات تسک معمولی
             gr.tasks = gr.tasks || [];
             gr.tasks.push(t);
             await ghSave(db);
@@ -19349,26 +19659,34 @@ async function netAddTaskCore(title, deadline, assigneeId, groupOverride) {
     }
     if (!NET_STATE.sb) { showToast('⚠️ گروه فعال نیست'); return null; }
     try {
-        const r = await NET_STATE.sb.from('net_tasks').insert({
+        const row = {
             group_id: g.id, title: title, deadline: deadline || null,
             owner_id: netMyUid(), owner_name: NET_STATE.myName,
             assignee_id: asg.id, assignee_name: asg.name
-        }).select();
+        };
+        if (extra) Object.assign(row, extra);   // K4: تمام جزئیات تسک معمولی
+        const r = await NET_STATE.sb.from('net_tasks').insert(row).select();
         if (r.error) throw new Error(r.error.message);
         NET_broadcast('tasks-refresh', {});
         await netLoadTasks();
         return r.data[0];
-    } catch(e) { showToast('⚠️ ' + (e.message || e)); return null; }
+    } catch(e) {
+        const m = (e && e.message) || String(e);
+        showToast('⚠️ ' + m + (m.indexOf('column') >= 0 || m.indexOf('repeat') >= 0 || m.indexOf('deleted') >= 0 ? ' — اسکریپت SQL جدید را در Supabase اجرا کنید' : ''));
+        return null;
+    }
 }
-async function netPassTask(id, uid) {
+// K3 (BA-249): تغییر «مسئول انجام» — با کد گروه کار می‌کند حتی اگر گروه
+// فعال پنل گروهِ دیگری باشد (اعضا از حافظهٔ همان گروه خوانده می‌شود).
+async function netPassTask(id, uid, codeOpt) {
     if (!id || !uid) return;
-    const a = NET_STATE.members.find(function(m) { return m.user_id === uid; });
-    if (!a) return;
-    const g = NET_STATE.group || netActiveGroup();
-    if (ghEnabled() && g) {
-        if (await ghMutateTask(g.code, function(gr) {
+    const code = codeOpt || ((NET_STATE.group || netActiveGroup()) || {}).code;
+    const a = netAssigneeMembersFor(code).find(function(m) { return m.user_id === uid; });
+    if (!a) { showToast('عضو پیدا نشد'); return; }
+    if (ghEnabled() && code) {
+        if (await ghMutateTask(code, function(gr) {
             (gr.tasks || []).forEach(function(t) { if (t.id === id) { t.assignee_id = a.user_id; t.assignee_name = a.display_name; t.updated_at = new Date().toISOString(); } });
-        })) showToast('📤 تسک به «' + a.display_name + '» پاس داده شد');
+        })) showToast('📤 مسئول به «' + a.display_name + '» تغییر کرد');
         return;
     }
     try {
@@ -19377,9 +19695,22 @@ async function netPassTask(id, uid) {
             .eq('id', id);
         if (r.error) throw new Error(r.error.message);
         NET_broadcast('tasks-refresh', {});
-        await netLoadTasks();
-        showToast('📤 تسک به «' + a.display_name + '» پاس داده شد');
+        await netLoadTasksAll();
+        showToast('📤 مسئول به «' + a.display_name + '» تغییر کرد');
     } catch(e) { showToast('⚠️ ' + (e.message || e)); }
+}
+// K3 (BA-249): تغییر مسئول از جزئیات تسک (فراخوانی با شناسهٔ محلی تسک)
+async function netChangeAssignee(localId, uid) {
+    const items = getDB();
+    const item = items.find(function(x) { return x.id === localId; });
+    if (!item || !item.netId || !uid) return;
+    await netPassTask(item.netId, uid, item.netCode);
+    // به‌روزرسانی خوش‌بینانهٔ محلی — سینک سرور هم همین را تأیید می‌کند
+    const a = netAssigneeMembersFor(item.netCode).find(function(m) { return m.user_id === uid; });
+    item.netAssigneeId = uid;
+    item.netAssignee = a ? a.display_name : item.netAssignee;
+    setDB(items);
+    if (typeof render === 'function') { try { render(); } catch(e) {} }
 }
 async function netToggleTaskDone(id, done) {
     const g = NET_STATE.group || netActiveGroup();
@@ -19396,19 +19727,21 @@ async function netToggleTaskDone(id, done) {
         await netLoadTasks();
     } catch(e) { showToast('⚠️ ' + (e.message || e)); }
 }
+// K4 (BA-250): حذف نرم — رکورد با پرچم «deleted» روی سرور می‌ماند تا حذف
+// برای همهٔ اعضا هم synchronize شود (سپس از برنامهٔ همه پاک می‌شود).
 async function netDeleteTask(id) {
     const g = NET_STATE.group || netActiveGroup();
     if (ghEnabled() && g) {
         if (await ghMutateTask(g.code, function(gr) {
-            gr.tasks = (gr.tasks || []).filter(function(t) { return t.id !== id; });
+            (gr.tasks || []).forEach(function(t) { if (t.id === id) { t.deleted = true; t.updated_at = new Date().toISOString(); } });
         })) showToast('تسک حذف شد');
         return;
     }
     try {
-        const r = await NET_STATE.sb.from('net_tasks').delete().eq('id', id);
+        const r = await NET_STATE.sb.from('net_tasks').update({ deleted: true, updated_at: new Date().toISOString() }).eq('id', id);
         if (r.error) throw new Error(r.error.message);
         NET_broadcast('tasks-refresh', {});
-        await netLoadTasks();
+        await netLoadTasksAll();
         showToast('تسک حذف شد');
     } catch(e) { showToast('⚠️ ' + (e.message || e)); }
 }
@@ -19439,6 +19772,11 @@ function netEnsureGroupInMain(g, isOwner) {
     } catch(e) {}
 }
 // BA-237: هم‌گام‌سازی تسک‌های یک گروه مشخص (نه فقط گروه فعال)
+// K4 (BA-250): «تمام جزئیات» سینک می‌شود — متن، سررسید، تکرار، انجام‌شده(+زمان)،
+// معلق، لغو، فوری، پین، مسئول، سازنده. حذف هم با پرچم deleted از سرور می‌آید و
+// نسخهٔ محلی تسک از برنامهٔ همه پاک می‌شود.
+// 🔒 K5: فیلدهای شخصی (شخص/contactId و غیره) هرگز بازنویسی نمی‌شوند —
+// هر کاربر برای نسخهٔ محلیِ خودش شخصِ خودش را می‌گذارد؛ تعریف سازنده هم حفظ می‌شود.
 function netSyncGroupTasks(g, tasks) {
     if (!g || !g.code) return;
     if (!NET_STATE.sb && !NET_STATE.gh) return;
@@ -19447,14 +19785,19 @@ function netSyncGroupTasks(g, tasks) {
         const items = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
         let changed = false;
         const gid = 'net_' + g.code;
+        const alive = {};   // K4: تسک‌های زندهٔ سرور — بقیه از محلی حذف می‌شوند
         (tasks || []).forEach(function(t) {
+            if (t.deleted) return;   // K4: تومبستون حذف — پایین‌تر پاک می‌شود
+            alive[t.id] = true;
             let it = items.find(function(x) { return x.netId === t.id; });
             if (!it) {
                 it = { id: 'nt_' + t.id, netId: t.id, netCode: g.code, groupId: gid,
                     text: t.title, deadline: t.deadline || null, done: !!t.done,
                     completedAt: t.done ? (t.completed_at || t.created_at || new Date().toISOString()) : null,
                     cancelled: !!t.cancelled, suspended: !!t.suspended, urgent: !!t.urgent, pinned: !!t.pinned,
-                    netOwner: t.owner_name || '', netAssignee: t.assignee_name || '', netAssigneeId: t.assignee_id || '',
+                    repeat: netParseRepeat(t.repeat),
+                    netOwner: t.owner_name || '', netOwnerId: t.owner_id || '',
+                    netAssignee: t.assignee_name || '', netAssigneeId: t.assignee_id || '',
                     createdAt: t.created_at || new Date().toISOString() };
                 items.push(it);
                 changed = true;
@@ -19470,9 +19813,21 @@ function netSyncGroupTasks(g, tasks) {
                 if (!!it.suspended !== !!t.suspended) { it.suspended = !!t.suspended; changed = true; }
                 if (!!it.urgent !== !!t.urgent) { it.urgent = !!t.urgent; changed = true; }
                 if (!!it.pinned !== !!t.pinned) { it.pinned = !!t.pinned; changed = true; }
+                // 🔧 K4: تکرار و سازنده هم دوطرفه
+                const _rep = netParseRepeat(t.repeat);
+                if (JSON.stringify(it.repeat || null) !== JSON.stringify(_rep)) { it.repeat = _rep; changed = true; }
+                if ((it.netOwner || '') !== (t.owner_name || '') || (it.netOwnerId || '') !== (t.owner_id || '')) { it.netOwner = t.owner_name || ''; it.netOwnerId = t.owner_id || ''; changed = true; }
             }
         });
-        if (changed) localStorage.setItem(DB_KEY, JSON.stringify(items));
+        // K4: تسک‌های حذف‌شده روی سرور (تومبستون یا ردیف پاک‌شده) از محلی هم حذف شوند
+        for (let i = items.length - 1; i >= 0; i--) {
+            const x = items[i];
+            if (x.netCode === g.code && x.netId && !alive[x.netId]) { items.splice(i, 1); changed = true; }
+        }
+        if (changed) {
+            localStorage.setItem(DB_KEY, JSON.stringify(items));
+            if (typeof currentView !== 'undefined' && (currentView === 'tasks' || currentView === 'groups')) { try { render(); } catch(e) {} }
+        }
     } catch(e) {}
 }
 // BA-237: دریافت تسک‌های همهٔ گروه‌ها + به‌روزرسانی نام/سازنده و هم‌گام‌سازی
@@ -19510,9 +19865,38 @@ async function netLoadTasksAll() {
 let netGroupPoll = null;
 function netStartGroupPoll() {
     if (netGroupPoll) return;
-    netGroupPoll = setInterval(function() { if (NET_STATE.sb && !ghEnabled()) netLoadTasksAll(); }, 20000);
+    netGroupPoll = setInterval(function() {
+        if (ghEnabled() || !NET_STATE.sb) return;
+        netLoadTasksAll();
+        netPollAllChats();   // L-5: پیام‌های تازهٔ همهٔ گروه‌ها — پشتیبانِ کانال‌ها
+    }, 20000);
 }
 function netStopGroupPoll() { if (netGroupPoll) { clearInterval(netGroupPoll); netGroupPoll = null; } }
+// L-5 (BA-252): نظرسنجی چت همهٔ گروه‌ها — اگر کانال Realtime پیامی را از دست
+// داده باشد (قطع‌وصلی، آپدیت برنامه، بسته بودن صفحه) با پول هم نوتیف می‌آید.
+async function netPollAllChats() {
+    const list = netMyGroups();
+    for (let i = 0; i < list.length; i++) {
+        const m = list[i];
+        try {
+            const r = await NET_STATE.sb.from('net_messages').select('*')
+                .eq('group_id', m.id).order('created_at', { ascending: false }).limit(15);
+            if (r.error) return;
+            const rows = (r.data || []).filter(function(x) { return !x.deleted; }).reverse();
+            const last = NET_STATE.lastMsgAt[m.code] || null;
+            if (!last) {
+                if (rows.length) NET_STATE.lastMsgAt[m.code] = rows[rows.length - 1].created_at;
+                continue;
+            }
+            rows.forEach(function(x) {
+                if (x.created_at > last) {
+                    NET_STATE.lastMsgAt[m.code] = x.created_at;
+                    netNotifyIncoming(m.code, x);
+                }
+            });
+        } catch(e) {}
+    }
+}
 function netIsOwnerOf(g) {
     if (!g) return false;
     const me = netMyUid();
@@ -19570,11 +19954,38 @@ function netAfterGroupRenamed(code, name) {
         showToast('✅ نام گروه به «' + name + '» تغییر کرد');
     } catch(e) {}
 }
+// K2 (BA-249): تعداد تسک‌های فعال یک گروه — نه انجام‌شده، نه لغو، نه معلق، نه حذف‌شده
+async function netActiveTaskCount(code) {
+    const isAct = function(t) { return !t.done && !t.cancelled && !t.suspended && !t.deleted; };
+    if (ghEnabled()) {
+        try {
+            const db = await ghGet();
+            const gr = db.groups[code];
+            return ((gr && gr.tasks) || []).filter(isAct).length;
+        } catch(e) { return 0; }
+    }
+    if (!NET_STATE.sb) return 0;
+    try {
+        const r0 = await NET_STATE.sb.from('net_groups').select('*').eq('code', code).limit(1);
+        const g = (r0.data || [])[0];
+        if (!g) return 0;
+        const r = await NET_STATE.sb.from('net_tasks').select('id,done,cancelled,suspended,deleted').eq('group_id', g.id);
+        if (r.error) return 0;
+        return (r.data || []).filter(isAct).length;
+    } catch(e) { return 0; }
+}
 // BA-239: حذف گروه توسط سازنده — پیام‌ها/تسک‌ها/اعضا/گروه برای همه پاک می‌شود
 // BA-247: عضو عادی اجازهٔ حذف ندارد — فقط «🚪 خروج»
+// K2 (BA-249): گروه شبکه‌ای که تسکٔ فعال دارد قابل حذف نیست.
 async function netDeleteGroup(code) {
     const mine = netMyGroups().find(function(x) { return x.code === code; });
     if (mine && !mine.isOwner) { showToast('فقط سازندهٔ گروه می‌تواند آن را حذف کند — برای ترک گروه از «🚪 خروج» استفاده کنید'); return; }
+    // K2: اول تعداد تسک‌های فعال گروه چک می‌شود (انجام‌نشده، لغو/معلق/حذف‌نشده)
+    const actN = await netActiveTaskCount(code);
+    if (actN > 0) {
+        showToast('⛔ گروه «' + ((mine && mine.name) || code) + '» ' + toPersianNumber(actN) + ' تسک فعال دارد — اول تسک‌های فعال را انجام، لغو، معلق یا حذف کنید؛ گروه دارای تسکٔ فعال قابل حذف نیست');
+        return;
+    }
     if (!confirm('گروه «' + ((mine && mine.name) || code) + '» و همهٔ تسک‌ها و پیام‌هایش برای همهٔ اعضا حذف شود؟')) return;
     if (ghEnabled()) {
         try {
@@ -19609,6 +20020,7 @@ function netRemoveGroupEverywhere(code, name, msg) {
         netGroupsSave(netMyGroups().filter(function(x) { return x.code !== code; }));
         localStorage.setItem(GROUPS_KEY, JSON.stringify(JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]').filter(function(x) { return x.netCode !== code; })));
         localStorage.setItem(DB_KEY, JSON.stringify(JSON.parse(localStorage.getItem(DB_KEY) || '[]').filter(function(x) { return x.netCode !== code; })));
+        netEnsureSideChannels();   // L-5: کانال جانبی گروه حذف‌شده بسته شود
         if (NET_STATE.group && NET_STATE.group.code === code) {
             netVoiceLeave(true);
             NET_leaveChannel();
@@ -19633,7 +20045,23 @@ function netSwitchGroup(code) {
     netLoadTasks();
     netLoadMessages().then(function() { if (NET_STATE.tab === 'chat') netRenderChatList(); });
     netRenderTab();
+    netEnsureSideChannels();   // L-5: گروه قبلی هم کانال جانبی بگیرد
     showToast('گروه فعال: ' + mine.name);
+}
+// K1 (BA-249): لمس هر گروه = فعال شدن + بالا آمدن به اول لیست —
+// جایگزین کلید حذف‌شدهٔ «✅ فعال».
+function netTouchGroup(code) {
+    const list = netMyGroups();
+    const idx = list.findIndex(function(x) { return x.code === code; });
+    if (idx < 0) return;
+    if (idx > 0) {
+        const g0 = list.splice(idx, 1)[0];
+        list.unshift(g0);
+        netGroupsSave(list);
+    }
+    const ag = NET_STATE.group || netActiveGroup();
+    if (!ag || ag.code !== code) { netSwitchGroup(code); return; }
+    netRenderTab();
 }
 // BA-239: خروج عضو از یک گروه مشخص (غیرفعال هم می‌شود) — سازنده اجازهٔ خروج ندارد (BA-247)
 async function netLeaveMyGroup(code) {
@@ -19667,7 +20095,40 @@ function netAssigneeMembersFor(code) {
     const g = NET_STATE.group || netActiveGroup();
     if (g && g.code === code) return NET_STATE.members || [];
     const mine = netMyGroups().find(function(x) { return x.code === code; });
-    return (mine && mine.members) || [];
+    const mem = (mine && mine.members) || [];
+    if (!mem.length) netEnsureMembersFor(code);   // K3: اعضا در حافظه نیست → پس‌زمینه از سرور
+    return mem;
+}
+// K3 (BA-249): واکشی اعضای یک گروه (حتی غیرفعال) در حافظه — تا «تغییر مسئول»
+// در جزئیات تسک هم برای گروه‌های غیرفعال کار کند؛ بعد از رسیدن، جزئیات باز رندر می‌شود.
+function netEnsureMembersFor(code) {
+    if (!code || NET_STATE.__membersFetching === code) return;
+    NET_STATE.__membersFetching = code;
+    const done = function() { if (NET_STATE.__membersFetching === code) NET_STATE.__membersFetching = null; };
+    if (ghEnabled()) {
+        const gr = ghGroup(code);
+        const list = netMyGroups();
+        const m = list.find(function(x) { return x.code === code; });
+        if (gr && m) { m.members = gr.members || []; netGroupsSave(list); }
+        done();
+        return;
+    }
+    if (!NET_STATE.sb) { done(); return; }
+    NET_STATE.sb.from('net_groups').select('*').eq('code', code).limit(1).then(function(r0) {
+        const g = (r0.data || [])[0];
+        if (!g) { done(); return null; }
+        return NET_STATE.sb.from('net_members').select('*').eq('group_id', g.id).then(function(r) {
+            if (!r.error) {
+                const list = netMyGroups();
+                const m = list.find(function(x) { return x.code === code; });
+                if (m) { m.members = r.data || []; netGroupsSave(list); }
+                // جزئیات تسکِ باز را دوباره رندر کن تا «مسئول انجام» ظاهر شود
+                if (typeof expandedId !== 'undefined' && expandedId) { try { render(); } catch(e) {} }
+            }
+            done();
+            return null;
+        });
+    }).catch(function(e) { done(); });
 }
 function netFillTaskAssigneeSelect(code, selectedId) {
     const row = document.getElementById('taskNetAssigneeRow');
@@ -19697,7 +20158,13 @@ async function netCreateTaskFromMain(item, assigneeId) {
         const mine = netMyGroups().find(function(x) { return x.code === ng.netCode; });
         gOverride = mine ? { id: mine.id, code: ng.netCode, name: mine.name } : { id: ng.netCode, code: ng.netCode, name: ng.name };
     }
-    const t = await netAddTaskCore(item.text, item.deadline ? String(item.deadline).slice(0, 10) : '', assigneeId || null, gOverride);
+    // K4 (BA-250): رکورد شبکه «تمام جزئیات» تسک را دارد — متن، زمان ساختِ
+    // اصلی، سررسید، تکرار، گروه، مسئول، فوری، پین، انجام‌شده، معلق، لغو.
+    // 🔒 K5: فیلدهای شخصی (شخص/contactId و غیره) ارسال نمی‌شوند و تعریف
+    // محلیِ سازنده هم دست‌نخورده می‌ماند.
+    const extra = netTaskSharedFields(item);
+    extra.created_at = item.createdAt || new Date().toISOString();   // K4: «زمان ساخت» اصلی حفظ شود
+    const t = await netAddTaskCore(item.text, item.deadline ? String(item.deadline).slice(0, 10) : '', assigneeId || null, gOverride, extra);
     if (!t) return;
     try {
         const items = getDB();
@@ -19706,6 +20173,7 @@ async function netCreateTaskFromMain(item, assigneeId) {
             it.netId = t.id;
             it.netCode = item.netCode || (gOverride ? gOverride.code : (((NET_STATE.group || netActiveGroup()) || {}).code || ''));
             it.netOwner = NET_STATE.myName;
+            it.netOwnerId = netMyUid();
             it.netAssignee = t.assignee_name || '';
             it.netAssigneeId = t.assignee_id || '';
         }
@@ -19718,14 +20186,15 @@ async function netCreateTaskFromMain(item, assigneeId) {
         setDB(items);
     } catch(e) {}
 }
-// BA-240: ویرایش متن/سررسید/مسئول تسک شبکه‌ای از برنامهٔ اصلی → به شبکه برسد
+// BA-240: ویرایش تسک شبکه‌ای از برنامهٔ اصلی → «تمام جزئیات» به شبکه برسد (K4)
 async function netUpdateTaskFromMain(item, assigneeId) {
     if (!item || !item.netId) return;
-    const dl = item.deadline ? String(item.deadline).slice(0, 10) : null;
     const code = item.netCode || ((NET_STATE.group || netActiveGroup()) || {}).code;
     const members = netAssigneeMembersFor(code);
+    // K4: تمام فیلدهای مشترک (متن، سررسید، تکرار، وضعیت‌ها) با هم می‌روند
+    const patch = netTaskSharedFields(item);
+    // '' یعنی «خودم» — عضو پیدا نمی‌شود → مسئول = خود کاربر (BA-243)
     const a = (assigneeId !== undefined && assigneeId !== null) ? members.find(function(m) { return m.user_id === assigneeId; }) : null;
-    const patch = { title: item.text, deadline: dl, updated_at: new Date().toISOString() };
     if (assigneeId !== undefined && assigneeId !== null) {
         patch.assignee_id = a ? a.user_id : netMyUid();   // پیش‌فرض: خود کاربر
         patch.assignee_name = a ? a.display_name : NET_STATE.myName;
@@ -19762,13 +20231,62 @@ function netChatBarHide() {
 async function netLoadMessages() {
     const g = NET_STATE.group || netActiveGroup();
     if (!g) return;
-    if (ghEnabled()) { const gr = ghGroup(g.code); NET_STATE.msgs = ((gr && gr.messages) || []).slice(-100); return; }
+    const hidKeys = netHiddenKeys();
+    if (ghEnabled()) {
+        const gr = ghGroup(g.code);
+        NET_STATE.msgs = ((gr && gr.messages) || []).slice(-100)
+            .filter(function(x) { return !x.deleted && hidKeys.indexOf(netMsgKey(x)) < 0; });
+        NET_STATE.lastMsgAt[g.code] = (NET_STATE.msgs.length ? NET_STATE.msgs[NET_STATE.msgs.length - 1].created_at : new Date().toISOString());
+        return;
+    }
     if (!NET_STATE.sb) return;
     try {
         const r = await NET_STATE.sb.from('net_messages').select('*')
             .eq('group_id', g.id).order('created_at', { ascending: false }).limit(100);
-        if (!r.error) NET_STATE.msgs = (r.data || []).slice().reverse();
+        if (r.error) return;
+        let rows = (r.data || []).slice().reverse();
+        // L-4: «حذف برای من» از سرور (جدول net_msg_hides) + کلیدهای محلی
+        try {
+            const hr = await NET_STATE.sb.from('net_msg_hides').select('msg_id').eq('user_id', netMyUid());
+            if (!hr.error) {
+                const hid = {};
+                (hr.data || []).forEach(function(x) { hid[x.msg_id] = true; });
+                rows = rows.filter(function(x) { return !hid[x.id]; });
+            }
+        } catch(e) {}   // جدول قدیمی‌ست — فقط فیلتر محلی اعمال می‌شود
+        NET_STATE.msgs = rows.filter(function(x) { return hidKeys.indexOf(netMsgKey(x)) < 0; });
+        NET_STATE.lastMsgAt[g.code] = (NET_STATE.msgs.length ? NET_STATE.msgs[NET_STATE.msgs.length - 1].created_at : new Date().toISOString());
     } catch(e) {}
+}
+// L-3 (BA-251): اندازهٔ فایل به فارسی
+function netFaSize(n) {
+    n = Number(n) || 0;
+    if (n >= 1048576) return toPersianNumber((n / 1048576).toFixed(1)) + ' مگ';
+    if (n >= 1024) return toPersianNumber(Math.round(n / 1024)) + ' کیلوبایت';
+    return toPersianNumber(n) + ' بایت';
+}
+// L-3 (BA-251): بدنهٔ پیام — متن/عکس/پیام صوتی/ویدیو/فایل + حالت حذف‌شده
+function netMsgBodyHtml(m) {
+    if (m.deleted) return '<span class="net-msg-deleted">🚫 این پیام حذف شد</span>';
+    let h = '';
+    if (m.img) h += '<img class="net-msg-img" src="' + m.img + '" alt="عکس" onclick="netOpenLightbox(this.src)">';
+    if (m.kind === 'image' && m.url) h += '<img class="net-msg-img" src="' + m.url + '" alt="عکس" onclick="netOpenLightbox(this.src)">';
+    if (m.kind === 'voice' && m.url) h += '<div class="net-msg-voice">🎙 پیام صوتی' + (m.dur ? ' — ' + toPersianNumber(m.dur) + ' ثانیه' : '') + '<audio controls preload="metadata" src="' + m.url + '"></audio></div>';
+    if (m.kind === 'video' && m.url) h += '<video class="net-msg-video" controls preload="metadata" src="' + m.url + '"></video>';
+    if (m.kind === 'file' && m.url) h += '<a class="net-msg-file" href="' + m.url + '" download="' + escA(m.fname || 'فایل') + '" target="_blank" rel="noopener">📎 ' + escapeHtml(m.fname || 'فایل') + ' <small>(' + netFaSize(m.fsize) + ')</small></a>';
+    if (m.text && m.kind !== 'image' && m.kind !== 'video' && m.kind !== 'file') h += (h ? '<br>' : '') + escapeHtml(m.text);
+    return h;
+}
+// L-4 (BA-251): کلید پیام — «⋮» برای پیام‌های خودم (ویرایش/حذف برای همه)،
+// «🚫» برای پیام دیگران (حذف فقط برای خودم).
+function netMsgMenuBtn(m, mine) {
+    if (m.deleted) return '';
+    const mid = m.id || netMsgKey(m);
+    if (mine) return '<button class="net-msg-menu" data-mid="' + escA(mid) + '" onclick="netMsgMenu(this.getAttribute(\'data-mid\'))" title="ویرایش/حذف">⋮</button>';
+    return '<button class="net-msg-menu" data-mid="' + escA(mid) + '" onclick="netMsgMenu(this.getAttribute(\'data-mid\'))" title="حذف برای من">🚫</button>';
+}
+function netMsgKey(m) {
+    return (m.sender_id || '') + '|' + (m.created_at || '') + '|' + (m.text || '') + '|' + (m.url || '') + (m.img ? '|img' : '');
 }
 function netRenderChatList() {
     const el = document.getElementById('netChatList');
@@ -19777,15 +20295,236 @@ function netRenderChatList() {
     netRenderChatHeader();
     el.innerHTML = NET_STATE.msgs.map(function(m) {
         const mine = (m.sender_id === me);
-        const imgHtml = m.img ? '<img class="net-msg-img" src="' + m.img + '" alt="عکس" onclick="netOpenLightbox(this.src)">' : '';
+        const body = netMsgBodyHtml(m);
+        const edited = (m.edited_at && !m.deleted) ? ' <span class="net-msg-edited" title="ویرایش‌شده">✎</span>' : '';
         return '<div class="net-msg ' + (mine ? 'mine' : 'other') + '">'
             + (mine ? '' : '<b style="font-size:11px;">' + escapeHtml(m.sender_name || '') + '</b><br>')
-            + imgHtml
-            + (m.text ? escapeHtml(m.text) : '')
-            + '<div class="net-msg-meta">' + netFaTime(m.created_at) + '</div></div>';
+            + body
+            + '<div class="net-msg-meta">' + netFaTime(m.created_at) + edited + netMsgMenuBtn(m, mine) + '</div></div>';
     }).join('') || '<div class="net-empty">پیامی نیست — اولین پیام را بفرستید</div>';
     const nb = document.getElementById('netBody');
     if (nb) nb.scrollTop = nb.scrollHeight;
+}
+// L-3 (BA-251): درج پیام پیوست‌دار (صوت/ویدیو/فایل/عکسِ استوریج) روی سرور
+async function netSendAttachmentMsg(kind, url, fname, fsize, dur, text) {
+    const g = NET_STATE.group || netActiveGroup();
+    if (!g || !url) return null;
+    const row = { group_id: g.id, sender_id: netMyUid(), sender_name: NET_STATE.myName,
+        text: text || '', kind: kind, url: url, fname: fname || null,
+        fsize: fsize || null, dur: dur || null, deleted: false };
+    try {
+        const r = await NET_STATE.sb.from('net_messages').insert(row).select();
+        if (r.error) throw new Error(r.error.message);
+        const msg = r.data[0];
+        NET_STATE.msgs.push(msg);
+        NET_broadcast('chat', { msg: msg });
+        netRenderChatList();
+        return msg;
+    } catch(e) {
+        const m2 = (e && e.message) || String(e);
+        showToast('⚠️ ارسال پیوست ناموفق: ' + m2 + (m2.indexOf('column') >= 0 ? ' — اسکریپت SQL جدید را اجرا کنید' : ''));
+        return null;
+    }
+}
+// L-3 (BA-251): بارگذاری پیوست در باست Supabase Storage و ارسال به چت
+// محدودیت‌های رایگان: ~۱ گیگ کل فضا، ۵ گیگ پهنای‌باند در ماه، ۵۰ مگ هر فایل.
+async function netSendAttachment(blob, kind, dur, fnameOverride) {
+    if (!blob) return;
+    if (ghEnabled()) { showToast('⚠️ ارسال فایل/صوت/ویدیو فقط در بک‌اند Supabase ممکن است'); return; }
+    if (!NET_STATE.sb) { showToast('⚠️ اول به شبکه وصل شوید'); return; }
+    if (blob.size > 50 * 1024 * 1024) { showToast('⚠️ فایل بزرگ‌تر از ۵۰ مگابایت است — کوچک‌تر انتخاب کنید'); return; }
+    const ext = fnameOverride || 'dat';
+    try {
+        const path = 'chat/' + netMyUid() + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+        const up = await NET_STATE.sb.storage.from('net-chat').upload(path, blob, { cacheControl: '3600', upsert: false });
+        if (up.error) throw new Error(up.error.message);
+        const pub = NET_STATE.sb.storage.from('net-chat').getPublicUrl(path);
+        const url = pub && pub.data && pub.data.publicUrl;
+        if (!url) throw new Error('لینک پیوست ساخته نشد');
+        const msg = await netSendAttachmentMsg(kind, url, fnameOverride ? ('پیام-صوتی.' + ext) : null, blob.size, dur || 0);
+        if (msg) showToast('✅ پیوست ارسال شد');
+    } catch(e) {
+        const m = (e && e.message) || String(e);
+        showToast('⚠️ ارسال پیوست ناموفق: ' + m + (m.indexOf('bucket') >= 0 || m.indexOf('row-level') >= 0 ? ' — اسکریپت SQL جدید (باست net-chat) را اجرا کنید' : ''));
+    }
+}
+// L-3: انتخاب فایل/ویدیو/صوت از گوشی
+function netPickFile() {
+    const inp = document.getElementById('netFileInput');
+    if (inp) inp.click();
+}
+async function netSendFilePick(file) {
+    if (!file) return;
+    let kind = 'file';
+    if (file.type && file.type.indexOf('video/') === 0) kind = 'video';
+    else if (file.type && file.type.indexOf('audio/') === 0) kind = 'voice';
+    else if (file.type && file.type.indexOf('image/') === 0) kind = 'image';
+    const ext = (file.name && file.name.split('.').pop()) || 'bin';
+    await netSendAttachment(file, kind, 0, ext);
+}
+// L-3: ضبط پیام صوتی با میکروفون و ارسال به چت
+let _netClipRec = null, _netClipChunks = [], _netClipStream = null, _netClipT0 = 0, _netClipTimer = null;
+async function netVoiceClipToggle() {
+    const btn = document.getElementById('netVoiceClipBtn');
+    if (_netClipRec) {
+        try { _netClipRec.stop(); } catch(e) {}
+        return;   // ادامه در onstop
+    }
+    if (ghEnabled()) { showToast('⚠️ پیام صوتی فقط در بک‌اند Supabase ممکن است'); return; }
+    if (!NET_STATE.sb) { showToast('⚠️ اول به شبکه وصل شوید'); return; }
+    if (!navigator.mediaDevices || !window.MediaRecorder) { showToast('⚠️ مرورگر از ضبط صدا پشتیبانی نمی‌کند'); return; }
+    try { _netClipStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch(e) { showToast('⚠️ اجازهٔ میکروفون داده نشد'); return; }
+    const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+    try { _netClipRec = new MediaRecorder(_netClipStream, mime ? { mimeType: mime } : undefined); }
+    catch(e) { try { _netClipStream.getTracks().forEach(function(t) { t.stop(); }); } catch(e2) {} return; }
+    _netClipChunks = [];
+    _netClipT0 = Date.now();
+    _netClipRec.ondataavailable = function(ev) { if (ev.data && ev.data.size) _netClipChunks.push(ev.data); };
+    _netClipRec.onstop = async function() {
+        const dur = Math.max(1, Math.round((Date.now() - _netClipT0) / 1000));
+        const blob = new Blob(_netClipChunks, { type: _netClipRec.mimeType || 'audio/webm' });
+        try { _netClipStream.getTracks().forEach(function(t) { t.stop(); }); } catch(e) {}
+        _netClipStream = null; _netClipRec = null;
+        if (btn) btn.textContent = '🎙';
+        if (_netClipTimer) { clearInterval(_netClipTimer); _netClipTimer = null; }
+        if (blob.size < 1500) { showToast('پیام صوتی خیلی کوتاه بود'); return; }
+        await netSendAttachment(blob, 'voice', dur, 'webm');
+    };
+    _netClipRec.start();
+    if (btn) btn.textContent = '⏺';
+    showToast('🎙 در حال ضبط… دوباره لمس کنید تا ارسال شود');
+    _netClipTimer = setInterval(function() {
+        if (btn && _netClipRec) btn.textContent = '⏺ ' + Math.round((Date.now() - _netClipT0) / 1000) + 's';
+    }, 500);
+}
+// L-4 (BA-251): منوی پیام — ویرایش/حذف برای همهٔ پیام‌های خودم، «حذف برای من» برای بقیه
+function netMsgMenu(mid) {
+    const m = NET_STATE.msgs.find(function(x) { return (x.id || netMsgKey(x)) === mid; });
+    if (!m) return;
+    const mine = m.sender_id === netMyUid();
+    const editable = mine && !m.deleted && !m.img && !m.url;
+    let h = '<div class="net-msg-menu-box">';
+    h += '<div class="net-msg-menu-title">' + escapeHtml((m.text || '').slice(0, 40) || (m.fname || 'پیوست')) + '</div>';
+    if (editable) h += '<button class="net-btn small" onclick="netMsgEditBox(\'' + escA(mid) + '\')">✏️ ویرایش</button>';
+    if (mine) h += '<button class="net-btn small danger" onclick="netMsgDeleteForAll(\'' + escA(mid) + '\')">🗑 حذف برای همه</button>';
+    if (!mine) h += '<button class="net-btn small danger" onclick="netMsgHideForMe(\'' + escA(mid) + '\')">🚫 حذف برای من</button>';
+    h += '<button class="net-btn small secondary" onclick="netMsgMenuClose()">انصراف</button></div>';
+    let ov = document.getElementById('netMsgMenuOv');
+    if (!ov) {
+        ov = document.createElement('div');
+        ov.id = 'netMsgMenuOv';
+        ov.className = 'net-msg-menu-ov';
+        ov.onclick = function() { netMsgMenuClose(); };
+        document.body.appendChild(ov);
+    }
+    ov.innerHTML = h;
+    ov.classList.add('open');
+}
+function netMsgMenuClose() {
+    const ov = document.getElementById('netMsgMenuOv');
+    if (ov) ov.classList.remove('open');
+}
+// L-4: جعبهٔ ویرایش متن پیام
+function netMsgEditBox(mid) {
+    const m = NET_STATE.msgs.find(function(x) { return (x.id || netMsgKey(x)) === mid; });
+    if (!m) return;
+    netMsgMenuClose();
+    let ov = document.getElementById('netMsgEditOv');
+    if (!ov) {
+        ov = document.createElement('div');
+        ov.id = 'netMsgEditOv';
+        ov.className = 'net-msg-menu-ov';
+        document.body.appendChild(ov);
+    }
+    ov.innerHTML = '<div class="net-msg-menu-box net-msg-edit-box" onclick="event.stopPropagation();">'
+        + '<div class="net-msg-menu-title">✏️ ویرایش پیام</div>'
+        + '<textarea id="netMsgEditText" class="net-msg-edit-ta">' + escapeHtml(m.text || '') + '</textarea>'
+        + '<div><button class="net-btn small" onclick="netMsgEditSave(\'' + escA(mid) + '\')">💾 ذخیره</button>'
+        + '<button class="net-btn small secondary" onclick="netMsgMenuClose()">انصراف</button></div></div>';
+    ov.classList.add('open');
+    const ta = document.getElementById('netMsgEditText');
+    if (ta) { ta.focus(); }
+}
+async function netMsgEditSave(mid) {
+    const ta = document.getElementById('netMsgEditText');
+    const t = (ta && ta.value || '').trim();
+    if (!t) { showToast('متن خالی است'); return; }
+    const m = NET_STATE.msgs.find(function(x) { return (x.id || netMsgKey(x)) === mid; });
+    netMsgMenuClose();
+    if (!m) return;
+    const g = NET_STATE.group || netActiveGroup();
+    m.text = t;
+    m.edited_at = new Date().toISOString();
+    netRenderChatList();
+    if (ghEnabled() && g) {
+        const gr = ghGroup(g.code);
+        if (gr) {
+            (gr.messages || []).forEach(function(x) { if (netMsgKey(x) === netMsgKey(m)) { x.text = t; x.edited_at = m.edited_at; } });
+            const db = await ghGet();
+            db.groups[g.code] = gr;
+            await ghSave(db);
+            NET_STATE.ghdb = db;
+        }
+        return;
+    }
+    if (!NET_STATE.sb || !m.id) return;
+    try {
+        const r = await NET_STATE.sb.from('net_messages').update({ text: t, edited_at: m.edited_at }).eq('id', m.id);
+        if (r.error) throw new Error(r.error.message);
+        NET_broadcast('chat-edit', { id: m.id, text: t, edited_at: m.edited_at });
+    } catch(e) { showToast('⚠️ ویرایش ناموفق: ' + ((e && e.message) || e)); }
+}
+// L-4: حذف پیام برای همهٔ اعضا (فقط فرستنده)
+async function netMsgDeleteForAll(mid) {
+    const m = NET_STATE.msgs.find(function(x) { return (x.id || netMsgKey(x)) === mid; });
+    netMsgMenuClose();
+    if (!m) return;
+    if (m.sender_id !== netMyUid()) { showToast('فقط فرستنده می‌تواند پیام را برای همه حذف کند — برای خودتان از «🚫 حذف برای من» استفاده کنید'); return; }
+    if (!confirm('این پیام برای همهٔ اعضا حذف شود؟')) return;
+    const g = NET_STATE.group || netActiveGroup();
+    m.deleted = true;
+    netRenderChatList();
+    if (ghEnabled() && g) {
+        const gr = ghGroup(g.code);
+        if (gr) {
+            (gr.messages || []).forEach(function(x) { if (netMsgKey(x) === netMsgKey(m)) x.deleted = true; });
+            const db = await ghGet();
+            db.groups[g.code] = gr;
+            await ghSave(db);
+            NET_STATE.ghdb = db;
+        }
+        return;
+    }
+    if (!NET_STATE.sb || !m.id) return;
+    try {
+        const r = await NET_STATE.sb.from('net_messages').update({ deleted: true }).eq('id', m.id);
+        if (r.error) throw new Error(r.error.message);
+        NET_broadcast('chat-refresh', {});
+    } catch(e) { showToast('⚠️ حذف ناموفق: ' + ((e && e.message) || e)); }
+}
+// L-4: «حذف برای من» — پیام دیگران فقط از نمای من پاک می‌شود
+async function netMsgHideForMe(mid) {
+    const idx = NET_STATE.msgs.findIndex(function(x) { return (x.id || netMsgKey(x)) === mid; });
+    netMsgMenuClose();
+    if (idx < 0) return;
+    const m = NET_STATE.msgs[idx];
+    if (!confirm('این پیام فقط برای شما پنهان شود؟ (برای بقیه می‌ماند)')) return;
+    NET_STATE.msgs.splice(idx, 1);
+    netRenderChatList();
+    try {
+        const hid = JSON.parse(localStorage.getItem('net_hidden_msgs_v1') || '[]');
+        hid.push(netMsgKey(m));
+        localStorage.setItem('net_hidden_msgs_v1', JSON.stringify(hid.slice(-500)));
+    } catch(e) {}
+    if (ghEnabled() || !NET_STATE.sb || !m.id) return;
+    try {
+        await NET_STATE.sb.from('net_msg_hides').insert({ msg_id: m.id, user_id: netMyUid() });
+    } catch(e) {}   // تکراری بودن مهم نیست
+}
+// L-4: کلیدهای «حذف برای من» محلی (gh + پشتیبان) هنگام بارگذاری پیام‌ها
+function netHiddenKeys() {
+    try { return JSON.parse(localStorage.getItem('net_hidden_msgs_v1') || '[]'); } catch(e) { return []; }
 }
 async function netSendText(text, img) {
     const g = NET_STATE.group || netActiveGroup();
@@ -19803,13 +20542,13 @@ async function netSendText(text, img) {
             if (gr.messages.length > 200) gr.messages = gr.messages.slice(-200);
             await ghSave(db);
             NET_STATE.ghdb = db;
-            NET_STATE.msgs = gr.messages.slice(-100);
+            NET_STATE.msgs = gr.messages.slice(-100).filter(function(x) { return !x.deleted && netHiddenKeys().indexOf(netMsgKey(x)) < 0; });
             netRenderChatList();
             return msg;
         } catch(e) { showToast('⚠️ ارسال پیام ناموفق: ' + ((e && e.message) || e)); return null; }
     }
     if (!NET_STATE.sb) return null;
-    const row = { group_id: g.id, sender_id: netMyUid(), sender_name: NET_STATE.myName, text: text };
+    const row = { group_id: g.id, sender_id: netMyUid(), sender_name: NET_STATE.myName, text: text, kind: 'text', deleted: false };
     if (img) row.img = img;
     try {
         const r = await NET_STATE.sb.from('net_messages').insert(row).select();
@@ -19854,8 +20593,10 @@ function netRenderChatHeader() {
     const v = NET_STATE.voice;
     let btns = '';
     if (!ghEnabled()) {
-        btns = '<button class="net-btn small' + (v.in ? ' secondary' : '') + '" onclick="' + (v.in ? 'netVoiceLeave()' : 'netVoiceJoin()') + '">' + (v.in ? '🔊 خروج از صوت' : '🎙 صوتی گروهی') + '</button>'
-            + (v.in ? '<button class="net-btn small' + (v.mic ? '' : ' secondary') + '" onclick="netVoiceMicToggle()">' + (v.mic ? '🎙 میک: باز' : '🔇 میک: بسته') + '</button>' : '');
+        // L-1 (BA-251): کلید «🎙 صوتی گروهی / 🔊 خروج از صوت» کامل برداشته شد —
+        // ورود به چت خودکار به حالت شنیداری می‌رود و صدای اعضا همان‌جا شنیده می‌شود.
+        // کلید میک همیشه دیده می‌شود و پیش‌فرض «بسته» است؛ فقط کاربر بازش می‌کند.
+        btns = '<button class="net-btn small' + (v.mic ? '' : ' secondary') + '" onclick="netVoiceMicToggle()">' + (v.mic ? '🎙 میک: باز' : '🔇 میک: بسته') + '</button>';
     }
     const stay = netStayChat();
     btns += '<button class="net-btn small' + (stay ? '' : ' secondary') + '" onclick="netToggleStayChat()">🚪 ترک چت: ' + (stay ? 'فعال' : 'غیرفعال') + '</button>';
@@ -19895,6 +20636,7 @@ async function netVoiceOfferTo(peerUid) {
         const pc = netVoiceNewPC(peerUid);
         NET_STATE.voice.pcs[peerUid] = pc;
         if (NET_STATE.voice.stream) NET_STATE.voice.stream.getAudioTracks().forEach(function(t) { pc.addTrack(t, NET_STATE.voice.stream); });
+        else { try { pc.addTransceiver('audio', { direction: 'recvonly' }); } catch(e) {} }   // L-1: شنیداری — فقط دریافت
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         NET_sendSignal({ kind: 'voice-offer', to: peerUid, from: netMyUid(), fromName: NET_STATE.myName, sdp: pc.localDescription });
@@ -19906,21 +20648,19 @@ function netVoiceClosePeer(peerUid) {
     const a = document.getElementById('netVoiceAudio-' + peerUid);
     if (a) { try { a.srcObject = null; } catch(e) {} if (a.remove) a.remove(); }
 }
-async function netVoiceJoin() {
-    if (ghEnabled()) { showToast('⚠️ در بک‌اند گیت‌هاب صوت گروهی نیست — بک‌اند Supabase را انتخاب کنید'); return; }
-    if (!(await netEnsureConnected())) { showToast('⚠️ اتصال برقرار نشد — جعبهٔ خطا را ببینید'); return; }
-    if (!NET_STATE.ch) { showToast('⚠️ اول عضو یک گروه شوید'); return; }
+// L-1 (BA-251): ورود خودکار به گفتگوی صوتی در حالت «شنیداری» — بدون درخواست
+// میکروفون؛ صدای اعضا بلافاصله شنیده می‌شود. میک پیش‌فرض بسته است.
+async function netVoiceEnter() {
+    if (ghEnabled()) return;
     if (NET_STATE.voice.in) return;
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { showToast('⚠️ مرورگر از میکروفون پشتیبانی نمی‌کند'); return; }
-    try { NET_STATE.voice.stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-    catch(e) { showToast('⚠️ اجازهٔ میکروفون داده نشد'); return; }
+    if (!(await netEnsureConnected())) return;
+    if (!NET_STATE.ch) return;
     NET_STATE.voice.in = true;
-    NET_STATE.voice.mic = true;
+    NET_STATE.voice.mic = false;
     NET_STATE.voice.pcs = {};
-    try { NET_STATE.ch.track({ uid: netMyUid(), name: NET_STATE.myName, mic: true }); } catch(e) {}
+    try { NET_STATE.ch.track({ uid: netMyUid(), name: NET_STATE.myName, mic: false }); } catch(e) {}
     NET_broadcast('voice-join', { uid: netMyUid(), name: NET_STATE.myName });
     netRenderChatHeader();
-    showToast('🎙 به گفتگوی صوتی گروه پیوستید — صدای همهٔ حاضرین شنیده می‌شود');
 }
 function netVoiceLeave(silent) {
     if (!NET_STATE.voice.in) return;
@@ -19928,21 +20668,38 @@ function netVoiceLeave(silent) {
     Object.keys(NET_STATE.voice.pcs).forEach(function(k) { netVoiceClosePeer(k); });
     if (NET_STATE.voice.stream) { try { NET_STATE.voice.stream.getTracks().forEach(function(t) { t.stop(); }); } catch(e) {} }
     NET_STATE.voice.in = false;
-    NET_STATE.voice.mic = true;
+    NET_STATE.voice.mic = false;   // L-1: میک پیش‌فرض بسته — بعد از خروج هم
     NET_STATE.voice.pcs = {};
     NET_STATE.voice.stream = null;
     try { if (NET_STATE.ch) NET_STATE.ch.track({ uid: netMyUid(), name: NET_STATE.myName, mic: false }); } catch(e) {}
     netRenderChatHeader();
     if (!silent) showToast('از گفتگوی صوتی خارج شدید');
 }
+// L-1 (BA-251): کلید میک — پیش‌فرض بسته؛ با لمس: اجازهٔ میکروفون + گفتگوی
+// دوباره با همهٔ حاضرین تا صدای کاربر هم برسد. بستن: فقط قطع ارسال.
 async function netVoiceMicToggle() {
-    if (!NET_STATE.voice.in) return;
-    NET_STATE.voice.mic = !NET_STATE.voice.mic;
-    if (NET_STATE.voice.stream) NET_STATE.voice.stream.getAudioTracks().forEach(function(t) { t.enabled = NET_STATE.voice.mic; });
+    if (ghEnabled()) return;
+    if (!NET_STATE.voice.in) await netVoiceEnter();
+    if (!NET_STATE.voice.in) { showToast('⚠️ اتصال برقرار نشد'); return; }
+    if (!NET_STATE.voice.mic) {
+        if (!NET_STATE.voice.stream) {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { showToast('⚠️ مرورگر از میکروفون پشتیبانی نمی‌کند'); return; }
+            try { NET_STATE.voice.stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+            catch(e) { showToast('⚠️ اجازهٔ میکروفون داده نشد'); return; }
+        }
+        NET_STATE.voice.mic = true;
+        NET_STATE.voice.stream.getAudioTracks().forEach(function(t) { t.enabled = true; });
+        // مذاکرهٔ دوباره با هر عضو حاضر — از این لحظه صدای من هم می‌رود
+        Object.keys(NET_STATE.voice.members).forEach(function(uid) { netVoiceOfferTo(uid); });
+        showToast('🎙 میکروفون باز شد — صدای شما به گروه می‌رسد');
+    } else {
+        NET_STATE.voice.mic = false;
+        if (NET_STATE.voice.stream) NET_STATE.voice.stream.getAudioTracks().forEach(function(t) { t.enabled = false; });
+        showToast('🔇 میکروفون بسته شد');
+    }
     NET_broadcast('voice-mic', { uid: netMyUid(), on: NET_STATE.voice.mic });
     try { if (NET_STATE.ch) NET_STATE.ch.track({ uid: netMyUid(), name: NET_STATE.myName, mic: NET_STATE.voice.mic }); } catch(e) {}
     netRenderChatHeader();
-    showToast(NET_STATE.voice.mic ? '🎙 میکروفون باز شد' : '🔇 میکروفون بسته شد');
 }
 // BA-232: مذاکرهٔ بدون‌برخورد — فقط عضوِ uid کوچک‌تر به بزرگ‌تر offer می‌دهد
 function netVoiceOnPeerJoined(uid, name) {
@@ -20002,25 +20759,42 @@ function netOpenLightbox(src) {
         lb.onclick = function() { lb.classList.remove('open'); };
         document.body.appendChild(lb);
     }
-    lb.innerHTML = '<img src="' + src + '" alt="عکس چت">';
+    // L-2 (BA-251): عکس با کلیک باز می‌شود و دکمهٔ «ذخیره» دارد
+    lb.innerHTML = '<img src="' + src + '" alt="عکس چت" onclick="event.stopPropagation();">'
+        + '<div class="net-lightbox-btns" onclick="event.stopPropagation();">'
+        + '<button class="net-btn net-lb-save">💾 ذخیرهٔ عکس</button>'
+        + '<button class="net-btn secondary net-lb-close">✕ بستن</button></div>';
+    lb.dataset.src = src;
+    lb.querySelector('.net-lb-save').onclick = function(ev) { ev.stopPropagation(); netSaveImg(lb.dataset.src); };
+    lb.querySelector('.net-lb-close').onclick = function(ev) { ev.stopPropagation(); netCloseLightbox(); };
     lb.classList.add('open');
 }
-// BA-233: نوتیف پیام جدید وقتی کاربر داخل چت نیست (پنل بسته یا تب دیگر)
-function netNotifyMsg(msg) {
-    if (!msg || msg.sender_id === netMyUid()) return false;
-    const key = (msg.sender_id || '') + '|' + (msg.created_at || '') + '|' + (msg.text || '');
-    if (NET_STATE.lastMsgKey === key) return false;
-    NET_STATE.lastMsgKey = key;
-    const ov = document.getElementById('netOverlay');
-    const viewingChat = !!(ov && ov.classList.contains('active') && NET_STATE.tab === 'chat');
-    if (!viewingChat) {
-        NET_STATE.unread = (NET_STATE.unread || 0) + 1;
-        showToast('💬 ' + (msg.sender_name || 'کاربر') + ': ' + String(msg.text || '').slice(0, 60));
-        const ov2 = document.getElementById('netOverlay');
-        if (ov2 && ov2.classList.contains('active')) netRender();
-    }
-    return true;
+function netCloseLightbox() {
+    const lb = document.getElementById('netLightbox');
+    if (lb) lb.classList.remove('open');
 }
+// L-2 (BA-251): ذخیرهٔ عکس چت در گوشی/کامپیوتر کاربر
+async function netSaveImg(src) {
+    if (!src) return;
+    try {
+        const r = await fetch(src);
+        const blob = await r.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'chat-' + Date.now() + '.jpg';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() { try { document.body.removeChild(a); URL.revokeObjectURL(url); } catch(e) {} }, 1500);
+        showToast('💾 عکس برای ذخیره آماده شد — به پوشهٔ دانلود بروید');
+    } catch(e) {
+        // پشتیبان: باز شدن عکس در تب جدید برای ذخیرهٔ دستی (Safari/iOS)
+        try { window.open(src, '_blank'); } catch(e2) {}
+        showToast('⚠️ ذخیرهٔ خودکار نشد — عکس در تب جدید باز شد؛ نگه دارید و ذخیره کنید');
+    }
+}
+// BA-233→L-5 (BA-251): نوتیف پیام به netNotifyIncoming منتقل شد — هدر + اعلان
+// سیستم برای «همهٔ» گروه‌ها؛ تابع قدیمی فقط برای گروه فعال بود و برداشته شد.
 // BA-236: همگام‌سازی گروه و تسک‌های شبکه با گروه‌ها/تسک‌های اصلی برنامه —
 // گروه شبکه یک گروه واقعی برنامه می‌شود (🛰️) و تسک‌هایش دقیقاً مثل
 // بقیهٔ تسک‌ها در نمای گروه نمایش داده می‌شوند.
@@ -20030,13 +20804,10 @@ function netSyncToMain() {
 // BA-236: تغییر «انجام شد» از نمای اصلی برنامه به شبکه هم برسد
 async function netSyncTaskFromMain(item) {
     if (!item || !item.netId) return;
-    // 🔧 BA-242: همهٔ فیلدهای وضعیت تسک به سرور برسد (done + لغو/تعلیق/فوری/پین)
+    // 🔧 K4 (BA-250): «تمام جزئیات» به سرور برسد — وضعیت‌ها + متن + سررسید + تکرار.
+    // 🔒 K5: فیلدهای شخصی (contactId و غیره) در این patch نیستند.
     const code = item.netCode || ((NET_STATE.group || netActiveGroup()) || {}).code;
-    const flags = { done: !!item.done,
-        completed_at: item.done ? (item.completedAt || new Date().toISOString()) : null,
-        cancelled: item.cancelled == true, suspended: item.suspended == true,
-        urgent: item.urgent == true, pinned: item.pinned == true,
-        updated_at: new Date().toISOString() };
+    const flags = netTaskSharedFields(item);
     if (ghEnabled()) {
         await ghMutateTask(code, function(gr) {
             (gr.tasks || []).forEach(function(x) { if (x.id === item.netId) { Object.assign(x, flags); } });
