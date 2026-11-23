@@ -8033,7 +8033,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v250-2026-11-23-net-deep-probe';
+const APP_VERSION = 'v251-2026-11-23-net-504-hint';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -18516,6 +18516,7 @@ function netErrHint(msg) {
     if (/invalid api key|invalid key|jws|jwt|unauthorized|401|forbidden/i.test(m)) return 'کلید عمومی اشتباه یا ناقص است — در فرم بالا دکمهٔ «↺ پیش‌فرض» را بزنید، یا کلید را از ⚙ Settings → API Keys دوباره کپی کنید (نه service_role/secret).';
     if (/failed to fetch|networkerror|network error|fetch failed|load failed|timeout|timed out|offline/i.test(m)) return 'اینترنت به supabase.co نمی‌رسد — «↻ اتصال دوباره» را بزنید؛ اگر نشد اینترنت دیگری امتحان کنید (Wi-Fi/دادهٔ موبایل جابه‌جا شود).';
     if (/schema cache|permission|row-level|rls|policy/i.test(m)) return 'سیاست‌های دسترسی روی جدول‌ها کامل نیست — اسکریپت SQL را یک بار دیگر کامل Run کنید (پیام already exists مهم نیست).';
+    if (/http 50[234]|gateway time|bad gateway|service unavailable/i.test(m)) return 'سرور Supabase در دسترس بود ولی خود پایگاه‌دادهٔ پروژه به‌موقع جواب نداد (HTTP 502/503/504). معمولاً موقتی است — به ترتیب: ۱) ۲–۳ دقیقه صبر کنید و «↻ اتصال دوباره» را بزنید؛ ۲) در داشبورد Supabase وضعیت پروژه را چک کنید — اگر کنار نام پروژه نوشته Paused بود دکمهٔ Restore project را بزنید؛ ۳) اینترنت را عوض کنید (Wi-Fi ↔ دادهٔ موبایل) و دوباره امتحان کنید؛ ۴) اگر ادامه داشت وضعیت سرویس را در status.supabase.com ببینید.';
     return '';
 }
 function netDiagHtml() {
