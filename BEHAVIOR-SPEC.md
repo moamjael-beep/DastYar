@@ -11,10 +11,10 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v255 — ۱۴۰۵ آذر ۲ (چت صوتی گروهی + حاضران/میک بالای چت + ارسال عکس + کلید «ترک چت» + ادغام گروه/تسک شبکه در گروه‌های اصلی — BA-232..236)
-#  نسخهٔ فعلی کد:  APP_VERSION = v255-2026-11-23-net-group-voice-images
-#                  CACHE_NAME  = yadavar-cache-v255
-#                  version.txt = v255-2026-11-23-net-group-voice-images
+#  آخرین به‌روزرسانی: v256 — ۱۴۰۵ آذر ۲ (چند گروه هم‌زمان فعال + ساخت فوری گروه در صفحهٔ اصلی + ویرایش/حذف گروه توسط سازنده + مدیریت کامل تسک از صفحهٔ اصلی + تب تسک فقط‌نمایش — BA-237..241)
+#  نسخهٔ فعلی کد:  APP_VERSION = v256-2026-11-23-net-multi-group-main-mgmt
+#                  CACHE_NAME  = yadavar-cache-v256
+#                  version.txt = v256-2026-11-23-net-multi-group-main-mgmt
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -1430,6 +1430,30 @@
 #   از openNetPanel) → NET_connect دوباره false بی‌صدا → خروج بدون هیچ
 #   پیام. اصلاح: netEnsureConnected (صبر تا ۱۰ ثانیه برای اتصال در جریان،
 #   بعد NET_connect) + پیام صریح «اتصال برقرار نشد — جعبهٔ خطا را ببینید».
+#   BA-237 (v256 — چند گروه هم‌زمان): net_groups_v1 (localStorage) لیست
+#   گروه‌های عضوشده {code,id,name,isOwner,members?}؛ netSyncGroupTasks هر
+#   گروه را جدا هم‌گام می‌کند؛ netLoadTasksAll همهٔ گروه‌ها را می‌کشد +
+#   نام/سازنده را تازه می‌کند + گروهِ ناپدیدشده را محلی پاک می‌کند؛
+#   netStartGroupPoll نظرسنجی ۲۰ ثانیه‌ای (Supabase)؛ gh poll هم همهٔ
+#   گروه‌ها را از ghdb هم‌گام می‌کند. netSyncToMain حالا delegate است.
+#   BA-238 (ساخت فوری در صفحهٔ اصلی + کلید پیوستن): netEnsureGroupInMain
+#   در netCreateGroup/netJoinGroup (هر دو بک‌اند) → گروه بلافاصله در
+#   GROUPS_KEY (🛰️) + net_groups_v1؛ کارت «ساخت» و «🔑 پیوستن به گروه»
+#   همیشه در تب گروه‌ها هستند (قبلاً فقط وقتی گروهی نبود).
+#   BA-239 (ویرایش/حذف گروه): netEditGroupName/netDeleteGroup — فقط
+#   created_by (sb) یا createdBy (gh)؛ حذف آبشاری messages→tasks→members
+#   →groups + broadcast «group-deleted» → netRemoveGroupEverywhere نزد
+#   همه (پاک‌سازی net_groups_v1 + آینهٔ GROUPS_KEY/DB_KEY + اگر فعال بود
+#   خروج صوتی/کانال)؛ «group-renamed» هم broadcast؛ اعضا «🚪 خروج» با
+#   netLeaveMyGroup.
+#   BA-240 (مدیریت تسک از صفحهٔ اصلی): فرم «➕ تسک جدید شبکه‌ای» در
+#   renderTasksView گروه‌های netCode؛ ذخیرهٔ مودال اصلی با netId →
+#   netUpdateTaskFromMain؛ ساخت با فرم اصلی در گروه شبکه‌ای →
+#   netCreateTaskFromMain (لینک netId + dedupe)؛ deleteItem با netId →
+#   netDeleteTask؛ «📤 پاس دادن به» در جزئیات تسک (وقتی گروه فعال همان
+#   کد است) → netPassTask؛ سررسید شبکه روز-گران است (slice 0,10).
+#   BA-241 (تب تسک‌ها فقط نمایش): netTasksHtml/netRenderTasksList بدون
+#   فرم/دکمه — فقط عنوان + چیپ‌های ساخت/مسئول/⏰/✓.
 #   BA-232 (v255 — چت صوتی گروهی): netVoiceJoin/Leave/MicToggle + mesh
 #   WebRTC روی کانال گروه؛ مذاکرهٔ بدون‌برخورد (فقط uid کوچک‌تر offer
 #   می‌دهد؛ voice-here برای آگاهی تازه‌وارد)؛ عنصر audio هر peer به body
@@ -2777,6 +2801,11 @@
 #
 #   فایل‌های نسخه: APP_VERSION / version.txt →
 #   v244-2026-11-15-align-keepalive-yt-multi؛ CACHE_NAME → yadavar-cache-v244.
+#
+### v256 (۱۴۰۵ آذر ۲) — چند گروه هم‌زمان + مدیریت تسک از صفحهٔ اصلی + ویرایش/حذف گروه (BA-237..241)
+#   رگرسیون: پروب ۱۳۳ چک — K24 چند-گروهی، K25 ساخت فوری + 🛰️، K26
+#   ویرایش/حذف سازنده با ترتیب آبشاری، K27 افزودن/ویرایش/ساخت از صفحهٔ
+#   اصلی (با dedupe)، K28 فقط-نمایشی بودن تب تسک‌ها — صفر شکست.
 #
 ### v255 (۱۴۰۵ آذر ۲) — چت صوتی گروهی + عکس + ترک چت + ادغام با گروه‌های اصلی (BA-232..236)
 #   رگرسیون: پروب ۱۲۸ چک — K19a-d صوت (با شبیه‌ساز RTC/GUM)، K20a/b عکس

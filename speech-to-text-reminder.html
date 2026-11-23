@@ -4800,6 +4800,11 @@ body.locked .header-actions button {
 .net-lightbox img { max-width:92%; max-height:92%; border-radius:8px; }
 .net-group-chip { background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.45); color:#fff; border-radius:9px; padding:1px 7px; font-size:10.5px; }
 .item-net-tag { background:#E0F2F1; color:#00695C; border-radius:9px; padding:1px 7px; font-size:10.5px; margin:0 3px; white-space:nowrap; }
+/* BA-240 — فرم تسک شبکه‌ای داخل صفحهٔ اصلی */
+.net-main-task-form { background:#fff; border:1px solid #ddd; border-radius:12px; padding:10px; margin-bottom:10px; display:flex; flex-direction:column; gap:6px; }
+.net-main-task-form .net-form-title { font-size:12.5px; font-weight:700; color:#00695C; }
+.net-main-task-form input, .net-main-task-form select { border:1px solid #cfd8dc; border-radius:8px; padding:7px 9px; font-size:13px; font-family:inherit; }
+.net-main-task-form button { background:#00897B; color:#fff; border:none; border-radius:8px; padding:8px 12px; font-size:13px; font-family:inherit; }
 .net-chat-inputbar {
     position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 8px;
     padding: 10px 12px; background: #fff; border-top: 1px solid #e5e5e5;
@@ -8049,7 +8054,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v255-2026-11-23-net-group-voice-images';
+const APP_VERSION = 'v256-2026-11-23-net-multi-group-main-mgmt';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -12263,6 +12268,7 @@ function saveItem() {
             }
 
             setDB(items);
+            if (items[idx].netId) netUpdateTaskFromMain(items[idx]);   // BA-240: ویرایش به شبکه برسد
             // Recalculate positions for the group (the deadline may have
             // changed, so the task might need to move to a new position).
             try { recalcGroupPositions(items[idx].groupId || 'all'); }
@@ -12331,6 +12337,8 @@ function saveItem() {
         newItem.contactId = formContactId;
     }
     items.push(newItem);
+    // 🔧 BA-240: اگر در گروه شبکه‌ای می‌سازیم، تسک روی شبکه هم ساخته شود
+    { const _ng = getGroupById(newTaskGroupId); if (_ng && _ng.netCode) netCreateTaskFromMain(newItem); }
 
     // Check repeat settings and generate children if configured
     var repType = document.getElementById('repeatType');
@@ -13780,6 +13788,19 @@ function renderTasksView(groupId) {
     header.className = 'group-tasks-header';
     const isDefaultGroup = group.id === 'all';
 
+    // 🔧 BA-240: گروه شبکه‌ای — فرم افزودن تسک شبکه‌ای داخل صفحهٔ اصلی
+    if (group.netCode) {
+        const nf = document.createElement('div');
+        nf.className = 'net-main-task-form';
+        nf.innerHTML = '<div class="net-form-title">➕ تسک جدید شبکه‌ای — برای همهٔ اعضا</div>'
+            + '<input id="netMainTaskTitle" placeholder="مثلاً خرید نان">'
+            + '<input id="netMainTaskDeadline" type="date" style="direction:ltr;">'
+            + '<select id="netMainTaskAssignee"><option value="">مسئول: خودم</option>' + netMemberOptions() + '</select>'
+            + '<button onclick="netAddTaskFromMain()">افزودن</button>';
+        container.appendChild(nf);
+        if (!ghEnabled() && ((NET_STATE.group || netActiveGroup()) || {}).code !== group.netCode) netLoadMembersForCode(group.netCode);
+    }
+
     // تنظیم پس‌زمینهٔ هدر: اگر عکس آپلود شده، عکس؛ وگرنه رنگ.
     if (group.headerImage) {
         header.classList.add('has-bg-image');
@@ -13935,6 +13956,7 @@ function renderTasksView(groupId) {
             <div class="detail-row"><span class="detail-label">انجام شد:</span><span class="detail-value">${item.completedAt ? toPersianDigits(toJalaliFull(item.completedAt)) : 'هنوز انجام نشده'}</span></div>
             ${item.completedAt ? `<div class="detail-row"><span class="detail-label">روز انجام:</span><span class="detail-value">${toJalaliLong(item.completedAt)}</span></div>` : ''}
             <div class="detail-row group-selector-row"><span class="detail-label">گروه:</span><select class="group-selector" onchange="changeTaskGroup('${item.id}', this.value)">${groupOpts}</select></div>
+            ${(() => { const _ng = getGroupById(item.groupId || ''); const _code = _ng && _ng.netCode; const _g = NET_STATE.group || netActiveGroup(); if (_code && _g && _g.code === _code && (NET_STATE.members || []).length) { return '<div class="detail-row"><span class="detail-label">📤 پاس دادن به:</span><select class="group-selector" onchange="if(this.value) netPassTask(\\\'' + item.netId + '\\\', this.value)"><option value="">— انتخاب عضو —</option>' + NET_STATE.members.filter(m => m.user_id !== netMyUid()).map(m => '<option value="' + escA(m.user_id) + '">' + escapeHtml(m.display_name) + '</option>').join('') + '</select></div>'; } if (item.netAssignee) { return '<div class="detail-row"><span class="detail-label">📤 مسئول:</span><span class="detail-value">' + escapeHtml(item.netAssignee) + '</span></div>'; } return ''; })()}
             <div class="detail-row urgent-toggle-row"><span class="detail-label">🚨 فوری:</span><label class="urgent-checkbox-label"><input type="checkbox" class="urgent-checkbox" ${item.urgent ? 'checked' : ''} onchange="toggleTaskUrgent('${item.id}')"> <span>این تسک در گروه «کارهای فوری» نمایش داده شود</span></label></div>
             ${(() => { const tc = item.contactId ? getContactById(item.contactId) : null; return `<div class="detail-row detail-contact-row"><span class="detail-label">👤 شخص:</span><span class="detail-value">${tc ? escapeHtml(tc.name) + (tc.company ? ' — ' + escapeHtml(tc.company) : '') + (tc.primaryPhone ? ' • ' + escapeHtml(tc.primaryPhone) : '') : 'بدون شخص'}</span><button class="detail-contact-edit-btn" onclick="event.stopPropagation(); changeTaskContact('${item.id}')" title="${tc ? 'ویرایش/تغییر شخص' : 'افزودن شخص'}">✏️</button></div>`; })()}
             <div class="item-actions">${
@@ -14306,6 +14328,7 @@ function deleteItem(id) {
         ? `این تسک و ${childCount} تسک تکرارشونده‌ی آن حذف شوند؟`
         : 'این یادآور حذف شود؟';
     if (!confirm(msg)) return;
+    if (item && item.netId) netDeleteTask(item.netId);   // BA-240: حذف از شبکه هم
     let newItems = items.filter(i => i.id !== id && i.parentId !== id);
     setDB(newItems);
     // 🔧 حفظ موقعیت اسکرول — صفحه نپرد
@@ -18681,6 +18704,13 @@ function ghStartPoll() {
                 NET_STATE.tasks = gr.tasks || [];
                 NET_STATE.msgs = (gr.messages || []).slice(-100);
                 netSyncToMain();
+                netMyGroups().forEach(function(gm2) {
+                    const gr2 = ghGroup(gm2.code);
+                    if (!gr2) { netRemoveGroupEverywhere(gm2.code, gm2.name, 'گروه «' + gm2.name + '» حذف شد'); return; }
+                    const fresh = netMyGroups().find(function(x) { return x.code === gm2.code; });
+                    if (fresh) { fresh.name = gr2.name || gm2.name; fresh.isOwner = gr2.createdBy === netMyUid(); netGroupsSave(netMyGroups()); }
+                    netSyncGroupTasks({ code: gm2.code, name: (gr2 && gr2.name) || gm2.name }, (gr2 && gr2.tasks) || []);
+                });
                 const lastM = (gr.messages || [])[(gr.messages || []).length - 1];
                 if (lastM) netNotifyMsg(lastM);
                 const ov = document.getElementById('netOverlay');
@@ -18817,7 +18847,9 @@ function NET_subscribe() {
         if (NET_STATE.tab === 'chat') netRenderChatList();
     });
     ch.on('broadcast', { event: 'tasks-refresh' }, function() {
-        netLoadTasks().then(function() { if (NET_STATE.tab === 'tasks') netRenderTasksList(); });
+        netLoadTasksAll().then(function() {
+            netLoadTasks().then(function() { if (NET_STATE.tab === 'tasks') netRenderTasksList(); });
+        });
     });
     ch.on('broadcast', { event: 'members-refresh' }, function() {
         netLoadMembers().then(function() {
@@ -18851,6 +18883,16 @@ function NET_subscribe() {
         const on = NET_STATE.online || {};
         if (on[p.uid]) { on[p.uid].mic = !!p.on; netRenderChatHeader(); }
     });
+    ch.on('broadcast', { event: 'group-deleted' }, function(m) {
+        const p = m && m.payload;
+        if (!p || !p.code) return;
+        netRemoveGroupEverywhere(p.code, p.name || '');
+    });
+    ch.on('broadcast', { event: 'group-renamed' }, function(m) {
+        const p = m && m.payload;
+        if (!p || !p.code) return;
+        netAfterGroupRenamed(p.code, p.name || '');
+    });
     ch.on('broadcast', { event: 'call-signal' }, function(m) {
         const p = m && m.payload;
         if (p) NET_onCallSignal(p);
@@ -18874,6 +18916,10 @@ function NET_subscribe() {
         }
     });
     NET_STATE.ch = ch;
+    netStartGroupPoll();   // BA-237: هم‌گام‌سازی دوره‌ای همهٔ گروه‌ها
+    netLoadTasksAll();
+    const ag = NET_STATE.group || netActiveGroup();
+    if (ag) netEnsureGroupInMain(ag);   // BA-238: مهاجرت کاربران قدیمی
 }
 
 // ─── باز/بستهٔ پنل (الگوی تعطیلات — BA-154 + BA-218) ───
@@ -18983,6 +19029,8 @@ function netForget() {
     localStorage.removeItem('net_settings');
     NET_leaveChannel();
     ghStopPoll();
+    netStopGroupPoll();   // BA-237
+    localStorage.removeItem('net_groups_v1');
     NET_STATE.sb = null;
     NET_STATE.gh = false; NET_STATE.ghdb = null;
     netVoiceLeave(true);   // BA-232: پاک‌سازی کامل صوت هنگام قطع اتصال
@@ -19066,31 +19114,40 @@ function netRenderTab() {
 // ─── تب گروه‌ها + اعضا ───
 function netGroupsHtml() {
     const g = NET_STATE.group || netActiveGroup();
-    let h = '';
-    if (g) {
-        h += '<div class="net-card"><h4>گروه فعال: ' + escapeHtml(g.name) + '</h4>'
-            + '<div class="net-row"><span class="net-badge">' + escapeHtml(g.code) + '</span>'
-            + '<span style="font-size:11px;color:#78909c;">کد دعوت — برای عضوت دیگران</span></div>'
-            + '<div style="margin-top:8px;"><button class="net-btn secondary small" onclick="netLeaveGroup()">خروج از گروه</button></div></div>';
-        h += '<div class="net-card"><h4>اعضا (لمس 📞 برای تماس صوتی)</h4><div id="netMembersList"><div class="net-empty">در حال دریافت…</div></div></div>';
-    } else {
-        h += '<div class="net-card"><h4>ساخت گروه مشترک</h4>'
-            + '<div class="net-field"><label>نام گروه</label><input id="netGroupName" placeholder="مثلاً خانواده"></div>'
-            + '<button class="net-btn" onclick="netCreateGroup()">ساخت گروه</button></div>';
-        h += '<div class="net-card"><h4>عضویت با کد دعوت</h4>'
-            + '<div class="net-field"><label>کد دعوت</label><input id="netJoinCode" style="direction:ltr;text-align:center;letter-spacing:2px;" placeholder="مثلاً K7M2PQ"></div>'
-            + '<button class="net-btn" onclick="netJoinGroup()">عضویت</button></div>';
-    }
+    const mine = netMyGroups();
+    let h = '<div class="net-card"><h4>گروه‌های من (' + toPersianNumber(mine.length) + ') — همه فعال‌اند و در صفحهٔ اصلی برنامه هم هستند</h4>';
+    if (!mine.length) h += '<div class="net-empty">هنوز گروهی ندارید — گروه بسازید یا با کد دعوت عضو شوید</div>';
+    mine.forEach(function(m) {
+        const active = g && g.code === m.code;
+        h += '<div class="net-member-row">'
+            + '<span class="net-member-name">' + escapeHtml(m.name) + (m.isOwner ? ' <span class="net-chip owner">سازنده</span>' : '') + (active ? ' <span class="net-online">فعال</span>' : '') + '</span>'
+            + '<span class="net-badge">' + escapeHtml(m.code) + '</span>'
+            + (!active ? '<button class="net-btn small" onclick="netSwitchGroup(\'' + escA(m.code) + '\')">💬 چت و صوت</button>' : '')
+            + '<button class="net-btn small secondary" onclick="netEditGroupName(\'' + escA(m.code) + '\')">✏️ ویرایش</button>'
+            + (m.isOwner
+                ? '<button class="net-btn small danger" onclick="netDeleteGroup(\'' + escA(m.code) + '\')">🗑 حذف گروه</button>'
+                : '<button class="net-btn small secondary" onclick="netLeaveMyGroup(\'' + escA(m.code) + '\')">🚪 خروج</button>')
+            + '</div>';
+    });
+    h += '</div>';
+    h += '<div class="net-card"><h4>ساخت گروه جدید</h4>'
+        + '<div class="net-field"><label>نام گروه</label><input id="netGroupName" placeholder="مثلاً خانواده"></div>'
+        + '<button class="net-btn" onclick="netCreateGroup()">ساخت گروه</button></div>';
+    h += '<div class="net-card"><h4>پیوستن با کد دعوت</h4>'
+        + '<div class="net-field"><label>کد دعوت</label><input id="netJoinCode" style="direction:ltr;text-align:center;letter-spacing:2px;" placeholder="مثلاً K7M2PQ"></div>'
+        + '<button class="net-btn" onclick="netJoinGroup()">🔑 پیوستن به گروه</button>'
+        + '<div class="net-empty" style="margin-top:6px;">سازندهٔ گروه کد ۶ حرفی را برایتان می‌فرستد؛ آن را این‌جا وارد و «🔑 پیوستن» را بزنید — گروه بلافاصله در صفحهٔ اصلی برنامه هم ساخته می‌شود.</div></div>';
+    if (g) h += '<div class="net-card"><h4>اعضای گروه فعال: ' + escapeHtml(g.name) + ' (لمس 📞 برای تماس صوتی)</h4><div id="netMembersList"><div class="net-empty">در حال دریافت…</div></div></div>';
     return h;
 }
 async function netLoadMembers() {
     const g = NET_STATE.group || netActiveGroup();
     if (!g) return;
-    if (ghEnabled()) { const gr = ghGroup(g.code); NET_STATE.members = (gr && gr.members) || []; return; }
+    if (ghEnabled()) { const gr = ghGroup(g.code); NET_STATE.members = (gr && gr.members) || []; netCacheMembers(g.code, NET_STATE.members); return; }
     if (!NET_STATE.sb) return;
     try {
         const r = await NET_STATE.sb.from('net_members').select('*').eq('group_id', g.id);
-        if (!r.error) NET_STATE.members = r.data || [];
+        if (!r.error) { NET_STATE.members = r.data || []; netCacheMembers(g.code, NET_STATE.members); }
     } catch(e) {}
 }
 function netRenderMembersList() {
@@ -19136,6 +19193,8 @@ async function netCreateGroup() {
             await ghSave(db);
             NET_STATE.ghdb = db;
             netSetActiveGroup({ id: code, code: code, name: name });
+            netEnsureGroupInMain({ id: code, code: code, name: name }, true);   // BA-238
+            netLoadTasksAll();
             netRenderTab();
             showToast('✅ گروه ساخته شد (گیت‌هاب) — کد دعوت: ' + code);
         } catch(e) { showToast('⚠️ ' + ((e && e.message) || e)); }
@@ -19149,6 +19208,8 @@ async function netCreateGroup() {
         netSetActiveGroup({ id: g.id, code: g.code, name: g.name });
         await NET_subscribe();
         await netLoadMembers();
+        netEnsureGroupInMain(g, true);   // BA-238: بلافاصله در گروه‌های صفحهٔ اصلی
+        await netLoadTasksAll();
         netRenderTab();
         showToast('✅ گروه ساخته شد — کد دعوت: ' + code);
     } catch(e) { showToast('⚠️ ' + (e.message || e)); }
@@ -19170,6 +19231,8 @@ async function netJoinGroup() {
             }
             NET_STATE.ghdb = db;
             netSetActiveGroup({ id: code, code: code, name: gr.name });
+            netEnsureGroupInMain({ id: code, code: code, name: gr.name }, gr.createdBy === netMyUid());   // BA-238
+            netSyncGroupTasks({ code: code, name: gr.name }, gr.tasks || []);
             NET_STATE.members = gr.members || [];
             NET_STATE.tasks = gr.tasks || [];
             NET_STATE.msgs = (gr.messages || []).slice(-100);
@@ -19191,6 +19254,8 @@ async function netJoinGroup() {
         netSetActiveGroup({ id: g.id, code: g.code, name: g.name });
         await NET_subscribe();
         await netLoadMembers();
+        netEnsureGroupInMain(g, g.created_by === netMyUid());   // BA-238: بلافاصله در گروه‌های صفحهٔ اصلی
+        await netLoadTasksAll();
         netRenderTab();
         showToast('✅ به گروه «' + g.name + '» وصل شدید');
     } catch(e) { showToast('⚠️ ' + (e.message || e)); }
@@ -19225,19 +19290,14 @@ async function netLeaveGroup() {
     showToast('از گروه خارج شدید');
 }
 
-// ─── تب تسک‌های مشترک + پاس دادن ───
+// ─── تب تسک‌های مشترک (فقط نمایش — BA-241) ───
+// افزودن/ویرایش/پاس دادن از صفحهٔ اصلی برنامه (نمای گروه شبکه‌ای) انجام می‌شود
 function netTasksHtml() {
     const g = NET_STATE.group || netActiveGroup();
     if (!g) return '<div class="net-empty">اول در تب «گروه‌ها» گروه بسازید یا عضو شوید</div>';
-    let h = '<div class="net-card"><h4>تسک جدید گروهی</h4>'
-        + '<div class="net-field"><label>عنوان</label><input id="netTaskTitle" placeholder="مثلاً خرید نان"></div>'
-        + '<div class="net-row">'
-        + '<div class="net-field"><label>مهلت (اختیاری)</label><input id="netTaskDeadline" type="date" style="direction:ltr;"></div>'
-        + '<div class="net-field"><label>مسئول (اختیاری)</label><select id="netTaskAssignee"><option value="">خودم</option></select></div>'
-        + '</div>'
-        + '<button class="net-btn" onclick="netAddTask()">افزودن به گروه</button></div>';
-    h += '<div id="netTasksList"></div>';
-    return h;
+    return '<div class="net-card"><h4>تسک‌های گروه «' + escapeHtml(g.name) + '»</h4>'
+        + '<div class="net-empty" style="font-size:11px;">فقط نمایش — افزودن، ویرایش و پاس دادن از صفحهٔ اصلی برنامه انجام می‌شود: در لیست گروه‌ها، گروه 🛰️ همین شبکه را باز کنید</div></div>'
+        + '<div id="netTasksList"></div>';
 }
 async function netLoadTasks() {
     const g = NET_STATE.group || netActiveGroup();
@@ -19252,26 +19312,14 @@ async function netLoadTasks() {
 function netRenderTasksList() {
     const el = document.getElementById('netTasksList');
     if (!el) return;
-    const me = netMyUid();
-    if (!NET_STATE.tasks.length) { el.innerHTML = '<div class="net-empty">تسک مشترکی نیست</div>'; return; }
+    if (!NET_STATE.tasks.length) { el.innerHTML = '<div class="net-empty">تسک مشترکی نیست — از صفحهٔ اصلی برنامه اضافه کنید</div>'; return; }
     el.innerHTML = NET_STATE.tasks.map(function(t) {
         const dl = t.deadline ? '<span class="net-chip dl">⏰ ' + escapeHtml(String(t.deadline)) + '</span>' : '';
         const own = '<span class="net-chip owner">ساخت: ' + escapeHtml(t.owner_name || '') + '</span>';
         const asg = t.assignee_name ? '<span class="net-chip assignee">مسئول: ' + escapeHtml(t.assignee_name) + '</span>' : '';
-        const passSel = '<select onchange="netPassTask(\'' + escA(t.id) + '\', this.value)">'
-            + '<option value="">📤 پاس دادن به…</option>'
-            + NET_STATE.members.filter(function(m) { return m.user_id !== me; })
-                .map(function(m) { return '<option value="' + escA(m.user_id) + '">' + escapeHtml(m.display_name) + '</option>'; })
-                .join('')
-            + '</select>';
-        const btns = [
-            '<button class="net-btn small ' + (t.done ? 'secondary' : '') + '" onclick="netToggleTaskDone(\'' + escA(t.id) + '\', ' + (t.done ? 'false' : 'true') + ')">' + (t.done ? '↩ برگرداندن' : '✓ انجام شد') + '</button>',
-            passSel
-        ];
-        if (t.owner_id === me) btns.push('<button class="net-btn small danger" onclick="netDeleteTask(\'' + escA(t.id) + '\')">حذف</button>');
+        const dn = t.done ? '<span class="net-online">✓ انجام شده</span>' : '';
         return '<div class="net-card"><div class="net-task-title' + (t.done ? ' done' : '') + '">' + escapeHtml(t.title) + '</div>'
-            + own + asg + dl
-            + '<div class="net-task-btns">' + btns.join('') + '</div></div>';
+            + own + asg + dl + dn + '</div>';
     }).join('');
 }
 // BA-231: جهش مشترک روی تسک‌های یک گروه در بک‌اند گیت‌هاب
@@ -19390,6 +19438,325 @@ async function netDeleteTask(id) {
         netRenderTasksList();
         showToast('تسک حذف شد');
     } catch(e) { showToast('⚠️ ' + (e.message || e)); }
+}
+
+// ─── BA-237..241: چند گروه هم‌زمان + مدیریت تسک از صفحهٔ اصلی + ویرایش/حذف گروه ───
+// BA-237: لیست گروه‌های عضوشدهٔ من — همه فعال‌اند و با صفحهٔ اصلی هم‌گام می‌شوند
+function netMyGroups() {
+    try { return JSON.parse(localStorage.getItem('net_groups_v1') || '[]'); } catch(e) { return []; }
+}
+function netGroupsSave(list) {
+    try { localStorage.setItem('net_groups_v1', JSON.stringify(list)); } catch(e) {}
+}
+// BA-238: گروه تازه‌ساخته/ملحق‌شده بلافاصله در «گروه‌های صفحهٔ اصلی» ظاهر می‌شود
+function netEnsureGroupInMain(g, isOwner) {
+    if (!g || !g.code) return;
+    try {
+        const list = netMyGroups();
+        const found = list.find(function(x) { return x.code === g.code; });
+        if (found) { found.name = g.name; if (isOwner !== undefined) found.isOwner = !!isOwner; }
+        else list.push({ code: g.code, id: g.id || g.code, name: g.name, isOwner: !!isOwner });
+        netGroupsSave(list);
+        const groups = JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]');
+        const mg = groups.find(function(x) { return x.netCode === g.code; });
+        if (!mg) groups.push({ id: 'net_' + g.code, name: g.name, color: '#00897B', headerIcon: '🛰️', netCode: g.code, showInAll: true });
+        else mg.name = g.name;
+        localStorage.setItem(GROUPS_KEY, JSON.stringify(groups));
+        if (typeof currentView !== 'undefined' && currentView === 'groups') { try { renderGroupsView(); } catch(e) {} }
+    } catch(e) {}
+}
+// BA-237: هم‌گام‌سازی تسک‌های یک گروه مشخص (نه فقط گروه فعال)
+function netSyncGroupTasks(g, tasks) {
+    if (!g || !g.code) return;
+    if (!NET_STATE.sb && !NET_STATE.gh) return;
+    try {
+        netEnsureGroupInMain(g);
+        const items = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+        let changed = false;
+        const gid = 'net_' + g.code;
+        (tasks || []).forEach(function(t) {
+            let it = items.find(function(x) { return x.netId === t.id; });
+            if (!it) {
+                it = { id: 'nt_' + t.id, netId: t.id, netCode: g.code, groupId: gid,
+                    text: t.title, deadline: t.deadline || null, done: !!t.done,
+                    netOwner: t.owner_name || '', netAssignee: t.assignee_name || '',
+                    createdAt: t.created_at || new Date().toISOString() };
+                items.push(it);
+                changed = true;
+            } else {
+                if (it.text !== t.title) { it.text = t.title; changed = true; }
+                if (String(it.deadline || '').slice(0, 10) !== String(t.deadline || '')) { it.deadline = t.deadline || null; changed = true; }
+                if (!!it.done !== !!t.done) { it.done = !!t.done; it.completedAt = it.done ? (t.completed_at || new Date().toISOString()) : null; changed = true; }
+                if ((it.netAssignee || '') !== (t.assignee_name || '')) { it.netAssignee = t.assignee_name || ''; changed = true; }
+            }
+        });
+        if (changed) localStorage.setItem(DB_KEY, JSON.stringify(items));
+    } catch(e) {}
+}
+// BA-237: دریافت تسک‌های همهٔ گروه‌ها + به‌روزرسانی نام/سازنده و هم‌گام‌سازی
+async function netLoadTasksAll() {
+    const list = netMyGroups();
+    if (!list.length) return;
+    if (ghEnabled()) {
+        try {
+            const db = await ghGet();
+            list.forEach(function(gm) {
+                const gr = db.groups[gm.code];
+                if (!gr) { netRemoveGroupEverywhere(gm.code, gm.name, 'گروه «' + gm.name + '» حذف شد'); return; }
+                const fresh = netMyGroups().find(function(x) { return x.code === gm.code; });
+                if (fresh) { fresh.name = gr.name || gm.name; fresh.isOwner = gr.createdBy === netMyUid(); netGroupsSave(netMyGroups()); }
+                netSyncGroupTasks({ code: gm.code, name: (gr && gr.name) || gm.name }, (gr && gr.tasks) || []);
+            });
+        } catch(e) {}
+        return;
+    }
+    if (!NET_STATE.sb) return;
+    for (var i = 0; i < list.length; i++) {
+        const gm = list[i];
+        try {
+            const gr0 = await NET_STATE.sb.from('net_groups').select('*').eq('code', gm.code).limit(1);
+            const g = (gr0.data || [])[0];
+            if (!g) { netRemoveGroupEverywhere(gm.code, gm.name, 'گروه «' + gm.name + '» حذف شد'); continue; }
+            const fresh = netMyGroups().find(function(x) { return x.code === gm.code; });
+            if (fresh) { fresh.name = g.name || gm.name; fresh.isOwner = g.created_by === netMyUid(); netGroupsSave(netMyGroups()); }
+            const r = await NET_STATE.sb.from('net_tasks').select('*').eq('group_id', g.id).order('created_at', { ascending: true });
+            netSyncGroupTasks(g, (!r.error && r.data) || []);
+        } catch(e) {}
+    }
+}
+// BA-237: نظرسنجی سبک ۲۰ ثانیه‌ای برای هم‌گام ماندن همهٔ گروه‌ها (Supabase)
+let netGroupPoll = null;
+function netStartGroupPoll() {
+    if (netGroupPoll) return;
+    netGroupPoll = setInterval(function() { if (NET_STATE.sb && !ghEnabled()) netLoadTasksAll(); }, 20000);
+}
+function netStopGroupPoll() { if (netGroupPoll) { clearInterval(netGroupPoll); netGroupPoll = null; } }
+function netIsOwnerOf(g) {
+    if (!g) return false;
+    const me = netMyUid();
+    if (g.created_by) return g.created_by === me;
+    const mine = netMyGroups().find(function(x) { return x.code === g.code; });
+    return !!(mine && mine.isOwner);
+}
+function netCacheMembers(code, members) {
+    const list = netMyGroups();
+    const mine = list.find(function(x) { return x.code === code; });
+    if (mine) { mine.members = members; netGroupsSave(list); }
+}
+// BA-239: ویرایش نام گروه (فقط سازنده)
+async function netEditGroupName(code) {
+    const mine = netMyGroups().find(function(x) { return x.code === code; });
+    const cur = mine ? mine.name : '';
+    const name = (prompt('نام جدید گروه:', cur) || '').trim();
+    if (!name || name === cur) return;
+    if (ghEnabled()) {
+        try {
+            const db = await ghGet();
+            const gr = db.groups[code];
+            if (!gr) throw new Error('گروه در Gist نیست');
+            if (gr.createdBy !== netMyUid()) throw new Error('فقط سازندهٔ گروه می‌تواند آن را ویرایش کند');
+            gr.name = name;
+            await ghSave(db);
+            NET_STATE.ghdb = db;
+            netAfterGroupRenamed(code, name);
+        } catch(e) { showToast('⚠️ ' + ((e && e.message) || e)); }
+        return;
+    }
+    if (!NET_STATE.sb) return;
+    try {
+        const r0 = await NET_STATE.sb.from('net_groups').select('*').eq('code', code).limit(1);
+        const g = (r0.data || [])[0];
+        if (!g) throw new Error('گروه پیدا نشد');
+        if (g.created_by !== netMyUid()) throw new Error('فقط سازندهٔ گروه می‌تواند آن را ویرایش کند');
+        const r = await NET_STATE.sb.from('net_groups').update({ name: name, updated_at: new Date().toISOString() }).eq('id', g.id);
+        if (r.error) throw new Error(r.error.message);
+        if (NET_STATE.ch && NET_STATE.group && NET_STATE.group.code === code) NET_broadcast('group-renamed', { code: code, name: name });
+        netAfterGroupRenamed(code, name);
+    } catch(e) { showToast('⚠️ ' + ((e && e.message) || e)); }
+}
+function netAfterGroupRenamed(code, name) {
+    try {
+        const list = netMyGroups();
+        const mine = list.find(function(x) { return x.code === code; });
+        if (mine) { mine.name = name; netGroupsSave(list); }
+        const groups = JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]');
+        const mg = groups.find(function(x) { return x.netCode === code; });
+        if (mg) { mg.name = name; localStorage.setItem(GROUPS_KEY, JSON.stringify(groups)); }
+        if (NET_STATE.group && NET_STATE.group.code === code) NET_STATE.group.name = name;
+        if (typeof currentView !== 'undefined' && currentView === 'groups') { try { renderGroupsView(); } catch(e) {} }
+        netRenderTab();
+        showToast('✅ نام گروه به «' + name + '» تغییر کرد');
+    } catch(e) {}
+}
+// BA-239: حذف گروه توسط سازنده — پیام‌ها/تسک‌ها/اعضا/گروه برای همه پاک می‌شود
+async function netDeleteGroup(code) {
+    const mine = netMyGroups().find(function(x) { return x.code === code; });
+    if (!confirm('گروه «' + ((mine && mine.name) || code) + '» و همهٔ تسک‌ها و پیام‌هایش برای همهٔ اعضا حذف شود؟')) return;
+    if (ghEnabled()) {
+        try {
+            const db = await ghGet();
+            const gr = db.groups[code];
+            if (!gr) throw new Error('گروه در Gist نیست');
+            if (gr.createdBy !== netMyUid()) throw new Error('فقط سازندهٔ گروه می‌تواند آن را حذف کند');
+            delete db.groups[code];
+            await ghSave(db);
+            NET_STATE.ghdb = db;
+            netRemoveGroupEverywhere(code, (gr && gr.name) || '');
+        } catch(e) { showToast('⚠️ ' + ((e && e.message) || e)); }
+        return;
+    }
+    if (!NET_STATE.sb) return;
+    try {
+        const r0 = await NET_STATE.sb.from('net_groups').select('*').eq('code', code).limit(1);
+        const g = (r0.data || [])[0];
+        if (!g) throw new Error('گروه پیدا نشد');
+        if (g.created_by !== netMyUid()) throw new Error('فقط سازندهٔ گروه می‌تواند آن را حذف کند');
+        await NET_STATE.sb.from('net_messages').delete().eq('group_id', g.id);
+        await NET_STATE.sb.from('net_tasks').delete().eq('group_id', g.id);
+        await NET_STATE.sb.from('net_members').delete().eq('group_id', g.id);
+        await NET_STATE.sb.from('net_groups').delete().eq('id', g.id);
+        if (NET_STATE.ch) NET_broadcast('group-deleted', { code: code, name: g.name });
+        netRemoveGroupEverywhere(code, g.name);
+    } catch(e) { showToast('⚠️ ' + ((e && e.message) || e)); }
+}
+// BA-239: پاک‌سازی محلی گروه حذف/ترک‌شده (نزد همهٔ اعضا هم از طریق broadcast/poll)
+function netRemoveGroupEverywhere(code, name, msg) {
+    try {
+        netGroupsSave(netMyGroups().filter(function(x) { return x.code !== code; }));
+        localStorage.setItem(GROUPS_KEY, JSON.stringify(JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]').filter(function(x) { return x.netCode !== code; })));
+        localStorage.setItem(DB_KEY, JSON.stringify(JSON.parse(localStorage.getItem(DB_KEY) || '[]').filter(function(x) { return x.netCode !== code; })));
+        if (NET_STATE.group && NET_STATE.group.code === code) {
+            netVoiceLeave(true);
+            NET_leaveChannel();
+            netSetActiveGroup(null);
+            NET_STATE.members = []; NET_STATE.tasks = []; NET_STATE.msgs = []; NET_STATE.online = {};
+            if (NET_STATE.tab !== 'groups') { NET_STATE.tab = 'groups'; }
+            netRenderTab();
+        }
+        if (typeof validateCurrentViewAfterDataChange === 'function') { try { validateCurrentViewAfterDataChange(); } catch(e) {} }
+        if (typeof fullRender === 'function') { try { fullRender(); } catch(e) {} }
+        showToast(msg || ('گروه «' + (name || code) + '» حذف شد'));
+    } catch(e) {}
+}
+// BA-237: تغییر گروه فعال پنل (چت/صوت) بین گروه‌های عضوشده
+function netSwitchGroup(code) {
+    const mine = netMyGroups().find(function(x) { return x.code === code; });
+    if (!mine) return;
+    netVoiceLeave(true);
+    netSetActiveGroup({ id: mine.id, code: code, name: mine.name });
+    NET_subscribe();
+    netLoadMembers().then(function() { if (NET_STATE.tab === 'groups') netRenderMembersList(); });
+    netLoadTasks();
+    netLoadMessages().then(function() { if (NET_STATE.tab === 'chat') netRenderChatList(); });
+    netRenderTab();
+    showToast('گروه فعال: ' + mine.name);
+}
+// BA-239: خروج عضو از یک گروه مشخص (غیرفعال هم می‌شود)
+async function netLeaveMyGroup(code) {
+    const mine = netMyGroups().find(function(x) { return x.code === code; });
+    if (!confirm('از گروه «' + ((mine && mine.name) || code) + '» خارج شوید؟')) return;
+    const g = NET_STATE.group || netActiveGroup();
+    if (ghEnabled()) {
+        try {
+            const db = await ghGet();
+            const gr = db.groups[code];
+            if (gr) { gr.members = (gr.members || []).filter(function(m) { return m.user_id !== netMyUid(); }); await ghSave(db); NET_STATE.ghdb = db; }
+        } catch(e) {}
+        netRemoveGroupEverywhere(code, mine && mine.name, 'از گروه خارج شدید');
+        return;
+    }
+    if (NET_STATE.sb) {
+        try {
+            const r0 = await NET_STATE.sb.from('net_groups').select('*').eq('code', code).limit(1);
+            const gr = (r0.data || [])[0];
+            if (gr) {
+                await NET_STATE.sb.from('net_members').delete().eq('group_id', gr.id).eq('user_id', netMyUid());
+                if (g && g.code === code && NET_STATE.ch) NET_broadcast('members-refresh', {});
+            }
+        } catch(e) {}
+    }
+    netRemoveGroupEverywhere(code, mine && mine.name, 'از گروه خارج شدید');
+}
+function netMemberOptions() {
+    const me = netMyUid();
+    return (NET_STATE.members || []).filter(function(m) { return m.user_id !== me; })
+        .map(function(m) { return '<option value="' + escA(m.user_id) + '">' + escapeHtml(m.display_name) + '</option>'; })
+        .join('');
+}
+// BA-240: بارگیری اعضای یک گروه مشخص (برای فرم پاس دادن در صفحهٔ اصلی)
+async function netLoadMembersForCode(code) {
+    let members = [];
+    if (ghEnabled()) { const gr = ghGroup(code); members = (gr && gr.members) || []; }
+    else if (NET_STATE.sb) {
+        try {
+            const r0 = await NET_STATE.sb.from('net_groups').select('*').eq('code', code).limit(1);
+            const gr = (r0.data || [])[0];
+            if (gr) {
+                const r = await NET_STATE.sb.from('net_members').select('*').eq('group_id', gr.id);
+                members = (!r.error && r.data) || [];
+            }
+        } catch(e) {}
+    }
+    netCacheMembers(code, members);
+    const sel = document.getElementById('netMainTaskAssignee');
+    if (sel && ((NET_STATE.group || netActiveGroup()) || {}).code === code) {
+        sel.innerHTML = '<option value="">مسئول: خودم</option>' + members.filter(function(m) { return m.user_id !== netMyUid(); })
+            .map(function(m) { return '<option value="' + escA(m.user_id) + '">' + escapeHtml(m.display_name) + '</option>'; }).join('');
+    }
+    return members;
+}
+// BA-240: افزودن تسک شبکه‌ای از فرم داخل صفحهٔ اصلی
+async function netAddTaskFromMain() {
+    const ti = document.getElementById('netMainTaskTitle');
+    const dl = document.getElementById('netMainTaskDeadline');
+    const as = document.getElementById('netMainTaskAssignee');
+    const title = ((ti && ti.value) || '').trim();
+    if (!title) { showToast('عنوان تسک را بنویسید'); return; }
+    const t = await netAddTaskCore(title, (dl && dl.value) || '', (as && as.value) || '');
+    if (t) {
+        if (ti) ti.value = '';
+        if (dl) dl.value = '';
+        showToast('✅ تسک به گروه اضافه شد');
+        const g = NET_STATE.group || netActiveGroup();
+        if (typeof currentView !== 'undefined' && currentView === 'tasks' && g && currentGroupId === 'net_' + g.code) { try { renderTasksView(currentGroupId); } catch(e) {} }
+    }
+}
+// BA-240: تسکِ ساخته‌شده با فرم اصلی برنامه در گروه شبکه‌ای → ساختن روی شبکه
+async function netCreateTaskFromMain(item) {
+    if (!item || item.netId) return;
+    const t = await netAddTaskCore(item.text, item.deadline ? String(item.deadline).slice(0, 10) : '', null);
+    if (!t) return;
+    try {
+        const items = getDB();
+        const it = items.find(function(x) { return x.id === item.id; });
+        if (it) { it.netId = t.id; const g = NET_STATE.group || netActiveGroup(); it.netCode = g ? g.code : ''; it.netOwner = NET_STATE.myName; }
+        const dupes = it ? items.filter(function(x) { return x.netId === t.id && x.id !== it.id; }) : [];
+        if (dupes.length) {
+            const keep = items.filter(function(x) { return !dupes.some(function(d) { return d.id === x.id; }); });
+            items.length = 0;
+            for (var i = 0; i < keep.length; i++) items.push(keep[i]);
+        }
+        setDB(items);
+    } catch(e) {}
+}
+// BA-240: ویرایش متن/سررسید تسک شبکه‌ای از برنامهٔ اصلی → به شبکه برسد
+async function netUpdateTaskFromMain(item) {
+    if (!item || !item.netId) return;
+    const dl = item.deadline ? String(item.deadline).slice(0, 10) : null;
+    const code = item.netCode || ((NET_STATE.group || netActiveGroup()) || {}).code;
+    if (ghEnabled()) {
+        await ghMutateTask(code, function(gr) {
+            (gr.tasks || []).forEach(function(x) { if (x.id === item.netId) { x.title = item.text; x.deadline = dl; x.updated_at = new Date().toISOString(); } });
+        });
+        return;
+    }
+    if (!NET_STATE.sb) return;
+    try {
+        const r = await NET_STATE.sb.from('net_tasks').update({ title: item.text, deadline: dl, updated_at: new Date().toISOString() }).eq('id', item.netId);
+        if (r.error) throw new Error(r.error.message);
+        NET_broadcast('tasks-refresh', {});
+        await netLoadTasksAll();
+    } catch(e) {}
 }
 
 // ─── تب چت دوطرفه ───
@@ -19672,36 +20039,7 @@ function netNotifyMsg(msg) {
 // گروه شبکه یک گروه واقعی برنامه می‌شود (🛰️) و تسک‌هایش دقیقاً مثل
 // بقیهٔ تسک‌ها در نمای گروه نمایش داده می‌شوند.
 function netSyncToMain() {
-    const g = NET_STATE.group || netActiveGroup();
-    if (!g || (!NET_STATE.sb && !NET_STATE.gh)) return;
-    try {
-        const groups = JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]');
-        let lg = groups.find(function(x) { return x.netCode === g.code; });
-        if (!lg) {
-            lg = { id: 'net_' + g.code, name: g.name, color: '#00897B', headerIcon: '🛰️', netCode: g.code, showInAll: true };
-            groups.push(lg);
-        } else if (lg.name !== g.name) { lg.name = g.name; }
-        localStorage.setItem(GROUPS_KEY, JSON.stringify(groups));
-        const items = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
-        let changed = false;
-        (NET_STATE.tasks || []).forEach(function(t) {
-            let it = items.find(function(x) { return x.netId === t.id; });
-            if (!it) {
-                it = { id: 'nt_' + t.id, netId: t.id, netCode: g.code, groupId: lg.id,
-                    text: t.title, deadline: t.deadline || null, done: !!t.done,
-                    netOwner: t.owner_name || '', netAssignee: t.assignee_name || '',
-                    createdAt: t.created_at || new Date().toISOString() };
-                items.push(it);
-                changed = true;
-            } else {
-                if (it.text !== t.title) { it.text = t.title; changed = true; }
-                if ((it.deadline || null) !== (t.deadline || null)) { it.deadline = t.deadline || null; changed = true; }
-                if (!!it.done !== !!t.done) { it.done = !!t.done; it.completedAt = it.done ? (t.completed_at || new Date().toISOString()) : null; changed = true; }
-                if ((it.netAssignee || '') !== (t.assignee_name || '')) { it.netAssignee = t.assignee_name || ''; changed = true; }
-            }
-        });
-        if (changed) localStorage.setItem(DB_KEY, JSON.stringify(items));
-    } catch(e) {}
+    netSyncGroupTasks(NET_STATE.group || netActiveGroup(), NET_STATE.tasks);   // BA-237
 }
 // BA-236: تغییر «انجام شد» از نمای اصلی برنامه به شبکه هم برسد
 async function netSyncTaskFromMain(item) {
