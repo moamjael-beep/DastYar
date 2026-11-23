@@ -8033,7 +8033,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v253-2026-11-23-net-real-url-grant';
+const APP_VERSION = 'v254-2026-11-23-net-github-backend';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -18459,6 +18459,9 @@ let NET_STATE = {
     myName: '',
     lastErr: null,     // BA-225: آخرین خطای اتصال {raw, hint}
     showSetup: false,  // BA-226: true → فرم اتصال حتی با تنظیمات ذخیره‌شده نشان داده می‌شود
+    gh: false,         // BA-231: بک‌اند گیت‌هاب (Gist) فعال
+    ghdb: null,        // BA-231: محتوای JSON داخل Gist
+    ghPoll: null,      // BA-231: شناسهٔ interval نظرسنجی ۴ ثانیه‌ای
     group: null,       // {id, code, name}
     members: [], tasks: [], msgs: [],
     online: {},        // {uid: true} از presence
@@ -18494,7 +18497,9 @@ function netLib() {
 }
 function netIsConfigured() {
     const st = netSettings();
-    return !!(st && st.url && st.key);
+    if (!st) return false;
+    if (st.backend === 'gh') return !!(st.ghToken && st.gistId);
+    return !!(st.url && st.key);
 }
 function netStatusSet(txt, cls) {
     const d = document.getElementById('netDot');
@@ -18525,8 +18530,10 @@ function netErrHint(msg) {
     const m = String(msg || '');
     if (/does not exist|relation/i.test(m)) return 'جدول‌های شبکه در این پروژه ساخته نشده‌اند — اسکریپت SQL باید در همان پروژه‌ای اجرا شود که URL آن در فرم بالا هست. اگر چند پروژه در داشبورد دارید، پروژهٔ درست را از لیست بالای صفحه انتخاب کنید و در SQL Editor همان پروژه اسکریپت را Run کنید.';
     if (/invalid api key|invalid key|jws|jwt|unauthorized|401|forbidden/i.test(m)) return 'کلید عمومی اشتباه یا ناقص است — در فرم بالا دکمهٔ «↺ پیش‌فرض» را بزنید، یا کلید را از ⚙ Settings → API Keys دوباره کپی کنید (نه service_role/secret).';
+    if (/GitHub 401|GitHub 403/i.test(m)) return 'توکن گیت‌هاب نامعتبر یا بی‌مجوز است — در GitHub: Settings → Developer settings → Personal access tokens یک توکن با دسترسی gist بسازید و در فرم اتصال جایگذاری کنید.';
+    if (/GitHub 404/i.test(m)) return 'شناسهٔ Gist اشتباه است یا Gist حذف شده — در فرم اتصال دکمهٔ «🆕 ساخت Gist جدید» را بزنید تا شناسهٔ درست ساخته و پر شود.';
     if (/DNS وجود ندارد/i.test(m)) return 'آدرس (Project URL) غلط است یا پروژه حذف شده — آدرس و کلید را دقیقاً از داشبورد کپی کنید: دکمهٔ Connect بالای داشبورد یا ⚙ Settings → Data API؛ اگر پروژه در داشبورد نیست، پروژهٔ جدید بسازید و اسکریپت SQL را در آن اجرا کنید.';
-    if (/failed to fetch|networkerror|network error|fetch failed|load failed|timeout|timed out|offline/i.test(m)) return 'اینترنت به supabase.co نمی‌رسد — «↻ اتصال دوباره» را بزنید؛ اگر نشد اینترنت دیگری امتحان کنید (Wi-Fi/دادهٔ موبایل جابه‌جا شود).';
+    if (/failed to fetch|networkerror|network error|fetch failed|load failed|timeout|timed out|offline/i.test(m)) return (ghEnabled() ? 'اینترنت به api.github.com نمی‌رسد — ' : 'اینترنت به supabase.co نمی‌رسد — ') + '«↻ اتصال دوباره» را بزنید؛ اگر نشد اینترنت دیگری امتحان کنید (Wi-Fi/دادهٔ موبایل جابه‌جا شود).';
     if (/permission denied for table/i.test(m)) return 'مجوز نقش عمومی به جدول‌ها داده نشده — در SQL Editor همین پروژه این سه خط را Run کنید: grant usage on schema public to anon, authenticated; grant select, insert, update, delete on all tables in schema public to anon, authenticated; alter default privileges in schema public grant all on tables to anon, authenticated; — بعد «↻ اتصال دوباره» را بزنید.';
     if (/schema cache|row-level|rls|policy/i.test(m)) return 'سیاست‌های دسترسی روی جدول‌ها کامل نیست — اسکریپت SQL را یک بار دیگر کامل Run کنید (پیام already exists مهم نیست).';
     if (/http 50[234]|gateway time|bad gateway|service unavailable/i.test(m)) return 'سرور Supabase در دسترس بود ولی خود پایگاه‌دادهٔ پروژه به‌موقع جواب نداد (HTTP 502/503/504). معمولاً موقتی است — به ترتیب: ۱) ۲–۳ دقیقه صبر کنید و «↻ اتصال دوباره» را بزنید؛ ۲) در داشبورد Supabase وضعیت پروژه را چک کنید — اگر کنار نام پروژه نوشته Paused بود دکمهٔ Restore project را بزنید؛ ۳) اینترنت را عوض کنید (Wi-Fi ↔ دادهٔ موبایل) و دوباره امتحان کنید؛ ۴) اگر ادامه داشت وضعیت سرویس را در status.supabase.com ببینید.';
@@ -18582,9 +18589,136 @@ async function netDeepProbe(st) {
         return 'درخواست مستقیم هم شکست خورد (' + String((e && e.message) || e) + ') — اینترنت به supabase.co نمی‌رسد؛ اینترنت دیگری امتحان کنید';
     }
 }
+
+// ─── BA-231: بک‌اند موازی گیت‌هاب (Gist) — انتخابی و اختیاری ───
+// همهٔ داده‌های شبکه (گروه‌ها/اعضا/تسک‌ها/پیام‌ها) به‌صورت یک فایل JSON
+// داخل یک Gist خصوصی ذخیره می‌شود؛ هم‌گام‌سازی با نظرسنجی ۴ ثانیه‌ای.
+// محدودیت‌ها نسبت به Supabase: تماس صوتی ندارد و به‌روزرسانی لحظه‌ای نیست.
+function ghEnabled() {
+    const st = netSettings();
+    return !!(st && st.backend === 'gh');
+}
+function ghFile() { return 'yadavar-net.json'; }
+function ghHeaders(st) {
+    return { 'Authorization': 'Bearer ' + (st.ghToken || ''), 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' };
+}
+async function ghGet() {
+    const st = netSettings();
+    const r = await fetch('https://api.github.com/gists/' + encodeURIComponent(st.gistId || ''), { headers: ghHeaders(st) });
+    if (!r.ok) throw new Error('GitHub ' + r.status + (r.status === 401 ? ' (توکن)' : (r.status === 404 ? ' (Gist)' : '')));
+    const j = await r.json();
+    let db = { v: 1, groups: {} };
+    try { db = JSON.parse((j.files && j.files[ghFile()] && j.files[ghFile()].content) || '{}'); } catch(e2) { db = { v: 1, groups: {} }; }
+    if (!db.groups) db.groups = {};
+    return db;
+}
+async function ghSave(db) {
+    const st = netSettings();
+    const files = {};
+    files[ghFile()] = { content: JSON.stringify(db) };
+    const r = await fetch('https://api.github.com/gists/' + encodeURIComponent(st.gistId || ''), {
+        method: 'PATCH', headers: ghHeaders(st), body: JSON.stringify({ files: files })
+    });
+    if (!r.ok) throw new Error('GitHub ' + r.status + ' در ذخیره');
+}
+async function ghCreateGist() {
+    const st = netSettings() || {};
+    if (!st.ghToken) { showToast('اول توکن گیت‌هاب را در فرم وارد کنید'); return; }
+    showToast('در حال ساخت Gist…');
+    const files = {};
+    files[ghFile()] = { content: JSON.stringify({ v: 1, groups: {} }) };
+    const r = await fetch('https://api.github.com/gists', {
+        method: 'POST', headers: ghHeaders(st), body: JSON.stringify({ description: 'yadavar network', public: false, files: files })
+    });
+    const j = await r.json().catch(function() { return {}; });
+    if (!r.ok || !j.id) { showToast('⚠️ ساخت Gist ناموفق: ' + (j.message || ('HTTP ' + r.status))); return; }
+    const el = document.getElementById('netGistId');
+    if (el) el.value = j.id;
+    showToast('✅ Gist ساخته شد — «ذخیره و اتصال» را بزنید');
+}
+function ghGroup(code) {
+    const db = NET_STATE.ghdb;
+    return (db && db.groups && db.groups[code]) || null;
+}
+function ghStartPoll() {
+    ghStopPoll();
+    NET_STATE.ghPoll = setInterval(async function() {
+        if (document.hidden) return;
+        try {
+            const db = await ghGet();
+            NET_STATE.ghdb = db;
+            const g = NET_STATE.group || netActiveGroup();
+            if (g) {
+                const gr = db.groups[g.code];
+                if (!gr) return;
+                NET_STATE.members = gr.members || [];
+                NET_STATE.tasks = gr.tasks || [];
+                NET_STATE.msgs = (gr.messages || []).slice(-100);
+                const ov = document.getElementById('netOverlay');
+                if (ov && ov.classList.contains('active')) {
+                    if (NET_STATE.tab === 'groups') netRenderMembersList();
+                    if (NET_STATE.tab === 'tasks') { netRefillAssigneeSelect(); netRenderTasksList(); }
+                    if (NET_STATE.tab === 'chat') netRenderChatList();
+                }
+            }
+        } catch(e) {}
+    }, 4000);
+}
+function ghStopPoll() {
+    if (NET_STATE.ghPoll) { try { clearInterval(NET_STATE.ghPoll); } catch(e) {} NET_STATE.ghPoll = null; }
+}
+async function NET_connectGh(st) {
+    if (!st.ghToken || !st.gistId) { netStatusSet('توکن یا شناسهٔ Gist خالی است', 'err'); return false; }
+    NET_STATE.connecting = true;
+    netStatusSet('در حال اتصال (گیت‌هاب)…');
+    try {
+        NET_STATE.ghdb = await ghGet();
+        NET_STATE.myName = st.name || 'کاربر';
+        NET_STATE.connecting = false;
+        NET_STATE.lastErr = null;
+        NET_STATE.gh = true;
+        netStatusSet('متصل ✓ (گیت‌هاب)', 'on');
+        netDiagPatch();
+        ghStartPoll();
+        return true;
+    } catch(e) {
+        NET_STATE.connecting = false;
+        const raw = String((e && e.message) || e);
+        const hint = netErrHint(raw);
+        NET_STATE.lastErr = { raw: raw, hint: hint };
+        netStatusSet('اتصال ناموفق', 'err');
+        netDiagPatch();
+        const ov = document.getElementById('netOverlay');
+        if (ov && ov.classList.contains('active')) showToast('⚠️ اتصال گیت‌هاب ناموفق — ' + (hint ? 'دلیل و راه‌حل بالای پنل نشان داده شد' : raw));
+        return false;
+    }
+}
+function netBackendToggle() {
+    const sel = document.getElementById('netBackend');
+    if (!sel) return;
+    const gh = sel.value === 'gh';
+    const sb = document.getElementById('sbFields'), gf = document.getElementById('ghFields');
+    if (sb) sb.style.display = gh ? 'none' : 'block';
+    if (gf) gf.style.display = gh ? 'block' : 'none';
+}
+// BA-230: اگر اتصال در جریان است صبر می‌کنیم به‌جای خروج بی‌صدا — ریشهٔ
+// اشکال «ساخت گروه کار نمی‌کند» همین بود.
+async function netEnsureConnected() {
+    if (NET_STATE.sb || NET_STATE.gh) return true;
+    if (NET_STATE.connecting) {
+        const t0 = Date.now();
+        while (NET_STATE.connecting && Date.now() - t0 < 10000) {
+            await new Promise(function(r) { setTimeout(r, 250); });
+        }
+        if (NET_STATE.sb || NET_STATE.gh) return true;
+    }
+    return await NET_connect();
+}
 async function NET_connect() {
-    if (NET_STATE.sb) return true;
+    if (NET_STATE.sb || NET_STATE.gh) return true;
     if (NET_STATE.connecting) return false;
+    const st0 = netSettings();
+    if (st0 && st0.backend === 'gh') return NET_connectGh(st0);
     const lib = netLib();
     if (!lib) { netStatusSet('کتابخانه بارگیری نشده', 'err'); return false; }
     const st = netSettings();
@@ -18638,6 +18772,7 @@ function NET_broadcast(event, payload) {
     }
 }
 function NET_subscribe() {
+    if (ghEnabled()) { ghStartPoll(); return; }
     NET_leaveChannel();
     const g = netActiveGroup();
     NET_STATE.group = g;
@@ -18722,16 +18857,31 @@ function netRender() {
 }
 function netSetupHtml() {
     const st = netSettings() || {};
+    const backend = st.backend || 'sb';
     let h = '<div class="net-strip">🛰️ شبکهٔ اختیاری — چت متنی دوطرفه، گروه تسک مشترک، پاس دادن تسک و تماس صوتی دوطرفه. بدون تنظیم، برنامه مثل قبل تک‌کاربره است.</div>';
     h += netDiagHtml();
     if (netIsConfigured()) {
         h += '<div class="net-strip">⚙️ در حال ویرایش تنظیمات اتصال — <button class="net-btn secondary small" onclick="netShowMain()">↩ بازگشت به نمای اصلی</button></div>';
     }
-    h += '<div class="net-card"><h4>۱) اتصال به پایگاه ابری (Supabase رایگان)</h4>'
+    h += '<div class="net-card"><h4>بک‌اند شبکه را انتخاب کنید (موازی و اختیاری)</h4>'
+        + '<div class="net-field"><label>بک‌اند</label><select id="netBackend" onchange="netBackendToggle()">'
+        + '<option value="sb"' + (backend === 'gh' ? '' : ' selected') + '>☁️ Supabase — کامل: چت، تسک، حضور آنلاین، تماس صوتی</option>'
+        + '<option value="gh"' + (backend === 'gh' ? ' selected' : '') + '>🐙 گیت‌هاب Gist — موازی: چت و تسک، بدون تماس، به‌روزرسانی هر ۴ ثانیه</option>'
+        + '</select></div>'
+        + '<div class="net-field"><label>نام نمایشی من</label><input id="netName" placeholder="مثلاً مامان" value="' + escA(st.name || '') + '"></div>'
+        + '</div>';
+    h += '<div id="sbFields" style="display:' + (backend === 'gh' ? 'none' : 'block') + ';"><div class="net-card"><h4>۱) اتصال به پایگاه ابری (Supabase رایگان)</h4>'
         + '<div class="net-field"><label>آدرس پروژه (Project URL)</label><input id="netUrl" style="direction:ltr;text-align:left;" placeholder="https://xxxx.supabase.co" value="' + escA(st.url || NET_DEFAULTS.url) + '"></div>'
         + '<div class="net-field"><label>کلید عمومی (Publishable یا anon)</label><input id="netKey" style="direction:ltr;text-align:left;" placeholder="sb_publishable_… یا eyJ…" value="' + escA(st.key || NET_DEFAULTS.key) + '"></div>'
-        + '<div class="net-field"><label>نام نمایشی من</label><input id="netName" placeholder="مثلاً مامان" value="' + escA(st.name || '') + '"></div>'
         + '<div class="net-field"><label>TURN اختیاری برای شبکه‌های بسته — فرمت: turn:user:pass@host:port</label><input id="netTurn" style="direction:ltr;text-align:left;" value="' + escA(st.turn || '') + '"></div>'
+        + '</div></div>';
+    h += '<div id="ghFields" style="display:' + (backend === 'gh' ? 'block' : 'none') + ';"><div class="net-card"><h4>۱) اتصال به گیت‌هاب (Gist شخصی — بدون سرور واسط)</h4>'
+        + '<div class="net-field"><label>توکن شخصی گیت‌هاب (PAT با دسترسی gist)</label><input id="netGhToken" style="direction:ltr;text-align:left;" placeholder="ghp_… یا github_pat_…" value="' + escA(st.ghToken || '') + '"></div>'
+        + '<div class="net-field"><label>شناسهٔ Gist (یک بار می‌سازید و به اعضای گروه می‌دهید)</label><input id="netGistId" style="direction:ltr;text-align:left;" placeholder="مثلاً a1b2c3d4…" value="' + escA(st.gistId || '') + '"></div>'
+        + '<button class="net-btn secondary" onclick="ghCreateGist()">🆕 ساخت Gist جدید</button>'
+        + '<div style="font-size:11px;color:#78909c;margin-top:6px;">توکن: GitHub → Settings → Developer settings → Personal access tokens → Generate new token (تیک gist). هر عضو توکنِ خودش را می‌سازد ولی «شناسهٔ Gist» برای همهٔ اعضای گروه یکی است. داده‌ها به‌صورت یک فایل JSON داخل Gist خصوصی ذخیره می‌شود.</div>'
+        + '</div></div>';
+    h += '<div class="net-card">'
         + '<button class="net-btn" onclick="netSaveAndConnect()">ذخیره و اتصال</button> '
         + '<button class="net-btn secondary" onclick="netFillDefaults()">↺ پیش‌فرض</button> '
         + '<button class="net-btn secondary" onclick="netForget()">⛔ قطع اتصال و پاک کردن</button>'
@@ -18752,20 +18902,30 @@ function netShowSetup() { NET_STATE.showSetup = true; netRender(); }
 function netShowMain() { NET_STATE.showSetup = false; netRender(); }
 async function netSaveAndConnect() {
     const g = function(id) { const el = document.getElementById(id); return el ? el.value : ''; };
-    const url = g('netUrl').trim(), key = g('netKey').trim();
-    const name = g('netName').trim(), turn = g('netTurn').trim();
-    if (!/^https:\/\/.+/.test(url)) { showToast('آدرس پروژه باید با https:// شروع شود'); return; }
-    if (!key) { showToast('کلید anon را وارد کنید'); return; }
+    const backend = g('netBackend') || 'sb';
+    const name = g('netName').trim();
     if (!name) { showToast('نام نمایشی را وارد کنید'); return; }
-    localStorage.setItem('net_settings', JSON.stringify({ url: url, key: key, name: name, turn: turn }));
     netMyUid();
+    if (backend === 'gh') {
+        const tok = g('netGhToken').trim(), gid = g('netGistId').trim();
+        if (!tok) { showToast('توکن گیت‌هاب را وارد کنید'); return; }
+        if (!gid) { showToast('شناسهٔ Gist را وارد کنید یا «🆕 ساخت Gist جدید» را بزنید'); return; }
+        localStorage.setItem('net_settings', JSON.stringify({ backend: 'gh', ghToken: tok, gistId: gid, name: name, turn: '' }));
+    } else {
+        const url = g('netUrl').trim(), key = g('netKey').trim(), turn = g('netTurn').trim();
+        if (!/^https:\/\/.+/.test(url)) { showToast('آدرس پروژه باید با https:// شروع شود'); return; }
+        if (!key) { showToast('کلید عمومی را وارد کنید'); return; }
+        localStorage.setItem('net_settings', JSON.stringify({ backend: 'sb', url: url, key: key, name: name, turn: turn }));
+    }
     const ok = await NET_connect();
     if (ok) { NET_STATE.showSetup = false; netRender(); showToast('✅ شبکه وصل شد — حالا یک گروه بسازید یا با کد عضو شوید'); }
 }
 function netForget() {
     localStorage.removeItem('net_settings');
     NET_leaveChannel();
+    ghStopPoll();
     NET_STATE.sb = null;
+    NET_STATE.gh = false; NET_STATE.ghdb = null;
     NET_STATE.showSetup = false;
     NET_STATE.members = []; NET_STATE.tasks = []; NET_STATE.msgs = []; NET_STATE.online = {};
     netStatusSet('غیرفعال');
@@ -18858,7 +19018,9 @@ function netGroupsHtml() {
 }
 async function netLoadMembers() {
     const g = NET_STATE.group || netActiveGroup();
-    if (!g || !NET_STATE.sb) return;
+    if (!g) return;
+    if (ghEnabled()) { const gr = ghGroup(g.code); NET_STATE.members = (gr && gr.members) || []; return; }
+    if (!NET_STATE.sb) return;
     try {
         const r = await NET_STATE.sb.from('net_members').select('*').eq('group_id', g.id);
         if (!r.error) NET_STATE.members = r.data || [];
@@ -18869,13 +19031,15 @@ function netRenderMembersList() {
     if (!el) return;
     const me = netMyUid();
     if (!NET_STATE.members.length) { el.innerHTML = '<div class="net-empty">هنوز عضوی نیست</div>'; return; }
+    const ghMode = ghEnabled();
     el.innerHTML = NET_STATE.members.map(function(m) {
         const on = !!NET_STATE.online[m.user_id];
         const self = (m.user_id === me);
+        const badge = ghMode ? '' : '<span class="' + (on ? 'net-online' : 'net-offline') + '">' + (on ? 'آنلاین' : 'آفلاین') + '</span>';
+        const call = (ghMode || self) ? '' : '<button class="net-btn small" onclick="netCallMember(\'' + escA(m.user_id) + '\', \'' + escA(m.display_name) + '\')">📞 تماس</button>';
         return '<div class="net-member-row">'
             + '<span class="net-member-name">' + escapeHtml(m.display_name) + (self ? ' (من)' : '') + '</span>'
-            + '<span class="' + (on ? 'net-online' : 'net-offline') + '">' + (on ? 'آنلاین' : 'آفلاین') + '</span>'
-            + (self ? '' : '<button class="net-btn small" onclick="netCallMember(\'' + escA(m.user_id) + '\', \'' + escA(m.display_name) + '\')">📞 تماس</button>')
+            + badge + call
             + '</div>';
     }).join('');
 }
@@ -18894,8 +19058,22 @@ async function netCreateGroup() {
     const inp = document.getElementById('netGroupName');
     const name = ((inp && inp.value) || '').trim();
     if (!name) { showToast('نام گروه را بنویسید'); return; }
-    if (!NET_STATE.sb && !(await NET_connect())) return;
+    if (!(await netEnsureConnected())) { showToast('⚠️ اتصال برقرار نشد — جعبهٔ خطا بالای فرم را ببینید'); return; }
     const code = netGenCode();
+    if (ghEnabled()) {
+        try {
+            const db = await ghGet();
+            if (db.groups[code]) { showToast('کد تکراری شد — دوباره دکمه را بزنید'); return; }
+            db.groups[code] = { name: name, createdBy: netMyUid(), createdAt: new Date().toISOString(),
+                members: [{ user_id: netMyUid(), display_name: NET_STATE.myName, joined_at: new Date().toISOString() }], tasks: [], messages: [] };
+            await ghSave(db);
+            NET_STATE.ghdb = db;
+            netSetActiveGroup({ id: code, code: code, name: name });
+            netRenderTab();
+            showToast('✅ گروه ساخته شد (گیت‌هاب) — کد دعوت: ' + code);
+        } catch(e) { showToast('⚠️ ' + ((e && e.message) || e)); }
+        return;
+    }
     try {
         const r = await NET_STATE.sb.from('net_groups').insert({ code: code, name: name, created_by: netMyUid() }).select();
         if (r.error) throw new Error(r.error.message);
@@ -18912,7 +19090,27 @@ async function netJoinGroup() {
     const inp = document.getElementById('netJoinCode');
     const code = ((inp && inp.value) || '').trim().toUpperCase();
     if (!code) { showToast('کد دعوت را وارد کنید'); return; }
-    if (!NET_STATE.sb && !(await NET_connect())) return;
+    if (!(await netEnsureConnected())) { showToast('⚠️ اتصال برقرار نشد — جعبهٔ خطا بالای فرم را ببینید'); return; }
+    if (ghEnabled()) {
+        try {
+            const db = await ghGet();
+            const gr = db.groups[code];
+            if (!gr) { showToast('⚠️ گروهی با این کد در Gist نیست'); return; }
+            if (!(gr.members || []).some(function(m) { return m.user_id === netMyUid(); })) {
+                gr.members = gr.members || [];
+                gr.members.push({ user_id: netMyUid(), display_name: NET_STATE.myName, joined_at: new Date().toISOString() });
+                await ghSave(db);
+            }
+            NET_STATE.ghdb = db;
+            netSetActiveGroup({ id: code, code: code, name: gr.name });
+            NET_STATE.members = gr.members || [];
+            NET_STATE.tasks = gr.tasks || [];
+            NET_STATE.msgs = (gr.messages || []).slice(-100);
+            netRenderTab();
+            showToast('✅ به گروه «' + gr.name + '» وصل شدید (گیت‌هاب)');
+        } catch(e) { showToast('⚠️ ' + ((e && e.message) || e)); }
+        return;
+    }
     try {
         const r = await NET_STATE.sb.from('net_groups').select('*').eq('code', code).limit(1);
         if (r.error) throw new Error(r.error.message);
@@ -18933,6 +19131,22 @@ async function netJoinGroup() {
 async function netLeaveGroup() {
     const g = NET_STATE.group || netActiveGroup();
     if (!g) return;
+    if (ghEnabled()) {
+        try {
+            const db = await ghGet();
+            const gr = db.groups[g.code];
+            if (gr) {
+                gr.members = (gr.members || []).filter(function(m) { return m.user_id !== netMyUid(); });
+                await ghSave(db);
+                NET_STATE.ghdb = db;
+            }
+        } catch(e) {}
+        netSetActiveGroup(null);
+        NET_STATE.members = []; NET_STATE.tasks = []; NET_STATE.msgs = []; NET_STATE.online = {};
+        netRenderTab();
+        showToast('از گروه خارج شدید');
+        return;
+    }
     if (NET_STATE.sb) {
         try { await NET_STATE.sb.from('net_members').delete().eq('group_id', g.id).eq('user_id', netMyUid()); NET_broadcast('members-refresh', {}); } catch(e) {}
     }
@@ -18959,7 +19173,9 @@ function netTasksHtml() {
 }
 async function netLoadTasks() {
     const g = NET_STATE.group || netActiveGroup();
-    if (!g || !NET_STATE.sb) return;
+    if (!g) return;
+    if (ghEnabled()) { const gr = ghGroup(g.code); NET_STATE.tasks = (gr && gr.tasks) || []; return; }
+    if (!NET_STATE.sb) return;
     try {
         const r = await NET_STATE.sb.from('net_tasks').select('*').eq('group_id', g.id).order('created_at', { ascending: true });
         if (!r.error) NET_STATE.tasks = r.data || [];
@@ -18990,10 +19206,44 @@ function netRenderTasksList() {
             + '<div class="net-task-btns">' + btns.join('') + '</div></div>';
     }).join('');
 }
+// BA-231: جهش مشترک روی تسک‌های یک گروه در بک‌اند گیت‌هاب
+async function ghMutateTask(code, fn) {
+    try {
+        const db = await ghGet();
+        const gr = db.groups[code];
+        if (!gr) { showToast('⚠️ گروه در Gist نیست'); return false; }
+        fn(gr);
+        await ghSave(db);
+        NET_STATE.ghdb = db;
+        NET_STATE.tasks = gr.tasks || [];
+        netRenderTasksList();
+        return true;
+    } catch(e) { showToast('⚠️ ' + ((e && e.message) || e)); return false; }
+}
 async function netAddTaskCore(title, deadline, assigneeId) {
     const g = NET_STATE.group || netActiveGroup();
-    if (!g || !NET_STATE.sb) { showToast('⚠️ گروه فعال نیست'); return null; }
+    if (!g) { showToast('⚠️ گروه فعال نیست'); return null; }
     const a = NET_STATE.members.find(function(m) { return m.user_id === assigneeId; });
+    if (ghEnabled()) {
+        try {
+            const db = await ghGet();
+            const gr = db.groups[g.code];
+            if (!gr) throw new Error('گروه در Gist نیست');
+            const t = { id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('t' + Date.now() + Math.floor(Math.random() * 100000)),
+                group_id: g.code, title: title, deadline: deadline || null,
+                owner_id: netMyUid(), owner_name: NET_STATE.myName,
+                assignee_id: a ? a.user_id : null, assignee_name: a ? a.display_name : null,
+                done: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+            gr.tasks = gr.tasks || [];
+            gr.tasks.push(t);
+            await ghSave(db);
+            NET_STATE.ghdb = db;
+            NET_STATE.tasks = gr.tasks;
+            netRenderTasksList();
+            return t;
+        } catch(e) { showToast('⚠️ ' + ((e && e.message) || e)); return null; }
+    }
+    if (!NET_STATE.sb) { showToast('⚠️ گروه فعال نیست'); return null; }
     try {
         const r = await NET_STATE.sb.from('net_tasks').insert({
             group_id: g.id, title: title, deadline: deadline || null,
@@ -19022,6 +19272,13 @@ async function netPassTask(id, uid) {
     if (!id || !uid) return;
     const a = NET_STATE.members.find(function(m) { return m.user_id === uid; });
     if (!a) return;
+    const g = NET_STATE.group || netActiveGroup();
+    if (ghEnabled() && g) {
+        if (await ghMutateTask(g.code, function(gr) {
+            (gr.tasks || []).forEach(function(t) { if (t.id === id) { t.assignee_id = a.user_id; t.assignee_name = a.display_name; t.updated_at = new Date().toISOString(); } });
+        })) showToast('📤 تسک به «' + a.display_name + '» پاس داده شد');
+        return;
+    }
     try {
         const r = await NET_STATE.sb.from('net_tasks')
             .update({ assignee_id: a.user_id, assignee_name: a.display_name, updated_at: new Date().toISOString() })
@@ -19034,6 +19291,13 @@ async function netPassTask(id, uid) {
     } catch(e) { showToast('⚠️ ' + (e.message || e)); }
 }
 async function netToggleTaskDone(id, done) {
+    const g = NET_STATE.group || netActiveGroup();
+    if (ghEnabled() && g) {
+        await ghMutateTask(g.code, function(gr) {
+            (gr.tasks || []).forEach(function(t) { if (t.id === id) { t.done = done; t.updated_at = new Date().toISOString(); } });
+        });
+        return;
+    }
     try {
         const r = await NET_STATE.sb.from('net_tasks').update({ done: done, updated_at: new Date().toISOString() }).eq('id', id);
         if (r.error) throw new Error(r.error.message);
@@ -19043,6 +19307,13 @@ async function netToggleTaskDone(id, done) {
     } catch(e) { showToast('⚠️ ' + (e.message || e)); }
 }
 async function netDeleteTask(id) {
+    const g = NET_STATE.group || netActiveGroup();
+    if (ghEnabled() && g) {
+        if (await ghMutateTask(g.code, function(gr) {
+            gr.tasks = (gr.tasks || []).filter(function(t) { return t.id !== id; });
+        })) showToast('تسک حذف شد');
+        return;
+    }
     try {
         const r = await NET_STATE.sb.from('net_tasks').delete().eq('id', id);
         if (r.error) throw new Error(r.error.message);
@@ -19068,7 +19339,9 @@ function netChatBarHide() {
 }
 async function netLoadMessages() {
     const g = NET_STATE.group || netActiveGroup();
-    if (!g || !NET_STATE.sb) return;
+    if (!g) return;
+    if (ghEnabled()) { const gr = ghGroup(g.code); NET_STATE.msgs = ((gr && gr.messages) || []).slice(-100); return; }
+    if (!NET_STATE.sb) return;
     try {
         const r = await NET_STATE.sb.from('net_messages').select('*')
             .eq('group_id', g.id).order('created_at', { ascending: false }).limit(100);
@@ -19092,7 +19365,24 @@ function netRenderChatList() {
 async function netSendText(text) {
     const g = NET_STATE.group || netActiveGroup();
     text = (text || '').trim();
-    if (!g || !NET_STATE.sb || !text) return null;
+    if (!g || !text) return null;
+    if (ghEnabled()) {
+        try {
+            const db = await ghGet();
+            const gr = db.groups[g.code];
+            if (!gr) throw new Error('گروه در Gist نیست');
+            const msg = { group_id: g.code, sender_id: netMyUid(), sender_name: NET_STATE.myName, text: text, created_at: new Date().toISOString() };
+            gr.messages = gr.messages || [];
+            gr.messages.push(msg);
+            if (gr.messages.length > 200) gr.messages = gr.messages.slice(-200);
+            await ghSave(db);
+            NET_STATE.ghdb = db;
+            NET_STATE.msgs = gr.messages.slice(-100);
+            netRenderChatList();
+            return msg;
+        } catch(e) { showToast('⚠️ ارسال پیام ناموفق: ' + ((e && e.message) || e)); return null; }
+    }
+    if (!NET_STATE.sb) return null;
     const row = { group_id: g.id, sender_id: netMyUid(), sender_name: NET_STATE.myName, text: text };
     try {
         const r = await NET_STATE.sb.from('net_messages').insert(row).select();

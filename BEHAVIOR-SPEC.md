@@ -11,10 +11,10 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v253 — ۱۴۰۵ آذر ۲ (URL واقعی کاربر تست و جایگذاری شد؛ تست زنده: DNS/گیت‌وی/کلید/جدول ✓ ولی anon بدون GRANT بود → اسکریپت با GRANT کامل شد + مهاجرت خودکار URL مرده — BA-229)
-#  نسخهٔ فعلی کد:  APP_VERSION = v253-2026-11-23-net-real-url-grant
-#                  CACHE_NAME  = yadavar-cache-v253
-#                  version.txt = v253-2026-11-23-net-real-url-grant
+#  آخرین به‌روزرسانی: v254 — ۱۴۰۵ آذر ۲ (رفع اشکال «ساخت گروه» — خروج بی‌صدا هنگام اتصال در جریان، BA-230؛ + بک‌اند موازی اختیاری گیت‌هاب Gist با نظرسنجی ۴ ثانیه‌ای، BA-231)
+#  نسخهٔ فعلی کد:  APP_VERSION = v254-2026-11-23-net-github-backend
+#                  CACHE_NAME  = yadavar-cache-v254
+#                  version.txt = v254-2026-11-23-net-github-backend
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -1424,6 +1424,26 @@
 #          ستون عمودی flex تبدیل می‌شود — ۷ سطرِ کاملِ هم‌ارتفاع (flex:1،
 #          min-height 72px)، زیر هم، تا پایین صفحه. بازگشت به نمای ماه
 #          کلاس‌ها را برمی‌دارد.##############
+#   BA-230 (v254 — گزارش کاربر «ساخت گروه کار نمی‌کند»؛ تست زندهٔ INSERT
+#   با همان کلید → 201 و DELETE پاک‌سازی → 200 یعنی سرور سالم بود):
+#   ریشه: netCreateGroup/netJoinGroup با اتصال در جریان (connecting=true
+#   از openNetPanel) → NET_connect دوباره false بی‌صدا → خروج بدون هیچ
+#   پیام. اصلاح: netEnsureConnected (صبر تا ۱۰ ثانیه برای اتصال در جریان،
+#   بعد NET_connect) + پیام صریح «اتصال برقرار نشد — جعبهٔ خطا را ببینید».
+#   BA-231 (همان v254 — بک‌اند موازی انتخابی گیت‌هاب): فرم اتصال حالا
+#   «بک‌اند» دارد (☁️ Supabase / 🐙 گیت‌هاب Gist). ماژول gh: ghGet/ghSave
+#   (Gist API، فایل yadavar-net.json، PAT با دسترسی gist)، ghCreateGist
+#   (🆕 دکمهٔ ساخت)، ghStartPoll (نظرسنجی ۴ ثانیه‌ای + رندر تب فعال؛
+#   document.hidden skip)، NET_connectGh (وضعیت «متصل ✓ (گیت‌هاب)»)،
+#   شاخهٔ gh در netCreateGroup/netJoinGroup/netLeaveGroup/netLoadMembers/
+#   netLoadTasks/netLoadMessages/netAddTaskCore/ghMutateTask
+#   (netPassTask/netToggleTaskDone/netDeleteTask)/netSendText؛
+#   netIsConfigured دوحالته؛ netSaveAndConnect دوحالته (backend:'gh' با
+#   ghToken+gistId)؛ netForget پاک‌سازی gh؛ NET_subscribe در gh فقط پول.
+#   محدودیت gh: بدون تماس صوتی/حضور آنلاین (در رندر اعضا حذف می‌شود)،
+#   آخرین-نویسنده-برنده در تداخل نوشتن. netErrHint: GitHub 401/403 و
+#   GitHub 404 + متن شبکهٔ gh به api.github.com. راهنمای مستقل: مرحلهٔ ۷
+#   گیت‌هاب + دو ردیف رفع اشکال.
 #   BA-229 (v253 — کاربر URL واقعی را فرستاد: uuedqototmxgzoltwdxc
 #   (ref قبلی uxedgotofmxgzoltwdxz غلط تایپیِ اسکرین‌شات بود — راز 504
 #   حل شد). تست زندهٔ سندباکس با همان کلید: DNS ✓ گیت‌وی ✓ کلید معتبر ✓
@@ -2731,6 +2751,12 @@
 #
 #   فایل‌های نسخه: APP_VERSION / version.txt →
 #   v244-2026-11-15-align-keepalive-yt-multi؛ CACHE_NAME → yadavar-cache-v244.
+#
+### v254 (۱۴۰۵ آذر ۲) — رفع «ساخت گروه» + بک‌اند موازی گیت‌هاب (BA-230/231)
+#   رگرسیون: پروب ۱۱۹ چک — K16 (صبر برای اتصال در جریان)، K17a-d (چرخهٔ
+#   کامل gh با fetch-ماک: اتصال/ساخت گروه/عضویت AB12CD/تسک/چت)، K18
+#   (Gist-404 → hint) — صفر شکست. نکتهٔ تست: بعد از openNetPanel باید
+#   netEnsureConnected صدا زده شود نه NET_connect (مسابقهٔ اتصال).
 #
 ### v253 (۱۴۰۵ آذر ۲) — URL واقعی + GRANT در اسکریپت + مهاجرت خودکار (BA-229)
 #   رگرسیون: پروب ۱۱۳ چک (K15a پیش‌فرض/GRANT؛ K15b مهاجرت URL مرده؛
