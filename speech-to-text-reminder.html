@@ -5235,7 +5235,8 @@ body.locked .header-actions button {
 <div class="ev-overlay" id="eventsOverlay">
     <div class="ev-card">
         <div class="ev-title">🏟️ جستجوی رویدادها</div>
-        <div class="ev-sub">فهرست آیندهٔ پخش anten.ir + aparatsport.ir جستجو می‌شود؛ فقط رویدادهای مطابق فیلتر شما (حسین وفایی، یانیک سانر، فرمول یک/وان/1، فوتبال استقلال، فوتبال برزیل — بدون تیم‌های نوجوانان/جوانان/زیرِ سنی/امیدها/بانوان) و بدون تکرار فهرست و به گروه «رویدادها» اضافه می‌شوند.</div>
+        <div class="ev-sub">فهرست آیندهٔ پخش anten.ir + aparatsport.ir جستجو می‌شود؛ فقط رویدادهایی که یکی از «کلمات خواسته» را دارند و هیچ «کلمهٔ ناخواسته‌ای» نداشته باشند — هر دو لیست در همین پنل بی‌نهایت قابل ویرایش است (حتی حذف پیش‌فرض‌ها) — و بدون تکرار به گروه «رویدادها» اضافه می‌شوند.</div>
+        <div id="evWords"></div>
         <div class="ev-btns">
             <button class="ev-btn main" id="evSearchBtn" onclick="runEventsSearch()">🔍 جستجوی رویدادها</button>
             <button class="ev-btn" onclick="closeEventsPanel()">بستن ❯</button>
@@ -8177,6 +8178,18 @@ body.locked .header-actions button {
 //   قانون صفر: هیچ رفتار سالم دیگری تغییر نکرد — پروب ۲۱/۲۱ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
 // ════════════════════════════════════════════════════════════════════
+// 🔧 v267-2026-11-24 (درخواست T) — بازطراحی فیلتر و کلمات رویدادها:
+//   ۱) فیلتر نمایش کارها (BA-261): فیلتر مؤثر هر گروه = سراسری AND گروهی —
+//      اولویت با سراسری است؛ نوعِ خاموش‌شدهٔ سراسری در هیچ گروهی روشن
+//      نمی‌شود (تیکِ آن در پنل گروه غیرفعال با نشان «سراسری خاموش»)؛
+//      «↩ پیش‌فرض» در هر دو پنل = همه تیک‌ها روشن؛ «تأیید» = ذخیره/اعمال.
+//   ۲) جستجوی رویدادها (BA-262): دو لیست بی‌نهایت خواسته/ناخواستهٔ قابل
+//      ویرایش (افزودن/حذف هر کلمه حتی پیش‌فرض‌ها) + کلید ردهٔ سنی «زیر NN»
+//      + «↩ بازگرداندن کلمات پیش‌فرض» — قانون ثابت «فوتبال استقلال/برزیل»
+//      به کلمات پیش‌فرض لیست خواسته‌ها تبدیل شد.
+//   قانون صفر: جریان SR/رکوردرها و پروتکل شبکه دست نخورد.
+//
+// ════════════════════════════════════════════════════════════════════
 // 🔧 v266-2026-11-24 (درخواست S) — فیلتر نمایش کارها، 🚫 صوت‌ها و باکس پیام:
 //   ۱) فیلتر نمایش انواع تسک حالا «روی کل برنامه» اثر دارد (BA-258):
 //      نشان‌های کارت گروه‌ها/همه کارها/فوری، شمارش هدر نمای گروه، نقاط و
@@ -8224,7 +8237,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v266-2026-11-24-filter-global-voice-ban-inputbar';
+const APP_VERSION = 'v267-2026-11-24-filter-priority-event-words';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -10092,11 +10105,16 @@ function getGroupById(id) {
 }
 
 // ═════════════════════════════════════════════════════════════════════
-// 🔧 N-2 (v261): فیلتر نمایش انواع تسک — با تیک برای هر وضعیت
-//   • سراسری (منوی همبرگری): روی کل برنامه اعمال می‌شود.
-//   • گروهی (منوی ☰ داخل هر گروه): فقط همان گروه؛ روی سراسری override
-//     می‌کند — اگر سراسری باز باشد ولی در گروهی نوعی بسته شود، فقط همان‌جا
-//     پنهان می‌شود. «فعال» = نه done، نه cancelled، نه suspended.
+// 🔧 N-2 (v261 + بازطراحی T v267 — BA-261): فیلتر نمایش انواع تسک
+//   • سراسری (منوی همبرگری): روی «کل برنامه» اعمال می‌شود و «اولویت اول»
+//     دارد — هر نوعی که سراسری خاموشش کرده، در هیچ گروهی دیده نمی‌شود
+//     (حتی اگر در گروه همه تیک‌ها روشن باشد).
+//   • گروهی (منوی ☰ داخل هر گروه): فقط می‌تواند «تنگ‌تر» کند — نوعی که
+//     سراسری روشنش کرده را برای همان گروه خاموش می‌کند، نه بیشتر.
+//     فیلتر مؤثر هر گروه = سراسری AND گروهی.
+//   • «↩ پیش‌فرض» در هر دو پنل = همه تیک‌ها روشن؛ «تأیید» = همان تغییرات
+//     لحظه‌ای تیک‌ها ذخیره و اعمال شده و پنل بسته می‌شود.
+//   • «فعال» = نه done، نه cancelled، نه suspended.
 // ═════════════════════════════════════════════════════════════════════
 const TASK_VIEW_STATES = [
     { k: 'active',    label: 'فعال' },
@@ -10112,12 +10130,14 @@ function taskViewFilterGlobal() {
     return { active: f.active !== false, done: f.done !== false, cancelled: f.cancelled !== false, suspended: f.suspended !== false };
 }
 function taskViewFilterGroup(gid) { return taskViewFilterRead('task_view_filter_' + gid); }
-// فیلتر مؤثر یک گروه: سراسری + فلگ‌های override گروهی
+// 🔧 T (v267) — BA-261: فیلتر مؤثر یک گروه = سراسری AND گروهی.
+// اولویت با سراسری است: نوعِ خاموش‌شدهٔ سراسری در هیچ گروهی روشن
+// نمی‌شود؛ نوعِ روشنِ سراسری فقط با تیکِ گروه تنگ‌تر می‌شود.
 function taskViewFilterFor(gid) {
     const g = taskViewFilterGlobal();
     const o = taskViewFilterGroup(gid) || {};
     const eff = {};
-    TASK_VIEW_STATES.forEach(s => { eff[s.k] = (o[s.k] !== undefined) ? !!o[s.k] : g[s.k]; });
+    TASK_VIEW_STATES.forEach(s => { eff[s.k] = g[s.k] && (o[s.k] === undefined ? true : !!o[s.k]); });
     return eff;
 }
 // وضعیت یک تسک از دید فیلتر: 'active' | 'done' | 'cancelled' | 'suspended'
@@ -10277,28 +10297,40 @@ function renderTvfPanelBody() {
     if (!ov || !body) return;
     const gid = ov.dataset.gid || '';
     const g = getGroupById(gid);
+    const glb = taskViewFilterGlobal();
     const eff = taskViewFilterFor(gid);
     const ovr = taskViewFilterGroup(gid) || {};
-    // 🔧 S (v266) — BA-258: در حالت سراسری (بدون گروه) تیک‌ها باید روی فیلتر
-    // «سراسری» بنویسند؛ قبلاً روی کلید گروهیِ خالی می‌نوشتند و تغییر سراسری
-    // هرگز روی برنامه اعمال نمی‌شد (گزارش کاربر: «کد اعمال به کل برنامه خراب شده»).
+    // 🔧 S (v266) — BA-258: تیک‌های پنل سراسری روی کلید سراسری می‌نویسند و
+    // بلافاصله روی کل برنامه اعمال می‌شوند؛ «تأیید» فقط پنل را می‌بندد.
+    // 🔧 T (v267) — BA-261: «↩ پیش‌فرض» در هر دو پنل = همه تیک‌ها روشن.
+    // در پنل گروه، نوعی که سراسری خاموشش کرده غیرقابل‌فعال‌سازی است
+    // (اولویت با سراسری) و با نشان «(سراسری خاموش)» رندر می‌شود.
     const isGlobalTvf = !gid;
     const tvfChg = function(sk) {
         return isGlobalTvf
             ? 'onchange="taskViewFilterSetGlobal(\'' + sk + '\', this.checked)"'
             : 'onchange="taskViewFilterSetGroup(\'' + escA(gid) + '\',\'' + sk + '\', this.checked)"';
     };
-    const resetBtn = isGlobalTvf
-        ? '<button class="btn-secondary" style="flex:1;" onclick="taskViewFilterResetGlobal(); renderTvfPanelBody(); showToast(\'فیلتر سراسری به پیش‌فرض برگشت\')">↩ پیش‌فرض</button>'
-        : '<button class="btn-secondary" style="flex:1;" onclick="taskViewFilterResetGroup(\'' + escA(gid) + '\'); renderTvfPanelBody(); showToast(\'بازگشت به فیلتر سراسری\')">↩ سراسری</button>';
+    const resetBtn = '<button class="btn-secondary" style="flex:1;" onclick="'
+        + (isGlobalTvf ? 'taskViewFilterResetGlobal(); ' : 'taskViewFilterResetGroup(\'' + escA(gid) + '\'); ')
+        + 'renderTvfPanelBody(); showToast(\'همه تیک‌ها روشن شد\')">↩ پیش‌فرض</button>';
     body.innerHTML = '<div style="font-size:13.5px; font-weight:700; color:#37474f; padding:8px 12px 2px;">🔎 فیلتر نمایش کارها'
         + (gid ? ' — ' + escapeHtml(g.name) : ' (سراسری — روی کل برنامه)') + '</div>'
+        + (gid
+            ? '<div style="font-size:11px; color:#78909c; padding:0 12px 2px;">اولویت با سراسری است: نوعِ خاموش‌شدهٔ سراسری اینجا روشن نمی‌شود؛ فقط می‌توانید برای همین گروه خاموشش کنید.</div>'
+            : '<div style="font-size:11px; color:#78909c; padding:0 12px 2px;">این تیک‌ها روی همهٔ نماها، شمارش‌ها و تقویمِ کل برنامه اعمال می‌شود؛ «تأیید» ذخیره و اعمال می‌کند.</div>')
         + '<div style="padding:0 12px 6px;">'
-        + TASK_VIEW_STATES.map(s =>
-            '<label style="display:flex;align-items:center;gap:8px;padding:6px 2px;font-size:13.5px;color:#37474f;cursor:pointer;">'
-            + '<input type="checkbox" ' + (eff[s.k] ? 'checked' : '') + ' ' + tvfChg(s.k) + '>'
-            + s.label + (ovr[s.k] === undefined ? ' <span style="font-size:10px;color:#90a4ae;">(سراسری)</span>' : ' <span style="font-size:10px;color:#1976d2;">(همین گروه)</span>')
-            + '</label>').join('')
+        + TASK_VIEW_STATES.map(s => {
+            const disabled = !isGlobalTvf && glb[s.k] === false;
+            let hint = '';
+            if (!isGlobalTvf) hint = disabled
+                ? ' <span style="font-size:10px;color:#c62828;">(سراسری خاموش)</span>'
+                : (ovr[s.k] === undefined ? ' <span style="font-size:10px;color:#90a4ae;">(سراسری: روشن)</span>' : ' <span style="font-size:10px;color:#1976d2;">(همین گروه)</span>');
+            return '<label style="display:flex;align-items:center;gap:8px;padding:6px 2px;font-size:13.5px;color:#37474f;cursor:pointer;'
+                + (disabled ? 'opacity:.5;' : '') + '">'
+                + '<input type="checkbox" ' + (eff[s.k] ? 'checked' : '') + (disabled ? ' disabled' : '') + ' ' + tvfChg(s.k) + '>'
+                + s.label + hint + '</label>';
+        }).join('')
         + '</div>'
         + '<div style="display:flex; gap:6px; padding:4px 12px 10px;">'
         + resetBtn
@@ -19869,17 +19901,103 @@ function netNotifyIncomingGroupMsgs(gname, rows) {
 //   کارت‌های ساعت+عنوان+زیرعنوان است و با همان الگو پارس می‌شود.
 // ════════════════════════════════════════════════════════════════════
 const EV_GROUP_NAME = 'رویدادها';
-const EV_INCLUDE_WORDS = ['حسین وفایی', 'یانیک سانر', 'یانیک', 'فرمول یک', 'فرمول وان', 'فرمول ۱', 'فرمول 1', 'فرمول‌یک', 'فرمول‌وان'];
-const EV_EXCLUDE_WORDS = ['نوجوانان', 'جوانان', 'نوآموزان', 'امیدها', 'تیم امید', 'بانوان', 'زنان', 'دختران', 'آکادمی', 'مدرسه فوتبال'];
+// 🔧 T (v267) — BA-262: دو لیست «خواسته/ناخواستهٔ بی‌نهایت» و قابل ویرایش
+// از داخل پنل جستجوی رویدادها — افزودن هر کلمه، حذف هر کلمه (حتی
+// پیش‌فرض‌ها) و کلید ردهٔ سنی. پیش‌فرض‌ها فقط مقادیر اولیه‌اند و با
+// «↩ بازگرداندن کلمات پیش‌فرض» برمی‌گردند. ذخیره: event_search_wanted /
+// event_search_unwanted / event_search_agere. قانون ثابت کدِ «فوتبالِ
+// استقلال/برزیل» حذف و به‌صورت کلمات پیش‌فرضِ لیست خواسته‌ها درآمد.
+const EV_DEFAULT_WANTED = ['حسین وفایی', 'یانیک سانر', 'یانیک', 'فرمول یک', 'فرمول وان', 'فرمول ۱', 'فرمول 1', 'فرمول‌یک', 'فرمول‌وان', 'فوتبال استقلال', 'فوتبال برزیل'];
+const EV_DEFAULT_UNWANTED = ['نوجوانان', 'جوانان', 'نوآموزان', 'امیدها', 'تیم امید', 'بانوان', 'زنان', 'دختران', 'آکادمی', 'مدرسه فوتبال'];
 const EV_EXCLUDE_AGE_RE = /زیر\s*[۰-۹0-9]{1,2}/;
+const EV_WANTED_KEY = 'event_search_wanted';
+const EV_UNWANTED_KEY = 'event_search_unwanted';
+const EV_AGERE_KEY = 'event_search_agere';
+function evWordsRead(key, def) {
+    try {
+        const v = JSON.parse(localStorage.getItem(key) || 'null');
+        if (Array.isArray(v)) return v.map(function(x) { return String(x || '').trim(); }).filter(function(x) { return x; });
+    } catch(e) {}
+    return def.slice();
+}
+function evWanted() { return evWordsRead(EV_WANTED_KEY, EV_DEFAULT_WANTED); }
+function evUnwanted() { return evWordsRead(EV_UNWANTED_KEY, EV_DEFAULT_UNWANTED); }
+function evAgeReOn() { try { return localStorage.getItem(EV_AGERE_KEY) !== '0'; } catch(e) { return true; } }
+function evWordsSave(key, arr) { try { localStorage.setItem(key, JSON.stringify(arr)); } catch(e) {} }
+function evWordsAdd(kind, w) {
+    w = evNorm(w || '');
+    if (!w) return false;
+    const key = kind === 'un' ? EV_UNWANTED_KEY : EV_WANTED_KEY;
+    const arr = evWordsRead(key, kind === 'un' ? EV_DEFAULT_UNWANTED : EV_DEFAULT_WANTED);
+    if (arr.some(function(x) { return evNorm(x) === w; })) return false;   // بدون تکرار
+    arr.push(w);
+    evWordsSave(key, arr);
+    evRenderWords();
+    return true;
+}
+function evWordsRemove(kind, idx) {
+    const key = kind === 'un' ? EV_UNWANTED_KEY : EV_WANTED_KEY;
+    const arr = evWordsRead(key, kind === 'un' ? EV_DEFAULT_UNWANTED : EV_DEFAULT_WANTED);
+    if (idx < 0 || idx >= arr.length) return;
+    arr.splice(idx, 1);
+    evWordsSave(key, arr);
+    evRenderWords();
+}
+function evWordsReset() {
+    try { localStorage.removeItem(EV_WANTED_KEY); localStorage.removeItem(EV_UNWANTED_KEY); localStorage.removeItem(EV_AGERE_KEY); } catch(e) {}
+    evRenderWords();
+    showToast('کلمات پیش‌فرض بازگردانده شد');
+}
+function evToggleAgeRe(on) { try { localStorage.setItem(EV_AGERE_KEY, on ? '1' : '0'); } catch(e) {} evRenderWords(); }
+function evWordsAddFromBox(kind) {
+    const inp = document.getElementById('evWordInp' + kind);
+    if (!inp) return;
+    const v = inp.value;
+    if (!evNorm(v)) return;
+    const ok = evWordsAdd(kind, v);
+    inp.value = '';
+    if (!ok) showToast('این کلمه قبلاً اضافه شده');
+}
+// ویرایشگر داخل پنل رویدادها — چیپ‌های ✕دار + ورودی افزودن (بی‌نهایت)
+function evRenderWords() {
+    const box = document.getElementById('evWords');
+    if (!box) return;
+    const chip = function(kind, arr, color) {
+        return arr.map(function(w, i) {
+            return '<span style="display:inline-flex;align-items:center;gap:4px;background:' + color + ';color:#263238;border-radius:999px;padding:3px 6px 3px 10px;font-size:11.5px;">'
+                + escapeHtml(w)
+                + '<button title="حذف کلمه" style="background:none;border:none;cursor:pointer;font-size:12px;color:#b71c1c;padding:0 2px;" onclick="evWordsRemove(\'' + kind + '\',' + i + ')">✕</button></span>';
+        }).join(' ');
+    };
+    const inp = function(kind, ph) {
+        return '<div style="display:flex;gap:6px;margin-top:6px;">'
+            + '<input type="text" id="evWordInp' + kind + '" placeholder="' + ph + '" style="flex:1;min-width:0;padding:7px 10px;border:1px solid #cfd8dc;border-radius:999px;font-size:12.5px;background:#fbfcfe;" onkeydown="if(event.key===\'Enter\'){evWordsAddFromBox(\'' + kind + '\');}">'
+            + '<button class="ev-btn" style="padding:6px 12px;font-size:12px;" onclick="evWordsAddFromBox(\'' + kind + '\')">➕ افزودن</button></div>';
+    };
+    box.innerHTML = '<div style="background:#f6f8fb;border:1px solid #e3e8ef;border-radius:12px;padding:10px 12px;margin:10px 0 0;">'
+        + '<div style="font-size:12.5px;font-weight:800;color:#37474f;">⚙️ کلمات فیلتر شما (بی‌نهایت — آزادانه اضافه/حذف کنید)</div>'
+        + '<div style="font-size:11px;color:#78909c;margin-top:4px;">رویداد فقط وقتی می‌آید که یکی از «خواسته‌ها» در عنوانش باشد و هیچ «ناخواسته‌ای» نداشته باشد. حتی کلمات پیش‌فرض قابل حذف‌اند.</div>'
+        + '<div style="margin-top:8px;font-size:12px;font-weight:800;color:#2E7D32;">✔ خواسته‌ها (' + toPersianNumber(evWanted().length) + ')</div>'
+        + '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">' + chip('in', evWanted(), '#E8F5E9') + '</div>'
+        + inp('in', 'کلمهٔ خواستهٔ جدید…')
+        + '<div style="margin-top:10px;font-size:12px;font-weight:800;color:#C62828;">✖ ناخواسته‌ها (' + toPersianNumber(evUnwanted().length) + ')</div>'
+        + '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">' + chip('un', evUnwanted(), '#FFEBEE') + '</div>'
+        + inp('un', 'کلمهٔ ناخواستهٔ جدید…')
+        + '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;color:#37474f;cursor:pointer;">'
+        + '<input type="checkbox" ' + (evAgeReOn() ? 'checked' : '') + ' onchange="evToggleAgeRe(this.checked)">'
+        + 'حذف خودکار ردهٔ سنی «زیر NN» (زیر ۲۳، زیر ۱۹ و…)</label>'
+        + '<div style="margin-top:8px;"><button class="ev-btn" style="font-size:12px;" onclick="evWordsReset()">↩ بازگرداندن کلمات پیش‌فرض</button></div>'
+        + '</div>';
+}
 function evNorm(t) { return (t || '').replace(/\u200c/g, ' ').replace(/\s+/g, ' ').trim(); }
+// 🔧 T (v267) — BA-262: تطبیق فقط با دو لیست قابل ویرایش + کلید ردهٔ سنی
 function evMatches(t) {
     const s2 = evNorm((t.title || '') + ' ' + (t.sub || ''));
-    for (let i = 0; i < EV_EXCLUDE_WORDS.length; i++) if (s2.indexOf(EV_EXCLUDE_WORDS[i]) >= 0) return false;
-    if (EV_EXCLUDE_AGE_RE.test(s2)) return false;
-    for (let j = 0; j < EV_INCLUDE_WORDS.length; j++) if (s2.indexOf(EV_INCLUDE_WORDS[j]) >= 0) return true;
-    const hasFootball = s2.indexOf('فوتبال') >= 0;
-    if (hasFootball && (s2.indexOf('استقلال') >= 0 || s2.indexOf('برزیل') >= 0)) return true;
+    const un = evUnwanted();
+    for (let i = 0; i < un.length; i++) if (s2.indexOf(evNorm(un[i])) >= 0) return false;
+    if (evAgeReOn() && EV_EXCLUDE_AGE_RE.test(s2)) return false;
+    const wn = evWanted();
+    for (let j = 0; j < wn.length; j++) if (s2.indexOf(evNorm(wn[j])) >= 0) return true;
     return false;
 }
 function evLog(msg, bold) {
@@ -19907,6 +20025,7 @@ function openEventsPanel() {
     const addBtn = document.getElementById('evAddBtn');
     if (addBtn) addBtn.style.display = 'none';
     evLog('منابع: anten.ir + aparatsport.ir — دکمهٔ «جستجوی رویدادها» را بزنید.', true);
+    evRenderWords();   // 🔧 T (v267) — BA-262: ویرایشگر کلمات خواسته/ناخواسته
 }
 function closeEventsPanel() {
     closeModalByType('events');
@@ -19966,6 +20085,7 @@ async function runEventsSearch() {
     if (log) log.innerHTML = '';
     _evResults = [];
     evLog('🎯 جستجوی رویدادها — شروع', true);
+    evLog('⚙️ کلمات فعال: ' + toPersianNumber(evWanted().length) + ' خواسته، ' + toPersianNumber(evUnwanted().length) + ' ناخواسته' + (evAgeReOn() ? ' + ردهٔ سنی «زیر NN»' : ''));
     evLog('📡 واکشی anten.ir …');
     const a1 = await evFetchText('https://www.anten.ir/');
     let antenRows = [];

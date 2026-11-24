@@ -1,1 +1,1 @@
-v266-2026-11-24-filter-global-voice-ban-inputbar
+v267-2026-11-24-filter-priority-event-words
