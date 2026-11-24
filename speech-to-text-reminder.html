@@ -8189,6 +8189,33 @@ body.locked .header-actions button {
 //   قانون صفر: هیچ رفتار سالم دیگری تغییر نکرد — پروب ۲۱/۲۱ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
 // ════════════════════════════════════════════════════════════════════
+// 🔧 v271-2026-11-24 (درخواست X) — پیش‌فرض‌های ذخیره‌شده + ضدتکرار + تاب‌آوری
+//   تک‌منبعی + واکشی مستقیم بدون پروکسی:
+//   ۱) ذخیرهٔ کلمات پیش‌فرض (BA-268): الزام کاربر: «ذخیرهٔ کلمات پیش‌فرض
+//      جستجو هم داشته باشیم که کلمات پیش‌فرض قبلی اصلاح شوند» — پیش‌فرض‌ها
+//      در localStorage ذخیره می‌شوند (مهرِ نسخه EV_DEFAULTS_VER=2)؛
+//      اصلاحِ آیندهٔ پیش‌فرض‌ها در به‌روزرسانی به فهرست ذخیره‌شده می‌رسد:
+//      پیش‌فرض‌های کهنه با اصلاح‌شده‌ها جایگزین و کلمات خودِ کاربر حفظ
+//      می‌شوند. اصلاح محتوا: حذف «فرمول‌یک/فرمول‌وان»
+//      (نیم‌فاصله = تکراری پس از evNorm) و «یانیک سانر» (زیرمجموعهٔ
+//      «یانیک») — تطبیق دست نخورده.
+//   ۲) ضدتکرار (BA-269): الزام کاربر: «اگر یک بار دیگر جستجو کردیم تسک
+//      قبلی موجود بود در گروه رویدادها دوباره تکراری اضافه نشود» — کلید
+//      دقیقِ ۶۰ نویسه‌ای قدیمی‌های با فرمت قدیم (متن = فقط عنوان) را
+//      نمی‌گرفت؛ حالا evIsDupRecord: تطبیق زیررشته‌ای دوسویه روی عنوان
+//      (گارد طول ≥۸) در فیلتر «جدید» و گارد دوم در لحظهٔ افزودن + شمارش
+//      تکراری‌ها در لاگ.
+//   ۳) تاب‌آوری تک‌منبعی (BA-270): الزام کاربر: «اگر جستجو از یک سایت موفق
+//      بود و یکی ناموفق، نتایج همان یک سایت را قبول کن» — هر منبع در
+//      try/catch خودش؛ خطای هرگز منبعِ دیگر و دکمه را نمی‌بندد (finally)؛
+//      هر دو منبع افتاده = پیام صادقانه.
+//   ۴) واکشی مستقیم (BA-271): الزام کاربر: «پروکسی خاصی برای سایت‌ها
+//      استفاده نکن — من بدون فیلتر با نتِ ایران سایت‌ها در دسترس است» —
+//      زنجیرهٔ allorigins/r.jina.ai و evFetchTextِ بی‌مصرف کامل حذف؛ فقط
+//      واکشی مستقیم با timeout ۱۵s و پیام صادقانه.
+//   قانون صفر: جریان SR/رکوردرها و پروتکل شبکه دست نخورد.
+//
+// ════════════════════════════════════════════════════════════════════
 // 🔧 v270-2026-11-24 (درخواست W) — ساعت واقعی سررسید رویدادها + دیدن
 //   فرآیندهای جستجو:
 //   ۱) سررسید با ساعت پخش (BA-266): الزام کاربر: «ساعات رویدادهای پیدا شده
@@ -8288,7 +8315,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v270-2026-11-24-event-deadline-time-progress-scroll';
+const APP_VERSION = 'v271-2026-11-24-event-defaults-sync-dedupe-single-site-direct';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -19961,8 +19988,9 @@ function netNotifyIncomingGroupMsgs(gname, rows) {
 //   یا وان یا 1 / فوتبالِ استقلال / فوتبالِ برزیل — بدون تیم‌های ردهٔ سنی
 //   و بانوان (نوجوانان، جوانان، زیرِ سنی، امیدها، بانوان و…)؛ بدون تکرار؛
 //   افزودن به گروه «رویدادها» (اگر نبود ساخته می‌شود) به‌صورت تسک.
-//   CORS مرورگر اجازهٔ واکشی مستقیم این سایت‌ها را نمی‌دهد → زنجیرهٔ
-//   واکشی: مستقیم → allorigins → r.jina.ai (رندر JS برای SPA آپارات‌اسپرت).
+//   CORS مرورگر اجازهٔ واکشی مستقیم این سایت‌ها را نمی‌دهد — اما الزام کاربر
+//   (BA-271): «پروکسی خاصی برای سایت‌ها استفاده نکن — من بدون فیلتر با نتِ
+//   ایران سایت‌ها در دسترس است» → فقط واکشی مستقیم (در شبکهٔ کاربر کار می‌کند).
 //   اگر منبعی پاسخ ساختاری نداد، در لاگ صادقانه اعلام می‌شود — هیچ دادهٔ
 //   جعلی ساخته نمی‌شود (بخش ۶ اسپک). ساختار anten (SSR واقعی صفحهٔ اصلی)
 //   کارت‌های ساعت+عنوان+زیرعنوان است و با همان الگو پارس می‌شود.
@@ -19974,8 +20002,21 @@ const EV_GROUP_NAME = 'رویدادها';
 // «↩ بازگرداندن کلمات پیش‌فرض» برمی‌گردند. ذخیره: event_search_wanted /
 // event_search_unwanted / event_search_agere. قانون ثابت کدِ «فوتبالِ
 // استقلال/برزیل» حذف و به‌صورت کلمات پیش‌فرضِ لیست خواسته‌ها درآمد.
-const EV_DEFAULT_WANTED = ['حسین وفایی', 'یانیک سانر', 'یانیک', 'فرمول یک', 'فرمول وان', 'فرمول ۱', 'فرمول 1', 'فرمول‌یک', 'فرمول‌وان', 'فوتبال استقلال', 'فوتبال برزیل'];
-const EV_DEFAULT_UNWANTED = ['نوجوانان', 'جوانان', 'نوآموزان', 'امیدها', 'تیم امید', 'بانوان', 'زنان', 'دختران', 'آکادمی', 'مدرسه فوتبال'];
+// 🔧 X (v271) — BA-268: «ذخیرهٔ کلمات پیش‌فرض جستجو هم داشته باشیم که کلمات
+// پیش‌فرض قبلی اصلاح شوند» — پیش‌فرض‌ها حالا در localStorage ذخیره می‌شوند و
+// «شمارهٔ نسخهٔ پیش‌فرض» دارند: وقتی پیش‌فرض‌ها در به‌روزرسانی اصلاح شوند
+// (EV_DEFAULTS_VER بالا برود)، فهرستِ ذخیره‌شدهٔ دست‌نخورده با پیش‌فرض‌های
+// اصلاح‌شده جایگزین می‌شود و فهرستِ ویرایش‌شدهٔ کاربر فقط پیش‌فرض‌های جدید را
+// می‌گیرد (کلمات خودِ کاربر حذف نمی‌شوند). اصلاحِ محتوای v271: «فرمول‌یک/
+// فرمول‌وان» (با نیم‌فاصله — evNorm نیم‌فاصله را فاصله می‌کند = تکراریِ
+// «فرمول یک/فرمول وان») و «یانیک سانر» (زیرمجموعهٔ «یانیک» در تطبیق
+// زیررشته‌ای) حذف شدند — تطبیق دست نخورده، فهرست تمیزتر.
+const EV_DEFAULTS_VER = 2;
+const EV_DEFAULTS_VER_KEY = 'event_search_defaults_ver';
+const EV_DEFAULT_WANTED_V1 = ['حسین وفایی', 'یانیک سانر', 'یانیک', 'فرمول یک', 'فرمول وان', 'فرمول ۱', 'فرمول 1', 'فرمول‌یک', 'فرمول‌وان', 'فوتبال استقلال', 'فوتبال برزیل'];
+const EV_DEFAULT_UNWANTED_V1 = ['نوجوانان', 'جوانان', 'نوآموزان', 'امیدها', 'تیم امید', 'بانوان', 'زنان', 'دختران', 'آکادمی', 'مدرسه فوتبال'];
+const EV_DEFAULT_WANTED = ['حسین وفایی', 'یانیک', 'فرمول یک', 'فرمول وان', 'فرمول ۱', 'فرمول 1', 'فوتبال استقلال', 'فوتبال برزیل'];
+const EV_DEFAULT_UNWANTED = EV_DEFAULT_UNWANTED_V1.slice();
 const EV_EXCLUDE_AGE_RE = /زیر\s*[۰-۹0-9]{1,2}/;
 const EV_WANTED_KEY = 'event_search_wanted';
 const EV_UNWANTED_KEY = 'event_search_unwanted';
@@ -20016,6 +20057,27 @@ function evWordsReset() {
     showToast('کلمات پیش‌فرض بازگردانده شد');
 }
 function evToggleAgeRe(on) { try { localStorage.setItem(EV_AGERE_KEY, on ? '1' : '0'); } catch(e) {} evRenderWords(); }
+// 🔧 X (v271) — BA-268: همگام‌سازی پیش‌فرض‌های اصلاح‌شده — یک‌بار در هر
+// به‌روزرسانی (بر اساس مهرِ نسخه). فهرست دست‌نخورده (مثل پیش‌فرض‌های قدیمی)
+// → جایگزینی کامل با پیش‌فرض‌های اصلاح‌شده؛ فهرست ویرایش‌شدهٔ کاربر →
+// کلمات خودِ کاربر می‌ماند اما پیش‌فرض‌های کهنه‌ای که در نسخهٔ جدید حذف
+// شده‌اند («فرمول‌یک/فرمول‌وان/یانیک سانر») با پیش‌فرض‌های اصلاح‌شده
+// جایگزین می‌شوند — یعنی «کلمات پیش‌فرض قبلی اصلاح می‌شوند».
+function evSyncDefaults() {
+    try {
+        const ver = parseInt(localStorage.getItem(EV_DEFAULTS_VER_KEY) || '1', 10) || 1;
+        if (ver >= EV_DEFAULTS_VER) return;
+        const w = evWordsRead(EV_WANTED_KEY, EV_DEFAULT_WANTED_V1);
+        const inV2 = function(y) { return EV_DEFAULT_WANTED.some(function(x) { return evNorm(x) === evNorm(y); }); };
+        // کلمات کاربر = آن‌هایی که پیش‌فرضِ قدیمی نیستند (پیش‌فرض‌های کهنه حذف می‌شوند)
+        const kept = w.filter(function(y) { return !EV_DEFAULT_WANTED_V1.some(function(x) { return evNorm(x) === evNorm(y); }) || inV2(y); })
+                      .filter(function(y) { return !inV2(y); });
+        evWordsSave(EV_WANTED_KEY, EV_DEFAULT_WANTED.slice().concat(kept));
+        evWordsSave(EV_UNWANTED_KEY, evWordsRead(EV_UNWANTED_KEY, EV_DEFAULT_UNWANTED_V1));
+        localStorage.setItem(EV_DEFAULTS_VER_KEY, String(EV_DEFAULTS_VER));
+    } catch(e) {}
+}
+evSyncDefaults();   // ذخیرهٔ پیش‌فرض‌ها از اولین اجرا (BA-268)
 function evWordsAddFromBox(kind) {
     const inp = document.getElementById('evWordInp' + kind);
     if (!inp) return;
@@ -20118,6 +20180,7 @@ function openEventsPanel() {
     if (list) list.innerHTML = '';
     const addBtn = document.getElementById('evAddBtn');
     if (addBtn) addBtn.style.display = 'none';
+    evSyncDefaults();   // 🔧 X (v271) — BA-268: پیش‌فرض‌های اصلاح‌شده در باز شدن پنل هم
     evLog('منابع: anten.ir + aparatsport.ir — دکمهٔ «جستجوی رویدادها» را بزنید.', true);
     evRenderWords();   // 🔧 T (v267) — BA-262: ویرایشگر کلمات خواسته/ناخواسته
 }
@@ -20125,61 +20188,30 @@ function closeEventsPanel() {
     closeModalByType('events');
     navBack();
 }
-async function evFetchText(url) {
-    const attempts = [
-        url,
-        'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
-        'https://api.allorigins.win/get?url=' + encodeURIComponent(url),
-        'https://r.jina.ai/' + url
-    ];
-    let lastErr = '';
-    for (let k = 0; k < attempts.length; k++) {
-        try {
-            const r = await fetch(attempts[k], { cache: 'no-store' });
-            if (!r.ok) { lastErr = 'HTTP ' + r.status; continue; }
-            let t = await r.text();
-            if (attempts[k].indexOf('allorigins.win/get') >= 0) { try { t = JSON.parse(t).contents || t; } catch(e) {} }
-            if (t && t.length > 400) return { ok: true, text: t, via: attempts[k] };
-            lastErr = 'پاسخ بی‌محتوا';
-        } catch(e) { lastErr = ((e && e.message) || 'خطای شبکه'); }
-    }
-    return { ok: false, err: lastErr };
-}
-// 🔧 V (v269): واکشی JSON برای APIها — پاسخ کوتاه (مثل []) هم معتبر است؛
-// فقط در خطای واقعی به زنجیرهٔ پروکسی می‌رود. evFetchText با آستانهٔ ۴۰۰
-// کاراکتر، پاسخ خالیِ API را «بی‌محتوا» می‌پنداشت و به پروکسی می‌افتید
-// (کندی شدید و دادهٔ مخلوط) — این نسخه جایگزین جریان API شد.
+// 🔧 X (v271) — BA-271: الزام کاربر: «پروکسی خاصی برای سایت‌ها استفاده نکن —
+// من بدون فیلتر با نتِ ایران سایت‌ها در دسترس است» — زنجیرهٔ پروکسی
+// (allorigins / r.jina.ai) و evFetchTextِ بی‌مصرف کامل حذف شدند؛ فقط واکشی
+// مستقیم با timeout ۱۵ ثانیه. خطا = پیام صادقانه (بخش ۶ اسپک — هیچ دادهٔ
+// جعلی ساخته نمی‌شود)؛ v269 ثابت کرد پاسخ کوتاهِ معتبر (مثل []) هم باید
+// پذیرفته شود، پس JSON خالی هم ok است.
 async function evFetchJson(url) {
-    // 🔧 V (v269): راستی‌آزمایی زنده — allorigins به api2.anten.ir نمی‌رسد
-    // (IP دیتاسنترها ۴۰۸ می‌گیرند) ولی r.jina.ai جواب می‌دهد (تست: ۲۰۰ در
-    // ۱.۳s). خروجی jina پیش‌گفتهٔ Markdown دارد — JSON از اولین { یا [ تا
-    // آخرین } یا ] جدا می‌شود.
-    const attempts = [
-        url,
-        'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
-        'https://api.allorigins.win/get?url=' + encodeURIComponent(url),
-        'https://r.jina.ai/' + url
-    ];
-    let lastErr = '';
-    for (let k = 0; k < attempts.length; k++) {
+    try {
+        const ctl = new AbortController();
+        const to = setTimeout(function() { ctl.abort(); }, 15000);
+        let r;
         try {
-            const r = await fetch(attempts[k], { cache: 'no-store' });
-            if (!r.ok) { lastErr = 'HTTP ' + r.status; continue; }
-            let t = await r.text();
-            if (attempts[k].indexOf('allorigins.win/get') >= 0) { try { t = JSON.parse(t).contents || t; } catch(e) {} }
-            if (attempts[k].indexOf('r.jina.ai') >= 0) {
-                const i0a = t.indexOf('{'), i0b = t.indexOf('[');
-                const i0 = (i0a >= 0 && (i0b < 0 || i0a < i0b)) ? i0a : i0b;
-                if (i0 > 0) t = t.slice(i0);
-                const j1 = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']'));
-                if (j1 >= 0 && j1 < t.length - 1) t = t.slice(0, j1 + 1);
-            }
-            let d = null;
-            try { d = JSON.parse(t); } catch(e) { lastErr = 'پاسخ JSON نیست'; continue; }
-            return { ok: true, data: d, via: attempts[k] };
-        } catch(e) { lastErr = ((e && e.message) || 'خطای شبکه'); }
+            r = await fetch(url, { cache: 'no-store', signal: ctl.signal });
+        } finally {
+            clearTimeout(to);
+        }
+        if (!r.ok) return { ok: false, err: 'HTTP ' + r.status };
+        const t = await r.text();
+        let d = null;
+        try { d = JSON.parse(t); } catch(e) { return { ok: false, err: 'پاسخ JSON نیست' }; }
+        return { ok: true, data: d };
+    } catch(e) {
+        return { ok: false, err: (e && e.name === 'AbortError') ? 'پاسخ نداد (timeout ۱۵s)' : ((e && e.message) || 'خطای شبکه') };
     }
-    return { ok: false, err: lastErr };
 }
 // 🔧 V (v269) — BA-264: بازنگری کامل منابع — الزام کاربر: «چیزی پیدا
 // نمی‌کند؛ کل رکوردهای قابل نمایش سایت برای تمام روزهای آتی را استخراج و
@@ -20287,41 +20319,77 @@ function evParseAparatApi(payload, dateStr) {
     return out;
 }
 let _evResults = [];
+// 🔧 X (v271) — BA-269: تشخیص تکراری — الزام کاربر: «اگر یک بار دیگر جستجو
+// کردیم تسک قبلی موجود بود در گروه رویدادها دوباره تکراری اضافه نشود».
+// کلیدِ دقیقِ v269 (۶۰ نویسهٔ اول متن) قدیمی‌های با فرمت قدیم (متن = فقط
+// عنوان، بدون « — ساعت — تاریخ») را نمی‌گرفت → تکراری اضافه می‌شد. حالا
+// تطبیق زیررشته‌ای دوسویه روی عنوانِ نرمال‌شده: تسک قدیمی «عنوان» یا
+// «عنوان — ساعت — تاریخ» هر دو می‌گیرند؛ گارد طول ≥۸ تا عنوانِ کوتاهِ
+// اشتباهی، تسکِ نامرتبط را تکراری نپندارد.
+function evIsDupRecord(r, existingTexts) {
+    const tn = evNorm((r && r.title) || '');
+    if (!tn || tn.length < 8) return false;
+    return existingTexts.some(function(t) {
+        if (!t || t.length < 8) return false;
+        return t.indexOf(tn) >= 0 || tn.indexOf(t) >= 0;
+    });
+}
 async function runEventsSearch() {
     const btn = document.getElementById('evSearchBtn');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ در حال جستجو…'; }
     EV_FLOW = true;   // 🔧 W (v270) — BA-267: اسکرول پنل به باکس فرآیندها با هر خط لاگ
+    try {
     const log = document.getElementById('evLog');
     if (log) log.innerHTML = '';
     _evResults = [];
+    evSyncDefaults();   // 🔧 X (v271) — BA-268
     evLog('🎯 جستجوی رویدادها — شروع', true);
     evLog('⚙️ کلمات فعال: ' + toPersianNumber(evWanted().length) + ' خواسته، ' + toPersianNumber(evUnwanted().length) + ' ناخواسته' + (evAgeReOn() ? ' + ردهٔ سنی «زیر NN»' : ''));
+    // 🔧 X (v271) — BA-270: «اگر جستجو از یک سایت موفق بود و یکی ناموفق،
+    // نتایج همان یک سایت را قبول کن» — هر منبع در try/catch خودش است؛ خطای
+    // هرگز هر منبعِ دیگر را نمی‌بندد و جستجو را نمی‌خواباند (دکمهٔ گیرکردهٔ
+    // «در حال جستجو…» ممنوع). پیام صادقانه برای منبعِ افتاده.
     evLog('📡 واکشی anten.ir — کل روزهای آینده با API واقعی سایت …', true);
     let antenRows = [];
-    const a1 = await evFetchAntenAll();
-    if (a1.ok) {
-        antenRows = a1.rows;
-        evLog('✅ anten.ir: ' + toPersianNumber(antenRows.length) + ' رویداد در ' + toPersianNumber(a1.days) + ' روز آینده خوانده شد (' + toPersianNumber(a1.pages) + ' صفحهٔ API)', true);
-    } else {
-        evLog('⚠️ anten.ir پاسخ نداد: ' + a1.err, true);
+    try {
+        const a1 = await evFetchAntenAll();
+        if (a1.ok) {
+            antenRows = a1.rows;
+            evLog('✅ anten.ir: ' + toPersianNumber(antenRows.length) + ' رویداد در ' + toPersianNumber(a1.days) + ' روز آینده خوانده شد (' + toPersianNumber(a1.pages) + ' صفحهٔ API)', true);
+        } else {
+            evLog('⚠️ anten.ir پاسخ نداد: ' + a1.err, true);
+        }
+    } catch(e) {
+        evLog('⚠️ anten.ir خطا داد: ' + ((e && e.message) || e), true);
     }
     evLog('📡 واکشی aparatsport.ir — فهرست مسابقات روزهای آینده …');
     let apRows = [];
     let apDays = 0;
-    const evDates = evFutureDates(11);
-    for (let i = 0; i < evDates.length; i++) {
-        const u = 'https://www.aparatsport.ir/api/fa/v1/sport/sport/get_match_list_data?date=' + evDates[i] + '&device_type=website';
-        const r = await evFetchJson(u);
-        if (!r.ok) continue;
-        const d = r.data;
-        const got = evParseAparatApi(d, evDates[i]);
-        apRows = apRows.concat(got);
-        if (got.length) apDays++;
+    try {
+        const evDates = evFutureDates(11);
+        for (let i = 0; i < evDates.length; i++) {
+            const u = 'https://www.aparatsport.ir/api/fa/v1/sport/sport/get_match_list_data?date=' + evDates[i] + '&device_type=website';
+            const r = await evFetchJson(u);
+            if (!r.ok) continue;
+            const d = r.data;
+            const got = evParseAparatApi(d, evDates[i]);
+            apRows = apRows.concat(got);
+            if (got.length) apDays++;
+        }
+    } catch(e) {
+        evLog('⚠️ aparatsport.ir خطا داد: ' + ((e && e.message) || e), true);
     }
     if (apRows.length) {
         evLog('✅ aparatsport.ir: ' + toPersianNumber(apRows.length) + ' مسابقه در ' + toPersianNumber(apDays) + ' روز خوانده شد', true);
     } else {
         evLog('⚠️ aparatsport.ir: پاسخ فهرست مسابقات خالی بود (این داده فقط به شبکهٔ ایران داده می‌شود) — تنها از anten.ir استفاده شد', true);
+    }
+    if (!antenRows.length && !apRows.length) {
+        evLog('🚫 هیچ‌یک از دو منبع پاسخ نداد — نتیجه‌ای وجود ندارد (پیام صادقانه)', true);
+        _evResults = [];
+        evRenderResults();   // فهرست کهنه پاک شود؛ دکمهٔ افزودن پنهان
+        showToast('جستجوی رویدادها: هیچ منبعی پاسخ نداد');
+        return;   // finally دکمه و پرچم را بازمی‌گرداند
     }
     const seen = {};
     const all = antenRows.concat(apRows);
@@ -20336,15 +20404,17 @@ async function runEventsSearch() {
     }
     const groups = getGroups();
     const g0 = groups.find(function(x) { return (x.name || '').trim() === EV_GROUP_NAME; });
-    const existing = {};
-    if (g0) getDB().filter(function(x) { return x.groupId === g0.id; }).forEach(function(x) { existing[evNorm(x.text).slice(0, 60)] = true; });
-    const fresh = matches.filter(function(r) { return !existing[evNorm(evTaskText(r)).slice(0, 60)]; });
-    evLog('⚖️ فیلتر: ' + toPersianNumber(matches.length) + ' رویداد مطابق فیلتر شما — ' + toPersianNumber(fresh.length) + ' مورد جدید (بدون تکرار)', true);
+    const existingTexts = g0 ? getDB().filter(function(x) { return x.groupId === g0.id; }).map(function(x) { return evNorm(x.text || ''); }) : [];
+    const fresh = matches.filter(function(r) { return !evIsDupRecord(r, existingTexts); });
+    const dups = matches.length - fresh.length;
+    evLog('⚖️ فیلتر: ' + toPersianNumber(matches.length) + ' رویداد مطابق فیلتر شما — ' + toPersianNumber(fresh.length) + ' مورد جدید' + (dups ? ' — ' + toPersianNumber(dups) + ' مورد تکراری (قبلاً در گروه «رویدادها» هست و دوباره اضافه نمی‌شود)' : ''), true);
     _evResults = fresh;
     evRenderResults();
-    evScrollListIntoView();   // 🔧 W (v270) — BA-266: پایان جستجو → دیدن فهرست نتایج
+    evScrollListIntoView();   // 🔧 W (v270) — BA-267: پایان جستجو → دیدن فهرست نتایج
+    } finally {
     EV_FLOW = false;
     if (btn) { btn.disabled = false; btn.textContent = '🔍 جستجوی رویدادها'; }
+    }
 }
 function evRenderResults() {
     const list = document.getElementById('evList');
@@ -20360,7 +20430,7 @@ function evRenderResults() {
     }).join('');
     if (addBtn) { addBtn.style.display = ''; addBtn.textContent = '➕ افزودن به گروه «رویدادها» (' + toPersianNumber(_evResults.length) + ')'; }
 }
-// 🔧 W (v270) — BA-267: الزام کاربر: «ساعات رویدادهای پیدا شده را از متن
+// 🔧 W (v270) — BA-266: الزام کاربر: «ساعات رویدادهای پیدا شده را از متن
 // آن‌ها استخراج و در سررسید تنظیم کن — همه را ساعت صفر گذاشتی». قبلاً فقط
 // تاریخ (YYYY-MM-DD) در deadline نوشته می‌شد و سررسیدِ همهٔ رویدادها ۰۰:۰۰
 // می‌شد. حالا ساعت از رکورد (startAt آنتن / متن JSON آپارات) و در نبودش از
@@ -20414,13 +20484,15 @@ function evAddSelected() {
     }
     const db = getDB();
     const chosen = chks.map(function(c) { return parseInt(c.getAttribute('data-i'), 10); });
+    const existingTexts = db.filter(function(x) { return x.groupId === g.id; }).map(function(x) { return evNorm(x.text || ''); });
     let added = 0, withTime = 0;
     chosen.forEach(function(i) {
         const r = _evResults[i];
         if (!r) return;
+        // 🔧 X (v271) — BA-269: گارد دوم در لحظهٔ افزودن — حتی اگر فیلتر «جدید»
+        // جستجو را دور زده باشد، تکراری اضافه نمی‌شود (تطبیق زیررشته‌ای دوسویه)
+        if (evIsDupRecord(r, existingTexts)) return;
         const text = evTaskText(r);
-        if (db.some(function(x) { return x.groupId === g.id && evNorm(x.text).slice(0, 60) === evNorm(text).slice(0, 60); })) return;
-        // 🔧 W (v270) — BA-266: deadline با ساعت واقعی پخش (استخراج از متن رکورد)
         db.push({ id: 'ev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), text: text, groupId: g.id, createdAt: new Date().toISOString(), deadline: evDeadlineIso(r), done: false, eventSource: r.src });
         if (evEventTime(r)) withTime++;
         added++;
