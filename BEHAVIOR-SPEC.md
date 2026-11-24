@@ -11,10 +11,10 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v273 — ۱۴۰۵ آذر ۳ (درخواست Z — «خراب است: تحقیق کن، حلش کن»: تحقیق زندهٔ کامل مسیرهای مستقیم BA-273؛ زنجیرهٔ چندلایهٔ anten با پشتیبانِ فقط-واکشی BA-273؛ بایاس SW از واسطه‌ها BA-273)
-#  نسخهٔ فعلی کد:  APP_VERSION = v273-2026-11-24-events-anten-relay-chain-honest
-#                  CACHE_NAME  = yadavar-cache-v273
-#                  version.txt = v273-2026-11-24-events-anten-relay-chain-honest
+#  آخرین به‌روزرسانی: v274 — ۱۴۰۵ آذر ۳ (درخواست AA — «بدون فیلترشکن هیچ؛ با فیلترشکن فقط anten؛ در همه حالات درست باشد»: کشِ آخرین نتایج موفق + زنجیرهٔ پهن ۵ واسطهٔ fail-fast + پیام راهنمای VPN — BA-274)
+#  نسخهٔ فعلی کد:  APP_VERSION = v274-2026-11-24-events-allcases-lastgood-widerelay
+#                  CACHE_NAME  = yadavar-cache-v274
+#                  version.txt = v274-2026-11-24-events-allcases-lastgood-widerelay
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -214,17 +214,18 @@
 #   ~17675     : صداهای اعلان با Web Audio API (getNotifAudioContext)
 #   ~17970     : 🛡️ بخش ۱۶ — init + قفل انقضا (LOCK_DEADLINE_JALALI ~17970)
 #                 + PWA install (installApp ~18467)
-#   ~20014     : 🏟️ جستجوی رویدادها (v265-v273 — پیش‌فرض‌ها + مهر نسخه
+#   ~20014     : 🏟️ جستجوی رویدادها (v265-v274 — پیش‌فرض‌ها + مهر نسخه
 #                 EV_DEFAULTS_VER/evSyncDefaults ~20038-20106؛ ویرایشگر
 #                 کلمات خواسته/ناخواسته evWords ~19962؛ EV_FLOW/
 #                 evScrollLogIntoView/evScrollListIntoView ~20137-20172؛
-#                 evHttpErr/evNetErr/evFetchJson مستقیم+تلاش دوباره
-#                 ~20255-20296؛ evRelayList/evParseRelayJson/
-#                 evFetchAntenPage زنجیرهٔ واسطه‌ها ~20352-20399؛
-#                 evFetchAntenAll ~20400؛ evIsDupRecord ~20474؛
-#                 runEventsSearch ~20482؛ evTimeNorm/evTaskText/
-#                 evDeadlineIso ~20588-20612؛ evAddSelected ~20613؛
-#                 .ev-card > * flex-shrink:0 ~4864)
+#                 evHttpErr/evNetErr/evFetchJson گزینه‌دار (timeout/retry)
+#                 ~20275-20320؛ evRelayList/evParseRelayJson/
+#                 evFetchAntenPage زنجیرهٔ ۵ واسطهٔ fail-fast ~20378-20432؛
+#                 evFetchAntenAll ~20433؛ evSaveLastGood/evLoadLastGood/
+#                 evLastGoodLabel کشِ همه حالات ~20517-20531؛
+#                 evIsDupRecord ~20532؛ runEventsSearch ~20540؛
+#                 evTimeNorm/evTaskText/evDeadlineIso ~20646-20670؛
+#                 evAddSelected ~20671؛ .ev-card > * flex-shrink:0 ~4864)
 #
 #   ⚠️ نکتهٔ شناخته‌شده (v205): refreshFloatingContactBtn تابع no-op است —
 #   دکمهٔ floatingContactBtn هرگز در DOM ساخته نمی‌شود (~۱۹ فراخوانندهٔ
@@ -1604,6 +1605,28 @@
 #          evScrollListIntoView: فهرست نتایج از بالای ناحیهٔ دید شروع می‌شود.
 #          پروب v270: ۱۱ چک (هندسهٔ وسطِ جستجو با تأخیر عمدی ۱۲۰۰ms در موک
 #          anten اندازه‌گیری می‌شود).
+#   🔑 BA-274 (v274 — الزام کاربر: «بدون فیلترشکن هیچ‌کدام وصل نشد؛ با
+#          فیلترشکن فقط anten جواب داد؛ می‌خواهم در همه حالات درست باشد»)
+#          — تحقیق زندهٔ تکمیلی: sweep Origin آنتن → allowlist فقط
+#          {anten.ir, www.anten.ir} است (echo + allow-credentials) و هیچ
+#          origin میزبانیِ قابل‌استفاده (github.io/netlify/vercel/pages/
+#          gitlab.io/glitch/herokuapp/render/replit/codepen/jsfiddle/null)
+#          مجاز نیست؛ telewebion در DNS عمومی NXDOMAIN (دامنه سراسری
+#          وجود ندارد)؛ varzesh3 از بیرون ایران resolve نمی‌شود؛ واسطه‌ها:
+#          allorigins نوسانی (raw گاهی ۴۰۸)، cors.lol زنده (۴۲۹ لحظه‌ای)،
+#          codetabs افتاده (۵۲۲). ریشهٔ واقعی گزارش: واسطه‌های خارجی در
+#          ایران فیلترند (بدون VPN) + geo-lock آپارات (با VPN خالی).
+#          لایه‌های «همه حالات»: ۱) کشِ «آخرین نتایج موفق»
+#          (event_search_lastgood_v1 در localStorage، تا ۸۰ ردیف + مهر
+#          زمان) — هر جستجوی موفق ذخیره؛ وقتی همهٔ مسیرهای زنده بسته‌اند
+#          نتایج اخیر با برچسب صادقانهٔ زمان («X ساعت پیش») و پیام راهنمای
+#          VPN نمایش داده می‌شود؛ در نبودِ کش، پیام صادقانهٔ قبلی عیناً
+#          می‌ماند (قرارداد v271 پابرجا). ۲) زنجیرهٔ واسطهٔ پهن‌تر: ۵ مسیر
+#          (allorigins raw → allorigins get → r.jina.ai → cors.lol →
+#          codetabs) با fail-fast (evFetchJson گزینه‌دار: timeout 8s،
+#          بدون retry برای واسطه‌ها؛ مستقیم مثل قبل ۱۵s+retry) و
+#          یادسپاری واسطهٔ موفق ۰..۴. ۳) sw.js: cors.lol/codetabs هم از
+#          کش مستثنی (۶ هاست). پروب v274: ۸/۸ — رگرسیون کامل ۱۹ سوئیت سبز.
 #   🔑 BA-273 (v273 — الزام کاربر: «خراب است خراب است خراب است — تحقیق کن
 #          حلش کن») — تحقیق زندهٔ کامل (۱۴۰۵/۰۹/۰۳): JSONP anten ندارد؛
 #          هاست‌های api./apiv2.anten.ir وجود ندارند؛ allowlist آپارات فقط
@@ -2985,6 +3008,14 @@
 #
 #   (نسخه‌های مفصل از v204 به بعد؛ قدیمی‌ها خلاصه. changelog کامل
 #    تفصیلی در سرآیند HTML موجود است.)
+#
+### v274 (۱۴۰۵ آذر ۳) — «در همه حالات درست باشد»: کشِ آخرین نتایج موفق + زنجیرهٔ ۵ واسطهٔ fail-fast (درخواست AA)
+#   کاربر: «بدون فیلترشکن هیچ‌کدام وصل نشد؛ با فیلترشکن فقط anten؛ می‌خواهم
+#   در همه حالات درست باشد». تحقیق زنده: allowlist آنتن فقط دامنه‌های خودش
+#   (هیچ origin میزبانی مجاز نیست)، telewebion NXDOMAIN، varzesh3 فقط
+#   ایران-DNS؛ ریشه: فیلتر واسطه‌ها در ایران + geo-lock آپارات. سه لایه:
+#   کشِ last-good در localStorage با برچسب صادقانهٔ زمان؛ زنجیرهٔ پهن
+#   ۵ واسطه با fail-fast ۸s؛ پیام راهنمای VPN. قراردادهای قبلی دست‌نخورده.
 #
 ### v273 (۱۴۰۵ آذر ۳) — زنجیرهٔ چندلایهٔ anten + پشتیبانِ فقط-واکشی + تحقیق کامل مسیرها (درخواست Z)
 #   کاربر: «خراب است خراب است خراب است — تحقیق کن حلش کن». تحقیق زنده: هیچ

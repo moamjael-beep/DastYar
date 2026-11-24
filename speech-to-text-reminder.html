@@ -8189,6 +8189,26 @@ body.locked .header-actions button {
 //   قانون صفر: هیچ رفتار سالم دیگری تغییر نکرد — پروب ۲۱/۲۱ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
 // ════════════════════════════════════════════════════════════════════
+// 🔧 v274-2026-11-24 (درخواست AA) — «بدون فیلترشکن هیچ؛ با فیلترشکن فقط
+//   anten؛ می‌خواهم در همه حالات درست باشد»:
+//   تحقیق زنده: allowlist آنتن فقط {anten.ir, www.anten.ir} (echo +
+//   credentials) — هیچ origin میزبانیِ قابل‌استفاده (github.io/netlify/
+//   vercel/pages/glitch/herokuapp/render/replit/codepen/jsfiddle/null)
+//   مجاز نیست؛ telewebion در DNS عمومی NXDOMAIN است؛ varzesh3 از بیرون
+//   ایران resolve نمی‌شود؛ واسطه‌ها: allorigins نوسانی، cors.lol زنده
+//   (۴۲۹ لحظه‌ای)، codetabs افتاده. لایه‌های «همه حالات» (BA-274):
+//   ۱) کشِ «آخرین نتایج موفق» (event_search_lastgood_v1) — هر جستجوی
+//      موفق ذخیره؛ وقتی همهٔ مسیرهای زنده بسته‌اند نتایج اخیر با برچسب
+//      صادقانهٔ زمان نمایش داده می‌شود؛ در نبود کش، پیام صادقانهٔ قبلی.
+//   ۲) زنجیرهٔ واسطهٔ پهن‌تر: allorigins(raw) → allorigins(get) →
+//      r.jina.ai → cors.lol → codetabs — fail-fast ۸ ثانیه بدون تلاش
+//      دوباره (evFetchJson گزینه‌دار شد)؛ یادسپاری واسطهٔ موفق ۰..۴.
+//   ۳) پیام راهنمای صادقانهٔ VPN در حالت افتادگی کامل.
+//   sw.js: cors.lol و codetabs هم از کش SW مستثنی؛ CACHE v274.
+//   پروب v274: ۸/۸ + v273: ۹/۹ + v272: ۸/۸ + v271: ۱۲/۱۲ + v270: ۱۱/۱۱ +
+//   v269: ۹/۹ + v267: ۱۶/۱۶ + رگرسیون ۱۹/۱۹.
+//
+// ════════════════════════════════════════════════════════════════════
 // 🔧 v273-2026-11-24 (درخواست Z) — «خراب است: تحقیق کن، حلش کن» — زنجیرهٔ
 //   چندلایهٔ واکشی anten با پشتیبانِ فقط-واکشی:
 //   تحقیق زندهٔ کامل: JSONP anten ندارد؛ api./apiv2.anten.ir وجود ندارند؛
@@ -8359,7 +8379,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v273-2026-11-24-events-anten-relay-chain-honest';
+const APP_VERSION = 'v274-2026-11-24-events-allcases-lastgood-widerelay';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20264,13 +20284,18 @@ function evNetErr(e) {
     if (m.indexOf('Failed to fetch') >= 0 || m.indexOf('NetworkError') >= 0 || m.indexOf('Load failed') >= 0) return 'مرورگر اجازهٔ خواندن مستقیم پاسخ سایت را نداد (قانون CORS خودِ مرورگر — نه فیلتر برنامه) یا شبکه در دسترس نیست؛ درخواست مستقیم و بدون واسطه بود';
     return m || 'خطای شبکه';
 }
-async function evFetchJson(url) {
+async function evFetchJson(url, opts) {
+    const o = opts || {};
+    // BA-274: واسطه‌ها fail-fast (۸ ثانیه، بدون تلاش دوباره) تا زنجیرهٔ
+    // پهن سریع به مسیر بعدی برود؛ مستقیم مثل قبل ۱۵ ثانیه + تلاش دوباره.
+    const maxTry = (o.retry === false) ? 1 : 2;
+    const toMs = o.timeout || 15000;
     let lastErr = '';
-    for (let k = 0; k < 2; k++) {   // BA-272: تلاش دوباره — خطای گذرای ۵۰۴/شبکه
+    for (let k = 0; k < maxTry; k++) {   // BA-272: تلاش دوباره — خطای گذرای ۵۰۴/شبکه
         if (k) await new Promise(function(res) { setTimeout(res, 1500); });
         try {
             const ctl = new AbortController();
-            const to = setTimeout(function() { ctl.abort(); }, 15000);
+            const to = setTimeout(function() { ctl.abort(); }, toMs);
             let r;
             try {
                 r = await fetch(url, { cache: 'no-store', signal: ctl.signal });
@@ -20351,10 +20376,18 @@ function evFutureDates(n) {
 // مسابقات فقط به IP ایران داده می‌شود — v269).
 let evAntenRelayIdx = -1;   // یادسپاری واسطهٔ موفق برای صفحات بعدی
 function evRelayList(url) {
+    // BA-274: زنجیرهٔ پهن‌تر — گزارش کاربر (AA): «بدون فیلترشکن هیچ؛ با
+    // فیلترشکن فقط anten» → واسطه‌های خارجی در ایران فیلترند؛ هر چه مسیر
+    // بیشتر باشد شانسِ باز بودنِ یکی بدون VPN بیشتر است. تحقیق زندهٔ
+    // ۱۴۰۵/۰۹/۰۳: allorigins نوسانی (get سالم/raw گاهی ۴۰۸)، cors.lol زنده
+    // (۴۲۹ لحظه‌ای)، codetabs افتاده (۵۲۲) — ولی هر لحظه ممکن است برگردند؛
+    // همه فقط-واکشی و بدون هیچ فیلتری. ترتیب: پایدارترین‌ها اول.
     return [
         { name: 'allorigins (raw)', url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url) },
         { name: 'allorigins (get)', url: 'https://api.allorigins.win/get?url=' + encodeURIComponent(url) },
-        { name: 'r.jina.ai', url: 'https://r.jina.ai/' + url }
+        { name: 'r.jina.ai', url: 'https://r.jina.ai/' + url },
+        { name: 'cors.lol', url: 'https://api.cors.lol/?url=' + encodeURIComponent(url) },
+        { name: 'codetabs', url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url) }
     ];
 }
 // تجزیهٔ دفاعی پاسخ واسطه: JSON خام / پوشش {"contents":...} / محصور در
@@ -20378,11 +20411,11 @@ async function evFetchAntenPage(off) {
     const r = await evFetchJson(u);          // ۱) مستقیم — بدون واسطه
     if (r.ok) return { ok: true, data: r.data, via: 'مستقیم' };
     const relays = evRelayList(u);
-    const order = (evAntenRelayIdx >= 0) ? [evAntenRelayIdx, 0, 1, 2].filter(function(v, i, arr) { return arr.indexOf(v) === i && v < relays.length; }) : [0, 1, 2];
+    const order = (evAntenRelayIdx >= 0) ? [evAntenRelayIdx, 0, 1, 2, 3, 4].filter(function(v, i, arr) { return arr.indexOf(v) === i && v < relays.length; }) : [0, 1, 2, 3, 4];
     let lastErr = r.err;
     for (const idx of order) {
         const rl = relays[idx];
-        const rr = await evFetchJson(rl.url);
+        const rr = await evFetchJson(rl.url, { timeout: 8000, retry: false });   // BA-274: fail-fast
         // ok: JSON سالم؛ نه-ok ولی متن دارد (مثل fence جینا) → تجزیهٔ دفاعی
         const d = rr.ok ? evParseRelayJson(rr.text) : (rr.text ? evParseRelayJson(rr.text) : null);
         if (d && d.calendar) {
@@ -20471,6 +20504,31 @@ let _evResults = [];
 // تطبیق زیررشته‌ای دوسویه روی عنوانِ نرمال‌شده: تسک قدیمی «عنوان» یا
 // «عنوان — ساعت — تاریخ» هر دو می‌گیرند؛ گارد طول ≥۸ تا عنوانِ کوتاهِ
 // اشتباهی، تسکِ نامرتبط را تکراری نپندارد.
+// 🔧 AA (v274) — BA-274: «می‌خواهم در همه حالات درست باشد» — تحقیق زنده:
+// allowlist آنتن فقط {anten.ir, www.anten.ir} است (echo + credentials) و
+// هیچ origin قابل‌استفاده‌ای (github.io/netlify/vercel/null/…) مجاز نیست؛
+// telewebion در DNS عمومی اصلاً وجود ندارد (NXDOMAIN)؛ varzesh3 از بیرون
+// ایران resolve نمی‌شود. پس لایهٔ «همه حالات»: ۱) کشِ «آخرین نتایج موفق»
+// در localStorage — هر جستجوی موفق ذخیره می‌شود و وقتی همهٔ مسیرهای زنده
+// بسته‌اند (بدون VPN در ایران) نتایج اخیر با برچسب صادقانهٔ زمان نمایش
+// داده می‌شود؛ ۲) زنجیرهٔ واسطهٔ پهن‌تر (۵ مسیر، fail-fast ۸ ثانیه)؛
+// ۳) پیام راهنمای صادقانهٔ VPN. هیچ رفتار سالمِ قبلی تغییر نمی‌کند:
+// در نبودِ کش، پیام صادقانهٔ قبلی عیناً می‌ماند.
+function evSaveLastGood(rows) {
+    try {
+        localStorage.setItem('event_search_lastgood_v1', JSON.stringify({ ts: Date.now(), rows: rows.slice(0, 80) }));
+    } catch(e) { /* حافظهٔ خصوصی/پر — بی‌اهمیت */ }
+}
+function evLoadLastGood() {
+    try { return JSON.parse(localStorage.getItem('event_search_lastgood_v1') || 'null'); } catch(e) { return null; }
+}
+function evLastGoodLabel(ts) {
+    const h = (Date.now() - ts) / 3600000;
+    if (h < 1) return 'کمتر از یک ساعت پیش';
+    if (h < 24) return toPersianNumber(Math.round(h)) + ' ساعت پیش';
+    return toPersianNumber(Math.round(h / 24)) + ' روز پیش';
+}
+
 function evIsDupRecord(r, existingTexts) {
     const tn = evNorm((r && r.title) || '');
     if (!tn || tn.length < 8) return false;
@@ -20531,6 +20589,15 @@ async function runEventsSearch() {
     }
     if (!antenRows.length && !apRows.length) {
         evLog('🚫 هیچ‌یک از دو منبع پاسخ نداد — نتیجه‌ای وجود ندارد (پیام صادقانه). anten: اول مستقیم، سپس واسطه‌های فقط-واکشیِ بدون فیلتر (allorigins/r.jina.ai)؛ آپارات‌اسپرت: فقط مستقیم (واسطه برای دادهٔ فقط-ایرانش بیفایده است) — علت دقیق هر منبع در پیام‌های ⚠️ بالا آمده است.', true);
+        const lg = evLoadLastGood();
+        if (lg && lg.rows && lg.rows.length) {   // BA-274: «همه حالات» — آخرین دادهٔ موفق
+            evLog('🗄 اتصال زندهٔ همهٔ مسیرها بسته است — نمایشِ «آخرین نتایج موفق» از ' + evLastGoodLabel(lg.ts) + ' (' + toPersianNumber(lg.rows.length) + ' رویداد). جستجوی تازه با اتصال باز دادهٔ روز می‌آورد؛ اگر VPN داری، anten معمولاً با آن باز می‌شود.', true);
+            _evResults = lg.rows;
+            evRenderResults();
+            evScrollListIntoView();
+            showToast('جستجوی رویدادها: اتصال زنده نبود — آخرین نتایج موفق (' + evLastGoodLabel(lg.ts) + ') نمایش داده شد');
+            return;   // finally دکمه و پرچم را بازمی‌گرداند
+        }
         _evResults = [];
         evRenderResults();   // فهرست کهنه پاک شود؛ دکمهٔ افزودن پنهان
         showToast('جستجوی رویدادها: هیچ منبعی پاسخ نداد');
@@ -20553,6 +20620,7 @@ async function runEventsSearch() {
     const fresh = matches.filter(function(r) { return !evIsDupRecord(r, existingTexts); });
     const dups = matches.length - fresh.length;
     evLog('⚖️ فیلتر: ' + toPersianNumber(matches.length) + ' رویداد مطابق فیلتر شما — ' + toPersianNumber(fresh.length) + ' مورد جدید' + (dups ? ' — ' + toPersianNumber(dups) + ' مورد تکراری (قبلاً در گروه «رویدادها» هست و دوباره اضافه نمی‌شود)' : ''), true);
+    if (matches.length) evSaveLastGood(matches);   // BA-274: کشِ «آخرین نتایج موفق»
     _evResults = fresh;
     evRenderResults();
     evScrollListIntoView();   // 🔧 W (v270) — BA-267: پایان جستجو → دیدن فهرست نتایج
