@@ -4858,6 +4858,10 @@ body.locked .header-actions button {
 .ev-overlay { position: fixed; left: 0; right: 0; bottom: 0; top: var(--header-h, 58px); background: #f5f6f8; z-index: 9800; display: none; flex-direction: column; overflow: hidden; }
 .ev-overlay.active { display: flex; }
 .ev-card { max-width: 640px; width: 100%; margin: 0 auto; padding: 14px 12px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+/* 🔧 W (v270) — BA-267: بچه‌های کارت نباید flex-shrink شوند — با محتوای بلند،
+   باکس «فرآیندهای در حال جستجو» (ev-log با overflow:auto) تا ~یک خط له می‌شد
+   و جا برای اسکرول هم نمی‌ماند؛ حالا ارتفاع واقعی می‌گیرند و کارت اسکرول می‌شود */
+.ev-card > * { flex-shrink: 0; }
 .ev-title { font-weight: 900; font-size: 17px; }
 .ev-sub { font-size: 12px; color: #555; line-height: 1.9; }
 .ev-btns { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -8185,6 +8189,23 @@ body.locked .header-actions button {
 //   قانون صفر: هیچ رفتار سالم دیگری تغییر نکرد — پروب ۲۱/۲۱ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
 // ════════════════════════════════════════════════════════════════════
+// 🔧 v270-2026-11-24 (درخواست W) — ساعت واقعی سررسید رویدادها + دیدن
+//   فرآیندهای جستجو:
+//   ۱) سررسید با ساعت پخش (BA-266): الزام کاربر: «ساعات رویدادهای پیدا شده
+//      را از متن آن‌ها استخراج و در سررسید تنظیم کن — همه را ساعت صفر
+//      گذاشتی» — قبلاً فقط تاریخ در deadline می‌نشست و همه ۰۰:۰۰ می‌شدند.
+//      حالا ساعت از رکورد (startAt آنتن / متن JSON آپارات) و در نبودش از متن
+//      عنوان استخراج (رقم فارسی/لاتین HH:MM) و deadline به‌صورت ISO کامل با
+//      آفست تهران (+03:30) ذخیره می‌شود — روی دستگاه کاربر همان ساعت واقعی
+//      پخش در لیست/جزئیات دیده می‌شود؛ بدون ساعت در متن → فقط تاریخ (صادقانه).
+//   ۲) فرآیندهای در حال جستجو همیشه در دید (BA-267): الزام کاربر: «صفحهٔ
+//      جستجوی رویدادها به پایین اسکرول شود و قسمت فرآیندهای در حال جستجو
+//      دیده شود» — با هر خط لاگِ جستجو/افزودن، کارت پنل به باکس فرآیندها
+//      اسکرول می‌شود؛ در پایان، فهرست نتایج به دید می‌آید (باز کردن پنل
+//      اسکرول نمی‌کند تا ویرایشگر کلمات در دید بماند).
+//   قانون صفر: جریان SR/رکوردرها و پروتکل شبکه دست نخورد.
+//
+// ════════════════════════════════════════════════════════════════════
 // 🔧 v269-2026-11-24 (درخواست V) — بازنگری جستجوی رویدادها + فیلتر تک‌پنلی:
 //   ۱) جستجوی رویدادها (BA-264): راستی‌آزمایی زنده — anten.ir فقط SSR صفحهٔ
 //      اصلی می‌دهد؛ API واقعی کشف شد (api2.anten.ir/programs?offset=N&count=120)
@@ -8267,7 +8288,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v269-2026-11-24-events-search-future-api-filter-single';
+const APP_VERSION = 'v270-2026-11-24-event-deadline-time-progress-scroll';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20046,6 +20067,10 @@ function evMatches(t) {
     for (let j = 0; j < wn.length; j++) if (s2.indexOf(evNorm(wn[j])) >= 0) return true;
     return false;
 }
+// 🔧 W (v270) — BA-267: «در حال جستجو» بودن جریان — فقط در این حالت هر خط
+// لاگ، کارت پنل را به سمت باکس «فرآیندهای در حال جستجو» اسکرول می‌کند
+// (باز کردن پنل اسکرول نمی‌کند تا ویرایشگر کلمات در دید بماند).
+let EV_FLOW = false;
 function evLog(msg, bold) {
     const el = document.getElementById('evLog');
     if (!el) return;
@@ -20054,6 +20079,29 @@ function evLog(msg, bold) {
     d.textContent = msg;
     el.appendChild(d);
     el.scrollTop = el.scrollHeight;
+    // 🔧 W (v270) — BA-267: الزام کاربر: «صفحهٔ جستجوی رویدادها به پایین
+    // اسکرول شود و قسمت فرآیندهای در حال جستجو دیده شود» — ev-card تنها
+    // اسکرول‌کنندهٔ پنل است؛ باکس فرآیندها با هر خط لاگ «کامل» در دید می‌آید
+    // (لبهٔ پایینش نزدیک لبهٔ پایین کارت — خطوط بعدی بدون جهش).
+    if (EV_FLOW) evScrollLogIntoView();
+}
+function evScrollLogIntoView() {
+    const log = document.getElementById('evLog');
+    if (!log) return;
+    const card = log.closest('.ev-card');
+    if (!card) return;
+    const lr = log.getBoundingClientRect(), cr = card.getBoundingClientRect();
+    // باکس فرآیندها باید «کامل» در دید باشد — لبهٔ پایینش نزدیک لبهٔ پایین کارت
+    if (lr.bottom > cr.bottom - 8 || lr.top < cr.top) card.scrollTop += (lr.bottom - cr.bottom) + 12;
+}
+// پایان جستجو — فهرست نتایج به دید می‌آید (باکس فرآیندها بالایش می‌ماند)
+function evScrollListIntoView() {
+    const list = document.getElementById('evList');
+    if (!list) return;
+    const card = list.closest('.ev-card');
+    if (!card) return;
+    const lr = list.getBoundingClientRect(), cr = card.getBoundingClientRect();
+    if (lr.top > cr.top + 12 || lr.top < cr.top) card.scrollTop += (lr.top - cr.top) - 12;
 }
 function openEventsPanel() {
     // 🔧 idempotent (الگوی BA-218) + تراز زیر هدر (BA-154)
@@ -20242,6 +20290,7 @@ let _evResults = [];
 async function runEventsSearch() {
     const btn = document.getElementById('evSearchBtn');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ در حال جستجو…'; }
+    EV_FLOW = true;   // 🔧 W (v270) — BA-267: اسکرول پنل به باکس فرآیندها با هر خط لاگ
     const log = document.getElementById('evLog');
     if (log) log.innerHTML = '';
     _evResults = [];
@@ -20289,10 +20338,12 @@ async function runEventsSearch() {
     const g0 = groups.find(function(x) { return (x.name || '').trim() === EV_GROUP_NAME; });
     const existing = {};
     if (g0) getDB().filter(function(x) { return x.groupId === g0.id; }).forEach(function(x) { existing[evNorm(x.text).slice(0, 60)] = true; });
-    const fresh = matches.filter(function(r) { return !existing[evNorm((r.title + (r.time ? ' — ' + r.time : ''))).slice(0, 60)]; });
+    const fresh = matches.filter(function(r) { return !existing[evNorm(evTaskText(r)).slice(0, 60)]; });
     evLog('⚖️ فیلتر: ' + toPersianNumber(matches.length) + ' رویداد مطابق فیلتر شما — ' + toPersianNumber(fresh.length) + ' مورد جدید (بدون تکرار)', true);
     _evResults = fresh;
     evRenderResults();
+    evScrollListIntoView();   // 🔧 W (v270) — BA-266: پایان جستجو → دیدن فهرست نتایج
+    EV_FLOW = false;
     if (btn) { btn.disabled = false; btn.textContent = '🔍 جستجوی رویدادها'; }
 }
 function evRenderResults() {
@@ -20309,7 +20360,43 @@ function evRenderResults() {
     }).join('');
     if (addBtn) { addBtn.style.display = ''; addBtn.textContent = '➕ افزودن به گروه «رویدادها» (' + toPersianNumber(_evResults.length) + ')'; }
 }
+// 🔧 W (v270) — BA-267: الزام کاربر: «ساعات رویدادهای پیدا شده را از متن
+// آن‌ها استخراج و در سررسید تنظیم کن — همه را ساعت صفر گذاشتی». قبلاً فقط
+// تاریخ (YYYY-MM-DD) در deadline نوشته می‌شد و سررسیدِ همهٔ رویدادها ۰۰:۰۰
+// می‌شد. حالا ساعت از رکورد (startAt آنتن / متن JSON آپارات) و در نبودش از
+// متنِ عنوان استخراج می‌شود (HH:MM با رقم لاتین یا فارسی) و deadline به‌صورت
+// ISO کامل با آفست تهران (+03:30) ذخیره می‌شود — چون کل برنامه سررسید را با
+// زمان محلی دستگاه می‌سازد (toJalaliFull)، روی دستگاه کاربر ایرانی همان ساعت
+// واقعی پخش دیده می‌شود. اگر در متن هیچ ساعتی نبود، صادقانه فقط تاریخ
+// (نیمه‌شب تهران) — هیچ ساعت جعلی ساخته نمی‌شود (بخش ۶ اسپک).
+const EV_TIME_RE = /(?:^|[^\d])([01]?\d|2[0-3]):([0-5]\d)(?![\d])/;
+function evTimeNorm(t) {
+    const s = String(t || '').replace(/[۰-۹]/g, function(c) { return String(c.charCodeAt(0) - 0x06F0); });
+    const m = s.match(EV_TIME_RE);
+    if (!m) return '';
+    const hh = parseInt(m[1], 10), mm = parseInt(m[2], 10);
+    if (hh > 23 || mm > 59) return '';
+    return pad2(hh) + ':' + pad2(mm);
+}
+// ساعت مؤثر رویداد: اول فیلد ساعت رکورد، بعد متن عنوان/زیرعنوان
+function evEventTime(r) {
+    return evTimeNorm(r && r.time) || evTimeNorm((r && r.title || '') + ' ' + (r && r.sub || ''));
+}
+// متن تسک — با همان ساعت مؤثر (متن و سررسید همیشه هم‌عصرند)
+function evTaskText(r) {
+    const tm = evEventTime(r);
+    return (r && r.title || '') + (tm ? ' — ' + tm : '') + (r && r.dateJ ? ' — ' + r.dateJ : '');
+}
+function evDeadlineIso(r) {
+    if (!r || !r.date) return null;
+    const ds = String(r.date).replace(/\//g, '-');   // آنتن «2026/11/28» می‌دهد — ISO خط تیره می‌خواهد
+    const t = evEventTime(r);
+    const d = t ? new Date(ds + 'T' + t + ':00+03:30') : new Date(ds + 'T00:00:00+03:30');
+    if (isNaN(d.getTime())) return r.date;
+    return d.toISOString();
+}
 function evAddSelected() {
+    EV_FLOW = true;   // 🔧 W (v270) — BA-267: لاگ افزودن هم به دید می‌آید
     const chks = Array.prototype.slice.call(document.querySelectorAll('#evList .ev-chk:checked'));
     if (!chks.length) { showToast('رویدادی انتخاب نشده'); return; }
     let groups = getGroups();
@@ -20327,20 +20414,23 @@ function evAddSelected() {
     }
     const db = getDB();
     const chosen = chks.map(function(c) { return parseInt(c.getAttribute('data-i'), 10); });
-    let added = 0;
+    let added = 0, withTime = 0;
     chosen.forEach(function(i) {
         const r = _evResults[i];
         if (!r) return;
-        const text = r.title + (r.time ? ' — ' + r.time : '') + (r.dateJ ? ' — ' + r.dateJ : '');
+        const text = evTaskText(r);
         if (db.some(function(x) { return x.groupId === g.id && evNorm(x.text).slice(0, 60) === evNorm(text).slice(0, 60); })) return;
-        db.push({ id: 'ev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), text: text, groupId: g.id, createdAt: new Date().toISOString(), deadline: (r.date || null), done: false, eventSource: r.src });
+        // 🔧 W (v270) — BA-266: deadline با ساعت واقعی پخش (استخراج از متن رکورد)
+        db.push({ id: 'ev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), text: text, groupId: g.id, createdAt: new Date().toISOString(), deadline: evDeadlineIso(r), done: false, eventSource: r.src });
+        if (evEventTime(r)) withTime++;
         added++;
     });
     setDB(db);
-    evLog('✅ ' + toPersianNumber(added) + ' رویداد به گروه «رویدادها» اضافه شد', true);
+    evLog('✅ ' + toPersianNumber(added) + ' رویداد به گروه «رویدادها» اضافه شد' + (withTime ? ' — سررسیدِ ' + toPersianNumber(withTime) + ' مورد با ساعت واقعی پخش تنظیم شد' : ''), true);
     showToast('✅ ' + toPersianNumber(added) + ' رویداد به گروه «رویدادها» اضافه شد');
     _evResults = _evResults.filter(function(r, i) { return chosen.indexOf(i) < 0; });
     evRenderResults();
+    EV_FLOW = false;
     if (typeof render === 'function') { try { render(); } catch(e) {} }
     if (typeof renderGroupsView === 'function') { try { renderGroupsView(); } catch(e) {} }
 }
