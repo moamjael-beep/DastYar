@@ -4836,8 +4836,13 @@ body.locked .header-actions button {
 }
 .net-empty { text-align: center; color: #90a4ae; font-size: 12px; padding: 18px 8px; }
 /* — تماس صوتی ۱:۱ (لایه روی پنل شبکه) — */
-.net-call-scrim { position: absolute; inset: 0; background: rgba(23,28,38,0.94); display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; z-index: 20; color: #fff; padding: 20px; text-align: center; }
+/* 🔧 Q (v264): صفحهٔ تماس سراسری — fixed در سطح body، z بالاتر از هدر
+   (۱۰۷۰۰) و همهٔ overlayها؛ تماس ورودی روی هر صفحه‌ای دیده می‌شود
+   (استثنای ثبت‌شده بر BA-154 با الزام کاربر). */
+.net-call-scrim { position: fixed; inset: 0; background: rgba(23,28,38,0.94); display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; z-index: 15000; color: #fff; padding: 20px; text-align: center; }
 .net-call-scrim.show { display: flex; }
+.net-call-scrim.ringing .net-call-avatar { animation: netCallPulse 0.9s ease-in-out infinite; }
+@keyframes netCallPulse { 0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,255,255,0.35); } 50% { transform: scale(1.06); box-shadow: 0 0 0 14px rgba(255,255,255,0); } }
 .net-call-avatar { width: 84px; height: 84px; border-radius: 50%; background: var(--primary, #1a237e); display: flex; align-items: center; justify-content: center; font-size: 38px; }
 .net-call-name { font-weight: 900; font-size: 18px; }
 .net-call-status { font-size: 12.5px; opacity: 0.85; }
@@ -5192,13 +5197,16 @@ body.locked .header-actions button {
         <input type="file" id="netFileInput" style="display:none;" onchange="netSendFilePick(this.files && this.files[0]); this.value='';">
         <button class="net-btn" onclick="netSendMsg()">ارسال</button>
     </div>
-    <div class="net-call-scrim" id="netCallScrim">
-        <div class="net-call-avatar" id="netCallAvatar">📞</div>
-        <div class="net-call-name" id="netCallName">—</div>
-        <div class="net-call-status" id="netCallStatus">—</div>
-        <div class="net-call-btns" id="netCallBtns"></div>
-        <audio id="netRemoteAudio" autoplay></audio>
-    </div>
+</div>
+
+<!-- 🔧 Q (v264): صفحهٔ تماس سراسری — خارج از netOverlay و در سطح body تا
+     روی «همهٔ صفحات» (حسابداری، یادداشت، جزئیات تسک و…) نمایش داده شود. -->
+<div class="net-call-scrim" id="netCallScrim">
+    <div class="net-call-avatar" id="netCallAvatar">📞</div>
+    <div class="net-call-name" id="netCallName">—</div>
+    <div class="net-call-status" id="netCallStatus">—</div>
+    <div class="net-call-btns" id="netCallBtns"></div>
+    <audio id="netRemoteAudio" autoplay></audio>
 </div>
 
 <!-- 🔧 N-5b (v261): چت خصوصی ۱:۱ — همان زبان طراحی و قابلیت‌های چت گروهی -->
@@ -8124,7 +8132,23 @@ body.locked .header-actions button {
 //   ۵) عنوان آیتم اعلان‌ها بدون «زنگوله»: «اعلان‌ها».
 //   قانون صفر: هیچ رفتار سالم دیگری تغییر نکرد — پروب ۲۱/۲۱ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v263-2026-11-24-hamburger-menu-overhaul';
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v264-2026-11-24 (درخواست Q) — چت، تماس و تگ‌های شبکه‌ای:
+//   ۱) حذف/ویرایش چت‌ها کامل شد و با پروب اثبات شد: حذف «برای همه» و
+//      «برای من» برای هر نوع پیام (متن/عکس/صوت/ویدیو/فایل) در چت گروهی و
+//      خصوصی + ویرایش فقط برای پیام متنیِ فرستنده (همان الگوی v259/v261).
+//   ۲) ترتیب نمایش چت‌ها معکوس شد — آخرین پیام‌ها بالای لیست (گروهی + خصوصی).
+//   ۳) هر پیام دریافتی (گروهی/خصوصی) نوتیف کامل می‌گیرد (بنر + سیستم)؛
+//      تماس ورودی شخصی نوتیف ندارد؛ فقط تماس از دست‌رفته نوتیف می‌دهد.
+//      صفحهٔ تماس سراسری شد: scrim در سطح body با z=15000 (بالای هدر) —
+//      روی همهٔ صفحات باز می‌شود، با زنگ سنتز ماریمبا (Web Audio) و دکمهٔ
+//      پاسخ/رد؛ پنل شبکه دیگر برای تماس ورودی به‌زور باز نمی‌شود.
+//   ۴) تگ کارهای شبکه‌ای بدون آیکون 🛰️ — «👤 نام مسئول» (یا «🏷️ شبکه»
+//      برای تسکِ بدون مسئول).
+//   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
+//      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
+// ════════════════════════════════════════════════════════════════════
+const APP_VERSION = 'v264-2026-11-24-chat-call-notif-overhaul';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -14352,9 +14376,11 @@ function renderTasksView(groupId) {
         if (item.suspended == true) { const m = document.createElement('div'); m.className='item-done-mark'; m.textContent='⏸'; m.style.color='#FFB74D'; row.appendChild(m); }
         const textEl = document.createElement('div'); textEl.className='item-text'; textEl.textContent=item.text; row.appendChild(textEl);
         // 🔧 BA-236: عناصر شبکه روی تسک‌های همگام‌شده از پنل شبکه
-        if (item.netCode) { const nt = document.createElement('span'); nt.className='item-net-tag'; nt.textContent='🛰️'; row.appendChild(nt); }
+        // 🔧 Q (v264): تگ شبکه بدون آیکون 🛰️ — «👤 نام مسئول» کافی است؛
+        // تسک شبکه‌ایِ بدون مسئول فقط «🏷️ شبکه» می‌گیرد.
         if (item.netAssignee) { const na = document.createElement('span'); na.className='item-net-tag'; na.textContent='👤 ' + item.netAssignee; row.appendChild(na); }
-        else if (item.netOwner) { const no = document.createElement('span'); no.className='item-net-tag'; no.textContent='🛰️ ' + item.netOwner; row.appendChild(no); }
+        else if (item.netOwner) { const no = document.createElement('span'); no.className='item-net-tag'; no.textContent='👤 ' + item.netOwner; row.appendChild(no); }
+        else if (item.netCode) { const nt = document.createElement('span'); nt.className='item-net-tag'; nt.textContent='🏷️ شبکه'; row.appendChild(nt); }
         // Group tag: show the task's group name as a colored badge — ONLY in
         // the "همه کارها" view (where all groups are mixed together). In a
         // specific group's view, every task belongs to the same group, so
@@ -19317,6 +19343,7 @@ function ghStartPoll() {
                 NET_STATE.members = gr.members || [];
                 NET_STATE.tasks = gr.tasks || [];
                 NET_STATE.msgs = (gr.messages || []).slice(-100);
+                netNotifyIncomingGroupMsgs(g.name, NET_STATE.msgs);   // 🔧 Q (v264)
                 netSyncToMain();
                 netMyGroups().forEach(function(gm2) {
                     const gr2 = ghGroup(gm2.code);
@@ -19673,6 +19700,22 @@ async function netSysNotify(title, body) {
                 });
             }
         }
+    } catch(e) {}
+}
+// 🔧 Q (v264): هر پیام گروهی دریافتی → نوتیف (بنر + سیستم). واترمارک هر
+// گروه فقط بار اول (بارگذاری تاریخچه) تنظیم می‌شود تا اسپم نشود؛ بعد فقط
+// پیام‌های تازه‌تر از واترمارک نوتیف می‌گیرند.
+function netNotifyIncomingGroupMsgs(gname, rows) {
+    try {
+        if (!gname || !Array.isArray(rows) || !rows.length) return;
+        const wm = NET_STATE.grpWm = NET_STATE.grpWm || {};
+        if (!wm[gname]) { wm[gname] = new Date().toISOString(); return; }
+        const fresh = rows.filter(function(m) { return m && m.created_at > wm[gname] && m.sender_id !== netMyUid() && !m.deleted; });
+        wm[gname] = new Date().toISOString();
+        if (!fresh.length) return;
+        const m0 = fresh[fresh.length - 1];
+        netSysNotify('💬 ' + gname + (fresh.length > 1 ? ' — ' + toPersianNumber(fresh.length) + ' پیام جدید' : ''),
+            (m0.sender_name || '') + ': ' + ((m0.text || '').slice(0, 60) || 'پیوست'));
     } catch(e) {}
 }
 // نوار نوتیف زیر هدر برنامه — «🔔 شبکه: ۳ پیام جدید …» با لمس به همان گروه می‌رود
@@ -20769,6 +20812,7 @@ async function netLoadMessages() {
             }
         } catch(e) {}   // جدول قدیمی‌ست — فقط فیلتر محلی اعمال می‌شود
         NET_STATE.msgs = rows.filter(function(x) { return hidKeys.indexOf(netMsgKey(x)) < 0; });
+        netNotifyIncomingGroupMsgs(g.name, NET_STATE.msgs);   // 🔧 Q (v264)
         NET_STATE.lastMsgAt[g.code] = (NET_STATE.msgs.length ? NET_STATE.msgs[NET_STATE.msgs.length - 1].created_at : new Date().toISOString());
     } catch(e) {}
 }
@@ -20807,7 +20851,8 @@ function netRenderChatList() {
     if (!el) return;
     const me = netMyUid();
     netRenderChatHeader();
-    el.innerHTML = NET_STATE.msgs.map(function(m) {
+    // 🔧 Q (v264): ترتیب معکوس — آخرین پیام‌ها بالای لیست؛ اسکرول به بالا
+    el.innerHTML = NET_STATE.msgs.slice().reverse().map(function(m) {
         const mine = (m.sender_id === me);
         const body = netMsgBodyHtml(m);
         const edited = (m.edited_at && !m.deleted) ? ' <span class="net-msg-edited" title="ویرایش‌شده">✎</span>' : '';
@@ -20817,7 +20862,7 @@ function netRenderChatList() {
             + '<div class="net-msg-meta">' + netFaTime(m.created_at) + edited + netMsgMenuBtn(m, mine) + '</div></div>';
     }).join('') || '<div class="net-empty">پیامی نیست — اولین پیام را بفرستید</div>';
     const nb = document.getElementById('netBody');
-    if (nb) nb.scrollTop = nb.scrollHeight;
+    if (nb) nb.scrollTop = 0;   // 🔧 Q (v264): تازه‌ترین پیام بالای لیست است
 }
 // L-3 (BA-251): درج پیام پیوست‌دار (صوت/ویدیو/فایل/عکسِ استوریج) روی سرور
 async function netSendAttachmentMsg(kind, url, fname, fsize, dur, text) {
@@ -21442,7 +21487,8 @@ function netPvRender() {
     const el = document.getElementById('netPvList');
     if (!el) return;
     const me = netMyUid();
-    el.innerHTML = NET_STATE.pv.msgs.map(function(m) {
+    // 🔧 Q (v264): ترتیب معکوس — آخرین پیام‌ها بالای لیست؛ اسکرول به بالا
+    el.innerHTML = NET_STATE.pv.msgs.slice().reverse().map(function(m) {
         const mine = (m.sender_id === me);
         const body = netMsgBodyHtml(m);
         const edited = (m.edited_at && !m.deleted) ? ' <span class="net-msg-edited" title="ویرایش‌شده">✎</span>' : '';
@@ -21450,7 +21496,7 @@ function netPvRender() {
             + body
             + '<div class="net-msg-meta">' + netFaTime(m.created_at) + edited + netPvMenuBtn(m, mine) + '</div></div>';
     }).join('') || '<div class="net-empty">پیامی نیست — اولین پیام خصوصی را بفرستید</div>';
-    el.scrollTop = el.scrollHeight;
+    el.scrollTop = 0;   // 🔧 Q (v264): تازه‌ترین پیام بالای لیست است
 }
 function netPvMenuBtn(m, mine) {
     if (m.deleted) return '';
@@ -21514,7 +21560,9 @@ function netPvHideForMe(mid) {
     netPvRender();
 }
 function netPvNotify(m) {
-    try { showToast('💬 ' + (m.sender_name || '') + ': ' + ((m.text || '').slice(0, 40) || 'پیوست')); } catch(e) {}
+    // 🔧 Q (v264): هر پیام خصوصی دریافتی → نوتیف کامل (بنر درون‌صفحه +
+    // نوتیف سیستم) — مثل پیام گروهی، الزام کاربر «هرگونه دریافت نوتیف».
+    try { netSysNotify('💬 پیام خصوصی — ' + (m.sender_name || NET_STATE.pv.peerName || ''), ((m.text || '').slice(0, 60) || 'پیوست')); } catch(e) {}
 }
 // دریافت رویدادهای چت خصوصی (روی کانال سیگنال شخصی خودم)
 function NET_onPv(p) {
@@ -21527,12 +21575,11 @@ function NET_onPv(p) {
         if (arr.some(function(x) { return x.id === m.id; })) return;
         arr.push(m);
         netPvSave(uid, arr);
-        if (NET_STATE.pv.peer === uid) {
-            netPvRefreshLocal();
-            netPvRender();
-        } else {
-            netPvNotify(m);
-        }
+        netPvRefreshLocal();
+        if (NET_STATE.pv.peer === uid) netPvRender();
+        // 🔧 Q (v264): نوتیف همیشه — حتی وقتی چت باز است (الزام کاربر:
+        // «هرگونه دریافت چت … نوتیف داشته باشد»)
+        netPvNotify(m);
     } else if (p.t === 'edit' && p.from) {
         const arr = netPvLoad(p.from);
         const m = arr.find(function(x) { return x.id === p.id; });
@@ -21692,14 +21739,18 @@ function NET_onCallSignal(p) {
         if (C.active || C.state) { NET_sendSignal({ kind: 'busy', to: p.from, from: netMyUid() }); return; }
         C.active = true; C.role = 'callee'; C.peerUid = p.from; C.peerName = p.fromName || 'تماس ورودی';
         C.pending = p; C.iceBuf = []; C.state = 'ringing';
-        const ov = document.getElementById('netOverlay');
-        if (ov && !ov.classList.contains('active')) openNetPanel();   // تماس ورودی حتی با پنل بسته دیده می‌شود
+        // 🔧 Q (v264): صفحهٔ تماس سراسری است (scrim در سطح body) — پنل شبکه
+        // دیگر به‌زور باز نمی‌شود؛ کاربر از هر صفحه‌ای زنگ را می‌بیند و جواب
+        // می‌دهد. برای تماس ورودی نوتیف داده نمی‌شود (الزام کاربر)؛ فقط اگر
+        // از دست برود، نوتیف «تماس از دست‌رفته» می‌آید.
         netCallShow('ringing', C.peerName, '🔔 تماس صوتی ورودی…');
+        netCallRingStart();
         C.ringT = setTimeout(function() {
             if (C.state === 'ringing') {
                 NET_sendSignal({ kind: 'end', to: p.from, from: netMyUid(), reason: 'missed' });
+                netCallRingStop();
                 NET_callCleanup();
-                showToast('تماس ورودی بی‌پاسخ ماند');
+                netSysNotify('📞 تماس از دست‌رفته', 'تماس ورودی ' + (C.peerName || 'ناشناس') + ' بی‌پاسخ ماند');
             }
         }, 30000);
         return;
@@ -21754,6 +21805,8 @@ function netCallAccept() {
     const C = NET_STATE.call;
     const p = C.pending;
     if (!p) return;
+    netCallRingStop();   // 🔧 Q (v264): پاسخ داده شد — زنگ تمام
+
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         showToast('⚠️ مرورگر از میکروفون پشتیبانی نمی‌کند');
         netCallDecline();
@@ -21810,6 +21863,55 @@ function netCallToggleMute() {
     C.stream.getAudioTracks().forEach(function(t) { t.enabled = !C.muted; });
     netCallShow('active', C.peerName, C.muted ? '🔇 بی‌صدا' : '🎙️ در حال تماس…');
 }
+// ─── Q (v264): زنگ تماس ورودی — سنتز «ماریمبا» با Web Audio ───
+// پلاک‌های چوبی کوتاه با فاد سریع؛ چرخهٔ ۳ ثانیه‌ای تا پاسخ/رد/پایان.
+// AudioContext معلق → resume؛ در بدترین حالت صفحهٔ تماس بی‌صدا نمایش
+// داده می‌شود (محدودیت شناخته‌شدهٔ مرورگر — بخش ۸ اسپک).
+let _callRingCtx = null;
+let _callRingTimer = null;
+function netCallRingPluck(t0, freq, dur) {
+    const o = _callRingCtx.createOscillator();
+    const g = _callRingCtx.createGain();
+    o.type = 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.22, t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(_callRingCtx.destination);
+    o.start(t0); o.stop(t0 + dur + 0.05);
+    const o2 = _callRingCtx.createOscillator();
+    const g2 = _callRingCtx.createGain();
+    o2.type = 'triangle'; o2.frequency.value = freq * 2;
+    g2.gain.setValueAtTime(0.0001, t0);
+    g2.gain.exponentialRampToValueAtTime(0.05, t0 + 0.01);
+    g2.gain.exponentialRampToValueAtTime(0.0001, t0 + dur * 0.6);
+    o2.connect(g2); g2.connect(_callRingCtx.destination);
+    o2.start(t0); o2.stop(t0 + dur * 0.6 + 0.05);
+}
+function netCallRingBar() {
+    try {
+        if (!NET_STATE.call || NET_STATE.call.state !== 'ringing') return;
+        const now = _callRingCtx.currentTime;
+        netCallRingPluck(now + 0.00, 659.26, 0.35);   // E5
+        netCallRingPluck(now + 0.26, 554.37, 0.35);   // C#5
+        netCallRingPluck(now + 0.52, 440.00, 0.40);   // A4
+        netCallRingPluck(now + 0.86, 493.88, 0.30);   // B4
+        netCallRingPluck(now + 1.10, 554.37, 0.45);   // C#5
+        netCallRingPluck(now + 1.50, 659.26, 0.55);   // E5
+        _callRingTimer = setTimeout(netCallRingBar, 3000);
+    } catch(e) {}
+}
+function netCallRingStart() {
+    try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        if (!_callRingCtx || _callRingCtx.state === 'closed') _callRingCtx = new AC();
+        if (_callRingCtx.state === 'suspended') { try { _callRingCtx.resume().catch(function() {}); } catch(e) {} }
+        netCallRingBar();
+    } catch(e) {}
+}
+function netCallRingStop() {
+    if (_callRingTimer) { clearTimeout(_callRingTimer); _callRingTimer = null; }
+}
 function netCallShow(mode, name, status) {
     const sc = document.getElementById('netCallScrim');
     if (!sc) return;
@@ -21834,6 +21936,8 @@ function netCallShow(mode, name, status) {
 }
 function NET_callCleanup() {
     const C = NET_STATE.call;
+    netCallRingStop();   // 🔧 Q (v264): امنیت — هر پاک‌سازی، زنگ را هم می‌بندد
+    
     if (C.timerIv) clearInterval(C.timerIv);
     if (C.ringT) clearTimeout(C.ringT);
     if (C.stream) { try { C.stream.getTracks().forEach(function(t) { t.stop(); }); } catch(e) {} }
