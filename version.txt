@@ -1,1 +1,1 @@
-v271-2026-11-24-event-defaults-sync-dedupe-single-site-direct
+v272-2026-11-24-events-direct-honest-errors-retry
