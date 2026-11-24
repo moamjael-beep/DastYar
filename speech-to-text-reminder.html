@@ -5752,7 +5752,7 @@ body.locked .header-actions button {
     </div>
 </div>
 
-<!-- 🔧 v209: منوی همبرگری هدر — بک‌آپ، بازیابی بک‌آپ، اعلان‌ها (زنگوله).
+<!-- 🔧 v209: منوی همبرگری هدر — بک‌آپ، بازیابی بک‌آپ، اعلان‌ها.
      هر آیتم اول منو را می‌بندد و بعد تابع اصلی همان دکمهٔ قبلی هدر را صدا می‌زند. -->
 <!-- 🔧 BA-214 (v241) + BA-217 (v243 — الزام کاربر): قفل حسابداری نامرئی
      است — هیچ صفحهٔ قفلی وجود ندارد. رمز (۳۰ لمس متوالی) بی‌صدا روی
@@ -5767,19 +5767,18 @@ body.locked .header-actions button {
             <span class="h-ico">📥</span><span>بازیابی بک‌آپ</span>
         </div>
         <div class="hamburger-item" onclick="closeHamburgerMenu(); toggleNotifications();">
-            <span class="h-ico">🔔</span><span>اعلان‌ها (زنگوله)</span>
+            <span class="h-ico">🔔</span><span>اعلان‌ها</span>
         </div>
         <div class="hamburger-item" onclick="closeHamburgerMenuSilent(); openHolidaysPanel();">
-            <span class="h-ico">📅</span><span>تعطیلات رسمی (انتخاب سال و جستجو)</span>
+            <span class="h-ico">📅</span><span>جستجوی تعطیلات رسمی</span>
         </div>
         <div class="hamburger-item" onclick="closeHamburgerMenuSilent(); openNetPanel();">
-            <span class="h-ico">🛰️</span><span>شبکه (چت، تماس، گروه مشترک)</span>
+            <span class="h-ico">🛰️</span><span>شبکه (چت، تماس، گروه)</span>
         </div>
-        <!-- 🔧 N-2 (v261): فیلتر نمایش انواع تسک — سراسری، با تیک برای هر وضعیت -->
-        <div style="border-top:1px solid #e3e6ea; padding:8px 12px 4px;">
-            <div style="font-size:12.5px; font-weight:700; color:#37474f; margin-bottom:6px;">🔎 نمایش کارها (سراسری)</div>
-            <div id="tvfGlobalBox"></div>
-            <div style="font-size:10.5px; color:#90a4ae; margin-top:4px;">در هر گروه می‌توانید جداگانه باز/بسته کنید (منوی ☰ گروه)</div>
+        <!-- 🔧 P (v263): «نمایش کارها (سراسری)» زیرمنو شد — مثل ☰ گروه‌ها،
+             آیتم منو پنل فیلتر (tvfOverlay) را در حالت سراسری باز می‌کند -->
+        <div class="hamburger-item" onclick="closeHamburgerMenuSilent(); openTvfPanel(null);">
+            <span class="h-ico">🔎</span><span>نمایش کارها (سراسری)</span>
         </div>
     </div>
 </div>
@@ -8111,7 +8110,21 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v262-2026-11-24-subgroup-cards-pages';
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v263-2026-11-24 (درخواست P) — بازسازی منوی همبرگری:
+//   ۱) آیتم «🗂️ زیرگروه‌های گروه» از ☰ گروه حذف شد — مکانیزم کارت قابل‌کلیک v262 جایگزین آن است.
+//   ۲) عنوان آیتم تعطیلات: «جستجوی تعطیلات رسمی» (جایگزین «تعطیلات رسمی (انتخاب سال و جستجو)»).
+//   ۳) عنوان آیتم شبکه بدون «مشترک»: «شبکه (چت، تماس، گروه)».
+//   ۴) «نمایش کارها (سراسری)» زیرمنو شد — مثل ☰ گروه‌ها: باکس درون‌خطی حذف، آیتم منو پنل
+//      فیلتر (tvfOverlay) را در حالت سراسری باز می‌کند. ناوبری اتاق‌های قصر (BA-004G):
+//      از منوی اصلی navReplace اتمیک روی marker همبرگری (الگوی BA-218/v244)، از ☰ گروه
+//      navPush؛ بستن (تأیید/کلیک بیرون) → closeModalByType('tvf') + navBack؛ Back موبایل
+//      پنل را می‌بندد. idempotent (باز/بستن دوباره استک را خراب نمی‌کند). نوع 'tvf' به
+//      نقشهٔ closeModalByType اضافه شد.
+//   ۵) عنوان آیتم اعلان‌ها بدون «زنگوله»: «اعلان‌ها».
+//   قانون صفر: هیچ رفتار سالم دیگری تغییر نکرد — پروب ۲۱/۲۱ + رگرسیون کامل سبز.
+// ════════════════════════════════════════════════════════════════════
+const APP_VERSION = 'v263-2026-11-24-hamburger-menu-overhaul';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -10113,27 +10126,42 @@ function changeTaskSubgroup(taskId, sgid) {
     if (it.netId && typeof netSyncTaskFromMain === 'function') { try { netSyncTaskFromMain(it); } catch(e) {} }
 }
 
-// ─── N-2: رندر تیک‌های فیلتر — سراسری (همبرگری) و گروهی (پنل ☰ گروه) ───
-function renderTvfGlobalBox() {
-    const el = document.getElementById('tvfGlobalBox');
-    if (!el) return;
-    const f = taskViewFilterGlobal();
-    el.innerHTML = TASK_VIEW_STATES.map(s =>
-        '<label style="display:flex;align-items:center;gap:8px;padding:5px 2px;font-size:13.5px;color:#37474f;cursor:pointer;">'
-        + '<input type="checkbox" ' + (f[s.k] ? 'checked' : '') + ' onchange="taskViewFilterSetGlobal(\'' + s.k + '\', this.checked)">'
-        + s.label + '</label>').join('');
-}
+// ─── N-2: رندر تیک‌های فیلتر — گروهی (پنل ☰ گروه).
+// 🔧 P (v263): رندر سراسریِ درون‌خطی همبرگری (renderTvfGlobalBox + tvfGlobalBox)
+// حذف شد — «نمایش کارها (سراسری)» حالا آیتم زیرمنو است و همان پنل
+// tvfOverlay را در حالت سراسری باز می‌کند. ───
 function openTvfPanel(gid) {
     const ov = document.getElementById('tvfOverlay');
     if (!ov) return;
+    // 🔧 P (v263): idempotent — باز کردن دوبارهٔ پنلِ باز، استک مودال و
+    // تاریخچه را خراب نمی‌کند (همان الگوی BA-218 برای تعطیلات).
+    if (ov.classList.contains('active')) return;
     ov.dataset.gid = gid || '';
     renderTvfPanelBody();
     ov.classList.add('active');
     bringToFront(ov);
+    // 🔧 P (v263): قانون اتاق‌های قصر (BA-004G) — پنل فیلتر حالا ورودی
+    // تاریخی می‌گیرد. اگر از آیتم منوی همبرگری اصلی باز شده (منو با
+    // closeHamburgerMenuSilent بی‌صدا بسته شده و marker همبرگری هنوز
+    // روی history است)، ورودی hamburger با navReplace به tvf تبدیل
+    // می‌شود؛ در فراخوانی مستقیم (منوی ☰ گروه) navPush عادی.
+    const curState = history.state;
+    if (curState && curState.view === 'modal' && curState.type === 'hamburger') {
+        navReplace({ view: 'modal', type: 'tvf' });
+    } else {
+        navPush({ view: 'modal', type: 'tvf' });
+    }
+    trackModalOpen('tvf');
 }
 function closeTvfPanel() {
     const ov = document.getElementById('tvfOverlay');
     if (ov) { ov.classList.remove('active'); ov.dataset.gid = ''; }
+    // 🔧 P (v263): بستن با دکمهٔ تأیید یا کلیک بیرون → pop ورودی فیلتر
+    // (اتاق به اتاق). idempotent: فقط وقتی tvf روی استک مودال است.
+    if (typeof _modalStack !== 'undefined' && _modalStack.length > 0 && _modalStack[_modalStack.length - 1] === 'tvf') {
+        closeModalByType('tvf');
+        navBack();
+    }
 }
 function renderTvfPanelBody() {
     const ov = document.getElementById('tvfOverlay');
@@ -10177,7 +10205,7 @@ function renderSubgroupsPanelBody() {
     const g = getGroupById(gid);
     const subs = groupSubgroups(gid);
     let h = '<div style="font-size:13.5px; font-weight:700; color:#37474f; padding:8px 12px 2px;">🗂 زیرگروه‌های «' + escapeHtml(g.name) + '»</div>'
-        + '<div style="padding:0 12px 4px; font-size:11px; color:#90a4ae;">زیرگروه زیرمجموعه نمی‌گیرد (دو سطح: گروه ← زیرگروه). تسک‌های بی‌زیرگروه، ریشهٔ گروه‌اند و زیر بخش‌های زیرگروه نمایش داده می‌شوند.</div>'
+        + '<div style="padding:0 12px 4px; font-size:11px; color:#90a4ae;">زیرگروه زیرمجموعه نمی‌گیرد (دو سطح: گروه ← زیرگروه). از v262 زیرگروه‌ها در نمای گروه کارت‌های قابل‌کلیک دارند و با کلیک، صفحهٔ داخلی خودشان باز می‌شود.</div>'
         + '<div style="padding:2px 12px 6px;">';
     subs.forEach(s => {
         const cnt = getDB().filter(i => i.groupId === gid && i.subgroupId === s.id).length;
@@ -13457,6 +13485,8 @@ function closeModalByType(type) {
         'phoneAction': 'phoneActionOverlay',
         // 🔧 v209: منوی همبرگری + بخش حسابداری + فرم رکورد حسابداری
         'hamburger': 'hamburgerMenuOverlay',
+        // 🔧 P (v263): پنل فیلتر نمایش کارها — tracked modal (اتاق‌های قصر)
+        'tvf': 'tvfOverlay',
         // 🔧 BA-208 (v238): منوی همبرگری اشخاص
         'contactsHamburger': 'contactsHamburgerOverlay',
         // 🔧 BA-214 (v241): صفحهٔ قفل حسابداری حذف شد (قفل نامرئی است)
@@ -14249,9 +14279,6 @@ function renderTasksView(groupId) {
                 </button>
                 <button class="group-menu-item" onclick="closeGroupMenu(); openTvfPanel('${group.id}')">
                     <span class="menu-icon">🔎</span> فیلتر نمایش کارها (فعال/انجام/لغو/معلق)
-                </button>
-                <button class="group-menu-item" onclick="closeGroupMenu(); openSubgroupsPanel('${group.id}')">
-                    <span class="menu-icon">🗂️</span> زیرگروه‌های گروه
                 </button>
                 <button class="group-menu-item" onclick="closeGroupMenu(); resetAllTaskPositions()">
                     <span class="menu-icon">↩</span> بازگردانی ترتیب اصلی تسک‌ها
@@ -24955,7 +24982,6 @@ function openHamburgerMenu() {
     bringToFront(ov);
     navPush({ view: 'modal', type: 'hamburger' });
     trackModalOpen('hamburger');
-    renderTvfGlobalBox();   // 🔧 N-2 (v261): تیک‌های فیلتر سراسری همیشه تازه
 }
 
 function closeHamburgerMenu() {
