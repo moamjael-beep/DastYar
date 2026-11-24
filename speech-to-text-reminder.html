@@ -4731,7 +4731,7 @@ body.locked .header-actions button {
 .net-dot { font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 999px; background: #eceff1; color: #607d8b; white-space: nowrap; }
 .net-dot.on { background: #E8F5E9; color: #2E7D32; }
 .net-dot.err { background: #FFEBEE; color: #C62828; }
-.net-body { flex: 1; overflow-y: auto; padding: 12px 12px 90px; -webkit-overflow-scrolling: touch; }
+.net-body { flex: 1; overflow-y: auto; padding: 12px 12px 124px; -webkit-overflow-scrolling: touch; }   /* 🔧 S (v266) BA-260: نوار دو ردیفه */
 .net-strip {
     background: #fff; border: 1px solid #e3e8ef; border-radius: 12px;
     padding: 10px 12px; margin-bottom: 10px; font-size: 12.5px; color: #37474f;
@@ -4788,7 +4788,7 @@ body.locked .header-actions button {
 .net-msg { max-width: 82%; padding: 7px 11px; border-radius: 13px; font-size: 12.5px; line-height: 1.7; word-break: break-word; }
 .net-msg.mine { align-self: flex-end; background: var(--primary, #1a237e); color: #fff; border-bottom-left-radius: 4px; }
 .net-msg.other { align-self: flex-start; background: #fff; color: #263238; border: 1px solid #e3e8ef; border-bottom-right-radius: 4px; }
-.net-msg-meta { font-size: 9.5px; opacity: 0.75; margin-top: 2px; }
+.net-msg-meta { font-size: 9.5px; opacity: 0.75; margin-top: 2px; position: relative; z-index: 1; }
 /* BA-232..236 — چت صوتی گروهی، حضور، عکس، ترک چت */
 .net-chat-header { background:#0e2a33; border-bottom:1px solid #1d4a56; padding:8px 10px; }
 .net-presence-row { font-size:11.5px; color:#b2ebf2; display:flex; flex-wrap:wrap; gap:4px; align-items:center; }
@@ -4799,7 +4799,9 @@ body.locked .header-actions button {
 .net-msg-img { max-width:70%; max-height:220px; border-radius:10px; display:block; cursor:zoom-in; margin-top:4px; }
 /* ─── v259 (L): پیوست‌های چت، منوی پیام، نوار نوتیف ─── */
 .net-msg-voice { margin-top:4px; font-size:12px; }
-.net-msg-voice audio { width:200px; max-width:60vw; height:34px; margin-top:2px; display:block; }
+/* 🔧 S (v266) — BA-259: ارتفاع ثابت ۳۴px پلیر صوت روی موبایل از کادر سرریز
+   می‌شد و خط متا (🚫 حذف برای من / ⋮) را می‌پوشاند — ارتفاع طبیعی + فاصله */
+.net-msg-voice audio { width:200px; max-width:60vw; height:auto; min-height:36px; margin-top:2px; margin-bottom:8px; display:block; }
 .net-msg-video { max-width:70%; max-height:240px; border-radius:10px; display:block; margin-top:4px; background:#000; }
 .net-msg-file { display:inline-block; margin-top:4px; background:#E3F2FD; color:#0D47A1; border-radius:9px; padding:6px 10px; font-size:12.5px; text-decoration:none; }
 .net-msg-deleted { color:#9E9E9E; font-style:italic; font-size:12.5px; }
@@ -4819,12 +4821,14 @@ body.locked .header-actions button {
 .net-lightbox img { max-width:92%; max-height:92%; border-radius:8px; }
 .net-group-chip { background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.45); color:#fff; border-radius:9px; padding:1px 7px; font-size:10.5px; }
 .item-net-tag { background:#E0F2F1; color:#00695C; border-radius:9px; padding:1px 7px; font-size:10.5px; margin:0 3px; white-space:nowrap; }
+/* 🔧 S (v266) — BA-260: ردیف دکمه‌ها بالا، باکس پیام یک خط کامل زیر آن */
 .net-chat-inputbar {
-    position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 8px;
-    padding: 10px 12px; background: #fff; border-top: 1px solid #e5e5e5;
+    position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 8px;
+    padding: 8px 12px 10px; background: #fff; border-top: 1px solid #e5e5e5;
 }
+.net-chat-btnrow { display: flex; gap: 8px; justify-content: flex-end; }
 .net-chat-inputbar input {
-    flex: 1; padding: 10px 12px; border: 1px solid #cfd8dc; border-radius: 999px;
+    flex: 1; width: 100%; padding: 10px 12px; border: 1px solid #cfd8dc; border-radius: 999px;
     font-size: 13px; background: #fbfcfe;
 }
 .net-guide { background: #fff; border: 1px dashed #b0bec5; border-radius: 12px; padding: 10px 12px; font-size: 12px; color: #455a64; line-height: 1.9; margin-top: 10px; }
@@ -4850,6 +4854,20 @@ body.locked .header-actions button {
 .net-call-btn { width: 62px; height: 62px; border-radius: 50%; border: none; font-size: 26px; color: #fff; display: flex; align-items: center; justify-content: center; }
 .net-call-btn.accept { background: #2E7D32; }
 .net-call-btn.decline, .net-call-btn.end { background: #c62828; }
+/* 🔧 R (v265): پنل «جستجوی رویدادها» — تراز زیر هدر (BA-154) */
+.ev-overlay { position: fixed; left: 0; right: 0; bottom: 0; top: var(--header-h, 58px); background: #f5f6f8; z-index: 9800; display: none; flex-direction: column; overflow: hidden; }
+.ev-overlay.active { display: flex; }
+.ev-card { max-width: 640px; width: 100%; margin: 0 auto; padding: 14px 12px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.ev-title { font-weight: 900; font-size: 17px; }
+.ev-sub { font-size: 12px; color: #555; line-height: 1.9; }
+.ev-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.ev-btn { border: 1px solid #ccc; background: #fff; border-radius: 10px; padding: 9px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.ev-btn.main { background: #1a237e; color: #fff; border-color: #1a237e; }
+.ev-btn:disabled { opacity: 0.5; }
+.ev-log { background: #fff; border: 1px solid #e3e5ea; border-radius: 10px; padding: 8px 10px; font-size: 11.5px; max-height: 150px; overflow-y: auto; line-height: 1.9; text-align: right; }
+.ev-log .b { font-weight: 900; }
+.ev-item { display: flex; align-items: flex-start; gap: 8px; background: #fff; border: 1px solid #e3e5ea; border-radius: 10px; padding: 8px 10px; font-size: 13px; line-height: 1.8; text-align: right; }
+.ev-item small { color: #777; font-size: 10.5px; }
 .net-call-btn.mute { background: #455a64; }
 .net-call-btn.mute.on { background: #E65100; }
 @keyframes netRingPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
@@ -5188,14 +5206,17 @@ body.locked .header-actions button {
     </div>
     <div class="net-body" id="netBody"></div>
     <div class="net-chat-inputbar" id="netChatBar" style="display:none;">
+        <!-- 🔧 S (v266) — BA-260: دکمه‌ها یک ردیف؛ باکس پیام یک خط کامل زیر آن -->
+        <div class="net-chat-btnrow">
+            <button class="net-btn" onclick="netPickImage()" title="ارسال عکس">📷</button>
+            <input type="file" id="netImgInput" accept="image/*" style="display:none;" onchange="netSendImage(this.files && this.files[0]); this.value='';">
+            <button class="net-btn" id="netVoiceClipBtn" onclick="netVoiceClipToggle()" title="پیام صوتی">🎙</button>
+            <button class="net-btn" onclick="netPickFile()" title="ارسال فایل/ویدیو">📎</button>
+            <input type="file" id="netFileInput" style="display:none;" onchange="netSendFilePick(this.files && this.files[0]); this.value='';">
+            <button class="net-btn" onclick="netSendMsg()">ارسال</button>
+        </div>
         <input id="netChatInput" type="text" placeholder="پیام…"
                onkeydown="if(event.key==='Enter'){netSendMsg();}">
-        <button class="net-btn" onclick="netPickImage()" title="ارسال عکس">📷</button>
-        <input type="file" id="netImgInput" accept="image/*" style="display:none;" onchange="netSendImage(this.files && this.files[0]); this.value='';">
-        <button class="net-btn" id="netVoiceClipBtn" onclick="netVoiceClipToggle()" title="پیام صوتی">🎙</button>
-        <button class="net-btn" onclick="netPickFile()" title="ارسال فایل/ویدیو">📎</button>
-        <input type="file" id="netFileInput" style="display:none;" onchange="netSendFilePick(this.files && this.files[0]); this.value='';">
-        <button class="net-btn" onclick="netSendMsg()">ارسال</button>
     </div>
 </div>
 
@@ -5209,22 +5230,41 @@ body.locked .header-actions button {
     <audio id="netRemoteAudio" autoplay></audio>
 </div>
 
+<!-- 🔧 R (v265): پنل «جستجوی رویدادها» — فهرست آیندهٔ پخش anten.ir و
+     aparatsport.ir؛ افزودن رویدادهای فیلترشده به گروه «رویدادها» -->
+<div class="ev-overlay" id="eventsOverlay">
+    <div class="ev-card">
+        <div class="ev-title">🏟️ جستجوی رویدادها</div>
+        <div class="ev-sub">فهرست آیندهٔ پخش anten.ir + aparatsport.ir جستجو می‌شود؛ فقط رویدادهای مطابق فیلتر شما (حسین وفایی، یانیک سانر، فرمول یک/وان/1، فوتبال استقلال، فوتبال برزیل — بدون تیم‌های نوجوانان/جوانان/زیرِ سنی/امیدها/بانوان) و بدون تکرار فهرست و به گروه «رویدادها» اضافه می‌شوند.</div>
+        <div class="ev-btns">
+            <button class="ev-btn main" id="evSearchBtn" onclick="runEventsSearch()">🔍 جستجوی رویدادها</button>
+            <button class="ev-btn" onclick="closeEventsPanel()">بستن ❯</button>
+        </div>
+        <div class="ev-log" id="evLog"></div>
+        <div class="ev-list" id="evList" style="display:flex;flex-direction:column;gap:6px;"></div>
+        <button class="ev-btn main" id="evAddBtn" style="display:none;" onclick="evAddSelected()">➕ افزودن</button>
+    </div>
+</div>
+
 <!-- 🔧 N-5b (v261): چت خصوصی ۱:۱ — همان زبان طراحی و قابلیت‌های چت گروهی -->
 <div class="net-overlay" id="netPvOverlay">
     <div class="net-topbar">
         <button class="net-back-btn" onclick="netPvClose()">بازگشت ❯</button>
         <div class="net-title" id="netPvTitle">💬 چت خصوصی</div>
     </div>
-    <div class="net-body" id="netPvList" style="padding-bottom:76px;"></div>
+    <div class="net-body" id="netPvList" style="padding-bottom:124px;"></div>
     <div class="net-chat-inputbar" style="position:absolute; bottom:0; left:0; right:0;">
+        <!-- 🔧 S (v266) — BA-260: همان چیدمان چت گروهی -->
+        <div class="net-chat-btnrow">
+            <button class="net-btn" onclick="document.getElementById('netPvImgInput').click()" title="ارسال عکس">📷</button>
+            <input type="file" id="netPvImgInput" accept="image/*" style="display:none;" onchange="netPvSendFilePick(this.files && this.files[0]); this.value='';">
+            <button class="net-btn" id="netPvVoiceClipBtn" onclick="netPvVoiceClipToggle()" title="پیام صوتی">🎙</button>
+            <button class="net-btn" onclick="netPvPickFile()" title="ارسال فایل/ویدیو">📎</button>
+            <input type="file" id="netPvFileInput" style="display:none;" onchange="netPvSendFilePick(this.files && this.files[0]); this.value='';">
+            <button class="net-btn" onclick="netPvSend()">ارسال</button>
+        </div>
         <input id="netPvInput" type="text" placeholder="پیام خصوصی…"
                onkeydown="if(event.key==='Enter'){netPvSend();}">
-        <button class="net-btn" onclick="document.getElementById('netPvImgInput').click()" title="ارسال عکس">📷</button>
-        <input type="file" id="netPvImgInput" accept="image/*" style="display:none;" onchange="netPvSendFilePick(this.files && this.files[0]); this.value='';">
-        <button class="net-btn" id="netPvVoiceClipBtn" onclick="netPvVoiceClipToggle()" title="پیام صوتی">🎙</button>
-        <button class="net-btn" onclick="netPvPickFile()" title="ارسال فایل/ویدیو">📎</button>
-        <input type="file" id="netPvFileInput" style="display:none;" onchange="netPvSendFilePick(this.files && this.files[0]); this.value='';">
-        <button class="net-btn" onclick="netPvSend()">ارسال</button>
     </div>
 </div>
 
@@ -5779,6 +5819,10 @@ body.locked .header-actions button {
         </div>
         <div class="hamburger-item" onclick="closeHamburgerMenuSilent(); openHolidaysPanel();">
             <span class="h-ico">📅</span><span>جستجوی تعطیلات رسمی</span>
+        </div>
+        <!-- 🔧 R (v265): «جستجوی رویدادها» زیر جستجوی تعطیلات — الزام کاربر -->
+        <div class="hamburger-item" onclick="closeHamburgerMenuSilent(); openEventsPanel();">
+            <span class="h-ico">🏟️</span><span>جستجوی رویدادها</span>
         </div>
         <div class="hamburger-item" onclick="closeHamburgerMenuSilent(); openNetPanel();">
             <span class="h-ico">🛰️</span><span>شبکه (چت، تماس، گروه)</span>
@@ -8133,6 +8177,38 @@ body.locked .header-actions button {
 //   قانون صفر: هیچ رفتار سالم دیگری تغییر نکرد — پروب ۲۱/۲۱ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
 // ════════════════════════════════════════════════════════════════════
+// 🔧 v266-2026-11-24 (درخواست S) — فیلتر نمایش کارها، 🚫 صوت‌ها و باکس پیام:
+//   ۱) فیلتر نمایش انواع تسک حالا «روی کل برنامه» اثر دارد (BA-258):
+//      نشان‌های کارت گروه‌ها/همه کارها/فوری، شمارش هدر نمای گروه، نقاط و
+//      فهرست کارهای روزِ تقویم — و باگ اصلی: تیک‌های پنل سراسری روی کلید
+//      گروهیِ خالی می‌نوشت و هرگز اعمال نمی‌شد — رفع شد.
+//   ۲) 🚫 «حذف برای من» زیر پیام صوتی چت هم دیده می‌شود (BA-259) — پلیر
+//      صوت با ارتفاع ثابت از کادر سرریز می‌شد و خط متا را می‌پوشاند.
+//   ۳) باکس پیام چت (گروهی و خصوصی) یک خط کامل زیر ردیف دکمه‌هاست (BA-260).
+//   قانون صفر: جریان SR/رکوردرها و پروتکل شبکه دست نخورد.
+//
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v265-2026-11-24 (درخواست R) — تشخیص صوتی، میک‌ها، مسئول شبکه‌ای و
+//   «جستجوی رویدادها»:
+//   ۱) هیچ کلمهٔ قبلی هرگز پاک/اصلاح نمی‌شود: تبدیل عدد‌به‌رقم فقط روی
+//      «بخش تازه» اعمال می‌شود (قبلاً کل متن هر بار پارس می‌شد و توکن‌های
+//      عددیِ مرز متن قبلی/جدید بازنویسی می‌شدند) + جذب تایپ دستی کاربر در
+//      حین شنیدن — در هر سه رکوردر (تسک/شرح سند/متن رکورد).
+//   ۲) هر میک تشخیص صوتی باز با هر بستن/ذخیرهٔ صفحه بسته می‌شود —
+//      srStopEverything در closeModalByType (همهٔ مسیرها از جمله Back)،
+//      دو مسیر مستقیم saveItem و closeAccounting (نشت واقعی: saveItem
+//      مودال را مستقیم می‌بست و میک باز می‌ماند).
+//   ۳) «📤 مسئول انجام» در جزئیات «تمام» تسک‌های شبکه‌ای قابل ویرایش شد
+//      (قبلاً فقط سازنده/مسئولِ فعلی).
+//   ۴) منوی «🏟️ جستجوی رویدادها» زیر جستجوی تعطیلات — واکشی فهرست آیندهٔ
+//      پخش anten.ir (پارس SSR واقعی) و aparatsport.ir (بهترین تلاش؛ SPA —
+//      اگر ساختار نبود در لاگ صادقانه اعلام می‌شود)؛ فیلتر حسین وفایی/
+//      یانیک سانر/فرمول یک-وان-1/فوتبال استقلال/فوتبال برزیل بدون تیم‌های
+//      ردهٔ سنی و بانوان؛ حذف تکرار؛ افزودن به گروه «رویدادها» (ساخت در
+//      صورت نبود) به‌صورت تسک.
+//   قانون صفر: جریان restart/watchdog رکوردرها و پروتکل شبکه دست نخورد.
+//
+// ════════════════════════════════════════════════════════════════════
 // 🔧 v264-2026-11-24 (درخواست Q) — چت، تماس و تگ‌های شبکه‌ای:
 //   ۱) حذف/ویرایش چت‌ها کامل شد و با پروب اثبات شد: حذف «برای همه» و
 //      «برای من» برای هر نوع پیام (متن/عکس/صوت/ویدیو/فایل) در چت گروهی و
@@ -8148,7 +8224,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v264-2026-11-24-chat-call-notif-overhaul';
+const APP_VERSION = 'v266-2026-11-24-filter-global-voice-ban-inputbar';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -10072,10 +10148,18 @@ function taskViewFilterResetGroup(gid) {
     localStorage.removeItem('task_view_filter_' + gid);
     rerenderAfterTaskFilter();
 }
+// 🔧 S (v266) — BA-258: بازگشت فیلتر سراسری به پیش‌فرض (همه تیک)
+function taskViewFilterResetGlobal() {
+    localStorage.removeItem('task_view_filter');
+    rerenderAfterTaskFilter();
+}
 function rerenderAfterTaskFilter() {
     try {
         if (typeof currentView !== 'undefined' && currentView === 'tasks' && typeof currentGroupId !== 'undefined') renderTasksView(currentGroupId);
         else if (typeof currentView !== 'undefined' && currentView === 'groups') renderGroupsView();
+        // 🔧 S (v266) — BA-258: اگر تقویم باز است فوراً هم‌گام شود
+        const calOv266 = document.getElementById('calendarOverlay');
+        if (calOv266 && calOv266.classList.contains('active') && typeof renderCalendar === 'function') renderCalendar();
     } catch(e) {}
 }
 
@@ -10195,17 +10279,29 @@ function renderTvfPanelBody() {
     const g = getGroupById(gid);
     const eff = taskViewFilterFor(gid);
     const ovr = taskViewFilterGroup(gid) || {};
+    // 🔧 S (v266) — BA-258: در حالت سراسری (بدون گروه) تیک‌ها باید روی فیلتر
+    // «سراسری» بنویسند؛ قبلاً روی کلید گروهیِ خالی می‌نوشتند و تغییر سراسری
+    // هرگز روی برنامه اعمال نمی‌شد (گزارش کاربر: «کد اعمال به کل برنامه خراب شده»).
+    const isGlobalTvf = !gid;
+    const tvfChg = function(sk) {
+        return isGlobalTvf
+            ? 'onchange="taskViewFilterSetGlobal(\'' + sk + '\', this.checked)"'
+            : 'onchange="taskViewFilterSetGroup(\'' + escA(gid) + '\',\'' + sk + '\', this.checked)"';
+    };
+    const resetBtn = isGlobalTvf
+        ? '<button class="btn-secondary" style="flex:1;" onclick="taskViewFilterResetGlobal(); renderTvfPanelBody(); showToast(\'فیلتر سراسری به پیش‌فرض برگشت\')">↩ پیش‌فرض</button>'
+        : '<button class="btn-secondary" style="flex:1;" onclick="taskViewFilterResetGroup(\'' + escA(gid) + '\'); renderTvfPanelBody(); showToast(\'بازگشت به فیلتر سراسری\')">↩ سراسری</button>';
     body.innerHTML = '<div style="font-size:13.5px; font-weight:700; color:#37474f; padding:8px 12px 2px;">🔎 فیلتر نمایش کارها'
-        + (gid ? ' — ' + escapeHtml(g.name) : '') + '</div>'
+        + (gid ? ' — ' + escapeHtml(g.name) : ' (سراسری — روی کل برنامه)') + '</div>'
         + '<div style="padding:0 12px 6px;">'
         + TASK_VIEW_STATES.map(s =>
             '<label style="display:flex;align-items:center;gap:8px;padding:6px 2px;font-size:13.5px;color:#37474f;cursor:pointer;">'
-            + '<input type="checkbox" ' + (eff[s.k] ? 'checked' : '') + ' onchange="taskViewFilterSetGroup(\'' + escA(gid) + '\',\'' + s.k + '\', this.checked)">'
+            + '<input type="checkbox" ' + (eff[s.k] ? 'checked' : '') + ' ' + tvfChg(s.k) + '>'
             + s.label + (ovr[s.k] === undefined ? ' <span style="font-size:10px;color:#90a4ae;">(سراسری)</span>' : ' <span style="font-size:10px;color:#1976d2;">(همین گروه)</span>')
             + '</label>').join('')
         + '</div>'
         + '<div style="display:flex; gap:6px; padding:4px 12px 10px;">'
-        + '<button class="btn-secondary" style="flex:1;" onclick="taskViewFilterResetGroup(\'' + escA(gid) + '\'); renderTvfPanelBody(); showToast(\'بازگشت به فیلتر سراسری\')">↩ سراسری</button>'
+        + resetBtn
         + '<button class="btn-primary" style="flex:1;" onclick="closeTvfPanel()">تأیید</button>'
         + '</div>';
 }
@@ -10888,6 +10984,7 @@ let taskRecAccum = '';
 let taskRecIndices = null;
 let taskRecObj = null;
 let taskLastInterim = '';   // 🔧 v243: آخرین interim برای تعهد در onend
+let taskRecLastWritten = null;   // 🔧 R (v265): آخرین نوشتار موتور — برای تشخیص تایپ دستی کاربر
 
 function isSpeechSupported() {
     return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -10921,12 +11018,30 @@ function buildTaskSR() {
     rec.onstart = function() { taskRecLastEventAt = Date.now(); };   // 🔧 v244
     rec.onresult = function(ev) {
         taskRecLastEventAt = Date.now();   // 🔧 v244
+    // 🔧 R (v265) — قانون کاربر: «کلمات قبلی تایپ‌شده پاک و اصلاح نشود».
+    // جذب تایپ دستی «قبل از» پردازش نتایج جدید: اگر کاربر در حین شنیدن
+    // چیزی تایپ/ویرایش کرده باشد (متن فیلد ≠ نوشتار قبلی موتور)، همان متن
+    // به‌عنوان بخش متعهدشده حفظ می‌شود؛ نتایج تازه به آن می‌چسبند. و تبدیل
+    // عدد‌به‌رقم فقط روی «بخش تازه» اعمال می‌شود — متن متعهدشدهٔ قبلی هرگز
+    // دوباره پارس/بازنویسی نمی‌شود.
+    {
+        const el0 = document.getElementById('itemText');
+        if (el0 && taskRecLastWritten !== null && el0.value !== taskRecLastWritten) {
+            if (taskLastInterim && taskLastInterim.trim() && el0.value.endsWith(taskLastInterim)) {
+                taskRecAccum = el0.value.slice(0, el0.value.length - taskLastInterim.length);
+            } else {
+                taskRecAccum = el0.value;
+            }
+            if (taskRecAccum && !taskRecAccum.endsWith(' ')) taskRecAccum += ' ';
+        }
+    }
         let interim = '';
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
             const r = ev.results[i];
             if (r.isFinal) {
                 if (taskRecIndices && !taskRecIndices.has(i)) {
-                    taskRecAccum += r[0].transcript + ' ';
+                    // 🔧 R (v265): تبدیل عدد فقط روی همین عبارت تازه
+                    taskRecAccum += addNumericAfterWords(r[0].transcript.trim()).trim() + ' ';
                     taskRecIndices.add(i);
                 }
             } else {
@@ -10935,7 +11050,10 @@ function buildTaskSR() {
         }
         taskLastInterim = interim;   // 🔧 v243
         const el = document.getElementById('itemText');
-        if (el) el.value = addNumericAfterWords((taskRecAccum + ' ' + interim).trim()).trim();
+        if (el) {
+            taskRecLastWritten = (taskRecAccum + ' ' + addNumericAfterWords(interim).trim()).trim();
+            el.value = taskRecLastWritten;
+        }
         const hintEl = document.getElementById('interimText');
         if (hintEl) {
             hintEl.style.display = '';
@@ -10958,9 +11076,10 @@ function buildTaskSR() {
         //    آن جمله گم می‌شد (= «بعد از سکوت جمله قبلی را پاک میکند»).
         //    اکنون هر جملهٔ شنیده‌شده همیشه تایپ می‌ماند.
         if (taskLastInterim && taskLastInterim.trim()) {
-            taskRecAccum += taskLastInterim.trim() + ' ';
+            // 🔧 R (v265): تعهد interim با تبدیلِ همان عبارت — بدون پارس کل متن
+            taskRecAccum += addNumericAfterWords(taskLastInterim.trim()).trim() + ' ';
             const elC = document.getElementById('itemText');
-            if (elC) elC.value = addNumericAfterWords(taskRecAccum.trim()).trim();
+            if (elC) { taskRecLastWritten = taskRecAccum.trim(); elC.value = taskRecLastWritten; }
         }
         taskLastInterim = '';
         // 🔧 v242: بعد از restart، ایندکس نتایج از صفر شروع می‌شود؛ اگر Set
@@ -11037,6 +11156,7 @@ function startRecording() {
         return;
     }
     taskRecIndices = new Set();
+    taskRecLastWritten = null;   // 🔧 R (v265)
     taskRecActive = true;
     isRecording = true;
     // 🔧 v243 (الزام کاربر: «هیچوقت جملات قبل را پاک نکند»): متن موجود
@@ -12672,6 +12792,7 @@ function saveItem() {
             // changed, so the task might need to move to a new position).
             try { recalcGroupPositions(items[idx].groupId || 'all'); }
             catch(e) { console.error('[saveItem edit] recalcGroupPositions failed:', e.message); }
+            srStopEverything();   // 🔧 R (v265): میک باز با ذخیره بسته شود
             document.getElementById('modalOverlay').classList.remove('active');
             // 🔧 باز کردن قفل اسکرول body
             unlockBodyScroll();
@@ -12810,6 +12931,7 @@ function saveItem() {
         // Don't block — the task is already saved.
     }
 
+    srStopEverything();   // 🔧 R (v265): میک باز با ذخیره بسته شود
     document.getElementById('modalOverlay').classList.remove('active');
     // 🔧 باز کردن قفل اسکرول body
     unlockBodyScroll();
@@ -13493,7 +13615,18 @@ function _popstateClose(fn) {
 // Visually close a single modal by its type marker ('calendar' | 'taskForm'
 // | 'datetimePicker' | 'groupPicker' | 'groupDeleteConfirm'). Also performs
 // side-effects specific to that modal (stop recording, reset edit-task flag).
+// 🔧 R (v265): خاموش‌کردن همهٔ میک‌های تشخیص صوتی باز — الزام کاربر:
+// با هر بستن/ذخیرهٔ صفحه (تسک/یادداشت/شرح سند/متن رکورد) میک نباید باز
+// بماند. Idempotent و امن — هر استاپر خودش گارد فعال‌بودن دارد.
+function srStopEverything() {
+    try { if (typeof isRecording !== 'undefined' && isRecording) stopRecording(); } catch(e) {}
+    try { if (typeof accDocRecActive !== 'undefined' && accDocRecActive) accDocStopRec(); } catch(e) {}
+    try { if (typeof accRecRecActive !== 'undefined' && accRecRecActive) accRecStopRec(); } catch(e) {}
+    try { if (typeof _notesRecording !== 'undefined' && _notesRecording && typeof toggleNotesRecording === 'function') toggleNotesRecording(); } catch(e) {}
+}
 function closeModalByType(type) {
+    // 🔧 R (v265): هر مسیر بستن صفحه — از جمله Back موبایل — میک‌های باز را می‌بندد
+    srStopEverything();
     const overlayId = {
         'calendar': 'calendarOverlay',
         'taskForm': 'modalOverlay',
@@ -13515,6 +13648,7 @@ function closeModalByType(type) {
         'contactsHamburger': 'contactsHamburgerOverlay',
         // 🔧 BA-214 (v241): صفحهٔ قفل حسابداری حذف شد (قفل نامرئی است)
         'holidays': 'holidaysOverlay',
+        'events': 'eventsOverlay',
         'accounting': 'accountingOverlay',
         'accRecordForm': 'accRecordFormOverlay',
         // 🔧 v210: فرم شرح/تاریخ سند + منوی انتخاب شخص
@@ -14036,7 +14170,9 @@ function renderGroupsView() {
         const showPinnedBadge = o.showPinnedBadge !== false;
         const gid = groupId || '';
         // 🔧 v141: فقط تسک‌های فعال (نه done، نه cancelled، نه suspended)
-        const active = groupItems.filter(i => !i.done && i.cancelled != true && i.suspended != true);
+        // 🔧 S (v266) — BA-258: شمارش نشان‌ها هم از فیلتر نمایش پیروی می‌کند —
+        // هر تسک با فیلتر مؤثر گروه خودش سنجیده می‌شود («همه کارها»/«فوری» هم)
+        const active = groupItems.filter(i => (!i.done && i.cancelled != true && i.suspended != true) && taskViewAllows(gid, i));
         const activeCount = active.length;
         // 🔧 بررسی با == true برای پذیرش مقادیر قدیمی
         const pinnedCount = active.filter(i => i.pinned == true).length;
@@ -14319,7 +14455,8 @@ function renderTasksView(groupId) {
     // 🔧 v141: فقط تسک‌های فعال (نه done، نه cancelled، نه suspended)
     // برای گروه «کارهای فوری»، badge فوری نشان داده نمی‌شود (زیرتکراری است).
     // 🔧 بررسی با == true برای پذیرش مقادیر قدیمی
-    const activeItems = items.filter(i => !i.done && i.cancelled != true && i.suspended != true);
+    // 🔧 S (v266) — BA-258: شمارش هدر هم از فیلتر نمایش پیروی می‌کند
+    const activeItems = items.filter(i => (!i.done && i.cancelled != true && i.suspended != true) && taskViewAllows(groupId, i));
     const activeCount = activeItems.length;
     const pinnedCount = activeItems.filter(i => i.pinned == true).length;
     const urgentCount = activeItems.filter(i => i.urgent == true).length;
@@ -14431,7 +14568,7 @@ function renderTasksView(groupId) {
             ${item.completedAt ? `<div class="detail-row"><span class="detail-label">روز انجام:</span><span class="detail-value">${toJalaliLong(item.completedAt)}</span></div>` : ''}
             <div class="detail-row group-selector-row"><span class="detail-label">گروه:</span><select class="group-selector" onchange="changeTaskGroup('${item.id}', this.value)">${groupOpts}</select></div>
             ${taskSubgroupSelectorHtml(item)}
-            ${(() => { const _ng = getGroupById(item.groupId || ''); const _code = _ng && _ng.netCode; if (_code && item.netId) { const _members = netAssigneeMembersFor(_code); const _isCreator = item.netOwnerId === netMyUid() || item.netOwner === NET_STATE.myName; const _isAssignee = (item.netAssigneeId || '') === netMyUid(); if ((_isCreator || _isAssignee) && _members.length) { const _cur = item.netAssigneeId || ''; const _inList = _cur && _members.some(m => m.user_id === _cur); const _opts = (!_cur ? '<option value="" selected>— انتخاب عضو —</option>' : '') + _members.map(m => '<option value="' + escA(m.user_id) + '"' + (m.user_id === _cur ? ' selected' : '') + '>' + escapeHtml(m.display_name) + (m.user_id === netMyUid() ? ' (من)' : '') + '</option>').join('') + ((_cur && !_inList) ? '<option value="' + escA(_cur) + '" selected>' + escapeHtml(item.netAssignee || 'عضو') + '</option>' : ''); return '<div class="detail-row"><span class="detail-label">📤 مسئول انجام:</span><select class="group-selector" data-tid="' + escA(item.id) + '" onchange="if(this.value) netChangeAssignee(this.getAttribute(\'data-tid\'), this.value)">' + _opts + '</select></div>'; } if (item.netAssignee) { return '<div class="detail-row"><span class="detail-label">📤 مسئول انجام:</span><span class="detail-value">' + escapeHtml(item.netAssignee) + '</span></div>'; } } return ''; })()}
+            ${(() => { const _ng = getGroupById(item.groupId || ''); const _code = _ng && _ng.netCode; if (_code && item.netId) { const _members = netAssigneeMembersFor(_code); const _isCreator = item.netOwnerId === netMyUid() || item.netOwner === NET_STATE.myName; const _isAssignee = (item.netAssigneeId || '') === netMyUid(); if (_members.length) { /* 🔧 R (v265): ویرایش مسئول برای «تمام» تسک‌های شبکه‌ای — الزام کاربر */ const _cur = item.netAssigneeId || ''; const _inList = _cur && _members.some(m => m.user_id === _cur); const _opts = (!_cur ? '<option value="" selected>— انتخاب عضو —</option>' : '') + _members.map(m => '<option value="' + escA(m.user_id) + '"' + (m.user_id === _cur ? ' selected' : '') + '>' + escapeHtml(m.display_name) + (m.user_id === netMyUid() ? ' (من)' : '') + '</option>').join('') + ((_cur && !_inList) ? '<option value="' + escA(_cur) + '" selected>' + escapeHtml(item.netAssignee || 'عضو') + '</option>' : ''); return '<div class="detail-row"><span class="detail-label">📤 مسئول انجام:</span><select class="group-selector" data-tid="' + escA(item.id) + '" onchange="if(this.value) netChangeAssignee(this.getAttribute(\'data-tid\'), this.value)">' + _opts + '</select></div>'; } if (item.netAssignee) { return '<div class="detail-row"><span class="detail-label">📤 مسئول انجام:</span><span class="detail-value">' + escapeHtml(item.netAssignee) + '</span></div>'; } } return ''; })()}
             <div class="detail-row urgent-toggle-row"><span class="detail-label">🚨 فوری:</span><label class="urgent-checkbox-label"><input type="checkbox" class="urgent-checkbox" ${item.urgent ? 'checked' : ''} onchange="toggleTaskUrgent('${item.id}')"> <span>این تسک در گروه «کارهای فوری» نمایش داده شود</span></label></div>
             ${(() => { const tc = item.contactId ? getContactById(item.contactId) : null; return `<div class="detail-row detail-contact-row"><span class="detail-label">👤 شخص:</span><span class="detail-value">${tc ? escapeHtml(tc.name) + (tc.company ? ' — ' + escapeHtml(tc.company) : '') + (tc.primaryPhone ? ' • ' + escapeHtml(tc.primaryPhone) : '') : 'بدون شخص'}</span><button class="detail-contact-edit-btn" onclick="event.stopPropagation(); changeTaskContact('${item.id}')" title="${tc ? 'ویرایش/تغییر شخص' : 'افزودن شخص'}">✏️</button></div>`; })()}
             <div class="item-actions">${
@@ -19718,6 +19855,201 @@ function netNotifyIncomingGroupMsgs(gname, rows) {
             (m0.sender_name || '') + ': ' + ((m0.text || '').slice(0, 60) || 'پیوست'));
     } catch(e) {}
 }
+// ════════════════════════════════════════════════════════════════════
+// 🔧 R (v265): «جستجوی رویدادها» — الزام کاربر:
+//   منو زیر «جستجوی تعطیلات رسمی»؛ جستجو در فهرست آیندهٔ پخش anten.ir و
+//   aparatsport.ir؛ فقط رویدادهایی با: حسین وفایی / یانیک سانر / فرمول یک
+//   یا وان یا 1 / فوتبالِ استقلال / فوتبالِ برزیل — بدون تیم‌های ردهٔ سنی
+//   و بانوان (نوجوانان، جوانان، زیرِ سنی، امیدها، بانوان و…)؛ بدون تکرار؛
+//   افزودن به گروه «رویدادها» (اگر نبود ساخته می‌شود) به‌صورت تسک.
+//   CORS مرورگر اجازهٔ واکشی مستقیم این سایت‌ها را نمی‌دهد → زنجیرهٔ
+//   واکشی: مستقیم → allorigins → r.jina.ai (رندر JS برای SPA آپارات‌اسپرت).
+//   اگر منبعی پاسخ ساختاری نداد، در لاگ صادقانه اعلام می‌شود — هیچ دادهٔ
+//   جعلی ساخته نمی‌شود (بخش ۶ اسپک). ساختار anten (SSR واقعی صفحهٔ اصلی)
+//   کارت‌های ساعت+عنوان+زیرعنوان است و با همان الگو پارس می‌شود.
+// ════════════════════════════════════════════════════════════════════
+const EV_GROUP_NAME = 'رویدادها';
+const EV_INCLUDE_WORDS = ['حسین وفایی', 'یانیک سانر', 'یانیک', 'فرمول یک', 'فرمول وان', 'فرمول ۱', 'فرمول 1', 'فرمول‌یک', 'فرمول‌وان'];
+const EV_EXCLUDE_WORDS = ['نوجوانان', 'جوانان', 'نوآموزان', 'امیدها', 'تیم امید', 'بانوان', 'زنان', 'دختران', 'آکادمی', 'مدرسه فوتبال'];
+const EV_EXCLUDE_AGE_RE = /زیر\s*[۰-۹0-9]{1,2}/;
+function evNorm(t) { return (t || '').replace(/\u200c/g, ' ').replace(/\s+/g, ' ').trim(); }
+function evMatches(t) {
+    const s2 = evNorm((t.title || '') + ' ' + (t.sub || ''));
+    for (let i = 0; i < EV_EXCLUDE_WORDS.length; i++) if (s2.indexOf(EV_EXCLUDE_WORDS[i]) >= 0) return false;
+    if (EV_EXCLUDE_AGE_RE.test(s2)) return false;
+    for (let j = 0; j < EV_INCLUDE_WORDS.length; j++) if (s2.indexOf(EV_INCLUDE_WORDS[j]) >= 0) return true;
+    const hasFootball = s2.indexOf('فوتبال') >= 0;
+    if (hasFootball && (s2.indexOf('استقلال') >= 0 || s2.indexOf('برزیل') >= 0)) return true;
+    return false;
+}
+function evLog(msg, bold) {
+    const el = document.getElementById('evLog');
+    if (!el) return;
+    const d = document.createElement('div');
+    d.className = bold ? 'b' : '';
+    d.textContent = msg;
+    el.appendChild(d);
+    el.scrollTop = el.scrollHeight;
+}
+function openEventsPanel() {
+    // 🔧 idempotent (الگوی BA-218) + تراز زیر هدر (BA-154)
+    const ov0 = document.getElementById('eventsOverlay');
+    if (ov0 && ov0.classList.contains('active')) return;
+    if (typeof applyHeaderAlignedTop === 'function') applyHeaderAlignedTop();
+    const ov = document.getElementById('eventsOverlay');
+    if (!ov) return;
+    ov.classList.add('active');
+    bringToFront(ov);
+    trackModalOpen('events');
+    navPush({ view: 'modal', type: 'events' });
+    const list = document.getElementById('evList');
+    if (list) list.innerHTML = '';
+    const addBtn = document.getElementById('evAddBtn');
+    if (addBtn) addBtn.style.display = 'none';
+    evLog('منابع: anten.ir + aparatsport.ir — دکمهٔ «جستجوی رویدادها» را بزنید.', true);
+}
+function closeEventsPanel() {
+    closeModalByType('events');
+    navBack();
+}
+async function evFetchText(url) {
+    const attempts = [
+        url,
+        'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+        'https://api.allorigins.win/get?url=' + encodeURIComponent(url),
+        'https://r.jina.ai/' + url
+    ];
+    let lastErr = '';
+    for (let k = 0; k < attempts.length; k++) {
+        try {
+            const r = await fetch(attempts[k], { cache: 'no-store' });
+            if (!r.ok) { lastErr = 'HTTP ' + r.status; continue; }
+            let t = await r.text();
+            if (attempts[k].indexOf('allorigins.win/get') >= 0) { try { t = JSON.parse(t).contents || t; } catch(e) {} }
+            if (t && t.length > 400) return { ok: true, text: t, via: attempts[k] };
+            lastErr = 'پاسخ بی‌محتوا';
+        } catch(e) { lastErr = ((e && e.message) || 'خطای شبکه'); }
+    }
+    return { ok: false, err: lastErr };
+}
+// پارس anten.ir — کارت‌های SSR صفحهٔ اصلی (ساعت body1 + عنوان h2 + زیرعنوان body2)
+function evParseAnten(html) {
+    const out = [];
+    const re = /<p[^>]*MuiTypography-body1[^>]*>\s*([۰-۹0-9]{1,2}:[۰-۹0-9]{2})\s*<\/p>[\s\S]{0,240}?<h2[^>]*>([\s\S]*?)<\/h2>([\s\S]{0,400}?<p[^>]*MuiTypography-body2[^>]*>([\s\S]*?)<\/p>)?/g;
+    let m;
+    const strip = function(x) { return (x || '').replace(/<[^>]+>/g, '').trim(); };
+    while ((m = re.exec(html))) {
+        out.push({ time: m[1], title: strip(m[2]), sub: strip(m[4]), src: 'anten.ir' });
+    }
+    return out;
+}
+// پارس aparatsport.ir — بهترین تلاش روی متن رندرشده (خطوط ورزشی حاوی ساعت)
+function evParseAparat(txt) {
+    const out = [];
+    const clean = (txt || '').replace(/<script[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, '\n');
+    const lines = clean.split(/[\n\r]+/).map(function(x) { return x.trim(); }).filter(Boolean);
+    const tRe = /(?:^|\s)([۰-۹0-9]{1,2}:[۰-۹0-9]{2})(?=\s|$)/;
+    for (let i = 0; i < lines.length; i++) {
+        const L = lines[i];
+        if (L.length < 8 || L.length > 180) continue;
+        if (!/فوتبال|فوتسال|ورزش|مسابقه|لیگ|جام|پخش|زنده|حسین|یانیک|فرمول/.test(L)) continue;
+        const time = (L.match(tRe) || [])[1] || ((lines[i + 1] || '').match(tRe) || [])[1] || '';
+        out.push({ time: time, title: L.replace(tRe, ' ').trim(), sub: '', src: 'aparatsport.ir' });
+    }
+    return out;
+}
+let _evResults = [];
+async function runEventsSearch() {
+    const btn = document.getElementById('evSearchBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ در حال جستجو…'; }
+    const log = document.getElementById('evLog');
+    if (log) log.innerHTML = '';
+    _evResults = [];
+    evLog('🎯 جستجوی رویدادها — شروع', true);
+    evLog('📡 واکشی anten.ir …');
+    const a1 = await evFetchText('https://www.anten.ir/');
+    let antenRows = [];
+    if (a1.ok) {
+        antenRows = evParseAnten(a1.text);
+        evLog('✅ anten.ir: ' + toPersianNumber(antenRows.length) + ' رویداد آیندهٔ پخش خوانده شد' + (a1.via !== 'https://www.anten.ir/' ? ' (با پروکسی)' : ''));
+    } else {
+        evLog('⚠️ anten.ir پاسخ نداد: ' + a1.err, true);
+    }
+    evLog('📡 واکشی aparatsport.ir …');
+    const a2 = await evFetchText('https://www.aparatsport.ir/');
+    let apRows = [];
+    if (a2.ok) {
+        apRows = evParseAparat(a2.text);
+        if (apRows.length) evLog('✅ aparatsport.ir: ' + toPersianNumber(apRows.length) + ' مورد خوانده شد');
+        else evLog('⚠️ aparatsport.ir پاسخ ساختاری نداشت (سایت SPA است و فهرست پخش بدون اجرای JS در HTML نیست) — تنها از anten.ir استفاده شد', true);
+    } else {
+        evLog('⚠️ aparatsport.ir پاسخ نداد: ' + a2.err, true);
+    }
+    const seen = {};
+    const all = antenRows.concat(apRows);
+    const matches = [];
+    for (let i = 0; i < all.length; i++) {
+        const r = all[i];
+        if (!r.title) continue;
+        const key = evNorm(r.title) + '|' + (r.time || '');
+        if (seen[key]) continue;
+        seen[key] = true;
+        if (evMatches(r)) matches.push(r);
+    }
+    const groups = getGroups();
+    const g0 = groups.find(function(x) { return (x.name || '').trim() === EV_GROUP_NAME; });
+    const existing = {};
+    if (g0) getDB().filter(function(x) { return x.groupId === g0.id; }).forEach(function(x) { existing[evNorm(x.text).slice(0, 60)] = true; });
+    const fresh = matches.filter(function(r) { return !existing[evNorm((r.title + (r.time ? ' — ' + r.time : ''))).slice(0, 60)]; });
+    evLog('⚖️ فیلتر: ' + toPersianNumber(matches.length) + ' رویداد مطابق فیلتر شما — ' + toPersianNumber(fresh.length) + ' مورد جدید (بدون تکرار)', true);
+    _evResults = fresh;
+    evRenderResults();
+    if (btn) { btn.disabled = false; btn.textContent = '🔍 جستجوی رویدادها'; }
+}
+function evRenderResults() {
+    const list = document.getElementById('evList');
+    if (!list) return;
+    const addBtn = document.getElementById('evAddBtn');
+    if (!_evResults.length) {
+        list.innerHTML = '<div class="ev-item">رویداد جدیدی مطابق فیلتر شما پیدا نشد.</div>';
+        if (addBtn) addBtn.style.display = 'none';
+        return;
+    }
+    list.innerHTML = _evResults.map(function(r, i) {
+        return '<label class="ev-item"><input type="checkbox" class="ev-chk" data-i="' + i + '" checked> <span>' + escapeHtml(r.title) + (r.time ? ' <small>(' + r.time + ' — ' + r.src + ')</small>' : ' <small>(' + r.src + ')</small>') + '</span></label>';
+    }).join('');
+    if (addBtn) { addBtn.style.display = ''; addBtn.textContent = '➕ افزودن به گروه «رویدادها» (' + toPersianNumber(_evResults.length) + ')'; }
+}
+function evAddSelected() {
+    const chks = Array.prototype.slice.call(document.querySelectorAll('#evList .ev-chk:checked'));
+    if (!chks.length) { showToast('رویدادی انتخاب نشده'); return; }
+    let groups = getGroups();
+    let g = groups.find(function(x) { return (x.name || '').trim() === EV_GROUP_NAME; });
+    if (!g) {
+        g = addGroup(EV_GROUP_NAME, '#00695C');
+        g.headerIcon = '🏟️';
+        setGroups(getGroups());
+        evLog('📁 گروه «رویدادها» ساخته شد', true);
+    }
+    const db = getDB();
+    const chosen = chks.map(function(c) { return parseInt(c.getAttribute('data-i'), 10); });
+    let added = 0;
+    chosen.forEach(function(i) {
+        const r = _evResults[i];
+        if (!r) return;
+        const text = r.title + (r.time ? ' — ' + r.time : '');
+        if (db.some(function(x) { return x.groupId === g.id && evNorm(x.text).slice(0, 60) === evNorm(text).slice(0, 60); })) return;
+        db.push({ id: 'ev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), text: text, groupId: g.id, createdAt: new Date().toISOString(), deadline: null, done: false, eventSource: r.src });
+        added++;
+    });
+    setDB(db);
+    evLog('✅ ' + toPersianNumber(added) + ' رویداد به گروه «رویدادها» اضافه شد', true);
+    showToast('✅ ' + toPersianNumber(added) + ' رویداد به گروه «رویدادها» اضافه شد');
+    _evResults = _evResults.filter(function(r, i) { return chosen.indexOf(i) < 0; });
+    evRenderResults();
+    if (typeof render === 'function') { try { render(); } catch(e) {} }
+    if (typeof renderGroupsView === 'function') { try { renderGroupsView(); } catch(e) {} }
+}
 // نوار نوتیف زیر هدر برنامه — «🔔 شبکه: ۳ پیام جدید …» با لمس به همان گروه می‌رود
 function netNotifStripRender() {
     let strip = document.getElementById('netNotifStrip');
@@ -20775,7 +21107,7 @@ async function netUpdateTaskFromMain(item, assigneeId) {
 function netChatHtml() {
     if (!(NET_STATE.group || netActiveGroup())) return '<div class="net-empty">اول عضو یک گروه شوید</div>';
     return '<div id="netChatHeader" class="net-chat-header"><div class="net-empty">در حال آماده‌سازی…</div></div>'
-        + '<div class="net-chat-list" id="netChatList"></div>';
+        + '<div class="net-chat-list" id="netChatList" style="padding-bottom:124px;"></div>';
 }
 function netChatBarShow() {
     const b = document.getElementById('netChatBar');
@@ -21994,6 +22326,7 @@ function closeAccounting() {
     const ov = document.getElementById('accountingOverlay');
     if (!ov || !ov.classList.contains('active')) return; // idempotent (درس v204)
     closeModalByType('accounting');
+    srStopEverything();   // 🔧 R (v265): اگر فرم شرح سند/رکورد باز مانده بود
     navBack();
 }
 
@@ -22555,6 +22888,7 @@ let accDocRecAccum = '';
 let accDocRecIndices = null;
 let accDocRecObj = null;
 let accDocLastInterim = '';   // 🔧 v243: آخرین interim برای تعهد در onend
+let accDocRecLastWritten = null;   // 🔧 R (v265): برای جذب تایپ دستی — مثل تسک
 
 function accDocToggleMic() {
     if (accDocRecActive) accDocStopRec();
@@ -22590,12 +22924,30 @@ function buildAccDocSR() {
     rec.onstart = function() { accDocRecLastEventAt = Date.now(); };   // 🔧 v244
     rec.onresult = function(ev) {
         accDocRecLastEventAt = Date.now();   // 🔧 v244
+    // 🔧 R (v265) — قانون کاربر: «کلمات قبلی تایپ‌شده پاک و اصلاح نشود».
+    // جذب تایپ دستی «قبل از» پردازش نتایج جدید: اگر کاربر در حین شنیدن
+    // چیزی تایپ/ویرایش کرده باشد (متن فیلد ≠ نوشتار قبلی موتور)، همان متن
+    // به‌عنوان بخش متعهدشده حفظ می‌شود؛ نتایج تازه به آن می‌چسبند. و تبدیل
+    // عدد‌به‌رقم فقط روی «بخش تازه» اعمال می‌شود — متن متعهدشدهٔ قبلی هرگز
+    // دوباره پارس/بازنویسی نمی‌شود.
+    {
+        const el0 = document.getElementById('accDocDesc');
+        if (el0 && accDocRecLastWritten !== null && el0.value !== accDocRecLastWritten) {
+            if (accDocLastInterim && accDocLastInterim.trim() && el0.value.endsWith(accDocLastInterim)) {
+                accDocRecAccum = el0.value.slice(0, el0.value.length - accDocLastInterim.length);
+            } else {
+                accDocRecAccum = el0.value;
+            }
+            if (accDocRecAccum && !accDocRecAccum.endsWith(' ')) accDocRecAccum += ' ';
+        }
+    }
         let interim = '';
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
             const r = ev.results[i];
             if (r.isFinal) {
                 if (accDocRecIndices && !accDocRecIndices.has(i)) {
-                    accDocRecAccum += r[0].transcript + ' ';
+                    // 🔧 R (v265): تبدیل عدد فقط روی همین عبارت تازه
+                    accDocRecAccum += addNumericAfterWords(r[0].transcript.trim()).trim() + ' ';
                     accDocRecIndices.add(i);
                 }
             } else {
@@ -22604,7 +22956,10 @@ function buildAccDocSR() {
         }
         accDocLastInterim = interim;   // 🔧 v243
         const el = document.getElementById('accDocDesc');
-        if (el) el.value = addNumericAfterWords((accDocRecAccum + ' ' + interim).trim()).trim();
+        if (el) {
+            accDocRecLastWritten = (accDocRecAccum + ' ' + addNumericAfterWords(interim).trim()).trim();
+            el.value = accDocRecLastWritten;
+        }
     };
     rec.onerror = function(ev) {
         console.error('[AccDocMic] error:', ev.error);
@@ -22618,9 +22973,10 @@ function buildAccDocSR() {
         accDocRecLastEventAt = Date.now();   // 🔧 v244
         // 🔧 v243: تعهد آخرین interim + ریست ایندکس‌ها (توضیح در taskRecObj.onend)
         if (accDocLastInterim && accDocLastInterim.trim()) {
-            accDocRecAccum += accDocLastInterim.trim() + ' ';
+            // 🔧 R (v265): تعهد interim با تبدیلِ همان عبارت
+            accDocRecAccum += addNumericAfterWords(accDocLastInterim.trim()).trim() + ' ';
             const elC = document.getElementById('accDocDesc');
-            if (elC) elC.value = addNumericAfterWords(accDocRecAccum.trim()).trim();
+            if (elC) { accDocRecLastWritten = accDocRecAccum.trim(); elC.value = accDocRecLastWritten; }
         }
         accDocLastInterim = '';
         accDocRecIndices = new Set();
@@ -22684,6 +23040,7 @@ function accDocStartRec() {
     accDocRecAccum = (document.getElementById('accDocDesc').value || '').trim();
     if (accDocRecAccum && !accDocRecAccum.endsWith(' ')) accDocRecAccum += ' ';
     accDocRecIndices = new Set();
+    accDocRecLastWritten = null;   // 🔧 R (v265)
     accDocRecObj = buildAccDocSR();   // 🔧 v244: نمونهٔ تازه در هر شروع
     accDocRecActive = true;
     document.getElementById('accDocMicBtn').classList.add('recording');
@@ -22716,7 +23073,8 @@ function accDocStopRec() {
 let accRecRecActive = false;
 let accRecRecAccum = '';
 let accRecRecIndices = null;
-let accRecLastInterim = '';   // 🔧 v243: آخرین interim برای تعهد در onend
+let accRecLastInterim = '';
+let accRecRecLastWritten = null;   // 🔧 R (v265): برای جذب تایپ دستی — مثل تسک   // 🔧 v243: آخرین interim برای تعهد در onend
 let accRecRecObj = null;
 
 function accRecToggleMic() {
@@ -22740,12 +23098,30 @@ function buildAccRecSR() {
     rec.onstart = function() { accRecRecLastEventAt = Date.now(); };   // 🔧 v244
     rec.onresult = function(ev) {
         accRecRecLastEventAt = Date.now();   // 🔧 v244
+    // 🔧 R (v265) — قانون کاربر: «کلمات قبلی تایپ‌شده پاک و اصلاح نشود».
+    // جذب تایپ دستی «قبل از» پردازش نتایج جدید: اگر کاربر در حین شنیدن
+    // چیزی تایپ/ویرایش کرده باشد (متن فیلد ≠ نوشتار قبلی موتور)، همان متن
+    // به‌عنوان بخش متعهدشده حفظ می‌شود؛ نتایج تازه به آن می‌چسبند. و تبدیل
+    // عدد‌به‌رقم فقط روی «بخش تازه» اعمال می‌شود — متن متعهدشدهٔ قبلی هرگز
+    // دوباره پارس/بازنویسی نمی‌شود.
+    {
+        const el0 = document.getElementById('accRecText');
+        if (el0 && accRecRecLastWritten !== null && el0.value !== accRecRecLastWritten) {
+            if (accRecLastInterim && accRecLastInterim.trim() && el0.value.endsWith(accRecLastInterim)) {
+                accRecRecAccum = el0.value.slice(0, el0.value.length - accRecLastInterim.length);
+            } else {
+                accRecRecAccum = el0.value;
+            }
+            if (accRecRecAccum && !accRecRecAccum.endsWith(' ')) accRecRecAccum += ' ';
+        }
+    }
         let interim = '';
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
             const r = ev.results[i];
             if (r.isFinal) {
                 if (accRecRecIndices && !accRecRecIndices.has(i)) {
-                    accRecRecAccum += r[0].transcript + ' ';
+                    // 🔧 R (v265): تبدیل عدد فقط روی همین عبارت تازه
+                    accRecRecAccum += addNumericAfterWords(r[0].transcript.trim()).trim() + ' ';
                     accRecRecIndices.add(i);
                 }
             } else {
@@ -22754,7 +23130,10 @@ function buildAccRecSR() {
         }
         accRecLastInterim = interim;   // 🔧 v243
         const el = document.getElementById('accRecText');
-        if (el) el.value = addNumericAfterWords((accRecRecAccum + ' ' + interim).trim()).trim();
+        if (el) {
+            accRecRecLastWritten = (accRecRecAccum + ' ' + addNumericAfterWords(interim).trim()).trim();
+            el.value = accRecRecLastWritten;
+        }
     };
     rec.onerror = function(ev) {
         console.error('[AccRecMic] error:', ev.error);
@@ -22767,9 +23146,10 @@ function buildAccRecSR() {
         accRecRecLastEventAt = Date.now();   // 🔧 v244
         // 🔧 v243: تعهد آخرین interim + ریست ایندکس‌ها (توضیح در taskRecObj.onend)
         if (accRecLastInterim && accRecLastInterim.trim()) {
-            accRecRecAccum += accRecLastInterim.trim() + ' ';
+            // 🔧 R (v265): تعهد interim با تبدیلِ همان عبارت
+            accRecRecAccum += addNumericAfterWords(accRecLastInterim.trim()).trim() + ' ';
             const elC = document.getElementById('accRecText');
-            if (elC) elC.value = addNumericAfterWords(accRecRecAccum.trim()).trim();
+            if (elC) { accRecRecLastWritten = accRecRecAccum.trim(); elC.value = accRecRecLastWritten; }
         }
         accRecLastInterim = '';
         accRecRecIndices = new Set();
@@ -22831,6 +23211,7 @@ function accRecStartRec() {
     accRecRecAccum = document.getElementById('accRecText').value || '';
     if (accRecRecAccum && !accRecRecAccum.endsWith(' ')) accRecRecAccum += ' ';
     accRecRecIndices = new Set();
+    accRecRecLastWritten = null;   // 🔧 R (v265)
     accRecRecObj = buildAccRecSR();   // 🔧 v244: نمونهٔ تازه در هر شروع
     accRecRecActive = true;
     const btn = document.getElementById('accRecMicBtn');
@@ -26887,6 +27268,8 @@ function renderCalendar() {
     }
 
     items.forEach(item => {
+        // 🔧 S (v266) — BA-258: نقاط تقویم هم از فیلتر نمایش پیروی می‌کنند
+        if (!taskViewAllows('all', item)) return;
         checkAndMark(item, item.deadline);
         checkAndMark(item, item.completedAt);
         checkAndMark(item, item.createdAt);
@@ -27169,6 +27552,8 @@ function renderCalendarDayTasks() {
     }
 
     items.forEach(item => {
+        // 🔧 S (v266) — BA-258: فهرست کارهای روز هم از فیلتر نمایش پیروی می‌کند
+        if (!taskViewAllows('all', item)) return;
         const types = [];
         if (jalaliMatches(item.deadline)) types.push('deadline');
         if (jalaliMatches(item.completedAt)) types.push('completed');
