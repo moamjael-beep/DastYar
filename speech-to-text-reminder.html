@@ -8189,6 +8189,26 @@ body.locked .header-actions button {
 //   قانون صفر: هیچ رفتار سالم دیگری تغییر نکرد — پروب ۲۱/۲۱ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
 // ════════════════════════════════════════════════════════════════════
+// 🔧 v273-2026-11-24 (درخواست Z) — «خراب است: تحقیق کن، حلش کن» — زنجیرهٔ
+//   چندلایهٔ واکشی anten با پشتیبانِ فقط-واکشی:
+//   تحقیق زندهٔ کامل: JSONP anten ندارد؛ api./apiv2.anten.ir وجود ندارند؛
+//   allowlist آپارات فقط دامنه‌های خودش؛ همهٔ endpointهای آپارات بدون ACAO؛
+//   telewebion از اینجا resolve نمی‌شود؛ corsproxy.io کلید می‌خواهد؛
+//   cors.eu.org 429؛ yacdn مرده؛ whateverorigin HTML می‌دهد؛ allorigins /get
+//   زنده و سالم (۲۰۰ + ۶.۷KB calendar) و r.jina.ai CORS باز ولی از IP
+//   دیتاسنتر ۴۰۱ (بدگمانی IP — از IP کاربر ممکن است باز باشد).
+//   نتیجه: مسیر «مستقیمِ تضمینی» وجود ندارد (قانون CORS مرورگر) — اما پیام
+//   «HTTP 504» کاربر اثبات می‌کند گرهٔ antenِ خودش پاسخ قابل‌خواندن می‌دهد؛
+//   پس: ۱) مستقیم همیشه اول؛ ۲) در شکستِ مستقیم، واسطهٔ فقط-واکشیِ بدون
+//   فیلتر به‌ترتیب allorigins(raw) → allorigins(get) → r.jina.ai با تجزیهٔ
+//   دفاعی (fence/contents/برش {…}) و یادسپاری واسطهٔ موفق برای صفحات بعد؛
+//   ۳) لاگ صادقانهٔ مسیر: «مستقیم» یا «واسطهٔ فقط-واکشی (نام)»؛ ۴) aparat
+//   فقط مستقیم می‌ماند (واسطه بیفایده است — دادهٔ فقط-ایران)؛ ۵) sw.js:
+//   واسطه‌ها هم از کش SW مستثنی. پیام «هر دو افتاد» صادقانه به‌روز شد.
+//   پروب v273: ۸/۸ + v272: ۸/۸ + v271: ۱۲/۱۲ + v270: ۱۱/۱۱ + v269: ۹/۹ +
+//   v267: ۱۶/۱۶ + رگرسیون ۱۹/۱۹.
+//
+// ════════════════════════════════════════════════════════════════════
 // 🔧 v272-2026-11-24 (درخواست Y) — سایت‌ها «در دسترس نیستند»: علت‌یابی صادقانه
 //   + تلاش دوبارهٔ ۵۰۴ + کنار رفتن کامل سرویس‌ورکر از مسیر APIها:
 //   الزام کاربر: «هیچ‌کدام از دو سایت قابل دسترس نیست — خطای 504 و یکی خطای
@@ -8339,7 +8359,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v272-2026-11-24-events-direct-honest-errors-retry';
+const APP_VERSION = 'v273-2026-11-24-events-anten-relay-chain-honest';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20264,8 +20284,10 @@ async function evFetchJson(url) {
             }
             const t = await r.text();
             let d = null;
-            try { d = JSON.parse(t); } catch(e) { return { ok: false, err: 'پاسخ سایت JSON نبود (احتمالاً صفحهٔ خطا)' }; }
-            return { ok: true, data: d };
+            // v273: متنِ خام هم برگردانده می‌شود — واسطه‌ها (مثل jina) ممکن
+            // است JSON را در fence/markdown بدهند؛ تجزیهٔ دفاعی در مرحلهٔ بعد
+            try { d = JSON.parse(t); } catch(e) { return { ok: false, err: 'پاسخ سایت JSON نبود (احتمالاً صفحهٔ خطا)', text: t }; }
+            return { ok: true, data: d, text: t };
         } catch(e) {
             lastErr = evNetErr(e);
         }
@@ -20310,13 +20332,77 @@ function evFutureDates(n) {
     }
     return out;
 }
+// 🔧 Z (v273) — BA-273: الزام کاربر: «خراب است — تحقیق کن حلش کن» — تحقیق
+// زندهٔ کامل (۱۴۰۵/۰۹/۰۳): JSONP anten ندارد؛ هاست‌های api./apiv2.anten.ir
+// وجود ندارند؛ allowlist آپارات فقط دامنه‌های خودش؛ همهٔ endpointهای آپارات
+// بدون ACAO؛ telewebion از اینجا resolve نمی‌شود؛ corsproxy.io کلید می‌خواهد؛
+// cors.eu.org 429؛ yacdn مرده؛ whateverorigin HTML می‌دهد؛ allorigins /get
+// زنده و سالم (۲۰۰، ۶.۷KB دادهٔ calendar آنتن) و /raw گذرا ۵۲۲؛ r.jina.ai
+// CORS باز (Origin را echo می‌کند) ولی از IP این سندباکس ۴۰۱ (بدگمانی به
+// IP دیتاسنتر — از IP کاربر ممکن است باز باشد). نتیجهٔ تحقیق: هیچ مسیر
+// «مستقیمِ تضمینی» برای anten وجود ندارد چون قانون CORS مرورگر است و فقط
+// خود سایت می‌تواند هدر اجازه بفرستد — نکتهٔ کلیدی: پیام «HTTP 504» کاربر
+// در v271 اثبات می‌کند گرهٔ antenِ خودِ او پاسخ را قابل‌خواندن می‌دهد (CORS
+// روی گرهٔ او رد شده!) — پس مستقیم اول تلاش می‌شود (وقتی سرورشان سالم باشد
+// بدون واسطه کار می‌کند) و واسطهٔ فقط-واکشیِ بدون فیلتر فقط پشتیبان است.
+// زنجیرهٔ anten: مستقیم → واسطهٔ موفقِ یادسپاری‌شده → allorigins(raw) →
+// allorigins(get) → r.jina.ai — هر پاسخ با تجزیهٔ دفاعی (fence حذف، پوشش
+// contents، برش {…})؛ aparat فقط مستقیم می‌ماند (واسطه بیفایده است: دادهٔ
+// مسابقات فقط به IP ایران داده می‌شود — v269).
+let evAntenRelayIdx = -1;   // یادسپاری واسطهٔ موفق برای صفحات بعدی
+function evRelayList(url) {
+    return [
+        { name: 'allorigins (raw)', url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url) },
+        { name: 'allorigins (get)', url: 'https://api.allorigins.win/get?url=' + encodeURIComponent(url) },
+        { name: 'r.jina.ai', url: 'https://r.jina.ai/' + url }
+    ];
+}
+// تجزیهٔ دفاعی پاسخ واسطه: JSON خام / پوشش {"contents":...} / محصور در
+// markdown fence / برش اولین { تا آخرین }
+function evParseRelayJson(t) {
+    let s = String(t || '').trim();
+    if (s.indexOf('```') >= 0) s = s.replace(/```[a-zA-Z]*\n?/g, '');
+    let d = null;
+    try { d = JSON.parse(s); } catch(e) { d = null; }
+    if (d && typeof d.contents === 'string') {
+        try { d = JSON.parse(d.contents); } catch(e2) { /* همان می‌ماند */ }
+    }
+    if (!d) {
+        const a = s.indexOf('{'), b = s.lastIndexOf('}');
+        if (a >= 0 && b > a) { try { d = JSON.parse(s.slice(a, b + 1)); } catch(e3) { d = null; } }
+    }
+    return d;
+}
+async function evFetchAntenPage(off) {
+    const u = evAntenUrl(off);
+    const r = await evFetchJson(u);          // ۱) مستقیم — بدون واسطه
+    if (r.ok) return { ok: true, data: r.data, via: 'مستقیم' };
+    const relays = evRelayList(u);
+    const order = (evAntenRelayIdx >= 0) ? [evAntenRelayIdx, 0, 1, 2].filter(function(v, i, arr) { return arr.indexOf(v) === i && v < relays.length; }) : [0, 1, 2];
+    let lastErr = r.err;
+    for (const idx of order) {
+        const rl = relays[idx];
+        const rr = await evFetchJson(rl.url);
+        // ok: JSON سالم؛ نه-ok ولی متن دارد (مثل fence جینا) → تجزیهٔ دفاعی
+        const d = rr.ok ? evParseRelayJson(rr.text) : (rr.text ? evParseRelayJson(rr.text) : null);
+        if (d && d.calendar) {
+            const first = (evAntenRelayIdx !== idx);
+            evAntenRelayIdx = idx;
+            if (first) evLog('🛰 anten.ir از واسطهٔ فقط-واکشیِ بدون فیلتر (' + rl.name + ') گرفته شد — خواندنِ مستقیم توسط مرورگر بلاک بود (CORS)', false);
+            return { ok: true, data: d, via: rl.name };
+        }
+        lastErr = rr.ok ? ('پاسخ واسطهٔ ' + rl.name + ' تجزیه نشد') : (rl.name + ' → ' + rr.err);
+    }
+    return { ok: false, err: 'مستقیم: ' + r.err + ' | واسطه‌ها: ' + lastErr, via: '' };
+}
+
 // واکشی «کل روزهای آینده»ٔ anten — صفحات با گام 120 تا خالی شدن (حداکثر ۴ صفحه)
 async function evFetchAntenAll() {
     const byDate = {};
     const seenId = {};
     let pages = 0, days = 0;
     for (let off = 0; off <= 360; off += 120) {
-        const r = await evFetchJson(evAntenUrl(off));
+        const r = await evFetchAntenPage(off);
         if (!r.ok) { if (off === 0) return { ok: false, err: r.err, rows: [] }; continue; }
         const d = r.data;
         const cal = (d && d.calendar) || [];
@@ -20444,7 +20530,7 @@ async function runEventsSearch() {
         evLog('⚠️ aparatsport.ir: پاسخ فهرست مسابقات خالی بود (این داده فقط به شبکهٔ ایران داده می‌شود) — تنها از anten.ir استفاده شد', true);
     }
     if (!antenRows.length && !apRows.length) {
-        evLog('🚫 هیچ‌یک از دو منبع پاسخ نداد — نتیجه‌ای وجود ندارد (پیام صادقانه). درخواست‌ها مستقیم و بدون واسطه بودند (بدون پروکسی، بدون فیلتر) — علت دقیق هر منبع در پیام‌های ⚠️ بالا آمده است.', true);
+        evLog('🚫 هیچ‌یک از دو منبع پاسخ نداد — نتیجه‌ای وجود ندارد (پیام صادقانه). anten: اول مستقیم، سپس واسطه‌های فقط-واکشیِ بدون فیلتر (allorigins/r.jina.ai)؛ آپارات‌اسپرت: فقط مستقیم (واسطه برای دادهٔ فقط-ایرانش بیفایده است) — علت دقیق هر منبع در پیام‌های ⚠️ بالا آمده است.', true);
         _evResults = [];
         evRenderResults();   // فهرست کهنه پاک شود؛ دکمهٔ افزودن پنهان
         showToast('جستجوی رویدادها: هیچ منبعی پاسخ نداد');
