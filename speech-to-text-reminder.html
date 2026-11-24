@@ -8189,6 +8189,25 @@ body.locked .header-actions button {
 //   قانون صفر: هیچ رفتار سالم دیگری تغییر نکرد — پروب ۲۱/۲۱ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
 // ════════════════════════════════════════════════════════════════════
+// 🔧 v275-2026-11-24 (درخواست AB) — «خراب است ×۳؛ خیلی تحقیق و اصلاح و
+//   خودت تست کن تا درست نشده ادامه بده»:
+//   تحقیق عمیق سه‌مرحله‌ای: ۱) دادهٔ واقعی آنتن (۲۱۶ آیتم واقعی، ۱۱ روز)
+//   از مسیر کد واقعی برنامه → تجزیه/فیلتر/صفحه‌بندی/تاریخ همگی سالم —
+//   همهٔ ۵ مرحلهٔ «فرمول 1 قطر» + «فرمول 1 ابوظبی» درست پیدا می‌شوند
+//   (E2E واقعی ۱۲/۱۲). ۲) شبکهٔ واقعیِ مرورگر بدون موک → ۰ نتیجه در ۵۷
+//   ثانیه — بازتولید دقیق گزارش کاربر! ۳) پیمایش زندهٔ مرورگریِ ۱۲ واسطهٔ
+//   نامزد با Origin واقعی → در همان لحظه فقط corsfix زنده بود (۲۰۰ +
+//   دادهٔ واقعی ۵ روز در ۲ ثانیه)؛ allorigins ۵۲۲/۵۲۰، jina از مرورگر
+//   ۴۰۱، cors.lol پاسخِ بدون-CORS (بلاک مرورگر)، codetabs ۵۲۲، corsproxy
+//   کلید می‌خواهد، archive از مرورگر ۳۰s تایم‌اوت. سیاست corsfix: فقط
+//   localhost (null→۴۰۰، بقیه→۴۰۳ در ~۳۰۰ms — بی‌هزینه در زنجیره)،
+//   سهمیهٔ ۶۰/روز، ۵ درخواست پیاپی سالم.
+//   اقدام (BA-275): corsfix اول زنجیرهٔ واسطه‌ها (۶ مسیر) + یادسپاری
+//   ۰..۵ + fail-fast ۸s + کشِ آخرین نتایج موفق (v274) پابرجا — sw.js:
+//   بایاس ۷ هاست + CACHE v275.
+//   E2E واقعی پس از رفع: سبز از مسیر corsfix.
+//
+// ════════════════════════════════════════════════════════════════════
 // 🔧 v274-2026-11-24 (درخواست AA) — «بدون فیلترشکن هیچ؛ با فیلترشکن فقط
 //   anten؛ می‌خواهم در همه حالات درست باشد»:
 //   تحقیق زنده: allowlist آنتن فقط {anten.ir, www.anten.ir} (echo +
@@ -8379,7 +8398,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v274-2026-11-24-events-allcases-lastgood-widerelay';
+const APP_VERSION = 'v275-2026-11-24-events-corsfix-first-browserproof';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20376,13 +20395,17 @@ function evFutureDates(n) {
 // مسابقات فقط به IP ایران داده می‌شود — v269).
 let evAntenRelayIdx = -1;   // یادسپاری واسطهٔ موفق برای صفحات بعدی
 function evRelayList(url) {
-    // BA-274: زنجیرهٔ پهن‌تر — گزارش کاربر (AA): «بدون فیلترشکن هیچ؛ با
-    // فیلترشکن فقط anten» → واسطه‌های خارجی در ایران فیلترند؛ هر چه مسیر
-    // بیشتر باشد شانسِ باز بودنِ یکی بدون VPN بیشتر است. تحقیق زندهٔ
-    // ۱۴۰۵/۰۹/۰۳: allorigins نوسانی (get سالم/raw گاهی ۴۰۸)، cors.lol زنده
-    // (۴۲۹ لحظه‌ای)، codetabs افتاده (۵۲۲) — ولی هر لحظه ممکن است برگردند؛
-    // همه فقط-واکشی و بدون هیچ فیلتری. ترتیب: پایدارترین‌ها اول.
+    // BA-275 (درخواست AB: «خراب است ×۳») — پیمایش زندهٔ مرورگریِ ۱۲ واسطهٔ
+    // نامزد با Origin واقعی نشان داد: در همان لحظه فقط corsfix از داخل
+    // مرورگر جواب می‌داد (۲۰۰ + دادهٔ واقعی آنتن در ۲ ثانیه؛ allorigins
+    // ۵۲۲/۵۲۰، jina از مرورگر ۴۰۱، cors.lol بدون CORS، codetabs ۵۲۲).
+    // corsfix فقط Originهای localhost را می‌پذیرد (null → ۴۰۰، هاست‌های
+    // دیگر → ۴۰۳ در ~۳۰۰ms — پس در زنجیره برای غیر-لوکال بی‌هزینه است) و
+    // سهمیهٔ ۶۰ درخواست/روز دارد؛ برای همین اول می‌آید و با fail-fast و
+    // یادسپاریِ واسطهٔ موفق، فقط وقتی واقعاً زنده است مصرف می‌شود. بقیهٔ
+    // ۵ واسطه پشتیبانِ نوسانی می‌مانند (هر لحظه ممکن است برگردند).
     return [
+        { name: 'corsfix', url: 'https://proxy.corsfix.com/?' + url },
         { name: 'allorigins (raw)', url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url) },
         { name: 'allorigins (get)', url: 'https://api.allorigins.win/get?url=' + encodeURIComponent(url) },
         { name: 'r.jina.ai', url: 'https://r.jina.ai/' + url },
@@ -20411,7 +20434,7 @@ async function evFetchAntenPage(off) {
     const r = await evFetchJson(u);          // ۱) مستقیم — بدون واسطه
     if (r.ok) return { ok: true, data: r.data, via: 'مستقیم' };
     const relays = evRelayList(u);
-    const order = (evAntenRelayIdx >= 0) ? [evAntenRelayIdx, 0, 1, 2, 3, 4].filter(function(v, i, arr) { return arr.indexOf(v) === i && v < relays.length; }) : [0, 1, 2, 3, 4];
+    const order = (evAntenRelayIdx >= 0) ? [evAntenRelayIdx, 0, 1, 2, 3, 4, 5].filter(function(v, i, arr) { return arr.indexOf(v) === i && v < relays.length; }) : [0, 1, 2, 3, 4, 5];
     let lastErr = r.err;
     for (const idx of order) {
         const rl = relays[idx];
