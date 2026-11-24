@@ -8111,7 +8111,7 @@ body.locked .header-actions button {
 //            ۶) سخت‌گیری به‌روزرسانی SW: register با updateViaCache:'none' +
 //               reg.update() — بررسی sw.js بدون کش HTTP (بدون تأخیر ۲۴ ساعته).
 //            ⚠️ قانون صفر: رفتار v227 («ذخیرهٔ فایل ⇒ آماده») حفظ و قوی‌تر شد.
-const APP_VERSION = 'v261-2026-11-23-mic-autoclose-taskfilter-subgroups-call-pv';
+const APP_VERSION = 'v262-2026-11-24-subgroup-cards-pages';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -10217,6 +10217,36 @@ function renameSubgroupUi(gid, sgid) {
     }
 }
 
+// 🔧 O (v262): نشان‌های کارت زیرگروه — عین buildGroupBadges صفحهٔ اصلی
+// (پین قرمز، فوری زرد، دایرهٔ تعداد فعال) بدون دکمهٔ 📝 (یادداشت سطح گروه است)
+function buildSubgroupBadges(sgItems) {
+    const active = (sgItems || []).filter(i => !i.done && i.cancelled != true && i.suspended != true);
+    let html = '';
+    const pinnedCount = active.filter(i => i.pinned == true).length;
+    const urgentCount = active.filter(i => i.urgent == true).length;
+    if (pinnedCount > 0) html += `<span class="group-badge-pinned">📌${toPersianNumber(pinnedCount)}</span>`;
+    if (urgentCount > 0) html += `<span class="group-badge-urgent">🚨${toPersianNumber(urgentCount)}</span>`;
+    html += `<div class="group-count-notes-wrapper"><span class="group-count">${toPersianNumber(active.length)}</span></div>`;
+    return html;
+}
+
+// 🔧 O (v262): حذف زیرگروه از منوی ☰ صفحهٔ خودش — تسک‌ها به ریشهٔ گروه برمی‌گردند
+function deleteSubgroupUi(gid, sgid) {
+    const sg = subgroupById(gid, sgid);
+    const n = getDB().filter(i => i.groupId === gid && i.subgroupId === sgid).length;
+    if (!confirm('حذف زیرگروه «' + ((sg && sg.name) || '') + '»؟ ' + toPersianNumber(n) + ' تسک به ریشهٔ گروه برمی‌گردد.')) return;
+    deleteSubgroupOfGroup(gid, sgid);
+    showToast('زیرگروه حذف شد — تسک‌ها به ریشهٔ گروه برگشتند ✓');
+    if (typeof currentSubgroupId !== 'undefined' && currentSubgroupId === sgid) {
+        currentSubgroupId = null;
+        navReplace({ view: 'tasks', groupId: gid });
+        renderTasksView(gid);
+        window.scrollTo({ top: 0, behavior: 'auto' });
+    } else if (typeof currentView !== 'undefined' && currentView === 'tasks') {
+        renderTasksView(currentGroupId);
+    }
+}
+
 // Rename an existing group (used by the edit button on the group's tasks header).
 // The default "all" group can also be renamed; its id stays 'all'.
 function renameGroup(id, newName) {
@@ -11605,6 +11635,10 @@ let editTaskId = null;
 // since the user might have opened the calendar from the groups list view).
 let pendingTaskGroupId = null;
 let pendingPrefilledDeadline = null;
+// 🔧 O (v262): زیرگروه فعال در نمای تسک‌ها — null یعنی نمای خود گروه.
+// مکانیزم زیرگروه دقیقاً مثل صفحهٔ اصلی گروه‌ها: کارت قابل‌کلیک + باکس
+// «+ افزودن زیرگروه جدید +» و کلیک روی کارت → صفحهٔ داخلی زیرگروه.
+let currentSubgroupId = null;
 
 // ────────────────────────────────────────────────────────────────────
 // انتخاب‌گر گروه (برای افزودن از تقویم یا انتقال تسک‌ها)
@@ -11814,6 +11848,7 @@ function chooseDeleteTasks() {
     //    current history entry matches the new view.
     currentView = 'groups';
     currentGroupId = null;
+    currentSubgroupId = null;   // 🔧 O (v262)
     expandedId = null;
     closeModalByType('groupDeleteConfirm');
     navReplace({ view: 'groups' });
@@ -12639,6 +12674,8 @@ function saveItem() {
         deadline: deadline.toISOString(),
         done: false,
         groupId: newTaskGroupId,
+        // 🔧 O (v262): ساخته‌شدن در صفحهٔ داخلی زیرگروه → تسک در همان زیرگروه
+        subgroupId: (typeof currentSubgroupId !== 'undefined' && currentSubgroupId && newTaskGroupId === currentGroupId) ? currentSubgroupId : null,
         // 🔧 اگر در گروه فوری ساخته شده، urgent: true
         urgent: newTaskUrgent,
         // position intentionally NOT set — sort by deadline as fallback
@@ -13287,10 +13324,25 @@ function navReplace(state) {
 function openGroupView(groupId) {
     currentView = 'tasks';
     currentGroupId = groupId;
+    currentSubgroupId = null;   // 🔧 O (v262): ورود به گروه، از زیرگروه خارج می‌شود
     expandedId = null;
     navPush({ view: 'tasks', groupId: groupId });
     fullRender();
     // 🔧 اسکرول به بالای صفحه تا هدر داخلی گروه کاملاً مشخص و زیر هدر اصلی قرار گیرد
+    window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
+// 🔧 O (v262): باز کردن صفحهٔ داخلی زیرگروه — دقیقاً مثل openGroupView.
+// Back موبایل/دکمهٔ بازگشت با history به نمای گروه برمی‌گردد.
+function openSubgroupView(groupId, subgroupId) {
+    if (!subgroupById(groupId, subgroupId)) return;
+    currentView = 'tasks';
+    currentGroupId = groupId;
+    currentSubgroupId = subgroupId;
+    expandedId = null;
+    if (typeof _activeGroupMenu !== 'undefined' && _activeGroupMenu) closeGroupMenu();
+    navPush({ view: 'tasks', groupId: groupId, subgroupId: subgroupId });
+    fullRender();
     window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
@@ -13299,7 +13351,9 @@ function openGroupView(groupId) {
 function openTaskDetails(taskId) {
     const prevExpandedId = expandedId;
     expandedId = taskId;
-    navPush({ view: 'tasks', groupId: currentGroupId, expandedId: taskId });
+    // 🔧 O (v262): subgroupId همراه تاریخچه بماند تا Back از جزئیات،
+    // به صفحهٔ داخلی زیرگروه برگردد نه به نمای گروه
+    navPush({ view: 'tasks', groupId: currentGroupId, subgroupId: (typeof currentSubgroupId !== 'undefined' && currentSubgroupId) ? currentSubgroupId : undefined, expandedId: taskId });
     render();
     // 🔧 اگر قبلاً تسک باز نبود، اسکرول نکن تا تسک در جای خودش بماند.
     // اگر قبلاً تسک دیگری باز بود، به تسک جدید اسکرول کن.
@@ -13333,6 +13387,7 @@ function validateCurrentViewAfterDataChange() {
     // گروه یتیم است — به لیست گروه‌ها برگرد
     currentView = 'groups';
     currentGroupId = null;
+    currentSubgroupId = null;   // 🔧 O (v262)
     expandedId = null;
     navReplace({ view: 'groups' });
     fullRender();
@@ -13686,6 +13741,8 @@ window.addEventListener('popstate', (e) => {
     // handler وسط کار می‌مرد و fullRender اجرا نمی‌شد (UI کهنه می‌ماند).
     const prevView = currentView;
     const prevGroup = currentGroupId;
+    const prevSub = (typeof currentSubgroupId !== 'undefined') ? currentSubgroupId : null;   // 🔧 O (v262)
+    const prevExpanded = expandedId;
     // 🔧 اگر مودال فرم تسک باز است یا تازه بسته شده، هیچ اسکرول و fullRender انجام نده
     const taskFormJustClosed = (state.view === 'tasks' && _modalStack.length === 0 && prevView === 'tasks');
     if (state.view === 'modal') {
@@ -13709,15 +13766,27 @@ window.addEventListener('popstate', (e) => {
         if (state.view === 'groups') {
             currentView = 'groups';
             currentGroupId = null;
+            currentSubgroupId = null;   // 🔧 O (v262)
             expandedId = null;
         } else if (state.view === 'tasks') {
             currentView = 'tasks';
             currentGroupId = state.groupId || null;
+            currentSubgroupId = state.subgroupId || null;   // 🔧 O (v262)
+            if (currentSubgroupId && currentGroupId && currentGroupId !== 'all' && currentGroupId !== 'urgent' && !subgroupById(currentGroupId, currentSubgroupId)) currentSubgroupId = null;
             expandedId = state.expandedId || null;
+            // 🔧 O (v262): Back بین نمای گروه و صفحهٔ زیرگروه (یا جمع‌شدن
+            // جزئیات) هم از این شاخه می‌گذرد — اگر زمینهٔ دید عوض شده، رندر لازم است
+            if (prevSub !== currentSubgroupId || prevGroup !== currentGroupId || prevExpanded !== expandedId) {
+                fullRender();
+                if (prevSub !== currentSubgroupId || prevGroup !== currentGroupId) {
+                    window.scrollTo({ top: 0, behavior: 'auto' });
+                }
+            }
             // 🔧 v207: اگر گروه حذف شده، به لیست گروه‌ها برگرد (رندر لازم است)
             if (isStaleGroupId(currentGroupId)) {
                 currentView = 'groups';
                 currentGroupId = null;
+                currentSubgroupId = null;   // 🔧 O (v262)
                 expandedId = null;
                 navReplace({ view: 'groups' });
                 fullRender();
@@ -13728,16 +13797,20 @@ window.addEventListener('popstate', (e) => {
     if (state.view === 'groups') {
         currentView = 'groups';
         currentGroupId = null;
+        currentSubgroupId = null;   // 🔧 O (v262)
         expandedId = null;
     } else if (state.view === 'tasks') {
         currentView = 'tasks';
         currentGroupId = state.groupId || null;
+        currentSubgroupId = state.subgroupId || null;   // 🔧 O (v262)
+        if (currentSubgroupId && currentGroupId && currentGroupId !== 'all' && currentGroupId !== 'urgent' && !subgroupById(currentGroupId, currentSubgroupId)) currentSubgroupId = null;
         expandedId = state.expandedId || null;
         // 🔧 v207: Back موبایل بعد از حذف گروه / ورود بک‌آپ REPLACE —
         // گروه یتیم را به لیست گروه‌ها هدایت کن (نه نمای خالی fallback)
         if (isStaleGroupId(currentGroupId)) {
             currentView = 'groups';
             currentGroupId = null;
+            currentSubgroupId = null;   // 🔧 O (v262)
             expandedId = null;
             navReplace({ view: 'groups' });
         }
@@ -14017,6 +14090,9 @@ function renderGroupsView() {
 function renderTasksView(groupId) {
     const container = document.getElementById('container');
     const group = getGroupById(groupId);
+    // 🔧 O (v262): زیرگروه فعال؟ صفحهٔ داخلی زیرگروه رندر می‌شود (مثل نمای گروه)
+    const activeSub = (currentSubgroupId && groupId !== 'all' && groupId !== 'urgent') ? subgroupById(groupId, currentSubgroupId) : null;
+    if (currentSubgroupId && !activeSub) currentSubgroupId = null;   // زیرگروه حذف‌شده → نمای گروه
     let items = getDB();
     if (groupId === 'all') {
         // در گروه «همه کارها»، فقط گروه‌هایی که showInAll !== false هستند نمایش داده می‌شوند
@@ -14038,6 +14114,8 @@ function renderTasksView(groupId) {
     // در نمای «همه کارها»/«فوری» هر تسک با فیلتر مؤثر گروه خودش می‌آید.
     const _rawBeforeFilter = items.length;
     items = items.filter(i => taskViewAllows(groupId, i));
+    // 🔧 O (v262): در صفحهٔ داخلی زیرگروه فقط تسک‌های همان زیرگروه
+    if (activeSub) items = items.filter(i => i.subgroupId === activeSub.id);
 
     // 🔧 v133: مرتب‌سازی با ۴ حالت تسک
     // ترتیب از بالا به پایین:
@@ -14128,17 +14206,41 @@ function renderTasksView(groupId) {
     // 🔧 آیکون هدر (در کنار عنوان) — همیشه نمایش داده می‌شود، حتی اگر
     // عکس پس‌زمینه تنظیم شده باشد. عکس فقط پس‌زمینه است و جای آیکون را
     // نمی‌گیرد.
-    const iconHtml = group.headerIcon
-        ? `<div class="group-header-icon">${group.headerIcon}</div>`
+    // 🔧 O (v262): در صفحهٔ داخلی زیرگروه، عنوان/آیکون/بازگشت/منو متعلق به زیرگروه است
+    let headerTitle = group.name;
+    let headerIconChar = group.headerIcon || '';
+    let backBtnHtml = `<button class="back-btn" onclick="goToGroups()" title="بازگشت">◄</button>`;
+    if (activeSub) {
+        headerTitle = activeSub.name;
+        headerIconChar = '🗂️';
+        // بازگشت به نمای گروه — با history.back (popstate نمای گروه را بازیابی می‌کند)
+        backBtnHtml = `<button class="back-btn" onclick="navBack()" title="بازگشت به گروه">◄</button>`;
+    }
+    const iconHtml = headerIconChar
+        ? `<div class="group-header-icon">${headerIconChar}</div>`
         : '';
 
-    // دکمهٔ بازگشت
-    const backBtnHtml = `<button class="back-btn" onclick="goToGroups()" title="بازگشت">◄</button>`;
-
     // منوی همبرگری — فقط برای گروه‌های سفارشی (نه «همه کارها»)
+    // 🔧 O (v262): منوی زیرگروه — تغییر نام / فیلتر گروه / حذف زیرگروه
     let menuHtml = '';
     let dropdownHtml = '';
-    if (!isDefaultGroup) {
+    if (activeSub) {
+        menuHtml = `<button class="group-menu-btn" title="منوی زیرگروه" onclick="event.stopPropagation(); toggleGroupMenu('${activeSub.id}', this)">☰</button>`;
+        dropdownHtml = `
+            <div class="group-menu-dropdown" id="group-menu-${activeSub.id}">
+                <button class="group-menu-item" onclick="closeGroupMenu(); renameSubgroupUi('${group.id}', '${activeSub.id}')">
+                    <span class="menu-icon">✏️</span> تغییر نام زیرگروه
+                </button>
+                <button class="group-menu-item" onclick="closeGroupMenu(); openTvfPanel('${group.id}')">
+                    <span class="menu-icon">🔎</span> فیلتر نمایش کارها (فعال/انجام/لغو/معلق)
+                </button>
+                <div class="group-menu-divider"></div>
+                <button class="group-menu-item danger" onclick="closeGroupMenu(); deleteSubgroupUi('${group.id}', '${activeSub.id}')">
+                    <span class="menu-icon">🗑</span> حذف زیرگروه (تسک‌ها به ریشهٔ گروه برمی‌گردند)
+                </button>
+            </div>
+        `;
+    } else if (!isDefaultGroup) {
         menuHtml = `<button class="group-menu-btn" title="منوی گروه" onclick="event.stopPropagation(); toggleGroupMenu('${group.id}', this)">☰</button>`;
         dropdownHtml = `
             <div class="group-menu-dropdown" id="group-menu-${group.id}">
@@ -14183,16 +14285,17 @@ function renderTasksView(groupId) {
     // 🔧 v230 (الزام کاربر): «آیکن یادداشت روی هدر خارجی هر گروه در هدر
     // داخلی همان گروه هم نمایش داده شود» — همان دکمهٔ 📝 با همان
     // openNotes(groupId) که در هدر خارجی (buildGroupBadges) هست.
-    const notesBtnHtml = `<button class="group-notes-btn" onclick="event.stopPropagation(); openNotes('${group.id}')" title="یادداشت">📝</button>`;
+    // 🔧 O (v262): در صفحهٔ داخلی زیرگروه دکمهٔ 📝 گروه نشان داده نمی‌شود.
+    const notesBtnHtml = activeSub ? '' : `<button class="group-notes-btn" onclick="event.stopPropagation(); openNotes('${group.id}')" title="یادداشت">📝</button>`;
 
     // چیدمان: back → icon → title (flex:1) → menu → count
     // 🔧 منوی کشویی (dropdownHtml) مستقیماً در هدر قرار می‌گیرد (نه داخل
     // wrapper داخلی). چون منو position: fixed دارد، موقعیت آن مستقل از
     // والد DOM است و با جاوا اسکریپت تنظیم می‌شود.
     header.innerHTML = `<div style="display: flex; flex-direction: column; width: 100%; gap: 8px;">
-        <div style="text-align: center; font-size: 16px; font-weight: 700; color: white; padding: 2px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(group.name)}</div>
+        <div style="text-align: center; font-size: 16px; font-weight: 700; color: white; padding: 2px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(headerTitle)}</div>
         <div style="display: flex; align-items: center; gap: 10px;">${backBtnHtml}${iconHtml}<div style="flex: 1;"></div>${menuHtml}${countHtml}${notesBtnHtml}</div>
-    </div><div class="back-touch-area" onclick="event.stopPropagation(); goToGroups()"></div>${dropdownHtml}`;
+    </div><div class="back-touch-area" onclick="event.stopPropagation(); ${activeSub ? 'navBack()' : 'goToGroups()'}"></div>${dropdownHtml}`;
     container.appendChild(header);
 
     // 🔧 فیکس کردن هدر داخلی زیر هدر اصلی برنامه.
@@ -14203,18 +14306,7 @@ function renderTasksView(groupId) {
         header.style.top = headerHeight + 'px';
     }
 
-    if (items.length === 0) {
-        if (_rawBeforeFilter > 0) {
-            // 🔧 N-2 (v261): تسک هست ولی فیلتر نمایش همه را پنهان کرده
-            container.innerHTML += '<div class="empty"><div class="empty-icon">🔎</div><div>همهٔ کارها بر اساس فیلتر نمایش پنهان‌اند<br>(منوی ☰ گروه یا همبرگری اصلی)</div></div>';
-        } else {
-            container.innerHTML += '<div class="empty"><div class="empty-icon">📝</div><div>هیچ کاری در این گروه نیست<br>دکمه + را بزنید</div></div>';
-        }
-        return;
-    }
-
-    // 🔧 N-3 (v261): رندر با بخش‌های زیرگروه — اول بخش‌های زیرگروه‌ها
-    // (به‌ترتیب ساخت)، بعد تسک‌های ریشه (بدون زیرگروه) زیر آن‌ها.
+    // 🔧 O (v262): سازندهٔ عنصر تسک — مشترک بین نمای گروه و صفحهٔ زیرگروه
     const renderOneTask = (item) => {
         const level = getUrgencyLevel(item.deadline, item.done, item.cancelled, item.suspended);
         const div = document.createElement('div');
@@ -14317,28 +14409,63 @@ function renderTasksView(groupId) {
         });
         container.appendChild(div);
     };
-    const usesSubSections = (groupId !== 'all' && groupId !== 'urgent' && groupSubgroups(groupId).length > 0);
-    if (usesSubSections) {
-        groupSubgroups(groupId).forEach(sg => {
-            const list = items.filter(i => i.subgroupId === sg.id);
-            if (!list.length) return;
-            const h = document.createElement('div');
-            h.className = 'task-section-header';
-            h.textContent = '🗂 ' + sg.name + ' — ' + toPersianDigits(list.length) + ' کار';
-            container.appendChild(h);
-            list.forEach(renderOneTask);
-        });
-        const rootList = items.filter(i => !i.subgroupId || !subgroupById(groupId, i.subgroupId));
-        if (rootList.length) {
-            const h = document.createElement('div');
-            h.className = 'task-section-header task-section-root';
-            h.textContent = '📋 بدون زیرگروه — ' + toPersianDigits(rootList.length) + ' کار';
-            container.appendChild(h);
-            rootList.forEach(renderOneTask);
+    if (activeSub) {
+        // ── 🔧 O (v262): صفحهٔ داخلی زیرگروه — فقط تسک‌های این زیرگروه ──
+        if (items.length === 0) {
+            if (_rawBeforeFilter > 0) {
+                container.innerHTML += '<div class="empty"><div class="empty-icon">🔎</div><div>همهٔ کارها بر اساس فیلتر نمایش پنهان‌اند<br>(منوی ☰ زیرگروه)</div></div>';
+            } else {
+                container.innerHTML += '<div class="empty"><div class="empty-icon">🗂️</div><div>هیچ کاری در این زیرگروه نیست<br>دکمه + را بزنید</div></div>';
+            }
+            return;
         }
-    } else {
         items.forEach(renderOneTask);
+        setTimeout(initSortable, 0);
+        return;
     }
+
+    if (items.length === 0) {
+        if (_rawBeforeFilter > 0) {
+            // 🔧 N-2 (v261): تسک هست ولی فیلتر نمایش همه را پنهان کرده
+            container.innerHTML += '<div class="empty"><div class="empty-icon">🔎</div><div>همهٔ کارها بر اساس فیلتر نمایش پنهان‌اند<br>(منوی ☰ گروه یا همبرگری اصلی)</div></div>';
+        } else {
+            container.innerHTML += '<div class="empty"><div class="empty-icon">📝</div><div>هیچ کاری در این گروه نیست<br>دکمه + را بزنید</div></div>';
+        }
+        return;
+    }
+
+    // 🔧 O (v262): مکانیزم زیرگروه دقیقاً مثل صفحهٔ اصلی گروه‌ها —
+    // کارت قابل‌کلیک برای هر زیرگروه + مستطیل «+ افزودن زیرگروه جدید +»
+    // زیر آخرین کارت (اگر زیرگروهی نیست: زیر هدر داخلی)، بعد تسک‌های ریشه.
+    if (groupId !== 'all' && groupId !== 'urgent') {
+        groupSubgroups(groupId).forEach(sg => {
+            const sgItems = items.filter(i => i.subgroupId === sg.id);
+            const card = document.createElement('div');
+            card.className = 'group-item group-subgroup-card';
+            card.dataset.subgroupId = sg.id;
+            card.style.background = `linear-gradient(135deg, ${group.color}, ${group.color}BB)`;
+            card.innerHTML = `<div class="group-item-row"><div class="group-list-icon"><span>🗂️</span></div><span class="group-name">${escapeHtml(sg.name)}</span>${buildSubgroupBadges(sgItems)}</div>`;
+            card.onclick = () => openSubgroupView(groupId, sg.id);
+            container.appendChild(card);
+        });
+        // مستطیل افزودن زیرگروه — کپی همان باکس «افزودن گروه جدید» صفحهٔ اصلی
+        const addSub = document.createElement('div');
+        addSub.className = 'group-item add-group';
+        addSub.style.background = 'linear-gradient(135deg, #9E9E9E, #757575)';
+        addSub.innerHTML = `<div class="group-item-row add-group-row"><span class="add-plus">+</span><span class="group-name">افزودن زیرگروه جدید</span><span class="add-plus">+</span></div>`;
+        addSub.onclick = () => {
+            const name = prompt('نام زیرگروه جدید:');
+            if (!name || !name.trim()) return;
+            const sg = addSubgroupToGroup(groupId, name.trim());
+            if (!sg) { showToast('⚠️ زیرگروه ساخته نشد'); return; }
+            renderTasksView(groupId);
+            showToast('زیرگروه ایجاد شد ✓');
+        };
+        container.appendChild(addSub);
+    }
+    // تسک‌های بدون زیرگروه (ریشهٔ گروه) — بعد از کارت‌ها و باکس افزودن
+    const rootList = items.filter(i => !i.subgroupId || !subgroupById(groupId, i.subgroupId));
+    rootList.forEach(renderOneTask);
     setTimeout(initSortable, 0);
 }
 
@@ -14353,6 +14480,7 @@ function goToGroups() {
     // حالا مستقیماً currentView را تغییر می‌دهیم و fullRender می‌کنیم.
     currentView = 'groups';
     currentGroupId = null;
+    currentSubgroupId = null;   // 🔧 O (v262)
     expandedId = null;
     // توقف sortable برای جلوگیری از تداخل
     if (typeof sortableInstance !== 'undefined' && sortableInstance) {
@@ -25294,11 +25422,12 @@ function goToTaskFromReport(taskId) {
     document.getElementById('contactsOverlay').classList.remove('active');
     // تنظیم فلگ برای بازگشت
     _returningFromTaskToReport = true;
-    // رفتن به گروه تسک و گسترش آن
+    // رفتن به گروه تسک و گسترش آن — اگر تسک در زیرگروه است، داخل همان زیرگروه باز شود (O v262)
     currentView = 'tasks';
     currentGroupId = item.groupId || 'all';
+    currentSubgroupId = (item.subgroupId && subgroupById(currentGroupId, item.subgroupId)) ? item.subgroupId : null;
     expandedId = taskId;
-    navPush({ view: 'tasks', groupId: currentGroupId, expandedId: taskId, fromReport: true });
+    navPush({ view: 'tasks', groupId: currentGroupId, subgroupId: currentSubgroupId || undefined, expandedId: taskId, fromReport: true });
     fullRender();
     // 🔧 v143: تراز با زیر هدر برنامه — اسکرول به تسک
     setTimeout(function() {

@@ -1,1 +1,1 @@
-v261-2026-11-23-mic-autoclose-taskfilter-subgroups-call-pv
+v262-2026-11-24-subgroup-cards-pages
