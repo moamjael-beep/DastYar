@@ -11,10 +11,10 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v275 — ۱۴۰۵ آذر ۳ (درخواست AB — «خراب است ×۳؛ خیلی تحقیق و اصلاح و خودت تست کن تا درست نشده ادامه بده»: تحقیق سه‌مرحله‌ای واقعی؛ corsfix اول زنجیرهٔ واسطه‌ها — BA-275)
-#  نسخهٔ فعلی کد:  APP_VERSION = v275-2026-11-24-events-corsfix-first-browserproof
-#                  CACHE_NAME  = yadavar-cache-v275
-#                  version.txt = v275-2026-11-24-events-corsfix-first-browserproof
+#  آخرین به‌روزرسانی: v276 — ۱۴۰۵ آذر ۴ (درخواست AC — «زیر منو جستجو رویدادها یک جستجو رویدادهای جهانی درست کن»: اسنوکر wst.tv با نام پیش‌فرض HOSSEIN VAFAEI + فرمول ۱ گرندپری بعدی — BA-276)
+#  نسخهٔ فعلی کد:  APP_VERSION = v276-2026-11-24-events-global-wst-f1
+#                  CACHE_NAME  = yadavar-cache-v276
+#                  version.txt = v276-2026-11-24-events-global-wst-f1
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -223,9 +223,17 @@
 #                 اول) ~20397؛ evFetchAntenPage fail-fast ~20432؛
 #                 evFetchAntenAll ~20456؛ evSaveLastGood/evLoadLastGood/
 #                 evLastGoodLabel کشِ همه حالات ~20540-20554؛
-#                 evIsDupRecord ~20555؛ runEventsSearch ~20563؛
-#                 evTimeNorm/evTaskText/evDeadlineIso ~20679-20700؛
-#                 evAddSelected ~20704؛ .ev-card > * flex-shrink:0 ~4864)
+#                 evIsDupRecord ~20555؛ runEventsSearch ~20610؛
+#                 evRenderResults ~20702؛ evTimeNorm/evTaskText/
+#                 evDeadlineIso ~20818-20840؛ evAddSelected ~20842؛
+#                 🌐 رویدادهای جهانی (v276): کارت پنل ~5249؛
+#                 EV_WST_API/EV_WST_DEFAULT_NAME ~20825؛
+#                 evSnookerNameFa/فرهنگ ~20873؛ evSnookerTournFa ~20897؛
+#                 evF1CountryFa/evF1SessionFa/evTehranParts/evRowFromUtc
+#                 ~20942-20965؛ evFreshRows انباشتی ~20967؛
+#                 evFetchTextViaRelays ~20985؛ evWstApi ~21004؛
+#                 evSearchWst ~21022؛ evSearchF1 ~21077؛
+#                 .ev-card > * flex-shrink:0 ~4864)
 #
 #   ⚠️ نکتهٔ شناخته‌شده (v205): refreshFloatingContactBtn تابع no-op است —
 #   دکمهٔ floatingContactBtn هرگز در DOM ساخته نمی‌شود (~۱۹ فراخوانندهٔ
@@ -1605,6 +1613,45 @@
 #          evScrollListIntoView: فهرست نتایج از بالای ناحیهٔ دید شروع می‌شود.
 #          پروب v270: ۱۱ چک (هندسهٔ وسطِ جستجو با تأخیر عمدی ۱۲۰۰ms در موک
 #          anten اندازه‌گیری می‌شود).
+#   🔑 BA-276 (v276 — الزام کاربر: «زیر منو جستجو رویدادها یک جستجو
+#          رویدادهای جهانی درست کن …» + عکس‌های wst.tv/matches و
+#          formula1.com) — تحقیق زندهٔ همه‌واقعی (۱۴۰۵/۰۹/۰۴):
+#          ۱) wst.tv/matches داده را سمت-کاربر می‌گیرد؛ پیمایش مرورگری با
+#          ضبط شبکه نشان داد API رسمی WST است:
+#          tournaments.snooker.web.gc.wstservices.co.uk/v2/current →
+#          {id} تورنمنت جاری → /v2/{id} با attributes.matches (۱۱۲ بازی
+#          واقعی: name، status Completed/Scheduled، startDateTime به UTC،
+#          round، fixtureNumber، دو بازیکن با country) و
+#          access-control-allow-origin: * یعنی مستقیم از مرورگر بدون واسطه
+#          (تأیید با fetch داخل صفحهٔ واقعی: ۲۰۰). ساعتِ صفحه = UTC
+#          (۱۳:۰۰Z=۱۶:۳۰ تهران منطبق عکس؛ وفایی-چادا ۱۹:۳۰Z=۲۳:۰۰ تهران
+#          منطبق پخش anten v275).
+#          ۲) formula1.com بدون ACAO → زنجیرهٔ واسطهٔ v275؛ صفحهٔ گرندپری
+#          بلوک ld+json کامل دارد (Practice 1/2/3، Qualifying، Race به
+#          UTC — FP1 قطر ۱۳:۳۰Z=۱۷:۰۰ تهران منطبق عکس) و صفحهٔ فصل نشان
+#          «NEXT RACE» + slug کنارش دارد (الگوریتم توصیفی خود کاربر).
+#          اقدام: کارت «🌐 جستجوی رویدادهای جهانی» داخل پنل رویدادها —
+#          🎱 اسنوکر: ورودی نام (پیش‌فرض HOSSEIN VAFAEI؛ ذخیره در
+#          localStorage؛ prefill در openEventsPanel) → evWstApi مستقیم
+#          (پشتیبان زنجیرهٔ v275) → فقط status=Scheduled و آینده
+#          (گرِیس ۳۰ دقیقه) و تطبیق همهٔ توکن‌های نام → ردیف با نام فارسی
+#          دو حریف (فرهنگ ~۴۰ بازیکن؛ بیرونِ فرهنگ با نام لاتین) +
+#          ترجمهٔ عبارت‌محور نام تورنمنت + دور/بازی/شهر/کشور فارسی —
+#          🏎️ فرمول ۱: فصلِ سالِ اجرا → NEXT RACE → slug → ld+json →
+#          همهٔ sessionهای آینده با «گرندپری {کشور} — {تمرین آزاد N/
+#          تعیین خط/مسابقهٔ اصلی}» + پایان در زیرعنوان — همه: UTC→تهران
+#          با Intl.formatToParts (evTehranParts)، تاریخ شمسی evJDate،
+#          افزودن از همان evList/evAddBtn به گروه «رویدادها» با dedupe
+#          (evIsDupRecord + کلید فهرست جاری) و سررسید ISO +03:30؛ فهرست
+#          جهانی‌ها «انباشتی» است (نتایج اسنوکر با فرمول‌۱ یکجا می‌ماند؛
+#          evFreshRows(rows, currentList))؛ پیام صادقانه در همهٔ
+#          شکست‌ها؛ دکمه‌ها در finally آزاد می‌شوند. sw.js: دو هاست
+#          مستثنی + CACHE v276.
+#          آزمون: پروب v276 با فیكسچر واقعی هر دو سایت + ساعت مه‌شده
+#          (۲۲/۲۲ — شامل مسیر واسطه، تکراری، بی‌نتیجه) + E2E واقعی
+#          (۵/۵ — وفایی واقعی: «اسنوکر: حسین وفایی — بن مرتنس ۲۲:۳۰
+#          ۱۴۰۵/۰۹/۰۵» در ۱ ثانیه مستقیم؛ ۵ session واقعی قطر در ۴ ثانیه
+#          از مسیر corsfix).
 #   🔑 BA-275 (v275 — الزام کاربر: «خراب است خراب است خراب است — خیلی
 #          تحقیق و اصلاح و خودت تست کن تا درست نشده ادامه بده») — تحقیق
 #          سه‌مرحله‌ای همه‌واقعی: ۱) دادهٔ واقعی آنتن (۲۱۶ آیتم، ۱۱ روز:
@@ -3029,6 +3076,14 @@
 #
 #   (نسخه‌های مفصل از v204 به بعد؛ قدیمی‌ها خلاصه. changelog کامل
 #    تفصیلی در سرآیند HTML موجود است.)
+#
+### v276 (۱۴۰۵ آذر ۴) — «رویدادهای جهانی»: اسنوکر wst.tv + فرمول ۱ گرندپری بعدی (درخواست AC)
+#   API رسمی WST با CORS باز (current→{id}→matches؛ UTC) + ld+json
+#   گرندپری + نشان NEXT RACE — کارت «🌐 رویدادهای جهانی» در پنل رویدادها:
+#   نام پیش‌فرض HOSSEIN VAFAEI، بازی‌های Scheduled با نام فارسی دو حریف
+#   و ترجمهٔ تورنمنت؛ همهٔ sessionهای آیندهٔ گرندپری بعدی؛ تاریخ شمسی +
+#   ساعت ایران + افزودن به گروه «رویدادها» با dedupe و سررسید +03:30.
+#   پروب ۲۲/۲۲ + E2E واقعی ۵/۵.
 #
 ### v275 (۱۴۰۵ آذر ۳) —corsfix اول زنجیره + اثبات E2E شبکهٔ کاملاً واقعی (درخواست AB)
 #   کاربر: «خراب است ×۳». تحقیق سه‌مرحله‌ای: منطق روی دادهٔ واقعی سالم

@@ -1,1 +1,1 @@
-v275-2026-11-24-events-corsfix-first-browserproof
+v276-2026-11-24-events-global-wst-f1

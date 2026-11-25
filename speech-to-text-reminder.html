@@ -5241,6 +5241,21 @@ body.locked .header-actions button {
         <div class="ev-title">🏟️ جستجوی رویدادها</div>
         <div class="ev-sub">فهرست آیندهٔ پخش anten.ir + aparatsport.ir جستجو می‌شود؛ فقط رویدادهایی که یکی از «کلمات خواسته» را دارند و هیچ «کلمهٔ ناخواسته‌ای» نداشته باشند — هر دو لیست در همین پنل بی‌نهایت قابل ویرایش است (حتی حذف پیش‌فرض‌ها) — و بدون تکرار به گروه «رویدادها» اضافه می‌شوند.</div>
         <div id="evWords"></div>
+        <!-- 🔧 v276 (درخواست AC): زیرمنوی «رویدادهای جهانی» — اسنوکر wst.tv
+             (بازی‌های هنوز انجام‌نشدهٔ تورنمنت جاری با نام دو حریف و ترجمهٔ
+             فارسی نام مسابقات) + فرمول ۱ formula1.com (گرندپری بعدی با همهٔ
+             تمرین‌ها، تعیین‌خط و مسابقهٔ اصلی) — تاریخ شمسی + ساعت ایران؛
+             نتیجه‌ها به همان لیست و گروه «رویدادها» می‌روند -->
+        <div id="evGlobal" style="border:1px solid #d7dce3;border-radius:10px;padding:9px 10px;margin:9px 0;display:flex;flex-direction:column;gap:7px;background:#fff;">
+            <div style="font-weight:700;font-size:13px;color:#1a237e;">🌐 جستجوی رویدادهای جهانی</div>
+            <div style="font-size:11.5px;color:#555;line-height:1.7;">اسنوکر wst.tv (بازی‌های هنوز انجام‌نشدهٔ تورنمنت جاری) و فرمول ۱ formula1.com (گرندپری بعدی) — با تاریخ شمسی و ساعت ایران؛ نتیجه‌ها به لیست زیر می‌آیند و به گروه «رویدادها» اضافه می‌شوند.</div>
+            <div style="display:flex;gap:6px;align-items:center;">
+                <input id="evWstName" type="text" placeholder="نام بازیکن اسنوکر (لاتین) — پیش‌فرض HOSSEIN VAFAEI"
+                       style="flex:1;min-width:0;background:#f5f6f8;color:#333;border:1px solid #d7dce3;border-radius:8px;padding:7px 9px;font-size:12px;">
+                <button class="ev-btn" id="evWstBtn" onclick="evSearchWst()">🎱 اسنوکر</button>
+            </div>
+            <button class="ev-btn" id="evF1Btn" onclick="evSearchF1()">🏎️ فرمول ۱ — گرندپری بعدی</button>
+        </div>
         <div class="ev-btns">
             <button class="ev-btn main" id="evSearchBtn" onclick="runEventsSearch()">🔍 جستجوی رویدادها</button>
             <button class="ev-btn" onclick="closeEventsPanel()">بستن ❯</button>
@@ -8189,6 +8204,31 @@ body.locked .header-actions button {
 //   قانون صفر: هیچ رفتار سالم دیگری تغییر نکرد — پروب ۲۱/۲۱ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
 // ════════════════════════════════════════════════════════════════════
+// 🔧 v276-2026-11-24 (درخواست AC) — «زیر منو جستجو رویدادها یک جستجو
+//   رویدادهای جهانی درست کن …»:
+//   تحقیق زندهٔ همه‌واقعی: ۱) wst.tv/matches داده را سمت-کاربر می‌گیرد؛
+//   پیمایش مرورگری نشان داد API رسمی WST
+//   (tournaments.snooker.web.gc.wstservices.co.uk/v2/current → /{id}) با
+//   ACAO=* یعنی مستقیم از مرورگر؛ /{id} آرایهٔ matches واقعی دارد (۱۱۲
+//   بازی: status Completed/Scheduled، startDateTime UTC، round،
+//   fixtureNumber، دو بازیکن با کشور) — تأیید ساعت با عکس کاربر
+//   (۱۳:۰۰Z=۱۶:۳۰ تهران) و با پخش anten (وفایی-چادا ۲۳:۰۰ تهران).
+//   ۲) formula1.com بدون ACAO → زنجیرهٔ v275؛ صفحهٔ گرندپری بلوک ld+json
+//   کامل (P1/P2/P3/Q/Race به UTC — FP1 قطر ۱۳:۳۰Z=۱۷:۰۰ تهران منطبق عکس)
+//   و صفحهٔ فصل نشان NEXT RACE + slug کنارش دارد (الگوریتم توصیفی کاربر).
+//   اقدام: کارت «🌐 جستجوی رویدادهای جهانی» داخل پنل رویدادها — 🎱
+//   اسنوکر: ورودی نام (پیش‌فرض HOSSEIN VAFAEI، ذخیره در localStorage) →
+//   بازی‌های Scheduled آیندهٔ تورنمنت جاری → ردیف با نام فارسی دو حریف
+//   (فرهنگ ~۴۰ بازیکن؛ بیرونِ فرهنگ با نام لاتین) + ترجمهٔ فارسی نام
+//   تورنمنت (عبارت‌محور) + دور/بازی/شهر — 🏎️ فرمول ۱: فصلِ سالِ اجرا →
+//   NEXT RACE → ld+json → همهٔ sessionهای آینده با «گرندپری {کشور} —
+//   {تمرین آزاد N/تعیین خط/مسابقهٔ اصلی}» — همه: تبدیل UTC→تهران با
+//   Intl (تاریخ شمسی evJDate + ساعت) و افزودن از همان evList/evAddBtn
+//   به گروه «رویدادها» با dedupe (evIsDupRecord) و سررسید +03:30.
+//   پیام صادقانه در همهٔ شکست‌ها؛ دکمه‌ها در finally آزاد می‌شوند.
+//   آزمون: پروب v276 با فیكسچر واقعی (۹ سناریو) + E2E واقعی + رگرسیون.
+//
+// ════════════════════════════════════════════════════════════════════
 // 🔧 v275-2026-11-24 (درخواست AB) — «خراب است ×۳؛ خیلی تحقیق و اصلاح و
 //   خودت تست کن تا درست نشده ادامه بده»:
 //   تحقیق عمیق سه‌مرحله‌ای: ۱) دادهٔ واقعی آنتن (۲۱۶ آیتم واقعی، ۱۱ روز)
@@ -8398,7 +8438,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v275-2026-11-24-events-corsfix-first-browserproof';
+const APP_VERSION = 'v276-2026-11-24-events-global-wst-f1';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20256,6 +20296,13 @@ function openEventsPanel() {
     const ov = document.getElementById('eventsOverlay');
     if (!ov) return;
     ov.classList.add('active');
+    // 🔧 v276: نام پیش‌فرض اسنوکر (ذخیره‌شده یا HOSSEIN VAFAEI) در ورودی جهانی‌ها
+    const wstInp = document.getElementById('evWstName');
+    if (wstInp && !wstInp.value.trim()) {
+        let saved = '';
+        try { saved = localStorage.getItem(EV_WST_NAME_KEY) || ''; } catch(e) {}
+        wstInp.value = saved || EV_WST_DEFAULT_NAME;
+    }
     bringToFront(ov);
     trackModalOpen('events');
     navPush({ view: 'modal', type: 'events' });
@@ -20741,6 +20788,361 @@ function evAddSelected() {
     EV_FLOW = false;
     if (typeof render === 'function') { try { render(); } catch(e) {} }
     if (typeof renderGroupsView === 'function') { try { renderGroupsView(); } catch(e) {} }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🌐 جستجوی رویدادهای جهانی (v276 — درخواست AC)
+// ════════════════════════════════════════════════════════════════════
+// الزام کاربر: «زیر منو جستجو رویدادها یک جستجو رویدادهای جهانی درست کن
+// که فعلا در سایت wst.tv/matches/? مطابق عکس یک اسم از من بگیر پیش فرض
+// HOSSEIN VAFAEI و در این صفحه مسابقات این سایت دنبال آن بگرد بگونه ای که
+// هنوز انجام نشده باشد و به تاریخ شمسی درست و ساعت ایران آن را به گروه
+// رویدادها اضافه کند با اسم دو حریف و ترجمه اسم مسابقه به فارسی … در قسمت
+// دیگر این منو سایت formula1.com/en/racing/2026 یا سال جاری برنامه در
+// زمان اجرا را بررسی و next race را پیدا و به صفحه آن برو … و تمام
+// تمرینات و مسابقه اصلی را به زمان و تاریخ شمسی و توضیحات فارسی در گروه
+// رویدادها اضافه کن».
+//
+// تحقیق زندهٔ ۱۴۰۵/۰۹/۰۴ (همه‌واقعی):
+// • wst.tv صفحهٔ matches داده را سمت-کاربر می‌گیرد؛ پیمایش زندهٔ مرورگر
+//   نشان داد API رسمی WST است:
+//     tournaments.snooker.web.gc.wstservices.co.uk/v2/current → id تورنمنت جاری
+//     …/v2/{id} → attributes.matches (۱۱۲ بازی واقعی: name، status
+//     «Completed/Scheduled»، startDateTime به UTC، round، fixtureNumber،
+//     دو بازیکن با کشور) با «access-control-allow-origin: *» — یعنی
+//     مستقیم از مرورگر بدون هیچ واسطه‌ای خوانده می‌شود (تأیید با fetch
+//     داخل صفحهٔ واقعی: ۲۰۰). ساعت: «16:30 Wed 25 Nov» صفحهٔ سایت با
+//     ۱۳:۰۰ UTC = ۱۶:۳۰ تهران منطبق است (عکس کاربر) — پس startDateTime
+//     UTC است و برنامه خودش به تهران تبدیل می‌کند. راستی‌آزمایی: بازی
+//     «Hossein Vafaei vs Ishpreet Singh Chadha» ۱۹:۳۰ UTC = ۲۳:۰۰ تهران
+//     = همان ساعت پخش anten (v275) ✓ و بازی Scheduled بعدی وفایی
+//     «Hossein Vafaei vs Ben Mertens» ۱۹:۰۰ UTC = ۲۲:۳۰ تهران.
+// • formula1.com بدون ACAO است (مثل anten) → از زنجیرهٔ واسطهٔ v275
+//   می‌رود. صفحهٔ گرندپری یک بلوک ld+json کامل دارد با همهٔ sessionها به
+//   UTC (Practice 1/2/3، Qualifying، Race) — FP1 قطر ۱۳:۳۰Z = ۱۷:۰۰ تهران
+//   منطبق با عکس کاربر. صفحهٔ فصل نشان «NEXT RACE» دارد و slug گرندپری
+//   کنار همان نشان است (همان الگوریتمی که کاربر توصیف کرد).
+const EV_WST_API = 'https://tournaments.snooker.web.gc.wstservices.co.uk/v2';
+const EV_WST_NAME_KEY = 'event_search_wst_name';
+const EV_WST_DEFAULT_NAME = 'HOSSEIN VAFAEI';
+// فرهنگ ترجمهٔ نام بازیکنان اسنوکر (بخشی؛ نام‌های بیرون از فرهنگ با نام لاتین می‌آیند — هیچ ساختگی ساخته نمی‌شود)
+const EV_SNOOKER_FA = {
+    'hossein vafaei': 'حسین وفایی',
+    'ishpreet singh chadha': 'ایشپریت سینگ چادا',
+    'ben mertens': 'بن مرتنس',
+    'ronnie o\'sullivan': 'راننی اوسالیوان',
+    'judd trump': 'جاد ترامپ',
+    'mark selby': 'مارک سلبی',
+    'mark williams': 'مارک ویلیامز',
+    'mark allen': 'مارک آلن',
+    'john higgins': 'جان هیگینز',
+    'neil robertson': 'نیل رابرتسون',
+    'kyren wilson': 'کایرن ویلسون',
+    'luca brecel': 'لوکا برسل',
+    'shaun murphy': 'شان مورفی',
+    'jack lisowski': 'جک لیسوفسکی',
+    'ali carter': 'علی کارتر',
+    'barry hawkins': 'بری هاوکینز',
+    'stuart bingham': 'استوارت بینگام',
+    'ding junhui': 'دینگ جونهوی',
+    'si jiahui': 'سی جیاهویی',
+    'zhang anda': 'ژانگ آندا',
+    'xiao guodong': 'شیائو گودونگ',
+    'wu yize': 'وو ییزه',
+    'lei peifan': 'لی پیفان',
+    'fan zhengyi': 'فن ژنگ‌ای',
+    'lyu haotian': 'لو هائوتیان',
+    'long zehuang': 'لونگ ژوهوانگ',
+    'yuan sijun': 'یوان سیجون',
+    'zhou yuelong': 'ژو یولونگ',
+    'matthew selt': 'متیو سلت',
+    'jak jones': 'جک جونز',
+    'tom ford': 'تام فورد',
+    'riley powell': 'رایلی پاول',
+    'michael holt': 'مایکل هولت',
+    'joe o\'connor': 'جو اوکانور',
+    'jamie jones': 'جیمی جونز',
+    'liam highfield': 'لیام هایفیلد',
+    'stan moody': 'استن مودی',
+    'robbie williams': 'رابی ویلیامز',
+    'gary wilson': 'گری ویلسون',
+    'chris wakelin': 'کریس واکلین',
+    'zhao xintong': 'ژائو شین‌تونگ',
+    'john higgins.': 'جان هیگینز'
+};
+function evSnookerNameFa(n) {
+    const k = evNorm(n || '').toLowerCase();
+    return EV_SNOOKER_FA[k] || (n || '').trim();
+}
+// کشور/دور اسنوکر به فارسی (برچسب زیرعنوان)
+const EV_SNOOKER_COUNTRY_FA = {
+    'England': 'انگلستان', 'Wales': 'ولز', 'Scotland': 'اسکاتلند', 'China': 'چین',
+    'Germany': 'آلمان', 'Austria': 'اتریش', 'Belgium': 'بلژیک', 'Netherlands': 'هلند',
+    'Saudi Arabia': 'عربستان', 'UK': 'بریتانیا', 'Monaco': 'موناکو', 'France': 'فرانسه',
+    'Turkey': 'ترکیه', 'Ireland': 'ایرلند', 'Northern Ireland': 'ایرلند شمالی',
+    'Malta': 'مالت', 'Gibraltar': 'جبل‌الطارق', 'Latvia': 'لتونی', 'Thailand': 'تایلند',
+    'Hong Kong': 'هنگ‌کنگ', 'Japan': 'ژاپن', 'Australia': 'استرالیا', 'USA': 'آمریکا',
+    'Canada': 'کانادا', 'Qatar': 'قطر', 'India': 'هند', 'UAE': 'امارات',
+    'Cyprus': 'قبرس', 'Poland': 'لهستان', 'Finland': 'فنلاند', 'Norway': 'نروژ',
+    'Sweden': 'سوئد', 'Switzerland': 'سوئیس', 'Spain': 'اسپانیا', 'Egypt': 'مصر',
+    'Jordan': 'اردن', 'Iran': 'ایران'
+};
+function evSnookerCountryFa(c) { return EV_SNOOKER_COUNTRY_FA[c] || (c || ''); }
+function evSnookerRoundFa(r) {
+    const s = evNorm(r || '');
+    const m = s.match(/^Round\s*(\d+)$/i);
+    return m ? ('دور ' + toPersianDigits(m[1])) : s;
+}
+// ترجمهٔ فارسی نام تورنمنت اسنوکر — عبارت‌محور (ترتیب مهم است؛ حامی مالی به لاتین می‌ماند)
+function evSnookerTournFa(name) {
+    let s = evNorm(name || '');
+    const pairs = [
+        [/Champion of Champions/i, 'قهرمان‌قهرمانان'],
+        [/UK Championship/i, 'قهرمانی بریتانیا'],
+        [/World Championship/i, 'قهرمانی جهان'],
+        [/Grand Final/i, 'فینال بزرگ'],
+        [/Qualifiers/i, 'مقدماتی'],
+        [/Championship/i, 'قهرمانی'],
+        [/Masters/i, 'مسترز'],
+        [/Shoot Out/i, 'شوت‌آوت'],
+        [/Grand Prix/i, 'گرندپری'],
+        [/Open/i, 'اپن'],
+        [/World/i, 'جهان'],
+        [/European/i, 'اروپا'],
+        [/Northern Ireland/i, 'ایرلند شمالی'],
+        [/International/i, 'بین‌المللی'],
+        [/Welsh/i, 'ولز'],
+        [/Scottish/i, 'اسکاتلند'],
+        [/German/i, 'آلمان'],
+        [/English/i, 'انگلستان'],
+        [/China/i, 'چین'],
+        [/Saudi/i, 'عربستان'],
+        [/Players/i, 'بازیکنان'],
+        [/Tour/i, 'تور'],
+        [/Series/i, 'سری'],
+        [/Six Red/i, 'شش‌قرمز'],
+        [/Seniors/i, 'ویژهٔ بزرگسالان'],
+        [/Mixed Doubles/i, 'دونفرهٔ مختلط'],
+        [/Invitational/i, 'دعوتی']
+    ];
+    pairs.forEach(function(p) { s = s.replace(p[0], p[1]); });
+    return s;
+}
+// نام فارسی گرندپری از slug صفحهٔ فصل
+const EV_F1_COUNTRY_FA = {
+    'qatar': 'قطر', 'united-arab-emirates': 'ابوظبی', 'australia': 'استرالیا',
+    'austria': 'اتریش', 'azerbaijan': 'آذربایجان', 'bahrain': 'بحرین',
+    'belgium': 'بلژیک', 'brazil': 'برزیل', 'canada': 'کانادا', 'china': 'چین',
+    'great-britain': 'بریتانیا', 'hungary': 'مجارستان', 'italy': 'ایتالیا',
+    'japan': 'ژاپن', 'las-vegas': 'لاس‌وگاس', 'mexico': 'مکزیک', 'miami': 'میامی',
+    'monaco': 'موناکو', 'netherlands': 'هلند', 'singapore': 'سنگاپور',
+    'spain': 'اسپانیا', 'barcelona-catalunya': 'اسپانیا', 'united-states': 'آمریکا',
+    'france': 'فرانسه', 'portugal': 'پرتغال', 'imola': 'ایتالیا'
+};
+function evF1CountryFa(slug) { return EV_F1_COUNTRY_FA[slug] || slug; }
+function evF1SessionFa(en) {
+    const s = evNorm(en || '');
+    const pm = s.match(/^Practice\s*(\d)/i);
+    if (pm) return 'تمرین آزاد ' + toPersianDigits(pm[1]);
+    if (/^qualifying/i.test(s)) return 'تعیین خط';
+    if (/^sprint/i.test(s)) return 'اسپرینت (مسابقهٔ کوتاه)';
+    if (/^race/i.test(s)) return 'مسابقهٔ اصلی';
+    return s;
+}
+// لحظهٔ UTC → تاریخ/ساعت تهران (Intl با formatToParts — دقیق و بدون خطای آفست)
+function evTehranParts(utcIso) {
+    const f = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tehran', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+    const p = {};
+    f.formatToParts(new Date(utcIso)).forEach(function(x) { p[x.type] = x.value; });
+    let h = parseInt(p.hour, 10); if (h === 24) h = 0;
+    return { date: p.year + '-' + p.month + '-' + p.day, time: pad2(h) + ':' + p.minute };
+}
+function evRowFromUtc(utcIso, title, sub, src) {
+    const t = evTehranParts(utcIso);
+    return { date: t.date, time: t.time, dateJ: evJDate(t.date), title: title, sub: sub || '', src: src };
+}
+// تازگی نسبت به گروه «رویدادها» و فهرست جاری پنل — همان الگوی runEventsSearch
+// (بدون تکرار) + فهرستِ جهانی‌ها «انباشتی» است: اسنوکر بعد از فرمول‌۱،
+// نتایج قبلی پاک نمی‌شود تا کاربر همه را یکجا افزود کند (v276).
+function evFreshRows(rows, currentList) {
+    const groups = getGroups();
+    const g0 = groups.find(function(x) { return (x.name || '').trim() === EV_GROUP_NAME; });
+    const existingTexts = g0 ? getDB().filter(function(x) { return x.groupId === g0.id; }).map(function(x) { return evNorm(x.text || ''); }) : [];
+    const curKeys = {};
+    (currentList || []).forEach(function(r) { curKeys[evNorm(r.title) + '|' + (r.time || '')] = true; });
+    const seen = {}; const uniq = [];
+    rows.forEach(function(r) {
+        const k = evNorm(r.title) + '|' + (r.time || '');
+        if (seen[k] || curKeys[k]) return;
+        seen[k] = true;
+        if (!evIsDupRecord(r, existingTexts)) uniq.push(r);
+    });
+    return uniq;
+}
+// واکشی متن صفحهٔ HTML با زنجیرهٔ v275: مستقیم → corsfix → allorigins …
+// evFetchJson متن را حتی در شکست می‌دهد (ok:false + text)؛ فقط بدنهٔ
+// «شبیه صفحهٔ HTML» (بزرگ + دارای تگ) قبول می‌شود؛ پوشش contents هم باز می‌شود.
+async function evFetchTextViaRelays(url, label) {
+    let r = await evFetchJson(url);   // مستقیم — اگر CORS بلاک شد متن ندارد
+    if (r.text && r.text.length > 3000 && /<html|<!DOCTYPE|<script/i.test(r.text)) return { ok: true, text: r.text, via: 'مستقیم' };
+    let lastErr = r.err || '';
+    const relays = evRelayList(url);
+    const order = (evAntenRelayIdx >= 0) ? [evAntenRelayIdx, 0, 1, 2, 3, 4, 5].filter(function(v, i, arr) { return arr.indexOf(v) === i && v < relays.length; }) : [0, 1, 2, 3, 4, 5];
+    for (const idx of order) {
+        const rl = relays[idx];
+        const rr = await evFetchJson(rl.url, { timeout: 8000, retry: false });
+        let t = (rr.ok && rr.data && typeof rr.data.contents === 'string') ? rr.data.contents : (rr.text || '');
+        if (t && t.length > 3000 && /<html|<!DOCTYPE|<script/i.test(t)) {
+            if (evAntenRelayIdx !== idx) evAntenRelayIdx = idx;
+            return { ok: true, text: t, via: rl.name };
+        }
+        lastErr = rr.ok ? ('بدنهٔ HTML از ' + rl.name + ' نیامد') : (rl.name + ' → ' + rr.err);
+    }
+    return { ok: false, err: lastErr };
+}
+// واکشی JSON برنامهٔ WST: مستقیم (CORS باز — تحقیق زندهٔ v276) → پشتیبان زنجیرهٔ واسطهٔ v275
+async function evWstApi(path) {
+    const u = EV_WST_API + path;
+    const r = await evFetchJson(u);
+    if (r.ok && r.data) return { ok: true, data: r.data, via: 'مستقیم' };
+    let lastErr = r.err || '';
+    const relays = evRelayList(u);
+    const order = (evAntenRelayIdx >= 0) ? [evAntenRelayIdx, 0, 1, 2, 3, 4, 5].filter(function(v, i, arr) { return arr.indexOf(v) === i && v < relays.length; }) : [0, 1, 2, 3, 4, 5];
+    for (const idx of order) {
+        const rl = relays[idx];
+        const rr = await evFetchJson(rl.url, { timeout: 8000, retry: false });
+        let d = rr.ok ? rr.data : (rr.text ? evParseRelayJson(rr.text) : null);
+        if (rr.ok && rr.data && typeof rr.data.contents === 'string') { try { d = JSON.parse(rr.data.contents); } catch(e2) { d = null; } }
+        if (d && d.data) { if (evAntenRelayIdx !== idx) evAntenRelayIdx = idx; return { ok: true, data: d, via: rl.name }; }
+        lastErr = rr.ok ? ('پاسخ ' + rl.name + ' ساختار WST نداشت') : (rl.name + ' → ' + rr.err);
+    }
+    return { ok: false, err: lastErr };
+}
+// 🎱 اسنوکر — بازی‌های هنوز انجام‌نشدهٔ تورنمنت جاری به نام بازیکن
+async function evSearchWst() {
+    const btn = document.getElementById('evWstBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ …'; }
+    EV_FLOW = true;
+    try {
+    evLog('🌐 رویدادهای جهانی — اسنوکر wst.tv — شروع', true);
+    const inp = document.getElementById('evWstName');
+    const q = evNorm((inp && inp.value) || '').trim() || EV_WST_DEFAULT_NAME;
+    try { localStorage.setItem(EV_WST_NAME_KEY, q); } catch(e) {}
+    evLog('🔎 نام جستجو: «' + q + '» — فقط بازی‌های هنوز انجام‌نشده (status = Scheduled)');
+    evLog('📡 واکشی تورنمنت جاری از API رسمی WST (CORS باز — مستقیم) …');
+    const cur = await evWstApi('/current');
+    if (!cur.ok) { evLog('🚫 تورنمنت جاری خوانده نشد: ' + cur.err, true); showToast('اسنوکر: تورنمنت جاری خوانده نشد'); return; }
+    const tid = (cur.data.data && cur.data.data.id) || '';
+    const ta = (cur.data.data && cur.data.data.attributes) || {};
+    evLog('✅ تورنمنت: ' + (ta.name || tid) + ' — ' + evSnookerTournFa(ta.name || ''), true);
+    const det = await evWstApi('/' + tid);
+    if (!det.ok) { evLog('🚫 فهرست مسابقات خوانده نشد: ' + det.err, true); showToast('اسنوکر: فهرست مسابقات خوانده نشد'); return; }
+    const ms = ((det.data.data && det.data.data.attributes) || {}).matches || [];
+    evLog('✅ ' + toPersianNumber(ms.length) + ' مسابقه در تورنمنت خوانده شد — فیلتر انجام‌نشده‌ها برای «' + q + '»');
+    const toks = evNorm(q).toLowerCase().split(/\s+/).filter(Boolean);
+    const now = Date.now();
+    const rows = [];
+    (ms || []).forEach(function(m) {
+        if ((m.status || '') !== 'Scheduled') return;
+        if (!m.startDateTime) return;
+        const st = Date.parse(String(m.startDateTime).replace(' ', 'T') + 'Z');   // startDateTime به UTC است (تحقیق v276)
+        if (isNaN(st) || st < now - 30 * 60 * 1000) return;
+        const nm = evNorm(m.name || '').toLowerCase();
+        const hit = toks.every(function(t) { return nm.indexOf(t) >= 0; });
+        if (!hit) return;
+        const hp = m.homePlayer || {}, ap = m.awayPlayer || {};
+        const fa1 = evSnookerNameFa((hp.firstName || '') + ' ' + (hp.surname || ''));
+        const fa2 = evSnookerNameFa((ap.firstName || '') + ' ' + (ap.surname || ''));
+        const sub = evSnookerTournFa(ta.name || '') + ' | ' + evSnookerRoundFa(m.round || '') + ' | بازی ' + toPersianNumber(m.fixtureNumber || '') + ' | ' + (ta.city || '') + '، ' + evSnookerCountryFa(ta.country || '') + (m.numberOfFrames ? ' | ' + toPersianNumber(m.numberOfFrames) + ' فریم' : '');
+        rows.push(evRowFromUtc(new Date(st).toISOString(), '🎱 اسنوکر: ' + fa1 + ' — ' + fa2, sub, 'wst.tv'));
+    });
+    rows.sort(function(a, b) { return String(a.date + a.time).localeCompare(String(b.date + b.time)); });
+    if (!rows.length) {
+        evLog('⚠️ بازیِ انجام‌نشده‌ای برای «' + q + '» در تورنمنت جاری پیدا نشد — بازیکن یا حذف شده یا تورنمنتش هنوز شروع نشده/تمام شده است (پیام صادقانه)', true);
+        showToast('اسنوکر: بازی انجام‌نشده‌ای برای این نام پیدا نشد');
+        return;
+    }
+    evLog('✅ ' + toPersianNumber(rows.length) + ' بازی انجام‌نشده برای «' + q + '» — تاریخ شمسی و ساعت ایران (تهران)', true);
+    const fresh = evFreshRows(rows, _evResults);
+    if (!fresh.length) { evLog('⚠️ مورد جدیدی نبود — همهٔ بازی‌های یافت‌شده قبلاً در فهرست یا گروه «رویدادها» هستند (پیام صادقانه)', true); showToast('اسنوکر: مورد جدیدی نبود'); return; }
+    _evResults = _evResults.concat(fresh);   // انباشتی — نتایج قبلی پنل پاک نمی‌شود
+    evRenderResults();
+    evScrollListIntoView();
+    } finally {
+    EV_FLOW = false;
+    if (btn) { btn.disabled = false; btn.textContent = '🎱 اسنوکر'; }
+    }
+}
+// 🏎️ فرمول ۱ — فصل جاری → نشان NEXT RACE → صفحهٔ گرندپری → ld+json → همهٔ sessionهای آینده
+async function evSearchF1() {
+    const btn = document.getElementById('evF1Btn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ …'; }
+    EV_FLOW = true;
+    try {
+    evLog('🌐 رویدادهای جهانی — فرمول ۱ formula1.com — شروع', true);
+    const yr = new Date().getFullYear();   // «سال جاری برنامه در زمان اجرا»
+    evLog('📡 واکشی صفحهٔ فصل ' + toPersianDigits(String(yr)) + ' (formula1.com بدون ACAO → زنجیرهٔ واسطهٔ فقط-واکشی) …', true);
+    const s1 = await evFetchTextViaRelays('https://www.formula1.com/en/racing/' + yr);
+    if (!s1.ok) { evLog('🚫 صفحهٔ فصل خوانده نشد: ' + s1.err, true); showToast('فرمول ۱: صفحهٔ فصل خوانده نشد'); return; }
+    evLog('✅ صفحهٔ فصل خوانده شد (' + s1.via + ')');
+    // الگوریتم خود سایت: نشان «NEXT RACE» و slug گرندپری کنار همان نشان
+    const ni = s1.text.indexOf('NEXT RACE');
+    let slug = '', round = '';
+    if (ni >= 0) {
+        const win = s1.text.slice(Math.max(0, ni - 2500), ni + 2500);
+        const sm = win.match(/\/en\/racing\/(\d{4})\/([a-z0-9\-]+)/);
+        if (sm) slug = sm[2];
+        const rm = win.match(/ROUND\s+(\d+)/i);
+        if (rm) round = rm[1];
+    }
+    if (!slug) { evLog('🚫 نشان «NEXT RACE» در صفحهٔ فصل پیدا نشد (فصل تمام شده یا ساختار سایت عوض شده) — پیام صادقانه', true); showToast('فرمول ۱: گرندپری بعدی پیدا نشد'); return; }
+    const countryFa = evF1CountryFa(slug);
+    evLog('🏁 گرندپری بعدی: ' + countryFa + (round ? ' — دور ' + toPersianDigits(round) : '') + ' — واکشی صفحهٔ گرندپری …', true);
+    const s2 = await evFetchTextViaRelays('https://www.formula1.com/en/racing/' + yr + '/' + slug);
+    if (!s2.ok) { evLog('🚫 صفحهٔ گرندپری خوانده نشد: ' + s2.err, true); showToast('فرمول ۱: صفحهٔ گرندپری خوانده نشد'); return; }
+    evLog('✅ صفحهٔ گرندپری خوانده شد (' + s2.via + ')');
+    const bm = s2.text.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+    if (!bm) { evLog('🚫 دادهٔ برنامهٔ گرندپری (ld+json) در صفحه نبود — پیام صادقانه', true); showToast('فرمول ۱: برنامهٔ گرندپری پیدا نشد'); return; }
+    let ld = null;
+    try { ld = JSON.parse(bm[1]); } catch(e) { ld = null; }
+    const evs = [];
+    (function walk(o) {
+        if (o && typeof o === 'object') {
+            if (o['@type'] === 'SportsEvent' && o.startDate && o.name) evs.push(o);
+            Object.keys(o).forEach(function(k) { walk(o[k]); });
+        } else if (Array.isArray(o)) { o.forEach(walk); }
+    })(ld);
+    const now = Date.now();
+    const rows = [];
+    evs.forEach(function(e) {
+        const nm = String(e.name || '');
+        const parts = nm.split(/\s+-\s+/);
+        if (parts.length < 2) return;   // رویداد چترِ کل هفته (بدون « - session») جدا نمی‌شود
+        const st = Date.parse(e.startDate);
+        if (isNaN(st) || st < now) return;   // فقط آینده
+        const en = Date.parse(e.endDate);
+        const endT = isNaN(en) ? '' : evTehranParts(new Date(en).toISOString()).time;
+        rows.push(evRowFromUtc(new Date(st).toISOString(),
+            '🏎️ گرندپری ' + countryFa + ' — ' + evF1SessionFa(parts[0]),
+            'فرمول ۱ ' + toPersianDigits(String(yr)) + (round ? ' | دور ' + toPersianDigits(round) : '') + (endT ? ' | پایان ' + endT : ''),
+            'formula1.com'));
+    });
+    rows.sort(function(a, b) { return String(a.date + a.time).localeCompare(String(b.date + b.time)); });
+    if (!rows.length) {
+        evLog('⚠️ هیچ session آینده‌ای در برنامهٔ گرندپری «' + countryFa + '» نبود (همه گذشته‌اند) — پیام صادقانه', true);
+        showToast('فرمول ۱: session آینده‌ای در گرندپری نبود');
+        return;
+    }
+    evLog('✅ ' + toPersianNumber(rows.length) + ' session آیندهٔ گرندپری ' + countryFa + ' — تاریخ شمسی و ساعت ایران (تهران)', true);
+    const fresh = evFreshRows(rows, _evResults);
+    if (!fresh.length) { evLog('⚠️ مورد جدیدی نبود — همهٔ sessionهای یافت‌شده قبلاً در فهرست یا گروه «رویدادها» هستند (پیام صادقانه)', true); showToast('فرمول ۱: مورد جدیدی نبود'); return; }
+    _evResults = _evResults.concat(fresh);   // انباشتی — نتایج قبلی پنل پاک نمی‌شود
+    evRenderResults();
+    evScrollListIntoView();
+    } finally {
+    EV_FLOW = false;
+    if (btn) { btn.disabled = false; btn.textContent = '🏎️ فرمول ۱ — گرندپری بعدی'; }
+    }
 }
 // نوار نوتیف زیر هدر برنامه — «🔔 شبکه: ۳ پیام جدید …» با لمس به همان گروه می‌رود
 function netNotifStripRender() {
