@@ -34,7 +34,7 @@
 // + pagehide wake-up full set (KEEPALIVE/CHECK_DEADLINES/SCHEDULE_TRIGGERS/sync).
 // 🔧 v205: fresh audit — ممیزی کامل دوباره؛ تنها تغییر: اصلاح نویسهٔ چینی در کامنت بخش ۳.
 // 🔧 v208: گارد حذف شخصِ دارای ارجاع در تسک‌ها (یکپارچگی داده) — تغییر فقط در HTML.
-const CACHE_NAME = 'yadavar-cache-v280';
+const CACHE_NAME = 'yadavar-cache-v281';
 
 // نام پایگاه دادهٔ IndexedDB. این پایگاه داده بین سرویس ورکر و صفحهٔ
 // HTML مشترک است و یادآورها + تاریخچهٔ اعلان‌ها را در خود نگه می‌دارد.
@@ -357,6 +357,8 @@ self.addEventListener('fetch', (event) => {
   // v280 — BA-280: cors-anywhere از لیست حذف شد (دموی آن دیگر فعال نیست —
   // هر درخواست ۴۰۳ «See /corsdemo»؛ مسیر مرده)؛ تنیس حالا همان زنجیرهٔ
   // واسطهٔ آنتن (evRelayList) را می‌رود و هاست‌هایش همین‌جا مستثنی‌اند.
+  // v281 — BA-281: دامنهٔ توابع Edge («/functions/v1/…» روی همان هاست
+  // پروژه) هم مستثنی — invoke تابع ev-sync و REST آن نباید در کش بیفتد.
   if (url.hostname === 'api2.anten.ir' || url.hostname === 'www.aparatsport.ir' ||
       url.hostname === 'api.allorigins.win' || url.hostname === 'r.jina.ai' ||
       url.hostname === 'api.cors.lol' || url.hostname === 'api.codetabs.com' ||
@@ -366,6 +368,9 @@ self.addEventListener('fetch', (event) => {
       url.hostname === 'global.flashscore.ninja' ||
       url.hostname === 'api.jolpi.ca' ||
       url.hostname === 'www.formula1.com') return;
+  // v281: آدرس توابع هر پروژهٔ Supabase (شکل <ref>.supabase.co) — بدون
+  // کش/مداخله؛ درخواست جدول net_events از همان هاست هم این‌جا می‌گذرد.
+  if (/(^|\.)supabase\.co$/i.test(url.hostname) && url.pathname.indexOf('/functions/v1/') === 0) return;
 
   // ──────────────────────────────────────────────────────────────────
   // 🚨 استثنای ۱: درخواست‌های بررسی اتصال (_rc=1)
