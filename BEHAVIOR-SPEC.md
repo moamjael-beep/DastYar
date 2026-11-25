@@ -11,10 +11,10 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v279 — ۱۴۰۵ آذر ۴ (گزارش کاربر: «اسنوکر و فرمول ۱ درست است اما تنیس خراب است» — مسیر دوم cors-anywhere برای فید تنیس — BA-279)
-#  نسخهٔ فعلی کد:  APP_VERSION = v279-2026-11-25-events-tennis-cors-anywhere
-#                  CACHE_NAME  = yadavar-cache-v279
-#                  version.txt = v279-2026-11-25-events-tennis-cors-anywhere
+#  آخرین به‌روزرسانی: v280 — ۱۴۰۵ آذر ۴ (گزارش کاربر: «آپارات‌اسپرت خراب، تنیس خراب؛ یک‌بار همه را بررسی و از آن کد هم برای همه استفاده کن» — روش یکسان: زنجیرهٔ واسطهٔ آنتن برای تنیس — BA-280)
+#  نسخهٔ فعلی کد:  APP_VERSION = v280-2026-11-25-events-unified-relay-chain
+#                  CACHE_NAME  = yadavar-cache-v280
+#                  version.txt = v280-2026-11-25-events-unified-relay-chain
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -234,10 +234,12 @@
 #                 evFetchTextViaRelays ~21015؛ evWstApi ~21034؛
 #                 evSearchWst ~21052؛ evSearchF1 ~21107؛
 #                 🎾 تنیس (v277): ورودی پنل ~5261؛ evFetchJson هدر ~20403؛
-#                 EV_TENNIS_FSIGN/DEFAULT_NAME/فرهنگ‌ها ~21218؛
-#                 v278 مسیر دوم: evF1OfficialRows/evF1ErgastNext
-#                 (EV_F1_HOST_FA) داخل evSearchF1 ~21114؛
-#                 evTennisSofaApi/evTennisSofaEvents
+#                 EV_TENNIS_FSIGN/DEFAULT_NAME/فرهنگ‌ها ~21344؛
+#                 v278 مسیر دوم F1: evF1OfficialRows/evF1ErgastNext
+#                 (EV_F1_HOST_FA) داخل evSearchF1 ~21241؛
+#                 v280: evTennisFeedApi ~21509 = زنجیرهٔ evRelayList آنتن
+#                 (cors-anywhere حذف؛ sofascore قبلاً حذف)؛
+#                 evSearchTennis ~21566
 #                 (EV_TENNIS_SOFA_*) ~21360؛ evTennisNameFa ~21264؛
 #                 evTennisTournFa ~21321؛ evTennisSearchApi ~21351؛
 #                 evTennisFeedApi ~21362؛ evParseFlashFeed ~21381؛
@@ -1622,6 +1624,38 @@
 #          evScrollListIntoView: فهرست نتایج از بالای ناحیهٔ دید شروع می‌شود.
 #          پروب v270: ۱۱ چک (هندسهٔ وسطِ جستجو با تأخیر عمدی ۱۲۰۰ms در موک
 #          anten اندازه‌گیری می‌شود).
+#   🔑 BA-280 (v280 — گزارش کاربر: «آپارات‌اسپرت خراب، تنیس خراب؛ آنتن و
+#          اسنوکر و فرمول یک با بعضی فیلترشکن‌ها کار می‌کنند و با بعضی نه
+#          و بدون فیلترشکن هیچ‌کدام؛ همان اول که گفتم یک‌بار همه را بررسی
+#          و از آن کد هم برای همه استفاده کن و تست کن و اصلاح کن تا همه
+#          همیشه جواب بدهند») — تحقیق زندهٔ ماتریس کامل (۲۰+ کاوش مرورگری
+#          با مبدأ http://localhost و github.io؛ curl از IP سندباکس):
+#          • anten api2: مستقیم fail (CORS) → corsfix ۲۰۰/۵۹۵۶B دادهٔ
+#            واقعی ✓ (زنجیرهٔ v275 کار می‌کند — همین روش برای همه)
+#          • aparat get_match_list_data: مستقیم fail؛ corsfix هم
+#            target_unreachable (این فهرست فقط به شبکهٔ ایران داده می‌شود —
+#            geo-locked؛ آنتن پوششش را می‌دهد؛ پیام صادقانهٔ v269 می‌ماند)
+#          • WST اسنوکر: مستقیم ۲۰۰ (ACAO:*) ✓
+#          • jolpi F1: مستقیم ۲۰۰ (ACAO:*) ✓
+#          • تنیس سرچ livesport: مستقیم ۲۰۰ (ACAO:*) ✓
+#          • تنیس فید p_2: مستقیم «Failed to fetch» — ریشهٔ دقیق v280:
+#            GET با هدر x-fsign خودِ سرور ACAO=* می‌فرستد ولی پرفلایت
+#            OPTIONS برای مبدأ ما ACAO برنمی‌گرداند → مرورگر fetch را
+#            می‌بندد؛ بدون هدر هم 401. cors-anywhere هم حذف شد — دموی
+#            آن دیگر فعال نیست (هر درخواست ۴۰۳ «See /corsdemo»؛ فعال‌سازی
+#            POST هم خوانده نمی‌شود) پس مسیر v279 مرده بود.
+#          اقدام — یکسان‌سازی روش (خواستهٔ اصلی کاربر): evTennisFeedApi
+#          حالا همان زنجیرهٔ آنتن evRelayList: مستقیم → corsfix →
+#          allorigins(raw) → allorigins(get) → r.jina.ai → cors.lol →
+#          codetabs (fail-fast ۸ ثانیه + یادسپاری واسطهٔ موفق) با تشخیص
+#          بدنهٔ فید (AA÷/ZA÷ یا خالی = موفق). sw.js: cors-anywhere از
+#          استثناها حذف شد + CACHE v280. تأیید واقعی از مرورگر localhost:
+#          فید بازیکن فردا (AkEPGG1p) از corsfix ۲۰۰/۱۴۰۱B با AA÷ واقعی؛
+#          آنتن از corsfix ۲۰۰/۵۹۵۶B؛ WST/jolpi/livesport مستقیم ۲۰۰.
+#          آزمون: پروب v280 ۱۳/۱۳ (تنیس: زنجیرهٔ corsfix + مستقیم + همه
+#          بسته → صادقانه؛ نسخه‌ها) + E2E واقعی ۱۱/۱۱ دو بار (هر ۵ منبع
+#          واقعی) + E2Eهای واقعی v275:۱۳ v276:۵ v277:۴ v278:۵ v279:۵ +
+#          e2e_v204 ۱۴/۱۴ + audit ۱۰/۱۰ + static_audit + syntax.
 #   🔑 BA-279 (v279 — گزارش کاربر: «اسنوکر و فرمول ۱ درست است اما
 #          تنیس خراب است») — تشخیص زندهٔ کامل: مسیر اول فید تنیس (corsfix)
 #          فقط Originهای localhost را می‌پذیرد و سهمقهٔ ۶۰ درخواست/روز
@@ -3167,6 +3201,18 @@
 #
 #   (نسخه‌های مفصل از v204 به بعد؛ قدیمی‌ها خلاصه. changelog کامل
 #    تفصیلی در سرآیند HTML موجود است.)
+#
+### v280 (۱۴۰۵ آذر ۴) — روش یکسان برای هر ۵ منبع: زنجیرهٔ واسطهٔ آنتن برای تنیس — «یک‌بار همه را بررسی و از آن کد هم برای همه استفاده کن» (BA-280)
+#   ریشه: تنیس/آپارات از مبدأ کاربر می‌شکستند؛ WST/jolpi/livesport
+#   مستقیم (ACAO:*)؛ فید p_ تنیس مستقیم همیشه «Failed to fetch» چون
+#   پرفلایت OPTIONS برای مبدأ ما ACAO برنمی‌گرداند (GET با هدر خودش
+#   ACAO=* می‌دهد)؛ cors-anywhere مرده شد (۴۰۳ دموی فعال‌نیست).
+#   اقدام: evTennisFeedApi = همان زنجیرهٔ آنتن evRelayList (مستقیم →
+#   corsfix → allorigins×۲ → jina → cors.lol → codetabs؛ fail-fast +
+#   یادسپاری) با تشخیص بدنهٔ فید؛ cors-anywhere حذف از کد+sw.js؛
+#   aparat همان geo-locked با پیام صادقانه (آنتن پوشش می‌دهد).
+#   آزمون: پروب v280 ۱۳/۱۳ + E2E واقعی ۱۱/۱۱ ×۲ + همهٔ E2Eهای
+#   واقعی قدیمی (v275–v279) + e2e_v204 ۱۴/۱۴ + audit ۱۰/۱۰ سبز.
 #
 ### v279 (۱۴۰۵ آذر ۴) — مسیر دوم cors-anywhere برای فید تنیس — «تنیس خراب است» (BA-279)
 #   ریشه: corsfix فقط localhost + سهمقهٔ روزانه؛ sofascore از fetch مرورگر

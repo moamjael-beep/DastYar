@@ -8210,6 +8210,30 @@ body.locked .header-actions button {
 //   ۵) عنوان آیتم اعلان‌ها بدون «زنگوله»: «اعلان‌ها».
 //   قانون صفر: هیچ رفتار سالم دیگری تغییر نکرد — پروب ۲۱/۲۱ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
+// 🔧 v280-2026-11-25 (گزارش کاربر: «آپارات‌اسپورت خراب، تنیس خراب؛ آنتن
+//   و اسنوکر و فرمول یک با بعضی فیلترشکن‌ها کار می‌کنند و با بعضی نه —
+//   یک‌بار همه را بررسی و از آن کد هم برای همه استفاده کن و تست کن و
+//   اصلاح کن تا همه همیشه جواب بدهند») — تحقیق زندهٔ ماتریس کامل هر
+//   ۵ منبع از مرورگر واقعی (مبدأ http://localhost + مبدأ github.io):
+//   • anten api2: مستقیم fail (CORS) → corsfix ۲۰۰/۵۹۵۶B دادهٔ واقعی ✓
+//   • aparat get_match_list_data: مستقیم fail → corsfix 502
+//     target_unreachable (از IP خارجِ ایران فهرست geo-locked خالی/خطا —
+//     این داده فقط به شبکهٔ ایران داده می‌شود؛ آنتن پوشش می‌دهد)
+//   • WST اسنوکر: مستقیم ۲۰۰ (ACAO:*) ✓
+//   • jolpi F1: مستقیم ۲۰۰ (ACAO:*) ✓
+//   • تنیس سرچ livesport: مستقیم ۲۰۰ (ACAO:*) ✓
+//   • تنیس فید p_2: مستقیم «Failed to fetch» — ریشهٔ دقیق: GET با هدر
+//     x-fsign ACAO=* می‌گیرد اما پرفلایت OPTIONS برای مبدأ ما ACAO
+//     برنمی‌گرداند → مرورگر fetch را می‌بندد؛ بدون هدر هم 401.
+//   اقدام — یکسان‌سازی روش: evTennisFeedApi حالا همان زنجیرهٔ آنتن
+//   (مستقیم → corsfix → allorigins×۲ → jina → cors.lol → codetabs،
+//   fail-fast + یادسپاری واسطهٔ موفق) با تشخیص بدنهٔ فید (AA÷/ZA÷ یا
+//   خالی). cors-anywhere حذف شد (دمو ۴۰۳ — مرده). تنیس روی فایل محلی
+//   از corsfix ۲۰۰/۱۴۰۱B دادهٔ واقعی می‌گیرد (تأیید بازیکن فردا).
+//   آزمون: پروب v280 (ماتریس ۵ منبع + جریان کامل تنیس واقعی از corsfix)
+//   + E2E واقعی + رگرسیون کامل.
+//
+// ════════════════════════════════════════════════════════════════════
 // 🔧 v279-2026-11-25 (گزارش کاربر: «اسنوکر و فرمول ۱ درست است اما تنیس
 //   خراب است») — ریشه (تشخیص زندهٔ کامل): مسیر اول فید تنیس (corsfix)
 //   فقط Originهای localhost را می‌پذیرد و سهمقهٔ ۶۰ درخواست/روز دارد؛
@@ -8500,7 +8524,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v279-2026-11-25-events-tennis-cors-anywhere';
+const APP_VERSION = 'v280-2026-11-25-events-unified-relay-chain';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -21496,36 +21520,49 @@ async function evTennisSearchApi(q) {
 }
 // ═══ مسیر دوم تنیس حذف شد (v279) — تحقیق زنده: sofascore از fetch
 // مرورگر ۴۰۳ challenge (Cloudflare) می‌گیرد و هیچ واسطه‌ای هم از مرورگر
-// جواب نمی‌دهد. به‌جای آن cors-anywhere به‌عنوان مسیر دومِ فید فلش‌اسکور
-// اضافه شد (هدر x-fsign را فوروارد می‌کند — تأیید زنده).
-// واکشی فید بازیکن (global.flashscore.ninja با x-fsign): مستقیم → corsfix
-// واکشی فید بازیکن (global.flashscore.ninja با x-fsign): مستقیم → corsfix
-// → cors-anywhere (تحقیق زندهٔ v279: هرودوکو هدر سفارشی x-fsign را فوروارد
-// می‌کند و از هر مبدأی کار می‌کند — تأیید: فید r_2_1 با هدر ۲۰۰/۵۰۷B دادهٔ
-// واقعی، بدون هدر ۴۰۱). corsfix فقط localhost را قبول می‌کند (گزارش کاربر
-// v278: «تنیس خراب است»)؛ cors-anywhere پشتیبان قطعیِ غیر-لوکال است.
-// متنِ HTTP-200 حتی اگر خالی باشد (فیدِ واقعاً بدون مسابقه) = موفق —
+// جواب نمی‌دهد. v280: cors-anywhere هم حذف شد (دمو فعال نیست — هر
+// درخواست ۴۰۳ «See /corsdemo»)؛ به‌جای آن همان زنجیرهٔ واسطهٔ آنتن.
+// v280 (BA-280 — گزارش کاربر: «آپارات‌اسپرت خراب، تنیس خراب؛ یک‌بار همه را
+// بررسی و از همان کد برای همه استفاده کن») — روشِ یکسان برای هر ۵ منبع:
+// مستقیم → corsfix → allorigins(raw) → allorigins(get) → r.jina.ai →
+// cors.lol → codetabs (همان زنجیرهٔ evRelayList آنتن). تحقیق زندهٔ v280
+// (از مرورگر واقعی با مبدأ http://localhost): corsfix فقط Originهای
+// localhost را می‌پذیرد؛ در صفحات دیگر (github.io) ۴۰۳ می‌دهد؛ سایر
+// واسطه‌ها امروز از این IP بی‌پاسخ‌اند ولی زنجیره می‌مانند چون هر لحظه
+// ممکن است برگردند (یادسپاریِ واسطهٔ موفق). cors-anywhere حذف شد —
+// دموی آن امروز فعال نیست (هر درخواست ۴۰۳ «See /corsdemo» می‌دهد و
+// فعال‌سازی POST هم از مرورگر خوانده نمی‌شود) پس مسیر مرده‌ای بود.
+// کشف دقیق v280 برای تنیس: GET فید با هدر x-fsign از سرور ACAO:* می‌گیرد
+// ولی پرفلایت OPTIONS «برای مبدأ ما» ACAO برنمی‌گرداند → fetch مرورگرِ
+// مستقیم همیشه «Failed to fetch» است؛ متن HTTP-200 حتی خالی = موفق —
 // evFetchJson بدنهٔ غیرJSON را با text برمی‌گرداند؛ خطای HTTP متن ندارد.
 async function evTennisFeedApi(playerId) {
     const u = EV_TENNIS_FEED.replace('{ID}', playerId);
-    const hdr = { 'x-fsign': EV_TENNIS_FSIGN };
-    const o = { timeout: 8000, retry: false, headers: hdr };
+    const o = { timeout: 8000, retry: false, headers: { 'x-fsign': EV_TENNIS_FSIGN } };
     let r = await evFetchJson(u, o);   // مستقیم — پرفلایت فقط از میزبان مجاز می‌گذرد
     if (typeof r.text === 'string') return { ok: true, text: r.text, via: 'مستقیم' };
     let lastErr = r.err || '';
-    // مسیر ۱: corsfix (فقط localhost — روی فایل محلی کار می‌کند)
-    const cf = { name: 'corsfix', url: 'https://proxy.corsfix.com/?' + u };
-    {
-        const rr = await evFetchJson(cf.url, o);
-        if (typeof rr.text === 'string') { if (evAntenRelayIdx < 0) evAntenRelayIdx = 0; return { ok: true, text: rr.text, via: cf.name }; }
-        lastErr = 'corsfix → ' + (rr.err || 'بدنه نیامد');
-    }
-    // مسیر ۲: cors-anywhere (هرودوکو — هدر را فوروارد می‌کند؛ از هر مبدأی)
-    const ca = { name: 'cors-anywhere', url: 'https://cors-anywhere.herokuapp.com/' + u };
-    {
-        const rr = await evFetchJson(ca.url, o);
-        if (typeof rr.text === 'string') { return { ok: true, text: rr.text, via: ca.name }; }
-        lastErr = lastErr + ' | cors-anywhere → ' + (rr.err || 'بدنه نیامد');
+    // v280: همان زنجیرهٔ واسطهٔ آنتن — corsfix هدر سفارشی x-fsign را
+    // فوروارد می‌کند (تأیید زنده: فید بازیکن p_2_0_AkEPGG1p با هدر از
+    // مبدأ localhost: ۲۰۰/۱۴۰۱B دادهٔ واقعی AA÷). بقیهٔ واسطه‌ها هدر را
+    // معمولاً فوروارد نمی‌کنند ولی در بدنهٔ متنِ فیدِ بدون‌هدر هم ۴۰۱
+    // می‌آید؛ با این حال در زنجیره می‌مانند تا اگر روزی هدر را بگذرانند
+    // کار کنند (fail-fast ۸ ثانیه، یادسپاری واسطهٔ موفق مثل آنتن).
+    const relays = evRelayList(u);
+    const order = (evAntenRelayIdx >= 0) ? [evAntenRelayIdx, 0, 1, 2, 3, 4, 5].filter(function(v, i, arr) { return arr.indexOf(v) === i && v < relays.length; }) : [0, 1, 2, 3, 4, 5];
+    for (const idx of order) {
+        const rl = relays[idx];
+        const rr = await evFetchJson(rl.url, o);   // fail-fast ۸ ثانیه
+        if (typeof rr.text === 'string') {
+            // بدنهٔ متنِ فید — فقط وقتی شبیه فید فلش‌اسکور است (بلوک AA÷/ZA÷ یا خالیِ واقعی)
+            if (rr.text.indexOf('AA÷') >= 0 || rr.text.indexOf('ZA÷') >= 0 || rr.text.trim() === '' || rr.text.trim() === '0') {
+                if (evAntenRelayIdx !== idx) evAntenRelayIdx = idx;
+                return { ok: true, text: rr.text, via: rl.name };
+            }
+            lastErr = rl.name + ' → بدنهٔ فید نبود';
+        } else {
+            lastErr = rl.name + ' → ' + (rr.err || 'بدنه نیامد');
+        }
     }
     return { ok: false, err: lastErr };
 }
@@ -21601,7 +21638,7 @@ async function evSearchTennis() {
     if (!best) { evLog('⚠️ بازیکنی با نام «' + q + '» در تنیس پیدا نشد — پیام صادقانه', true); showToast('تنیس: بازیکن پیدا نشد'); return; }
     const pCountry = (best.defaultCountry || {}).name || '';
     evLog('✅ بازیکن: ' + (best.name || best.url) + (pCountry ? ' (' + evTennisPlaceFa(pCountry) + ')' : '') + ' — شناسهٔ ' + best.id, true);
-    evLog('📡 واکشی مسابقات پیش‌رو از فید فلش‌اسکور (مستقیم → corsfix برای هدر x-fsign) …');
+    evLog('📡 واکشی مسابقات پیش‌رو از فید فلش‌اسکور (مستقیم → زنجیرهٔ واسطه‌های فقط-واکشی مثل آنتن) …');
     const fd = await evTennisFeedApi(best.id);
     const now = Date.now();
     let rows = [];
@@ -21623,12 +21660,9 @@ async function evSearchTennis() {
             return;
         }
     } else {
-        // v279: مسیر اول (مستقیم → corsfix → cors-anywhere) همگی شکست خوردند.
-        // تحقیق زنده: sofascore از fetch مرورگر ۴۰۳ challenge (Cloudflare)
-        // می‌گیرد و هیچ واسطه‌ای هم از مرورگر جواب نمی‌دهد — پس مسیر دوم
-        // حذف شد و به‌جای آن پیام صادقانه + راهنما.
+        // v280: مسیر اول (مستقیم → زنجیرهٔ واسطه‌ها) شکست خورد — پیام صادقانه + راهنما.
         evLog('🚫 فید مسابقات بازیکن از هیچ مسیری خوانده نشد: ' + fd.err + ' — پیام صادقانه', true);
-        evLog('💡 راهنما: فید فلش‌اسکور به هدر x-fsign نیاز دارد. روی فایل محلی (localhost) مسیر corsfix کار می‌کند؛ اگر سهمقهٔ روزانهٔ corsfix (۶۰ درخواست) تمام شده باشد، مسیر cors-anywhere پشتیبان است. اگر باز هم نشد، چند دقیقه صبر کنید و دوباره تلاش کنید.', true);
+        evLog('💡 راهنما: فید فلش‌اسکور به هدر x-fsign نیاز دارد که مرورگر مستقیم نمی‌فرستد (پرفلایت CORS)؛ واسطه‌ها آن را فوروارد می‌کنند. روی فایل محلی (localhost) مسیر corsfix معمولاً کار می‌کند. چند دقیقه بعد دوباره تلاش کنید (واسطه‌ها هر لحظه ممکن است برگردند).', true);
         showToast('تنیس: فید بازیکن خوانده نشد — دوباره تلاش کنید');
         return;
     }
