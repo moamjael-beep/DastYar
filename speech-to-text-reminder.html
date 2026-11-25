@@ -5248,7 +5248,7 @@ body.locked .header-actions button {
              نتیجه‌ها به همان لیست و گروه «رویدادها» می‌روند -->
         <div id="evGlobal" style="border:1px solid #d7dce3;border-radius:10px;padding:9px 10px;margin:9px 0;display:flex;flex-direction:column;gap:7px;background:#fff;">
             <div style="font-weight:700;font-size:13px;color:#1a237e;">🌐 جستجوی رویدادهای جهانی</div>
-            <div style="font-size:11.5px;color:#555;line-height:1.7;">اسنوکر wst.tv (بازی‌های هنوز انجام‌نشدهٔ تورنمنت جاری)، فرمول ۱ formula1.com (گرندپری بعدی) و تنیس tennis24.com (مسابقات پیش‌روی بازیکن) — با تاریخ شمسی و ساعت ایران؛ نتیجه‌ها به لیست زیر می‌آیند و به گروه «رویدادها» اضافه می‌شوند.</div>
+            <div style="font-size:11.5px;color:#555;line-height:1.7;">اسنوکر wst.tv (بازی‌های هنوز انجام‌نشدهٔ تورنمنت جاری)، فرمول ۱ formula1.com (گرندپری بعدی) و تنیس tennis24.com (مسابقات پیش‌روی بازیکن) — با تاریخ شمسی و ساعت ایران؛ نتیجه‌ها به لیست زیر می‌آیند و به گروه «رویدادها» اضافه می‌شوند. <b>مسیر سروری (v281):</b> با دکمهٔ «🌐 سروری» همهٔ منابع از سرور Supabase خوانده و در گروه شبکه‌ای EVSRV نگه داشته می‌شوند — بدون محدودیت مرورگر.</div>
             <div style="display:flex;gap:6px;align-items:center;">
                 <input id="evWstName" type="text" placeholder="نام بازیکن اسنوکر (لاتین) — پیش‌فرض HOSSEIN VAFAEI"
                        style="flex:1;min-width:0;background:#f5f6f8;color:#333;border:1px solid #d7dce3;border-radius:8px;padding:7px 9px;font-size:12px;">
@@ -5262,6 +5262,24 @@ body.locked .header-actions button {
                        style="flex:1;min-width:0;background:#f5f6f8;color:#333;border:1px solid #d7dce3;border-radius:8px;padding:7px 9px;font-size:12px;">
                 <button class="ev-btn" id="evTennisBtn" onclick="evSearchTennis()">🎾 تنیس</button>
             </div>
+            <!-- 🔧 v281 (BA-281): دکمهٔ سروری — Edge Function «ev-sync» همهٔ منابع را
+                 از سرور می‌خواند و در جدول net_events (گروه EVSRV) نگه می‌دارد؛ همهٔ
+                 اعضای شبکه همان را می‌بینند؛ محدودیت مرورگر (CORS/پرفلایت) از بین می‌رود -->
+            <button class="ev-btn" id="evSrvBtn" onclick="evServerAll()">🌐 سروری — همه (شبکه‌ای)</button>
+            <button class="ev-btn" id="evSrvJoinBtn" onclick="evSrvJoinNetGroup()">🛰️ عضویت در گروه شبکه‌ای «رویدادها»</button>
+            <details style="border:1px solid #d7dce3;border-radius:8px;padding:6px 9px;background:#f8f9fb;">
+                <summary style="font-size:12px;font-weight:700;color:#1a237e;cursor:pointer;">📋 راهنمای سروری (یک‌بار راه‌اندازی Edge Function)</summary>
+                <div id="evSrvGuide" style="font-size:11.5px;color:#444;line-height:1.9;padding:6px 2px;">
+                    <b>چرا سروری؟</b> محدودیت‌های مرورگر (CORS و پرفلایت) دیگر مانع نمی‌شوند چون سرور Supabase مستقیم و آزادانه هر ۵ منبع (اسنوکر WST، فرمول‌۱ Ergast، تنیس فلش‌اسکور با هدر، آنتن، و سرچ بازیکن) را می‌خواند، تاریخ شمسی و ساعت ایران و ترجمهٔ فارسی را همان‌جا می‌سازد و در جدول <code>net_events</code> (گروه شبکه‌ای با کد دعوت <b>EVSRV</b>) نگه می‌دارد — همهٔ اعضا می‌بینند و رویدادهای گذشته خودکار پاک می‌شوند.<br>
+                    <b>گام ۱)</b> اسکریپت SQL همین راهنمای شبکه (که بخش v281: جدول <code>net_events</code> را دارد) یک بار در SQL Editor پروژه اجرا شود.<br>
+                    <b>گام ۲)</b> در داشبورد Supabase → منوی چپ <i>Edge Functions</i> (داخل گروه <i>Build</i>/<i>Products</i>) → دکمهٔ آبی بالا-راست <i>Deploy a new function</i> → از منوی بازشونده <i>Via Editor</i> را انتخاب کنید. در پنجرهٔ بازشده فیلد <b>Name</b> را دقیقاً <code>ev-sync</code> بگذارید، کل متن پیش‌فرض ویرایشگر را پاک کنید و <b>تمامِ محتوای فایل <code>edge-ev-sync-v281.ts</code></b> (در مخزن برنامه) را جای آن بگذارید → دکمهٔ سبزِ پایین <i>Deploy function</i>.<br>
+                    <b>گام ۳)</b> روی نام تابع <code>ev-sync</code> در فهرست کلیک کنید → زبانهٔ <i>Secrets</i> → دکمهٔ <i>Add secret</i>. دو Secret بگذارید: <code>SUPABASE_URL</code> (آدرس پروژهٔ خودتان، شکل <code>https://xxxxx.supabase.co</code> بدون اسلش آخر) و <code>SUPABASE_SERVICE_ROLE</code> (کلید service_role از ⚙ <i>Settings</i> → <i>API</i>/<i>API Keys</i> — <b>هرگز</b> در برنامه وارد نشود؛ فقط Secret تابع).<br>
+                    <b>گام ۳‌ب) امتحان همین‌جا:</b> روی تابع → زبانهٔ <i>Test</i> → روش <b>GET</b> → <i>Send request</i>؛ باید JSON با <code>"ok":true</code> برگردد.<br>
+                    <b>گام ۴)</b> دکمهٔ «🌐 سروری — همه (شبکه‌ای)» را بزنید: تابع اجرا و جدول پر می‌شود؛ سپس همهٔ اعضا با دکمهٔ «🛰️ عضویت…» یا همان دکمهٔ سروری جدول را می‌خوانند.<br>
+                    <b>نگهداری/به‌روزرسانی همیشگی:</b> تابع هر بار فراخوانی، همهٔ منابع را دوباره می‌خواند و upsert می‌کند و رویدادهای گذشته را پاک می‌کند. فراخوانی خودکار: دکمهٔ سروری هر ۳۰ دقیقه حداکثر یک بار invoke می‌کند (هر عضوی که پنل را باز کند کافی است)؛ برای کاملاً خودکار، هر سرویس زمان‌بندی بیرونی (مثل GitHub Actions cron) می‌تواند هر ۶ ساعت POST بزند — لازم نیست، پول جدول همیشه جواب می‌دهد.<br>
+                    <b>بدون تابع هم کار می‌کند:</b> جدول مستقل از تابع خوانده می‌شود؛ دکمه‌های جدا (اسنوکر/فرمول‌۱/تنیس) زنجیره‌های مرورگری v280 را دارند و نتایج‌شان با افزودن، در همان گروه «رویدادها» می‌نشیند.
+                </div>
+            </details>
         </div>
         <div class="ev-btns">
             <button class="ev-btn main" id="evSearchBtn" onclick="runEventsSearch()">🔍 جستجوی رویدادها</button>
@@ -8210,6 +8228,29 @@ body.locked .header-actions button {
 //   ۵) عنوان آیتم اعلان‌ها بدون «زنگوله»: «اعلان‌ها».
 //   قانون صفر: هیچ رفتار سالم دیگری تغییر نکرد — پروب ۲۱/۲۱ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
+// 🔧 v281-2026-11-25 (درخواست کاربر: «آیا نمی‌شود کدی روی سرور
+//   supabase.com اجرا کرد که همیشه این رویدادها را سرچ و نگهداری و
+//   آپدیت کند در یک گروه شبکه‌ای که همهٔ اعضا ببینند و دیگر محدودیت‌های
+//   مرورگر مانع اجرای درستشان نشود») — معماری سروریِ کامل (BA-281):
+//   • Edge Function «ev-sync» (کد: scripts/edge-ev-sync-v281.ts + راهنمای
+//     inside پنل + مرحلهٔ ۹ راهنمای مستقل): سرور Supabase هر ۵ منبع را
+//     مستقیم می‌خواند (CORS/پرفلایت فقط قانونِ مرورگر است — سرور با هدر
+//     آزادانه fetch می‌زند، حتی x-fsign فید تنیس!)، تاریخ شمسی + ساعت
+//     ایران + ترجمهٔ فارسی را همان‌جا می‌سازد و در جدول net_events
+//     (گروه شبکه‌ای EVSRV) با ev_key یکتا upsert می‌کند؛ گذشته‌ها را
+//     خودکار پاک می‌کند (نگهداری/آپدیت همیشگی).
+//   • کلاینت: دکمهٔ «🌐 سروری — همه (شبکه‌ای)» (invoke تابع با TTL ۳۰
+//     دقیقه + پول جدول + فیلتر خواسته/ناخواسته + رندر همان فهرست) +
+//     «🛰️ عضویت در گروه شبکه‌ای رویدادها» (کد EVSRV) + راهنمای inside.
+//     evSrvReadRows هم بدون supabase-js با REST خام می‌خواند (ACAO:*).
+//   • fallback کامل: بدون تابع/جدول هم دکمه‌های جدا زنجیره‌های v280 را
+//     دارند — هیچ رفتار سالم قبلی تغییر نکرد (قانون صفر).
+//   • K-6: SQL جدول net_events دو جا (NET_SQL_HELP + راهنمای مستقل).
+//   • sw.js: دامنهٔ functions/v1 هم مستثنی + CACHE v281.
+//   آزمون: پروب v281 (mock edge + پول جدول + fallback + dedup + فیلتر
+//   + EVSRV) + E2E واقعی + رگرسیون کامل.
+//
+// ════════════════════════════════════════════════════════════════════
 // 🔧 v280-2026-11-25 (گزارش کاربر: «آپارات‌اسپورت خراب، تنیس خراب؛ آنتن
 //   و اسنوکر و فرمول یک با بعضی فیلترشکن‌ها کار می‌کنند و با بعضی نه —
 //   یک‌بار همه را بررسی و از آن کد هم برای همه استفاده کن و تست کن و
@@ -8524,7 +8565,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v280-2026-11-25-events-unified-relay-chain';
+const APP_VERSION = 'v281-2026-11-25-events-server-edge-sync';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -19578,7 +19619,28 @@ const NET_SQL_HELP = '-- یاداوار شبکه — یک بار در SQL Editor
 '  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-delete\') then\n' +
 '    create policy "net-chat-delete" on storage.objects for delete using (bucket_id = \'net-chat\');\n' +
 '  end if;\n' +
-'end $$;\n';
+'end $$;\n' +
+'-- ─── v281: رویدادهای سروری (BA-281) — جدول مشترک گروه شبکه‌ای «EVSRV» ───\n' +
+'-- Edge Function «ev-sync» (کد در راهنما) این جدول را پر می‌کند؛ همهٔ اعضا\n' +
+'-- با کد دعوت EVSRV آن را می‌بینند؛ dedup با ev_key یکتا (upsert).\n' +
+'create table if not exists net_events (\n' +
+'  id uuid primary key default gen_random_uuid(),\n' +
+'  ev_key text unique not null,\n' +
+'  group_code text not null default \'EVSRV\',\n' +
+'  title text not null,\n' +
+'  sub text,\n' +
+'  src text not null,\n' +
+'  ev_date date,\n' +
+'  ev_time text,\n' +
+'  date_j text,\n' +
+'  starts_at timestamptz,\n' +
+'  created_at timestamptz default now()\n' +
+');\n' +
+'alter table net_events enable row level security;\n' +
+'create policy "net_events_all" on net_events for all using (true) with check (true);\n' +
+'grant select, insert, update, delete on net_events to anon, authenticated;\n' +
+'-- پاک‌سازی خودکار رویدادهای گذشته (نگهداری): هر بار که اسکریپت اجرا شود\n' +
+'delete from net_events where starts_at < now() - interval \'1 day\';\n';
 
 let NET_STATE = {
     sb: null,          // کلاینت Supabase
@@ -21678,6 +21740,195 @@ async function evSearchTennis() {
     if (btn) { btn.disabled = false; btn.textContent = '🎾 تنیس'; }
     }
 }
+// ═══ v281 (BA-281) — رویدادهای سروری Supabase (Edge Function ev-sync) ═══
+// الزام کاربر: «آیا نمی‌شود کدی روی سرور supabase.com اجرا کرد که همیشه
+// این رویدادها را سرچ و نگهداری و آپدیت کند در یک گروه شبکه‌ای که همهٔ
+// اعضا ببینند و دیگر محدودیت‌های مرورگر مانع اجرای درستشان نشود»
+// معماری: ① Edge Function «ev-sync» (کد کامل در راهنمای inside پنل + فایل
+// scripts/edge-ev-sync-v281.ts) هر ۵ منبع را «از سرور» می‌خواند —
+// محدودیت CORS/پرفلایت فقط قانونِ مرورگر است؛ سرور مستقیم fetch با هدر
+// می‌فرستد (حتی x-fsign فید تنیس!) → ② نتیجه‌ها با تاریخ شمسی/ساعت
+// ایران/ترجمهٔ فارسی همان‌جا ساخته و در جدول net_events (گروه EVSRV)
+// upsert می‌شوند (dedup با ev_key) → ③ همهٔ اعضای شبکه با همین کلاینت
+// جدول را می‌خوانند + broadcast «events-refresh» روی کانال net-group-EVSRV.
+// آنچه این‌جا هست: خواندن جدول + فراخوانی تابع (invoke با کلید anon) +
+// پیوند به گروه شبکه‌ای + دکمهٔ پنل رویدادها؛ fallback کامل = همان
+// زنجیره‌های v280 کلاینت (اگر تابع هنوز مستقر نشده یا خطا داد).
+const EVSRV_CODE = 'EVSRV';                      // کد دعوت گروه رویدادهای سروری
+const EVSRV_FN = 'ev-sync';                      // نام Edge Function
+const EVSRV_LAST_KEY = 'evsrv_last_pull';        // آخرین پول موفق (ms)
+const EVSRV_TTL = 30 * 60 * 1000;                // حداقل فاصلهٔ invoke: ۳۰ دقیقه
+// آدرس توابع از تنظیمات شبکه ساخته می‌شود (همان پروژهٔ کاربر):
+// https://<ref>.supabase.co/functions/v1/ev-sync
+function evSrvFnUrl() {
+    const st = (typeof netSettings === 'function' && netSettings()) || null;
+    const url = (st && st.url) || ((typeof NET_DEFAULTS !== 'undefined') ? NET_DEFAULTS.url : '');
+    if (!url) return '';
+    return url.replace(/\/$/, '') + '/functions/v1/' + EVSRV_FN;
+}
+function evSrvKey() {
+    const st = (typeof netSettings === 'function' && netSettings()) || null;
+    return (st && st.key) || ((typeof NET_DEFAULTS !== 'undefined') ? NET_DEFAULTS.key : '');
+}
+// فراخوانی سروریِ هر ۵ منبع — GET با پارامترهای query (tennis/snooker/apikey)
+// نه POST+JSON: تحقیق زندهٔ v281 — POST با هدرهای سفارشی (Authorization/
+// apikey/content-type) پیش‌فرایت OPTIONS می‌خواهد و پاسخ پیش‌فرایتِ تابع‌ها
+// ACAH کامل ندارد → مرورگر fetch را می‌بندد («Failed to fetch»)؛ اما GET
+// بدون هیچ هدر سفارشی = simple request = بدون پیش‌فرایت، همیشه مستقیم
+// می‌گذرد (تأیید زنده: 404 واقعی «function not found» از مرورگر آمد —
+// یعنی درخواست رسیده است). کلید از query-string «apikey» می‌گذرد (تابع
+// همان‌جا می‌خواندش؛ مثل REST Supabase). پاسخ: {ok, n_total, n_saved,
+// rows[], logs[]}; fallback: زنجیره‌های v280.
+async function evSrvInvoke(tennisQ, snookerQ) {
+    const u = evSrvFnUrl();
+    if (!u) return { ok: false, err: 'تنظیمات شبکه (URL) موجود نیست' };
+    const key = evSrvKey();
+    const ctl = (window.AbortController ? new AbortController() : null);
+    const to = ctl ? setTimeout(function() { ctl.abort(); }, 25000) : null;
+    try {
+        const qs = '?apikey=' + encodeURIComponent(key) + '&tennis=' + encodeURIComponent(tennisQ || '') + '&snooker=' + encodeURIComponent(snookerQ || '');
+        const r = await fetch(u + qs, { signal: ctl ? ctl.signal : undefined });   // GET ساده — بدون هدر سفارشی = بدون پیش‌فرایت
+        if (to) clearTimeout(to);
+        const t = await r.text();
+        if (!r.ok) return { ok: false, err: 'HTTP ' + r.status + (t ? ' — ' + t.slice(0, 160) : '') };
+        let d = null; try { d = JSON.parse(t); } catch(e) { return { ok: false, err: 'پاسخ JSON نبود' }; }
+        if (!d || d.ok === false) return { ok: false, err: (d && d.err) || 'تابع خودش خطا گزارش کرد' };
+        return { ok: true, rows: (d && d.rows) || [], logs: (d && d.logs) || [], n_saved: (d && d.n_saved) || 0, n_total: (d && d.n_total) || 0 };
+    } catch(e) {
+        if (to) clearTimeout(to);
+        return { ok: false, err: evSrvNetErr(e) };
+    }
+}
+// پیام خطای شبکه‌ای سروری — همان فرهنگِ netErrHint ولی مختصر رویدادها
+// (v281: نامش evSrvNetErr است — evNetErr قدیمیِ v272 (خط ۲۰۵۰۱) دست‌نخورده می‌ماند؛
+// دو تابع نباید هم‌نام باشند — تداخل تعریف در static_audit)
+function evSrvNetErr(e) {
+    const m = String((e && e.message) || e || '');
+    if (/failed to fetch|networkerror|timeout|abort/i.test(m)) return 'اینترنت به سرور تابع نمی‌رسد (یا تابع هنوز مستقر نشده) — «راهنمای سروری» در پنل را ببینید';
+    return m || 'خطای نامشخص شبکه';
+}
+// خواندن مستقیم جدول net_events از پروژهٔ شبکه (پول عمومی بدون Edge هم
+// کار می‌کند — جدول RLS-باز است و ACAO:* دارد؛ از مرورگر مستقیم خوانده می‌شود)
+async function evSrvReadRows() {
+    const sb = (typeof NET_STATE !== 'undefined') ? NET_STATE.sb : null;
+    if (sb) {
+        const r = await sb.from('net_events').select('title,sub,src,ev_date,ev_time,date_j,starts_at')
+            .order('starts_at', { ascending: true }).limit(300);
+        if (!r.error && r.data) return { ok: true, rows: (r.data || []).map(function(x) {
+            return { date: (x.ev_date ? String(x.ev_date).slice(0, 10) : ''), time: x.ev_time || '', dateJ: x.date_j || '', title: x.title, sub: x.sub || '', src: x.src };
+        }) };
+        return { ok: false, err: r.error ? r.error.message : '' };
+    }
+    // بدون کلاینت supabase-js: REST خام با کلید عمومی (publishable) — ACAO:*
+    const st = (typeof netSettings === 'function' && netSettings()) || null;
+    const url = (st && st.url) || ((typeof NET_DEFAULTS !== 'undefined') ? NET_DEFAULTS.url : '');
+    const key = evSrvKey();
+    if (!url || !key) return { ok: false, err: 'تنظیمات شبکه موجود نیست' };
+    try {
+        const r = await fetch(url.replace(/\/$/, '') + '/rest/v1/net_events?select=title,sub,src,ev_date,ev_time,date_j,starts_at&order=starts_at.asc&limit=300', {
+            headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+        });
+        if (!r.ok) return { ok: false, err: 'HTTP ' + r.status + ' از جدول net_events (اسکریپت SQL جدید اجرا شده؟)' };
+        const d = await r.json();
+        return { ok: true, rows: (d || []).map(function(x) {
+            return { date: (x.ev_date ? String(x.ev_date).slice(0, 10) : ''), time: x.ev_time || '', dateJ: x.date_j || '', title: x.title, sub: x.sub || '', src: x.src };
+        }) };
+    } catch(e) { return { ok: false, err: evSrvNetErr(e) }; }
+}
+// جریان کامل دکمهٔ «سروری همه»: ① اگر TTL گذشته → invoke تابع (سرور هر ۵
+// منبع را می‌خواند و جدول را آپدیت/نگهداری می‌کند) ② پول جدول ③ فیلتر
+// خواسته/ناخواستهٔ کاربر ④ رندر در همان فهرست پنل ⑤ پیام راهنما در نبود
+// تابع (deploy) با fallback زنجیره‌های v280 که همان دکمه‌های جدا هستند.
+async function evServerAll() {
+    const btn = document.getElementById('evSrvBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ …'; }
+    EV_FLOW = true;
+    try {
+        const log = document.getElementById('evLog');
+        if (log) log.innerHTML = '';
+        evLog('🌐 رویدادهای سروری (Supabase Edge Function «ev-sync») — شروع', true);
+        let lastPull = 0;
+        try { lastPull = parseInt(localStorage.getItem(EVSRV_LAST_KEY) || '0', 10) || 0; } catch(e) {}
+        // ① invoke فقط اگر ۳۰ دقیقه گذشته (کرون بیرونی/عضو دیگری هم تازه کرده باشد)
+        if (Date.now() - lastPull > EVSRV_TTL) {
+            const tennisQ = (document.getElementById('evTennisName') && document.getElementById('evTennisName').value) || '';
+            const snookerQ = (document.getElementById('evWstName') && document.getElementById('evWstName').value) || '';
+            evLog('📡 فراخوانی سروری تابع ev-sync (سرور هر ۵ منبع را مستقیم می‌خواند — بدون محدودیت مرورگر) …', true);
+            const inv = await evSrvInvoke(tennisQ, snookerQ);
+            if (inv.ok) {
+                try { localStorage.setItem(EVSRV_LAST_KEY, String(Date.now())); } catch(e) {}
+                evLog('✅ سرور ' + toPersianNumber(inv.n_total || 0) + ' رویداد خواند و ' + toPersianNumber(inv.n_saved || 0) + ' ردیف را در گروه شبکه‌ای ذخیره/به‌روز کرد', true);
+                (inv.logs || []).slice(0, 6).forEach(function(l) { evLog('   • ' + l, false); });
+            } else {
+                evLog('↪️ تابع سروری جواب نداد: ' + inv.err, true);
+                evLog('💡 راهنما: تابع هنوز مستقر نشده یا سرویس موقتاً خاموش است — وابسته نیستیم: جدول را می‌خوانیم و دکمه‌های جدا (اسنوکر/فرمول‌۱/تنیس/جستجوی رویدادها) با زنجیره‌های مرورگری همان کار را می‌کنند (v280). راهنمای مستقرسازی در «راهنمای سروری» پایین پنل.', true);
+            }
+        } else {
+            evLog('⏭ فراخوانی سروری لازم نبود (کمتر از ۳۰ دقیقه از آخرین به‌روزرسانی) — خواندن مستقیم جدول', true);
+        }
+        // ② پول جدول
+        evLog('📡 خواندن جدول net_events (گروه EVSRV — همهٔ اعضا همین را می‌بینند) …', true);
+        const rr = await evSrvReadRows();
+        if (!rr.ok) { evLog('🚫 جدول net_events خوانده نشد: ' + (rr.err || '') + ' — اسکریپت SQL جدید (بخش v281) را یک بار در SQL Editor اجرا کنید', true); showToast('سروری: جدول خوانده نشد'); return; }
+        let rows = rr.rows || [];
+        // فقط آینده (نگهداری سرور گذشته‌ها را پاک می‌کند؛ این هم گارد)
+        const now = Date.now();
+        rows = rows.filter(function(r) {
+            if (!r.date || !r.time) return true;
+            const st = Date.parse(r.date + 'T' + r.time + ':00+03:30');
+            return isNaN(st) || st > now - 24 * 3600 * 1000;
+        });
+        evLog('✅ ' + toPersianNumber(rows.length) + ' رویداد از سرور خوانده شد', true);
+        // ③ فیلتر خواسته/ناخواستهٔ کاربر — همان فیلتر پنل (خواسته‌ها «یا»، ناخواسته‌ها «نه»)
+        rows = evApplyWantedFilters(rows);
+        evLog('🔎 بعد از فیلتر شما: ' + toPersianNumber(rows.length) + ' رویداد', true);
+        // ④ رندر انباشتی همان فهرست
+        if (!rows.length) { evLog('⚠️ رویدادی مطابق فیلتر شما نبود (جدول سرور یا تنیسِ بدون مسابقه) — پیام صادقانه', true); showToast('سروری: موردی نبود'); return; }
+        const fresh = evFreshRows(rows, _evResults);
+        if (!fresh.length) { evLog('⚠️ مورد جدیدی نبود — همهٔ رویدادهای سروری قبلاً در فهرست یا گروه «رویدادها» هستند (پیام صادقانه)', true); showToast('سروری: مورد جدیدی نبود'); return; }
+        _evResults = _evResults.concat(fresh);
+        evRenderResults();
+        evScrollListIntoView();
+    } finally {
+        EV_FLOW = false;
+        if (btn) { btn.disabled = false; btn.textContent = '🌐 سروری — همه (شبکه‌ای)'; }
+    }
+}
+// فیلتر خواسته/ناخواسته روی ردیف‌های سروری — همان منطق runEventsSearch
+// (خواسته‌ها با «یا» / ناخواسته‌ها حذف می‌کنند؛ بدون خواسته = همه)
+function evApplyWantedFilters(rows) {
+    let wanted = [], unwanted = [];
+    try {
+        wanted = JSON.parse(localStorage.getItem('event_search_wanted') || '[]') || [];
+        unwanted = JSON.parse(localStorage.getItem('event_search_unwanted') || '[]') || [];
+    } catch(e) {}
+    wanted = (wanted || []).map(function(x) { return String(x || '').trim(); }).filter(Boolean);
+    unwanted = (unwanted || []).map(function(x) { return String(x || '').trim(); }).filter(Boolean);
+    const norm = function(s) { return String(s || '').toLowerCase().replace(/[یی]‌/g, 'ی').replace(/\u200c/g, ' ').trim(); };
+    return (rows || []).filter(function(r) {
+        const hay = norm((r.title || '') + ' ' + (r.sub || ''));
+        if (unwanted.some(function(w) { return hay.indexOf(norm(w)) >= 0; })) return false;
+        if (wanted.length && !wanted.some(function(w) { return hay.indexOf(norm(w)) >= 0; })) return false;
+        return true;
+    });
+}
+// عضویت/ساخت گروه شبکه‌ای «رویدادها» با کد EVSRV (هر عضو با یک دکمه
+// عضو می‌شود؛ اعضا جدول net_events را می‌بینند — RLS باز است و کد ثابت)
+async function evSrvJoinNetGroup() {
+    if (!(typeof NET_STATE !== 'undefined' && (NET_STATE.sb || NET_STATE.gh))) { showToast('ابتدا از منوی ☰ → 🛰️ شبکه به پروژهٔ Supabase وصل شوید'); return; }
+    try {
+        const myGroups = (typeof netMyGroups === 'function') ? netMyGroups() : [];
+        if (myGroups.some(function(g) { return g.code === EVSRV_CODE; })) { showToast('عضو گروه «رویدادها» هستید ✓'); return; }
+        if (typeof netJoinGroup !== 'function') { showToast('شبکه فعال نیست'); return; }
+        // netJoinGroup کد را از ورودی «کلید پیوستن» می‌خواند — پرش می‌کنیم و فراخوانی
+        const inp = document.getElementById('netJoinCode');
+        const old = inp ? inp.value : '';
+        if (inp) inp.value = EVSRV_CODE;
+        try { await netJoinGroup(); } finally { if (inp) inp.value = old; }
+        evLog('✅ عضو گروه شبکه‌ای «رویدادها» (کد EVSRV) شدید — همهٔ اعضا رویدادهای سروری را می‌بینند', true);
+    } catch(e) { showToast('⚠️ ' + String((e && e.message) || e)); }
+}
+// ═══ پایان v281 ═══
 // نوار نوتیف زیر هدر برنامه — «🔔 شبکه: ۳ پیام جدید …» با لمس به همان گروه می‌رود
 function netNotifStripRender() {
     let strip = document.getElementById('netNotifStrip');
