@@ -11,10 +11,10 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v277 — ۱۴۰۵ آذر ۴ (درخواست — «بخش تنیس tennis24.com به رویدادهای جهانی: بازیکن پیش‌فرض یانیک سینر + مسابقات پیش‌رو؛ خودت به چند بازیکن امتحان کن» — BA-277)
-#  نسخهٔ فعلی کد:  APP_VERSION = v277-2026-11-24-events-global-tennis
-#                  CACHE_NAME  = yadavar-cache-v277
-#                  version.txt = v277-2026-11-24-events-global-tennis
+#  آخرین به‌روزرسانی: v278 — ۱۴۰۵ آذر ۴ (گزارش کاربر: «اسنوکر درست است اما فرمول ۱ و تنیس کار نمی‌کند» — مسیر دوم برای هر دو — BA-278)
+#  نسخهٔ فعلی کد:  APP_VERSION = v278-2026-11-25-events-global-f1-tennis-fallback
+#                  CACHE_NAME  = yadavar-cache-v278
+#                  version.txt = v278-2026-11-25-events-global-f1-tennis-fallback
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -235,9 +235,13 @@
 #                 evSearchWst ~21052؛ evSearchF1 ~21107؛
 #                 🎾 تنیس (v277): ورودی پنل ~5261؛ evFetchJson هدر ~20403؛
 #                 EV_TENNIS_FSIGN/DEFAULT_NAME/فرهنگ‌ها ~21218؛
-#                 evTennisNameFa ~21264؛ evTennisTournFa ~21321؛
-#                 evTennisSearchApi ~21351؛ evTennisFeedApi ~21362؛
-#                 evParseFlashFeed ~21381؛ evSearchTennis ~21413؛
+#                 v278 مسیر دوم: evF1OfficialRows/evF1ErgastNext
+#                 (EV_F1_HOST_FA) داخل evSearchF1 ~21114؛
+#                 evTennisSofaApi/evTennisSofaEvents
+#                 (EV_TENNIS_SOFA_*) ~21360؛ evTennisNameFa ~21264؛
+#                 evTennisTournFa ~21321؛ evTennisSearchApi ~21351؛
+#                 evTennisFeedApi ~21362؛ evParseFlashFeed ~21381؛
+#                 evSearchTennis ~21413؛
 #                 .ev-card > * flex-shrink:0 ~4864)
 #
 #   ⚠️ نکتهٔ شناخته‌شده (v205): refreshFloatingContactBtn تابع no-op است —
@@ -1618,6 +1622,35 @@
 #          evScrollListIntoView: فهرست نتایج از بالای ناحیهٔ دید شروع می‌شود.
 #          پروب v270: ۱۱ چک (هندسهٔ وسطِ جستجو با تأخیر عمدی ۱۲۰۰ms در موک
 #          anten اندازه‌گیری می‌شود).
+#   🔑 BA-278 (v278 — گزارش کاربر: «اسنوکر درست است اما فرمول ۱ و تنیس
+#          کار نمی‌کند») — تشخیص زنده: corsfix فقط Originهای localhost را
+#          می‌پذیرد (null → ۴۰۰ invalid_origin؛ github.io → ۴۰۳
+#          domain_not_registered) پس فید فلش‌اسکور تنیس (هدر x-fsign که
+#          فقط corsfix فوروارد می‌کند) و صفحات formula1.com (پشت
+#          Cloudflare/Akamai؛ jina اسکریپت‌ها را حذف می‌کند و ld+json
+#          از دست می‌رود) از مبدأ کاربر نمی‌گذرند؛ اسنوکر کار می‌کند چون
+#          API رسمی WST با ACAO:* مستقیم است. اقدام — مسیر دوم برای هر دو:
+#          • فرمول ۱ → API پابلیک Ergast در api.jolpi.ca (جانشین رسمی
+#            ergast.com؛ JSON سادهٔ بدون محافظت بات؛ تحقیق زنده: ACAO:*
+#            با هدر Origin — یعنی مستقیم از هر مرورگری؛ /current/next.json
+#            با UTC همهٔ سشن‌ها). evF1OfficialRows (مسیر اول v275) → در
+#            شکست: evF1ErgastNext با اولویت مستقیم → زنجیرهٔ واسطه؛
+#            سشن‌ها با همان قالب ردیف؛ src «ergast (F1)»؛ کشور میزبان با
+#            EV_F1_HOST_FA (نام انگلیسی کشور).
+#          • تنیس → api.sofascore.com (تحقیق زنده: ACAO:* — از مرورگر
+#            کاربر مستقیم؛ از IP دیتاسنتر Cloudflare ۴۰۳/خالی؛ پشتیبان:
+#            زنجیرهٔ واسطهٔ JSON + واریانت api.sofascore.app).
+#            evTennisSofaApi (search/all → انتخاب entity با type=team +
+#            sport.name=Tennis + تطبیق توکن) → evTennisSofaEvents
+#            (team/{id}/events/next/0) → فقط status.type=notstarted و
+#            آینده؛ نام تورنمنت از tournament.uniqueTournament.name؛
+#            src «sofascore». مسیر اول فلش‌اسکور می‌ماند؛ سوفااسکور فقط
+#            وقتی که فید خوانده نشود (فید خالی = جواب واقعی، نه خطا).
+#            evTennisNameFa حالا هر دو قرارداد نام («Sinner J.» فلش‌اسکور
+#            و «Sinner Jannik» سوفااسکور) را با فرهنگ می‌سنجد.
+#          آزمون: پروب v278 شبیه‌سازی مبدأ کاربر (corsfix/formula1.com/
+#          فلش‌اسکور بلاک) ۱۴/۱۴ + E2E واقعی ۵/۵ (Ergast مستقیم واقعی از
+#          صفحه؛ ۵ سشن قطر؛ FP1=۱۷:۰۰ تهران؛ Race=۱۹:۳۰) + رگرسیون کامل.
 #   🔑 BA-277 (v277 — الزام کاربر: «tennis24.com یک بخش به این منو اضافه
 #          کن که سایت تنیس را برای یک بازیکن که نامش را می‌گیری — پیش‌فرض
 #          یانیک سینر — بگردد و مسابقات پیش‌روی آن را هم پیدا و اضافه کند؛
@@ -3118,6 +3151,11 @@
 #
 #   (نسخه‌های مفصل از v204 به بعد؛ قدیمی‌ها خلاصه. changelog کامل
 #    تفصیلی در سرآیند HTML موجود است.)
+#
+### v278 (۱۴۰۵ آذر ۴) — مسیر دوم برای فرمول ۱ (Ergast/jolpi.ca) و تنیس (SofaScore) — «کار نمی‌کند» کاربر (BA-278)
+#   ریشه: corsfix فقط localhost؛ formula1.com پشت Cloudflare. مسیر دومِ
+#   مستقیم برای هر دو (جولپی حتی ACAO:* با Origin می‌فرستد — مستقیم واقعی)؛
+#   مسیرهای اول دست‌نخورده؛ فید خالی تنیس همچنان «جواب واقعی، پیام صادقانه».
 #
 ### v277 (۱۴۰۵ آذر ۴) — بخش 🎾 تنیس tennis24.com در «رویدادهای جهانی» (BA-277)
 #   سرچ livesport (CORS باز، مستقیم) + فید فلش‌اسکور بازیکن با x-fsign

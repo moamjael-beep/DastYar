@@ -8211,6 +8211,26 @@ body.locked .header-actions button {
 //   قانون صفر: هیچ رفتار سالم دیگری تغییر نکرد — پروب ۲۱/۲۱ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
 // ════════════════════════════════════════════════════════════════════
+// 🔧 v278-2026-11-25 (گزارش کاربر: «اسنوکر درست است اما فرمول ۱ و تنیس
+//   کار نمی‌کند») — ریشه (تشخیص زنده): corsfix فقط Originهای localhost را
+//   می‌پذیرد (null → ۴۰۰ invalid_origin؛ github.io → ۴۰۳
+//   domain_not_registered) پس فید فلش‌اسکور تنیس (نیازمند هدر x-fsign که
+//   فقط corsfix فوروارد می‌کند) و صفحات formula1.com (پشت Cloudflare/
+//   Akamai که واسطه‌های دیگر صفحهٔ قابل‌پارس نمی‌دهند — jina اسکریپت‌ها
+//   را حذف می‌کند) از مبدأ کاربر نمی‌گذرند؛ اسنوکر کار می‌کند چون API
+//   رسمی WST با ACAO:* مستقیم است. اقدام — مسیر دوم برای هر دو:
+//   • فرمول ۱: API پابلیک Ergast در api.jolpi.ca (جانشین رسمی ergast.com
+//     — JSON سادهٔ بدون محافظت بات: /current/next.json با تاریخ/ساعت UTC
+//     همهٔ سشن‌ها) — مسیر اول formula1.com می‌ماند؛ در شکستش مسیر دوم.
+//   • تنیس: api.sofascore.com (خودش ACAO:* می‌فرستد — تحقیق زنده؛ از
+//     مرورگر مستقیم می‌گذرد؛ پشتیبان زنجیرهٔ واسطهٔ JSON + واریانت .app)
+//     — مسیر اول فلش‌اسکور می‌ماند؛ در شکستش سرچ + team/{id}/events/next
+//     و نام‌ها با همان فرهنگ‌ها (تطبیق توکنی نام برای هر دو قرارداد
+//     «Sinner J.» و «Sinner Jannik»).
+//   آزمون: پروب v278 با شبیه‌سازی مبدأ کاربر (corsfix+formula1.com بلاک)
+//   و پاسخ‌های واقعی Ergast/شمای سوفااسکور + E2E + رگرسیون.
+//
+// ════════════════════════════════════════════════════════════════════
 // 🔧 v277-2026-11-24 (درخواست) — بخش 🎾 تنیس tennis24.com در «رویدادهای
 //   جهانی»: «سایت تنیس را برای یک بازیکن که نامش را می‌گیری — پیش‌فرض
 //   یانیک سینر — بگردد و مسابقات پیش‌روی آن را هم پیدا و اضافه کند؛ خودت
@@ -8466,7 +8486,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v277-2026-11-24-events-global-tennis';
+const APP_VERSION = 'v278-2026-11-25-events-global-f1-tennis-fallback';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -21111,20 +21131,15 @@ async function evSearchWst() {
     if (btn) { btn.disabled = false; btn.textContent = '🎱 اسنوکر'; }
     }
 }
-// 🏎️ فرمول ۱ — فصل جاری → نشان NEXT RACE → صفحهٔ گرندپری → ld+json → همهٔ sessionهای آینده
-async function evSearchF1() {
-    const btn = document.getElementById('evF1Btn');
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ …'; }
-    EV_FLOW = true;
-    try {
-    const log = document.getElementById('evLog');
-    if (log) log.innerHTML = '';   // هر جستجوی جهانی، لاگِ فرآیندِ تازه‌ای می‌سازد (فهرستِ نتایج انباشتی می‌ماند)
-    evLog('🌐 رویدادهای جهانی — فرمول ۱ formula1.com — شروع', true);
+// 🏎️ فرمول ۱ — مسیر اول: formula1.com (فصل → NEXT RACE → ld+json) — v275
+// مسیر دوم (v278): API پابلیک Ergast در jolpi.ca (جانشین رسمی ergast.com —
+// JSON سادهٔ بدون محافظت بات) — دلیل: formula1.com پشت Cloudflare/Akamai است
+// و از مبدأ غیر-localhost واسطه‌ها صفحهٔ قابل‌پارس نمی‌دهند (گزارش کاربر:
+// «فرمول ۱ کار نمی‌کند»)؛ جولپی از هر واسطهٔ فقط-واکشی می‌گذرد.
+async function evF1OfficialRows() {
     const yr = new Date().getFullYear();   // «سال جاری برنامه در زمان اجرا»
-    evLog('📡 واکشی صفحهٔ فصل ' + toPersianDigits(String(yr)) + ' (formula1.com بدون ACAO → زنجیرهٔ واسطهٔ فقط-واکشی) …', true);
     const s1 = await evFetchTextViaRelays('https://www.formula1.com/en/racing/' + yr);
-    if (!s1.ok) { evLog('🚫 صفحهٔ فصل خوانده نشد: ' + s1.err, true); showToast('فرمول ۱: صفحهٔ فصل خوانده نشد'); return; }
-    evLog('✅ صفحهٔ فصل خوانده شد (' + s1.via + ')');
+    if (!s1.ok) return { ok: false, stage: 'صفحهٔ فصل', err: s1.err };
     // الگوریتم خود سایت: نشان «NEXT RACE» و slug گرندپری کنار همان نشان
     const ni = s1.text.indexOf('NEXT RACE');
     let slug = '', round = '';
@@ -21135,14 +21150,12 @@ async function evSearchF1() {
         const rm = win.match(/ROUND\s+(\d+)/i);
         if (rm) round = rm[1];
     }
-    if (!slug) { evLog('🚫 نشان «NEXT RACE» در صفحهٔ فصل پیدا نشد (فصل تمام شده یا ساختار سایت عوض شده) — پیام صادقانه', true); showToast('فرمول ۱: گرندپری بعدی پیدا نشد'); return; }
+    if (!slug) return { ok: false, stage: 'نشان NEXT RACE', err: 'در صفحهٔ فصل نبود (فصل تمام یا ساختار عوض شده)' };
     const countryFa = evF1CountryFa(slug);
-    evLog('🏁 گرندپری بعدی: ' + countryFa + (round ? ' — دور ' + toPersianDigits(round) : '') + ' — واکشی صفحهٔ گرندپری …', true);
     const s2 = await evFetchTextViaRelays('https://www.formula1.com/en/racing/' + yr + '/' + slug);
-    if (!s2.ok) { evLog('🚫 صفحهٔ گرندپری خوانده نشد: ' + s2.err, true); showToast('فرمول ۱: صفحهٔ گرندپری خوانده نشد'); return; }
-    evLog('✅ صفحهٔ گرندپری خوانده شد (' + s2.via + ')');
+    if (!s2.ok) return { ok: false, stage: 'صفحهٔ گرندپری', err: s2.err };
     const bm = s2.text.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
-    if (!bm) { evLog('🚫 دادهٔ برنامهٔ گرندپری (ld+json) در صفحه نبود — پیام صادقانه', true); showToast('فرمول ۱: برنامهٔ گرندپری پیدا نشد'); return; }
+    if (!bm) return { ok: false, stage: 'دادهٔ ld+json', err: 'در صفحهٔ گرندپری نبود' };
     let ld = null;
     try { ld = JSON.parse(bm[1]); } catch(e) { ld = null; }
     const evs = [];
@@ -21168,10 +21181,109 @@ async function evSearchF1() {
             'formula1.com'));
     });
     rows.sort(function(a, b) { return String(a.date + a.time).localeCompare(String(b.date + b.time)); });
-    if (!rows.length) {
+    return { ok: true, rows: rows, countryFa: countryFa, round: round, yr: yr, via: s1.via };
+}
+// کشورهای میزبان F1 به فارسی (مسیر Ergast — نام انگلیسی کشور از Circuit.Location)
+const EV_F1_HOST_FA = {
+    'Qatar': 'قطر', 'United Arab Emirates': 'ابوظبی', 'UAE': 'ابوظبی', 'Abu Dhabi': 'ابوظبی',
+    'Australia': 'استرالیا', 'Austria': 'اتریش', 'Azerbaijan': 'آذربایجان', 'Bahrain': 'بحرین',
+    'Belgium': 'بلژیک', 'Brazil': 'برزیل', 'Canada': 'کانادا', 'China': 'چین',
+    'Great Britain': 'بریتانیا', 'UK': 'بریتانیا', 'Hungary': 'مجارستان', 'Italy': 'ایتالیا',
+    'Japan': 'ژاپن', 'Mexico': 'مکزیک', 'Monaco': 'موناکو', 'Netherlands': 'هلند',
+    'Singapore': 'سنگاپور', 'Spain': 'اسپانیا', 'USA': 'آمریکا', 'United States': 'آمریکا',
+    'France': 'فرانسه', 'Portugal': 'پرتغال', 'Saudi Arabia': 'عربستان', 'Argentina': 'آرژانتین',
+    'India': 'هند', 'Korea': 'کرهٔ جنوبی', 'Turkey': 'ترکیه', 'Germany': 'آلمان',
+    'Malaysia': 'مالزی', 'Morocco': 'مراکش', 'Russia': 'روسیه', 'Vietnam': 'ویتنام',
+    'South Africa': 'آفریقای جنوبی', 'Sweden': 'سوئد', 'Switzerland': 'سوئیس',
+    'Las Vegas': 'لاس‌وگاس', 'Miami': 'میامی', 'Imola': 'ایمولا'
+};
+// مسیر دوم F1: JSON برنامهٔ رسمی Ergast (jolpi.ca) از زنجیرهٔ واسطه‌ها —
+// JSON ساده است (بدون محافظت بات) پس از هر واسطهٔ زنده می‌گذرد
+async function evF1ErgastNext() {
+    const u = 'https://api.jolpi.ca/ergast/f1/current/next.json';
+    let r = await evFetchJson(u);   // مستقیم — اگر روزی ACAO داد از همین می‌گذرد
+    let data = (r.ok && r.data && r.data.MRData) ? r.data : null;
+    let via = 'مستقیم';
+    if (!data) {
+        const relays = evRelayList(u);
+        const order = (evAntenRelayIdx >= 0) ? [evAntenRelayIdx, 0, 1, 2, 3, 4, 5].filter(function(v, i, arr) { return arr.indexOf(v) === i && v < relays.length; }) : [0, 1, 2, 3, 4, 5];
+        let lastErr = r.err || '';
+        for (const idx of order) {
+            const rl = relays[idx];
+            const rr = await evFetchJson(rl.url, { timeout: 9000, retry: false });
+            let d = rr.ok ? rr.data : (rr.text ? evParseRelayJson(rr.text) : null);
+            if (rr.ok && rr.data && typeof rr.data.contents === 'string') { try { d = JSON.parse(rr.data.contents); } catch(e2) { d = null; } }
+            if (d && d.MRData && d.MRData.RaceTable && Array.isArray(d.MRData.RaceTable.Races) && d.MRData.RaceTable.Races.length) {
+                if (evAntenRelayIdx !== idx) evAntenRelayIdx = idx;
+                data = d; via = rl.name;
+                break;
+            }
+            lastErr = rr.ok ? ('پاسخ ' + rl.name + ' ساختار Ergast نداشت') : (rl.name + ' → ' + rr.err);
+        }
+        if (!data) return { ok: false, err: lastErr };
+    }
+    return { ok: true, race: data.MRData.RaceTable.Races[0], via: via };
+}
+async function evSearchF1() {
+    const btn = document.getElementById('evF1Btn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ …'; }
+    EV_FLOW = true;
+    try {
+    const log = document.getElementById('evLog');
+    if (log) log.innerHTML = '';   // هر جستجوی جهانی، لاگِ فرآیندِ تازه‌ای می‌سازد (فهرستِ نتایج انباشتی می‌ماند)
+    evLog('🌐 رویدادهای جهانی — فرمول ۱ formula1.com — شروع', true);
+    const yr = new Date().getFullYear();   // «سال جاری برنامه در زمان اجرا»
+    evLog('📡 واکشی صفحهٔ فصل ' + toPersianDigits(String(yr)) + ' (formula1.com بدون ACAO → زنجیرهٔ واسطهٔ فقط-واکشی) …', true);
+    const off = await evF1OfficialRows();
+    let rows = off.rows || [];
+    let countryFa = off.countryFa || '';
+    let round = off.round || '';
+    let srcTag = 'formula1.com';
+    if (!off.ok) {
+        evLog('↪️ مسیر اول (' + off.stage + '): ' + off.err + ' — تلاش مسیر دوم: برنامهٔ رسمی Ergast (jolpi.ca — JSON ساده از هر واسطه می‌گذرد)', true);
+        const eg = await evF1ErgastNext();
+        if (!eg.ok) { evLog('🚫 هر دو مسیر فرمول ۱ خوانده نشد — formula1.com: ' + off.err + ' | Ergast: ' + eg.err + ' — پیام صادقانه', true); showToast('فرمول ۱: هیچ مسیری جواب نداد'); return; }
+        const race = eg.race;
+        countryFa = EV_F1_HOST_FA[(race.Circuit && race.Circuit.Location && race.Circuit.Location.country) || ''] || ((race.Circuit && race.Circuit.Location && race.Circuit.Location.country) || '');
+        round = race.round || '';
+        srcTag = 'ergast (F1)';
+        evLog('✅ برنامهٔ رسمی Ergast خوانده شد (' + eg.via + ') — گرندپری بعدی: ' + countryFa + (round ? ' — دور ' + toPersianDigits(round) : ''), true);
+        // سشن‌های Ergast: FirstPractice/SecondPractice/ThirdPractice/Qualifying/Sprint + خود مسابقه
+        const sess = [
+            ['FirstPractice', 'تمرین آزاد ۱'], ['SecondPractice', 'تمرین آزاد ۲'],
+            ['ThirdPractice', 'تمرین آزاد ۳'], ['Qualifying', 'تعیین خط'],
+            ['Sprint', 'اسپرینت (مسابقهٔ کوتاه)'], ['SprintQualifying', 'تعیین خط اسپرینت'],
+            ['SprintShootout', 'تعیین خط اسپرینت']
+        ];
+        const now = Date.now();
+        sess.forEach(function(sv) {
+            const s = race[sv[0]];
+            if (!s || !s.date || !s.time) return;
+            const st = Date.parse(s.date + 'T' + s.time.replace(/(\.\d+)?Z$/, 'Z'));
+            if (isNaN(st) || st < now) return;   // فقط آینده
+            rows.push(evRowFromUtc(new Date(st).toISOString(),
+                '🏎️ گرندپری ' + countryFa + ' — ' + sv[1],
+                'فرمول ۱ ' + toPersianDigits(String(yr)) + (round ? ' | دور ' + toPersianDigits(round) : '') + ' | منبع: برنامهٔ رسمی F1 (Ergast)',
+                srcTag));
+        });
+        const rt = (race.time || '').replace(/(\.\d+)?Z$/, 'Z');
+        if (race.date && rt) {
+            const st = Date.parse(race.date + 'T' + rt);
+            if (!isNaN(st) && st >= now) {
+                rows.push(evRowFromUtc(new Date(st).toISOString(),
+                    '🏎️ گرندپری ' + countryFa + ' — مسابقهٔ اصلی',
+                    'فرمول ۱ ' + toPersianDigits(String(yr)) + (round ? ' | دور ' + toPersianDigits(round) : '') + ' | منبع: برنامهٔ رسمی F1 (Ergast)',
+                    srcTag));
+            }
+        }
+        rows.sort(function(a, b) { return String(a.date + a.time).localeCompare(String(b.date + b.time)); });
+        if (!rows.length) { evLog('⚠️ در برنامهٔ رسمی گرندپری «' + countryFa + '» هیچ سشن آینده‌ای نبود (همه گذشته‌اند) — پیام صادقانه', true); showToast('فرمول ۱: session آینده‌ای نبود'); return; }
+    } else if (!rows.length) {
         evLog('⚠️ هیچ session آینده‌ای در برنامهٔ گرندپری «' + countryFa + '» نبود (همه گذشته‌اند) — پیام صادقانه', true);
         showToast('فرمول ۱: session آینده‌ای در گرندپری نبود');
         return;
+    } else {
+        evLog('✅ صفحهٔ فصل خوانده شد (' + off.via + ') — گرندپری بعدی: ' + countryFa + (round ? ' — دور ' + toPersianDigits(round) : ''), true);
     }
     evLog('✅ ' + toPersianNumber(rows.length) + ' session آیندهٔ گرندپری ' + countryFa + ' — تاریخ شمسی و ساعت ایران (تهران)', true);
     const fresh = evFreshRows(rows, _evResults);
@@ -21263,15 +21375,20 @@ const EV_TENNIS_PLAYER_FA = {
 };
 function evTennisNameFa(feedName) {
     const s = evNorm(feedName || '');
-    const m = s.match(/^([^\.]+?)\s*\.?\s*[A-Z]?\.?$/);   // «Faurel T.» → «Faurel»
-    let surname = (m ? m[1] : s).toLowerCase().trim();
-    if (EV_TENNIS_PLAYER_FA[surname]) return EV_TENNIS_PLAYER_FA[surname];
-    // دوکلمه‌ای‌ها مثل «Davidovich Fokina A.» — آخرین دو توکن هم امتحان شود
-    const toks = surname.split(/\s+/);
+    if (!s) return s;
+    // دو قرارداد نام: «Sinner J.» (فلش‌اسکور — نام خانوادگی اول) و
+    // «Sinner Jannik» (سوفااسکور — نام کوچک آخر). همهٔ توکن‌ها را با
+    // فرهنگ می‌سنجیم: ابتدا پنجرهٔ دوتایی آخر، سپس توکن آخر (اگر مخفف
+    // تک‌حرفی نباشد)، سپس توکن اول.
+    const toks = s.replace(/\./g, ' ').split(/\s+/).filter(Boolean).map(function(t) { return t.toLowerCase(); });
     if (toks.length >= 2) {
         const two = toks.slice(-2).join(' ');
         if (EV_TENNIS_PLAYER_FA[two]) return EV_TENNIS_PLAYER_FA[two];
     }
+    const last = toks.length ? toks[toks.length - 1] : '';
+    const first = toks.length ? toks[0] : '';
+    if (last && last.length > 1 && EV_TENNIS_PLAYER_FA[last]) return EV_TENNIS_PLAYER_FA[last];
+    if (first && EV_TENNIS_PLAYER_FA[first]) return EV_TENNIS_PLAYER_FA[first];
     return s;
 }
 // کشورها/شهرهای رایج تنیس → فارسی (بیرونِ فرهنگ لاتین می‌ماند — ساختگی نیست)
@@ -21310,7 +21427,14 @@ const EV_TENNIS_PLACE_FA = {
     'Montreal': 'مونترال', 'Tokyo': 'توکیو', 'Doha': 'دوحه', 'Dubai': 'دبی',
     'Rotterdam': 'رتردام', 'Marseille': 'مارسی', 'Lyon': 'لیون', 'Hamburg': 'هامبورگ',
     'Vienna': 'وین', 'Stockholm': 'استکهلم', 'Basel': 'بازل', 'Estoril': 'اشتوریل',
-    'Munich': 'مونیخ', 'Stuttgart': 'اشتوتگارت', 'Halle': 'هاله', 'Queen\'s': 'کویینز'
+    'Munich': 'مونیخ', 'Stuttgart': 'اشتوتگارت', 'Halle': 'هاله', 'Queen\'s': 'کویینز',
+    // نام تورنمنت‌های اصلی (سوفااسکور uniqueTournament.name و زا فلش‌اسکور)
+    'ATP Finals': 'فینال ATP', 'ATP Masters 1000': 'مسترز ۱۰۰۰ ATP',
+    'ATP Masters 500': 'مسترز ۵۰۰ ATP', 'ATP Masters 250': 'مسترز ۲۵۰ ATP',
+    'Australian Open': 'اپن استرالیا', 'Roland Garros': 'رولان گارو',
+    'US Open': 'اپن آمریکا', 'United Cup': 'کاپ متحد', 'Davis Cup': 'کاپ دیویس',
+    'Next Gen Finals': 'فینال نکست‌جن ATP', 'WTA Finals': 'فینال WTA',
+    'Billie Jean King Cup': 'کاپ بیلی جین کینگ', 'Olympics': 'المپیک'
 };
 function evTennisPlaceFa(word) {
     const k = evNorm(word || '').replace(/[.,]/g, '').trim();
@@ -21326,6 +21450,7 @@ function evTennisTournFa(z) {
     let c = cat;
     const catPairs = [
         [/Mixed Doubles/i, 'دونفرهٔ مختلط'], [/Qualification|Qualifying/i, 'مقدماتی'],
+        [/ATP Challenger/i, 'چلنجر ATP'], [/WTA Challenger/i, 'چلنجر WTA'],
         [/Doubles/i, 'دونفره'], [/Singles/i, 'تک‌نفره'],
         [/Challenger/i, 'چلنجر'], [/MEN/i, 'مردان'], [/WOMEN/i, 'زنان'],
         [/JUNIORS/i, 'نوجوانان'], [/Team/i, 'تیمی'], [/Masters/i, 'مسترز'],
@@ -21354,6 +21479,78 @@ async function evTennisSearchApi(q) {
     if (r.ok && Array.isArray(r.data)) return r.data;
     if (r.text) { try { const d = JSON.parse(r.text); if (Array.isArray(d)) return d; } catch(e) {} }
     return null;
+}
+// ═══ مسیر دوم تنیس (v278): SofaScore — بدون هدر سفارشی ═══
+// دلیل: فید فلش‌اسکور به هدر x-fsign نیاز دارد و فقط corsfix آن را
+// فوروارد می‌کند که فقط localhost را می‌پذیرد — گزارش کاربر: «تنیس کار
+// نمی‌کند». api.sofascore.com خودش ACAO:* می‌فرستد (تحقیق زنده) پس از
+// مرورگر مستقیم می‌گذرد؛ پشتیبانِ آن هم همان زنجیرهٔ واسطهٔ JSON ساده.
+// شمای داده (ثابت و شناخته‌شده): search/all → results[].entity (type=team،
+// sport.name=Tennis)؛ team/{id}/events/next/0 → events[] با startTimestamp
+// (ثانیه)، tournament.name، uniqueTournament.name، homeTeam/awayTeam.name،
+// status.type='notstarted'.
+const EV_TENNIS_SOFA_SEARCH = 'https://api.sofascore.com/api/v1/search/all?q={Q}';
+const EV_TENNIS_SOFA_EVENTS = 'https://api.sofascore.com/api/v1/team/{ID}/events/next/0';
+function evTennisSofaRelay(u) {
+    // زنجیرهٔ واسطهٔ فقط-واکشی برای JSON ساده (بدون هدر) — همان v275
+    return evRelayList(u);
+}
+function evTennisSofaPickPlayer(results, q) {
+    if (!Array.isArray(results)) return null;
+    const toks = q.toLowerCase().split(/\s+/).filter(Boolean);
+    const cand = results.filter(function(x) {
+        return x && x.type === 'team' && x.entity && x.entity.id &&
+               x.entity.sport && x.entity.sport.name === 'Tennis';
+    });
+    const best = cand.find(function(x) {
+        const nm = evNorm(x.entity.name || '').toLowerCase() + ' ' + String(x.entity.slug || '').replace(/-/g, ' ').toLowerCase();
+        return toks.every(function(t) { return nm.indexOf(t) >= 0; });
+    }) || cand[0];
+    return best ? best.entity : null;
+}
+async function evTennisSofaApi(q) {
+    const su = EV_TENNIS_SOFA_SEARCH.replace('{Q}', encodeURIComponent(q));
+    // ۱) مستقیم (ACAO:* — از مرورگر کاربر می‌گذرد؛ از IP دیتاسنتر ممکن است Cloudflare بلاک کند)
+    let r = await evFetchJson(su, { timeout: 8000, retry: false });
+    let player = evTennisSofaPickPlayer(r.ok ? (r.data && r.data.results) : null, q);
+    if (player) return { ok: true, player: player, via: 'مستقیم' };
+    // ۲) زنجیرهٔ واسطه‌ها — JSON ساده بدون هدر؛ هر دو دامنه (.com/.app)
+    const urls = [su, su.replace('api.sofascore.com', 'api.sofascore.app')];
+    let lastErr = r.err || '';
+    for (const base of urls) {
+        const relays = evTennisSofaRelay(base);
+        const order = (evAntenRelayIdx >= 0) ? [evAntenRelayIdx, 0, 1, 2, 3, 4, 5].filter(function(v, i, arr) { return arr.indexOf(v) === i && v < relays.length; }) : [0, 1, 2, 3, 4, 5];
+        for (const idx of order) {
+            const rl = relays[idx];
+            const rr = await evFetchJson(rl.url, { timeout: 8000, retry: false });
+            let d = rr.ok ? rr.data : (rr.text ? evParseRelayJson(rr.text) : null);
+            if (rr.ok && rr.data && typeof rr.data.contents === 'string') { try { d = JSON.parse(rr.data.contents); } catch(e2) { d = null; } }
+            const pl = evTennisSofaPickPlayer(d ? d.results : null, q);
+            if (pl) { if (evAntenRelayIdx !== idx) evAntenRelayIdx = idx; return { ok: true, player: pl, via: rl.name }; }
+            lastErr = rr.ok ? ('پاسخ ' + rl.name + ' ساختار سرچ نداشت') : (rl.name + ' → ' + rr.err);
+        }
+    }
+    return { ok: false, err: lastErr };
+}
+async function evTennisSofaEvents(pid) {
+    const eu = EV_TENNIS_SOFA_EVENTS.replace('{ID}', pid);
+    let r = await evFetchJson(eu, { timeout: 8000, retry: false });
+    if (r.ok && r.data && r.data.events) return { ok: true, events: r.data.events, via: 'مستقیم' };
+    let lastErr = r.err || '';
+    const urls = [eu, eu.replace('api.sofascore.com', 'api.sofascore.app')];
+    for (const base of urls) {
+        const relays = evTennisSofaRelay(base);
+        const order = (evAntenRelayIdx >= 0) ? [evAntenRelayIdx, 0, 1, 2, 3, 4, 5].filter(function(v, i, arr) { return arr.indexOf(v) === i && v < relays.length; }) : [0, 1, 2, 3, 4, 5];
+        for (const idx of order) {
+            const rl = relays[idx];
+            const rr = await evFetchJson(rl.url, { timeout: 8000, retry: false });
+            let d = rr.ok ? rr.data : (rr.text ? evParseRelayJson(rr.text) : null);
+            if (rr.ok && rr.data && typeof rr.data.contents === 'string') { try { d = JSON.parse(rr.data.contents); } catch(e2) { d = null; } }
+            if (d && d.events) { if (evAntenRelayIdx !== idx) evAntenRelayIdx = idx; return { ok: true, events: d.events, via: rl.name }; }
+            lastErr = rr.ok ? ('پاسخ ' + rl.name + ' ساختار events نداشت') : (rl.name + ' → ' + rr.err);
+        }
+    }
+    return { ok: false, err: lastErr };
 }
 // واکشی فید بازیکن (global.flashscore.ninja با x-fsign): مستقیم → corsfix
 // (فقط corsfix هدر سفارشی را فوروارد می‌کند — تحقیق زندهٔ v277).
@@ -21450,29 +21647,60 @@ async function evSearchTennis() {
     evLog('✅ بازیکن: ' + (best.name || best.url) + (pCountry ? ' (' + evTennisPlaceFa(pCountry) + ')' : '') + ' — شناسهٔ ' + best.id, true);
     evLog('📡 واکشی مسابقات پیش‌رو از فید فلش‌اسکور (مستقیم → corsfix برای هدر x-fsign) …');
     const fd = await evTennisFeedApi(best.id);
-    if (!fd.ok) {
-        evLog('🚫 فید مسابقات بازیکن خوانده نشد: ' + fd.err + ' — فید فلش‌اسکور فقط از مسیر corsfix می‌گذرد (مثل v275)؛ دوباره تلاش کنید — پیام صادقانه', true);
-        showToast('تنیس: فید بازیکن خوانده نشد');
-        return;
-    }
-    evLog('✅ فید بازیکن خوانده شد (' + fd.via + ')');
-    const all = evParseFlashFeed(fd.text, best.id);
     const now = Date.now();
-    const rows = [];
-    all.forEach(function(m) {
-        if (m.st < now - 30 * 60 * 1000) return;   // فقط پیش‌رو (گرِیس ۳۰ دقیقه)
-        rows.push(evRowFromUtc(new Date(m.st).toISOString(),
-            '🎾 تنیس: ' + evTennisNameFa(m.nA) + ' — ' + evTennisNameFa(m.nB),
-            evTennisTournFa(m.tourn),
-            'tennis24.com'));
-    });
-    rows.sort(function(a, b) { return String(a.date + a.time).localeCompare(String(b.date + b.time)); });
-    if (!rows.length) {
-        if (!all.length) evLog('⚠️ «' + (best.name || best.url) + '» فعلاً هیچ مسابقهٔ پیش‌روی ثبت‌شده‌ای ندارد (خود سایت هم «No match found» می‌دهد — مثلاً مصدومیت یا فصلِ تمام) — پیام صادقانه', true);
-        else evLog('⚠️ مسابقهٔ ثبت‌شده در فید بود ولی همهٔ زمان‌ها گذشته بودند — پیام صادقانه', true);
-        showToast('تنیس: مسابقهٔ پیش‌روی ثبت‌شده‌ای ندارد');
-        return;
+    let rows = [];
+    if (fd.ok) {
+        evLog('✅ فید بازیکن خوانده شد (' + fd.via + ')');
+        const all = evParseFlashFeed(fd.text, best.id);
+        all.forEach(function(m) {
+            if (m.st < now - 30 * 60 * 1000) return;   // فقط پیش‌رو (گرِیس ۳۰ دقیقه)
+            rows.push(evRowFromUtc(new Date(m.st).toISOString(),
+                '🎾 تنیس: ' + evTennisNameFa(m.nA) + ' — ' + evTennisNameFa(m.nB),
+                evTennisTournFa(m.tourn),
+                'tennis24.com'));
+        });
+        if (!rows.length) {
+            // فید خالی = جوابِ واقعی سایت (مصدومیت/فصل تمام) — نه خطا؛
+            // مسیر دوم سوفااسکور فقط وقتی است که خود فید خوانده نشود.
+            if (!all.length) evLog('⚠️ «' + (best.name || best.url) + '» فعلاً هیچ مسابقهٔ پیش‌روی ثبت‌شده‌ای ندارد (خود سایت هم «No match found» می‌دهد — مثلاً مصدومیت یا فصلِ تمام) — پیام صادقانه', true);
+            else evLog('⚠️ مسابقهٔ ثبت‌شده در فید بود ولی همهٔ زمان‌ها گذشته بودند — پیام صادقانه', true);
+            showToast('تنیس: مسابقهٔ پیش‌روی ثبت‌شده‌ای ندارد');
+            return;
+        }
+    } else {
+        // v278: مسیر دوم — فید فلش‌اسکور به هدر نیاز دارد و از مبدأهای
+        // غیر-لوکال نمی‌گذرد (گزارش کاربر). SofaScore بدون هدر سفارشی است
+        // (ACAO:* — مستقیم از مرورگر؛ پشتیبان: زنجیرهٔ واسطهٔ JSON).
+        evLog('↪️ مسیر اول خوانده نشد: ' + fd.err + ' — تلاش مسیر دوم: SofaScore (بدون هدر — مستقیم از مرورگر)', true);
+        const sf = await evTennisSofaApi(q);
+        if (!sf.ok) {
+            evLog('🚫 هر دو مسیر تنیس خوانده نشد — فلش‌اسکور: ' + fd.err + ' | سوفااسکور: ' + sf.err + ' — پیام صادقانه', true);
+            showToast('تنیس: هیچ مسیری جواب نداد');
+            return;
+        }
+        evLog('✅ بازیکن در SofaScore: ' + (sf.player.name || '') + ' — شناسهٔ ' + sf.player.id + ' (' + sf.via + ')', true);
+        const se = await evTennisSofaEvents(String(sf.player.id));
+        if (!se.ok) { evLog('🚫 فهرست مسابقه‌های سوفااسکور خوانده نشد: ' + se.err + ' — پیام صادقانه', true); showToast('تنیس: فهرست مسابقه‌ها خوانده نشد'); return; }
+        evLog('✅ فهرست مسابقه‌ها خوانده شد (' + se.via + ')');
+        (se.events || []).forEach(function(e) {
+            if (!e || !e.startTimestamp || !e.homeTeam || !e.awayTeam) return;
+            if (e.status && e.status.type && e.status.type !== 'notstarted') return;   // فقط هنوز انجام‌نشده
+            if (e.startTimestamp * 1000 < now - 30 * 60 * 1000) return;   // فقط پیش‌رو (گرِیس ۳۰ دقیقه)
+            const tn = (e.tournament && e.tournament.uniqueTournament && e.tournament.uniqueTournament.name) ||
+                       (e.uniqueTournament && e.uniqueTournament.name) ||
+                       (e.tournament && e.tournament.name) || '';
+            rows.push(evRowFromUtc(new Date(e.startTimestamp * 1000).toISOString(),
+                '🎾 تنیس: ' + evTennisNameFa(e.homeTeam.name || '') + ' — ' + evTennisNameFa(e.awayTeam.name || ''),
+                evTennisTournFa(tn),
+                'sofascore'));
+        });
+        if (!rows.length) {
+            evLog('⚠️ «' + (sf.player.name || '') + '» فعلاً هیچ مسابقهٔ پیش‌روی ثبت‌شده‌ای ندارد (فصلِ تمام یا بازی بعدی هنوز برنامه‌ریزی نشده) — پیام صادقانه', true);
+            showToast('تنیس: مسابقهٔ پیش‌روی ثبت‌شده‌ای ندارد');
+            return;
+        }
     }
+    rows.sort(function(a, b) { return String(a.date + a.time).localeCompare(String(b.date + b.time)); });
     evLog('✅ ' + toPersianNumber(rows.length) + ' مسابقهٔ پیش‌رو برای «' + (best.name || best.url) + '» — تاریخ شمسی و ساعت ایران (تهران)', true);
     const fresh = evFreshRows(rows, _evResults);
     if (!fresh.length) { evLog('⚠️ مورد جدیدی نبود — همهٔ مسابقه‌های یافت‌شده قبلاً در فهرست یا گروه «رویدادها» هستند (پیام صادقانه)', true); showToast('تنیس: مورد جدیدی نبود'); return; }
