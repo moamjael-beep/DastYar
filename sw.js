@@ -34,7 +34,7 @@
 // + pagehide wake-up full set (KEEPALIVE/CHECK_DEADLINES/SCHEDULE_TRIGGERS/sync).
 // 🔧 v205: fresh audit — ممیزی کامل دوباره؛ تنها تغییر: اصلاح نویسهٔ چینی در کامنت بخش ۳.
 // 🔧 v208: گارد حذف شخصِ دارای ارجاع در تسک‌ها (یکپارچگی داده) — تغییر فقط در HTML.
-const CACHE_NAME = 'yadavar-cache-v276';
+const CACHE_NAME = 'yadavar-cache-v277';
 
 // نام پایگاه دادهٔ IndexedDB. این پایگاه داده بین سرویس ورکر و صفحهٔ
 // HTML مشترک است و یادآورها + تاریخچهٔ اعلان‌ها را در خود نگه می‌دارد.
@@ -347,11 +347,16 @@ self.addEventListener('fetch', (event) => {
   // v275 — BA-275: corsfix (اول زنجیرهٔ واسطه‌ها) هم مستثنی.
   // v276 — BA-276: API رسمی WST (اسنوکر) + صفحات formula1.com هم مستثنی
   // (رویدادهای جهانی — بدون کش SW، بدون مداخله).
+  // v277 — BA-277: سرچ تنیس (s.livesport.services) + فید فلش‌اسکور
+  // (global.flashscore.ninja) هم مستثنی — فید با هدر x-fsign است و
+  // نباید پاسخش در SW کش/دستکاری شود.
   if (url.hostname === 'api2.anten.ir' || url.hostname === 'www.aparatsport.ir' ||
       url.hostname === 'api.allorigins.win' || url.hostname === 'r.jina.ai' ||
       url.hostname === 'api.cors.lol' || url.hostname === 'api.codetabs.com' ||
       url.hostname === 'proxy.corsfix.com' ||
       url.hostname === 'tournaments.snooker.web.gc.wstservices.co.uk' ||
+      url.hostname === 's.livesport.services' ||
+      url.hostname === 'global.flashscore.ninja' ||
       url.hostname === 'www.formula1.com') return;
 
   // ──────────────────────────────────────────────────────────────────

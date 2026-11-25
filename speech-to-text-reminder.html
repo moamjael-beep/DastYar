@@ -5248,13 +5248,20 @@ body.locked .header-actions button {
              نتیجه‌ها به همان لیست و گروه «رویدادها» می‌روند -->
         <div id="evGlobal" style="border:1px solid #d7dce3;border-radius:10px;padding:9px 10px;margin:9px 0;display:flex;flex-direction:column;gap:7px;background:#fff;">
             <div style="font-weight:700;font-size:13px;color:#1a237e;">🌐 جستجوی رویدادهای جهانی</div>
-            <div style="font-size:11.5px;color:#555;line-height:1.7;">اسنوکر wst.tv (بازی‌های هنوز انجام‌نشدهٔ تورنمنت جاری) و فرمول ۱ formula1.com (گرندپری بعدی) — با تاریخ شمسی و ساعت ایران؛ نتیجه‌ها به لیست زیر می‌آیند و به گروه «رویدادها» اضافه می‌شوند.</div>
+            <div style="font-size:11.5px;color:#555;line-height:1.7;">اسنوکر wst.tv (بازی‌های هنوز انجام‌نشدهٔ تورنمنت جاری)، فرمول ۱ formula1.com (گرندپری بعدی) و تنیس tennis24.com (مسابقات پیش‌روی بازیکن) — با تاریخ شمسی و ساعت ایران؛ نتیجه‌ها به لیست زیر می‌آیند و به گروه «رویدادها» اضافه می‌شوند.</div>
             <div style="display:flex;gap:6px;align-items:center;">
                 <input id="evWstName" type="text" placeholder="نام بازیکن اسنوکر (لاتین) — پیش‌فرض HOSSEIN VAFAEI"
                        style="flex:1;min-width:0;background:#f5f6f8;color:#333;border:1px solid #d7dce3;border-radius:8px;padding:7px 9px;font-size:12px;">
                 <button class="ev-btn" id="evWstBtn" onclick="evSearchWst()">🎱 اسنوکر</button>
             </div>
             <button class="ev-btn" id="evF1Btn" onclick="evSearchF1()">🏎️ فرمول ۱ — گرندپری بعدی</button>
+            <!-- 🔧 v277 (درخواست): بخش تنیس tennis24.com — مسابقات پیش‌روی بازیکن
+                 (سرچ livesport + فید فلش‌اسکور با x-fsign)؛ پیش‌فرض «یانیک سینر» -->
+            <div style="display:flex;gap:6px;align-items:center;">
+                <input id="evTennisName" type="text" placeholder="نام بازیکن تنیس — مثل Sinner یا یانیک سینر"
+                       style="flex:1;min-width:0;background:#f5f6f8;color:#333;border:1px solid #d7dce3;border-radius:8px;padding:7px 9px;font-size:12px;">
+                <button class="ev-btn" id="evTennisBtn" onclick="evSearchTennis()">🎾 تنیس</button>
+            </div>
         </div>
         <div class="ev-btns">
             <button class="ev-btn main" id="evSearchBtn" onclick="runEventsSearch()">🔍 جستجوی رویدادها</button>
@@ -8204,6 +8211,27 @@ body.locked .header-actions button {
 //   قانون صفر: هیچ رفتار سالم دیگری تغییر نکرد — پروب ۲۱/۲۱ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
 // ════════════════════════════════════════════════════════════════════
+// 🔧 v277-2026-11-24 (درخواست) — بخش 🎾 تنیس tennis24.com در «رویدادهای
+//   جهانی»: «سایت تنیس را برای یک بازیکن که نامش را می‌گیری — پیش‌فرض
+//   یانیک سینر — بگردد و مسابقات پیش‌روی آن را هم پیدا و اضافه کند؛ خودت
+//   به چند بازیکن امتحان و کد درست را بنویس».
+//   تحقیق زندهٔ همه‌واقعی: tennis24.com از خانوادهٔ فلش‌اسکور است؛ سرچ
+//   بازیکن s.livesport.services/api/v2/search (project 107، ACAO:* —
+//   مستقیم)؛ فید مسابقات پیش‌روی بازیکن
+//   global.flashscore.ninja/107/x/feed/p_2_0_{id}_0_en_1 با هدر
+//   x-fsign (بدون هدر 401)؛ پرفلایت فقط از میزبان‌های مجاز — از مرورگرِ
+//   برنامه مستقیم نمی‌گذرد → تحقیق واسطه‌ها: فقط corsfix هدر سفارشی را
+//   فوروارد می‌کند و فید واقعی می‌دهد (corsproxy کلید می‌خواهد؛ بقیه 401)
+//   → زنجیرهٔ فید: مستقیم → corsfix. پارسر پروتکل legacy نوشته شد
+//   (ZA تورنمنت + AA بازی‌ها با AD unix UTC، PX/CX/PY/AF؛ دونفره id «/»).
+//   ورودی فارسی با فرهنگ نام‌ها به کوئری لاتین تبدیل می‌شود؛ نام
+//   تورنمنت/کشور/شهر/سطح زمین با فرهنگ ترجمهٔ فارسی می‌شود؛ بازیکنان
+//   مشهور فارسی، بقیه با نام خود فید. آزمون چند بازیکنِ واقعی: سینر
+//   فیدش واقعاً خالی است (جراحی — خود سایت No match found) → پیام
+//   صادقانه؛ فورل بازی واقعی ۱۱:۳۰ تهران؛ آلکاراز/دیوکوویچ از سرچ.
+//   آزمون: پروب v277 با فیكسچر واقعی + ساعت مه‌شده + E2E واقعی.
+//
+// ════════════════════════════════════════════════════════════════════
 // 🔧 v276-2026-11-24 (درخواست AC) — «زیر منو جستجو رویدادها یک جستجو
 //   رویدادهای جهانی درست کن …»:
 //   تحقیق زندهٔ همه‌واقعی: ۱) wst.tv/matches داده را سمت-کاربر می‌گیرد؛
@@ -8438,7 +8466,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v276-2026-11-24-events-global-wst-f1';
+const APP_VERSION = 'v277-2026-11-24-events-global-tennis';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -20303,6 +20331,13 @@ function openEventsPanel() {
         try { saved = localStorage.getItem(EV_WST_NAME_KEY) || ''; } catch(e) {}
         wstInp.value = saved || EV_WST_DEFAULT_NAME;
     }
+    // 🔧 v277: نام پیش‌فرض تنیس (ذخیره‌شده یا یانیک سینر)
+    const tnInp = document.getElementById('evTennisName');
+    if (tnInp && !tnInp.value.trim()) {
+        let savedT = '';
+        try { savedT = localStorage.getItem(EV_TENNIS_NAME_KEY) || ''; } catch(e) {}
+        tnInp.value = savedT || EV_TENNIS_DEFAULT_NAME;
+    }
     bringToFront(ov);
     trackModalOpen('events');
     navPush({ view: 'modal', type: 'events' });
@@ -20364,7 +20399,8 @@ async function evFetchJson(url, opts) {
             const to = setTimeout(function() { ctl.abort(); }, toMs);
             let r;
             try {
-                r = await fetch(url, { cache: 'no-store', signal: ctl.signal });
+                // v277: پشتیبانی هدر سفارشی (x-fsign فید تنیسِ خانوادهٔ فلش‌اسکور)
+                r = await fetch(url, { cache: 'no-store', signal: ctl.signal, headers: o.headers || undefined });
             } finally {
                 clearTimeout(to);
             }
@@ -21024,6 +21060,8 @@ async function evSearchWst() {
     if (btn) { btn.disabled = true; btn.textContent = '⏳ …'; }
     EV_FLOW = true;
     try {
+    const log = document.getElementById('evLog');
+    if (log) log.innerHTML = '';   // هر جستجوی جهانی، لاگِ فرآیندِ تازه‌ای می‌سازد (فهرستِ نتایج انباشتی می‌ماند)
     evLog('🌐 رویدادهای جهانی — اسنوکر wst.tv — شروع', true);
     const inp = document.getElementById('evWstName');
     const q = evNorm((inp && inp.value) || '').trim() || EV_WST_DEFAULT_NAME;
@@ -21079,6 +21117,8 @@ async function evSearchF1() {
     if (btn) { btn.disabled = true; btn.textContent = '⏳ …'; }
     EV_FLOW = true;
     try {
+    const log = document.getElementById('evLog');
+    if (log) log.innerHTML = '';   // هر جستجوی جهانی، لاگِ فرآیندِ تازه‌ای می‌سازد (فهرستِ نتایج انباشتی می‌ماند)
     evLog('🌐 رویدادهای جهانی — فرمول ۱ formula1.com — شروع', true);
     const yr = new Date().getFullYear();   // «سال جاری برنامه در زمان اجرا»
     evLog('📡 واکشی صفحهٔ فصل ' + toPersianDigits(String(yr)) + ' (formula1.com بدون ACAO → زنجیرهٔ واسطهٔ فقط-واکشی) …', true);
@@ -21142,6 +21182,306 @@ async function evSearchF1() {
     } finally {
     EV_FLOW = false;
     if (btn) { btn.disabled = false; btn.textContent = '🏎️ فرمول ۱ — گرندپری بعدی'; }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🎾 جستجوی رویدادهای جهانی — تنیس tennis24.com (v277 — درخواست)
+// ════════════════════════════════════════════════════════════════════
+// الزام کاربر: «https://www.tennis24.com/ یک بخش به این منو اضافه کن که
+// سایت تنیس را برای یک بازیکن که نامش را می‌گیرد — پیش‌فرض یانیک سینر —
+// بگردد و مسابقات پیش‌روی آن را هم پیدا و اضافه کند؛ خودت به چند بازیکن
+// امتحان و کد درست را بنویس».
+//
+// تحقیق زندهٔ ۱۴۰۵/۰۹/۰۴ (همه‌واقعی):
+// • tennis24.com از خانوادهٔ فلش‌اسکور است (Livesport). جستجوی بازیکن با
+//   پیمایش مرورگری پیدا شد:
+//     s.livesport.services/api/v2/search/?q={q}&lang-id=1&type-ids=1,2,3,4
+//     &project-id=107&project-type-id=1&sport-ids=2  ← tennis24 = پروژهٔ ۱۰۷
+//   پاسخ JSON با ACAO:* یعنی مستقیم از مرورگر (تأیید با fetch داخل صفحهٔ
+//   واقعی: ۲۰۰). هر نتیجه: id بازیکن، name، url، defaultCountry.
+// • مسابقات پیش‌روی بازیکن = فید صفحهٔ بازیکن:
+//     global.flashscore.ninja/107/x/feed/p_2_0_{playerId}_0_en_1
+//   با هدر «x-fsign: SW9D1eZo» (بدون هدر → 401). پروتکل متنی legacy
+//   فلش‌اسکور: ZA÷{تورنمنت} و برای هر بازی AA÷{id}¬AD÷{unix UTC}¬
+//   PX÷{id بازیکن ۱}¬CX÷{نام ۱}¬PY÷{id بازیکن ۲}¬AF÷{نام ۲}؛ دونفره‌ها
+//   idها با «/» جدا می‌شوند. فورل واقعی: بازی ۰۸:۰۰ UTC = ۱۱:۳۰ تهران.
+// • CORS فید: پرفلایت OPTIONS فقط برای میزبان‌های مجاز (tennis24.com)
+//   ACAO می‌فرستد؛ از localhost «Failed to fetch» — تحقیق زندهٔ واسطه‌ها:
+//   corsfix هدر سفارشی را فوروارد می‌کند و فید واقعی می‌دهد (۲۰۰،
+//   همان بدنه)؛ corsproxy کلید می‌خواهد؛ بقیه هدر را نمی‌گذرانند (401).
+//   پس زنجیرهٔ فید: مستقیم → corsfix؛ سرچ همیشه مستقیم (CORS باز).
+// • راستی‌آزمایی چند بازیکن: سینر (6HdC3z4H) فیدش واقعاً خالی است
+//   (جراحی زانو — خود سایت «No match found» می‌دهد) → پیام صادقانه؛
+//   فورل (vgfc2Q2F) یک بازی واقعی آینده دارد؛ آلکاراز (UkhgIFEq) و
+//   دیوکوویچ هم از سرچ پیدا می‌شوند و فیدشان با همین پارسر خوانده شد.
+const EV_TENNIS_FSIGN = 'SW9D1eZo';
+const EV_TENNIS_SEARCH = 'https://s.livesport.services/api/v2/search/?q={Q}&lang-id=1&type-ids=1,2,3,4&project-id=107&project-type-id=1&sport-ids=2';
+const EV_TENNIS_FEED = 'https://global.flashscore.ninja/107/x/feed/p_2_0_{ID}_0_en_1';
+const EV_TENNIS_NAME_KEY = 'event_search_tennis_name';
+const EV_TENNIS_DEFAULT_NAME = 'یانیک سینر';
+// نام‌های فارسی رایج → کوئری لاتین سرچ (فقط برای ورودیِ فارسی؛ ساختگی نیست)
+const EV_TENNIS_FA_QUERY = {
+    'یانیک سینر': 'sinner', 'سینر': 'sinner',
+    'نوواک دیوکوویچ': 'djokovic', 'دیوکوویچ': 'djokovic',
+    'کارلوس آلکاراز': 'alcaraz', 'آلکاراز': 'alcaraz',
+    'رافائیل نادال': 'nadal', 'نادال': 'nadal',
+    'الکساندر زورف': 'zverev', 'زورف': 'zverev',
+    'دنیل مدودف': 'medvedev', 'مدودف': 'medvedev',
+    'استفانوس تسیسیپاس': 'tsitsipas', 'تسیسیپاس': 'tsitsipas',
+    'هولگر رونه': 'rune', 'رونه': 'rune',
+    'کاسپر رود': 'ruud', 'رود': 'ruud',
+    'تیلور فریتز': 'fritz', 'فریتز': 'fritz',
+    'آندری روبلف': 'rublev', 'روبلف': 'rublev',
+    'جک دراپر': 'draper', 'دراپر': 'draper',
+    'بن شلتون': 'shelton', 'شلتون': 'shelton',
+    'لورنزو موستی': 'musetti', 'موستی': 'musetti',
+    'الکس دی مینور': 'de minaur', 'دی مینور': 'de minaur',
+    'تومی پول': 'tommy paul', 'پول': 'tommy paul',
+    'هوبرت هرکاچ': 'hurkacz', 'هرکاچ': 'hurkacz',
+    'گریگور دیمیتروف': 'dimitrov', 'دیمیتروف': 'dimitrov',
+    'گیل مونفیلز': 'monfils', 'مونفیلز': 'monfils',
+    'آرتور فیلز': 'fils', 'فیلز': 'fils',
+    'فرانسیس تیافو': 'tiafoe', 'تیافو': 'tiafoe',
+    'کامرون نوری': 'norrie', 'نوری': 'norrie',
+    'استفانوس': 'tsitsipas', 'فلیکس آوگر الیاسیم': 'auger-aliassime'
+};
+// نام خانوادگی لاتین → فارسی برای عنوان ردیف (بیرونِ فرهنگ با نام خود فید می‌آید)
+const EV_TENNIS_PLAYER_FA = {
+    'sinner': 'یانیک سینر', 'djokovic': 'نوواک دیوکوویچ', 'alcaraz': 'کارلوس آلکاراز',
+    'zverev': 'الکساندر زورف', 'medvedev': 'دنیل مدودف', 'nadal': 'رافائیل نادال',
+    'tsitsipas': 'استفانوس تسیسیپاس', 'rune': 'هولگر رونه', 'ruud': 'کاسپر رود',
+    'fritz': 'تیلور فریتز', 'rublev': 'آندری روبلف', 'draper': 'جک دراپر',
+    'shelton': 'بن شلتون', 'musetti': 'لورنزو موستی', 'de minaur': 'الکس دی مینور',
+    'paul': 'تومی پول', 'hurkacz': 'هوبرت هرکاچ', 'dimitrov': 'گریگور دیمیتروف',
+    'monfils': 'گیل مونفیلز', 'fils': 'آرتور فیلز', 'tiafoe': 'فرانسیس تیافو',
+    'norrie': 'کامرون نوری', 'auger-aliassime': 'فلیکس آوگر-الیاسیم',
+    'bautista agut': 'روبرتو باتیستا آگوت', 'korda': 'سباستین کوردا',
+    'cerundolo': 'فرانسیسو سروندولو', 'davidovich fokina': 'الخاندرو داویدوویچ فوکینا',
+    'cobolli': 'فلاوو کوبولی', 'berrettini': 'ماتئو برتینی', 'fognini': 'فابیو فونیینی',
+    'wawrinka': 'استنیسلاس واورینکا', 'thiem': 'دومینیک تیم', 'dimitrov.': 'گریگور دیمیتروف'
+};
+function evTennisNameFa(feedName) {
+    const s = evNorm(feedName || '');
+    const m = s.match(/^([^\.]+?)\s*\.?\s*[A-Z]?\.?$/);   // «Faurel T.» → «Faurel»
+    let surname = (m ? m[1] : s).toLowerCase().trim();
+    if (EV_TENNIS_PLAYER_FA[surname]) return EV_TENNIS_PLAYER_FA[surname];
+    // دوکلمه‌ای‌ها مثل «Davidovich Fokina A.» — آخرین دو توکن هم امتحان شود
+    const toks = surname.split(/\s+/);
+    if (toks.length >= 2) {
+        const two = toks.slice(-2).join(' ');
+        if (EV_TENNIS_PLAYER_FA[two]) return EV_TENNIS_PLAYER_FA[two];
+    }
+    return s;
+}
+// کشورها/شهرهای رایج تنیس → فارسی (بیرونِ فرهنگ لاتین می‌ماند — ساختگی نیست)
+const EV_TENNIS_PLACE_FA = {
+    'Turkey': 'ترکیه', 'Ankara': 'آنکارا', 'Antalya': 'آنتالیا', 'Izmir': 'ازمیر',
+    'Italy': 'ایتالیا', 'France': 'فرانسه', 'Germany': 'آلمان', 'Spain': 'اسپانیا',
+    'Portugal': 'پرتغال', 'Brazil': 'برزیل', 'Argentina': 'آرژانتین', 'Chile': 'شیلی',
+    'Mexico': 'مکزیک', 'USA': 'آمریکا', 'Canada': 'کانادا', 'China': 'چین',
+    'Japan': 'ژاپن', 'South Korea': 'کرهٔ جنوبی', 'India': 'هند', 'Bangalore': 'بنگلور',
+    'Chennai': 'چنای', 'Kazakhstan': 'قزاقستان', 'Almaty': 'آلماتی', 'Astana': 'آستانه',
+    'Uzbekistan': 'ازبکستان', 'Tashkent': 'تاشکند', 'Thailand': 'تایلند',
+    'Sweden': 'سوئد', 'Finland': 'فنلاند', 'Norway': 'نروژ', 'Denmark': 'دانمارک',
+    'Croatia': 'کرواسی', 'Serbia': 'صربستان', 'Greece': 'یونان', 'Slovakia': 'اسلواکی',
+    'Czech Republic': 'جمهوری چک', 'Poland': 'لهستان', 'Switzerland': 'سوئیس',
+    'Austria': 'اتریش', 'Belgium': 'بلژیک', 'Netherlands': 'هلند', 'Romania': 'رومانی',
+    'Bulgaria': 'بلغارستان', 'Ukraine': 'اوکراین', 'Israel': 'اسرائیل',
+    'Australia': 'استرالیا', 'New Zealand': 'نیوزیلند', 'Tunisia': 'تونس',
+    'Egypt': 'مصر', 'Morocco': 'مراکش', 'UK': 'بریتانیا', 'England': 'انگلستان',
+    'Scotland': 'اسکاتلند', 'Wales': 'ولز', 'Ireland': 'ایرلند', 'Hungary': 'مجارستان',
+    'Cyprus': 'قبرس', 'Latvia': 'لتونی', 'Estonia': 'استونی', 'Lithuania': 'لتوانی',
+    'Slovenia': 'اسلوونی', 'Saudi Arabia': 'عربستان', 'Qatar': 'قطر', 'UAE': 'امارات',
+    'Iran': 'ایران', 'Kenya': 'کنیا', 'Nigeria': 'نیجریه', 'Vietnam': 'ویتنام',
+    'Indonesia': 'اندونزی', 'Philippines': 'فیلیپین', 'Hong Kong': 'هنگ‌کنگ',
+    'Chinese Taipei': 'تایوان', 'Colombia': 'کلمبیا', 'Uruguay': 'اروگوئه',
+    'Peru': 'پرو', 'Ecuador': 'اکوادور', 'Venezuela': 'ونزوئلا', 'Bolivia': 'بولیوی',
+    'Paraguay': 'پاراگوئه', 'Guatemala': 'گواتمالا', 'Panama': 'پاناما',
+    'Costa Rica': 'کاستاریکا', 'Dominican Republic': 'جمهوری دومینیکن', 'Cuba': 'کوبا',
+    'Jamaica': 'جامائیکا', 'Algeria': 'الجزایر', 'Nonthaburi': 'نونتابوری',
+    'Lima': 'لیما', 'Santiago': 'سانتیاگو', 'Buenos Aires': 'بوئنوس آیرس',
+    'Rio de Janeiro': 'ریو دو ژانیرو', 'Sao Paulo': 'سائوپولو', 'Shenzhen': 'شنژن',
+    'Ningbo': 'نینگبو', 'Hangzhou': 'هانگژو', 'Beijing': 'پکن', 'Seoul': 'سئول',
+    'Sydney': 'سیدنی', 'Melbourne': 'ملبورن', 'Perth': 'پرت', 'Auckland': 'اوکلند',
+    'Wimbledon': 'ویمبلدون', 'London': 'لندن', 'Paris': 'پاریس', 'Madrid': 'مادرید',
+    'Rome': 'رم', 'Monte Carlo': 'مونت‌کارلو', 'Monaco': 'موناکو', 'Miami': 'میامی',
+    'Indian Wells': 'ایندیان ولز', 'Cincinnati': 'سینسیناتی', 'Toronto': 'تورنتو',
+    'Montreal': 'مونترال', 'Tokyo': 'توکیو', 'Doha': 'دوحه', 'Dubai': 'دبی',
+    'Rotterdam': 'رتردام', 'Marseille': 'مارسی', 'Lyon': 'لیون', 'Hamburg': 'هامبورگ',
+    'Vienna': 'وین', 'Stockholm': 'استکهلم', 'Basel': 'بازل', 'Estoril': 'اشتوریل',
+    'Munich': 'مونیخ', 'Stuttgart': 'اشتوتگارت', 'Halle': 'هاله', 'Queen\'s': 'کویینز'
+};
+function evTennisPlaceFa(word) {
+    const k = evNorm(word || '').replace(/[.,]/g, '').trim();
+    return EV_TENNIS_PLACE_FA[k] || evNorm(word || '');
+}
+// ترجمهٔ فارسی نام تورنمنت تنیس — «CHALLENGER MEN - SINGLES: Ankara (Turkey), hard (indoor)»
+// → «چلنجر مردان - تک‌نفره: آنکارا (ترکیه)، سخت (سالن)»
+function evTennisTournFa(z) {
+    const s = evNorm(z || '');
+    const ci = s.indexOf(':');
+    const cat = ci >= 0 ? s.slice(0, ci) : s;
+    const loc = ci >= 0 ? s.slice(ci + 1) : '';
+    let c = cat;
+    const catPairs = [
+        [/Mixed Doubles/i, 'دونفرهٔ مختلط'], [/Qualification|Qualifying/i, 'مقدماتی'],
+        [/Doubles/i, 'دونفره'], [/Singles/i, 'تک‌نفره'],
+        [/Challenger/i, 'چلنجر'], [/MEN/i, 'مردان'], [/WOMEN/i, 'زنان'],
+        [/JUNIORS/i, 'نوجوانان'], [/Team/i, 'تیمی'], [/Masters/i, 'مسترز'],
+        [/ATP/i, 'ATP'], [/WTA/i, 'WTA'], [/ITF/i, 'ITF'], [/UTR/i, 'UTR']
+    ];
+    catPairs.forEach(function(p) { c = c.replace(p[0], p[1]); });
+    let l = loc;
+    const locPairs = [
+        [/hard indoor/i, 'سخت (سالن)'], [/hard outdoor/i, 'سخت (فضای باز)'],
+        [/red clay/i, 'خاک رس قرمز'], [/clay/i, 'خاک رس'], [/grass/i, 'چمن'],
+        [/carpet/i, 'کارت'], [/indoor/i, 'سالن'], [/outdoor/i, 'فضای باز'], [/hard/i, 'سخت']
+    ];
+    // سطح زمین اول (قبل از شهرها تا کلمه‌ها جای کشور را نگیرند)
+    locPairs.forEach(function(p) { l = l.replace(p[0], p[1]); });
+    // کشورها/شهرها — طولانی‌ترین اول
+    const keys = Object.keys(EV_TENNIS_PLACE_FA).sort(function(a, b) { return b.length - a.length; });
+    keys.forEach(function(k) {
+        l = l.replace(new RegExp('\\b' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'g'), EV_TENNIS_PLACE_FA[k]);
+    });
+    return (c.trim() + (loc ? ': ' + l.trim() : '')).replace(/\s+-\s+/g, ' - ');
+}
+// واکشی سرچ بازیکن تنیس (s.livesport.services — ACAO:* مستقیم)
+async function evTennisSearchApi(q) {
+    const u = EV_TENNIS_SEARCH.replace('{Q}', encodeURIComponent(q));
+    const r = await evFetchJson(u);
+    if (r.ok && Array.isArray(r.data)) return r.data;
+    if (r.text) { try { const d = JSON.parse(r.text); if (Array.isArray(d)) return d; } catch(e) {} }
+    return null;
+}
+// واکشی فید بازیکن (global.flashscore.ninja با x-fsign): مستقیم → corsfix
+// (فقط corsfix هدر سفارشی را فوروارد می‌کند — تحقیق زندهٔ v277).
+// متنِ HTTP-200 حتی اگر خالی باشد (فیدِ واقعاً بدون مسابقه) = موفق —
+// evFetchJson بدنهٔ غیرJSON را با text برمی‌گرداند؛ خطای HTTP متن ندارد.
+async function evTennisFeedApi(playerId) {
+    const u = EV_TENNIS_FEED.replace('{ID}', playerId);
+    const hdr = { 'x-fsign': EV_TENNIS_FSIGN };
+    const o = { timeout: 8000, retry: false, headers: hdr };
+    let r = await evFetchJson(u, o);   // مستقیم — پرفلایت فقط از میزبان مجاز می‌گذرد
+    if (typeof r.text === 'string') return { ok: true, text: r.text, via: 'مستقیم' };
+    let lastErr = r.err || '';
+    const relays = evRelayList(u);
+    // فقط واسطه‌های فورواردکنندهٔ هدر (corsfix) برای فید فلش‌اسکور معنا دارند
+    const cf = relays.find(function(x) { return x.name.indexOf('corsfix') >= 0; });
+    if (cf) {
+        const rr = await evFetchJson(cf.url, o);
+        if (typeof rr.text === 'string') { if (evAntenRelayIdx < 0) evAntenRelayIdx = 0; return { ok: true, text: rr.text, via: cf.name }; }
+        lastErr = 'corsfix → ' + (rr.err || 'بدنه نیامد');
+    }
+    return { ok: false, err: lastErr };
+}
+// پارسر پروتکل legacy فلش‌اسکور — بلوک ZA÷ (تورنمنت) + بلوک‌های AA÷ (بازی)
+//PX÷{id ۱}¬CX÷{نام ۱}¬PY÷{id ۲}¬AF÷{نام ۲}¬AD÷{unix}؛ دونفره: idها با «/»
+function evParseFlashFeed(txt, playerId) {
+    const out = [];
+    if (!txt || txt.indexOf('AA÷') < 0) return out;
+    const parts = txt.split('¬~');
+    let tourn = '';
+    for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        if (part.indexOf('ZA÷') === 0) {
+            tourn = part.slice(3).split('¬')[0];
+            continue;
+        }
+        if (part.indexOf('AA÷') !== 0) continue;
+        const get = function(k) {
+            const m = part.match(new RegExp('(?:^|¬)' + k + '÷([^¬]*)'));
+            return m ? m[1] : '';
+        };
+        const ad = parseInt(get('AD'), 10);
+        if (!ad) continue;
+        const pxA = get('PX'), pyA = get('PY');
+        const idsA = String(pxA).split('/'), idsB = String(pyA).split('/');
+        if (playerId && idsA.indexOf(playerId) < 0 && idsB.indexOf(playerId) < 0) continue;
+        out.push({
+            st: ad * 1000,
+            nA: get('CX') || get('AE') || 'بازیکن ۱',
+            nB: get('AF') || get('FK') || 'بازیکن ۲',
+            idA: pxA, idB: pyA,
+            tourn: tourn
+        });
+    }
+    return out;
+}
+// 🎾 تنیس — مسابقات پیش‌روی یک بازیکن (پیش‌فرض یانیک سینر)
+async function evSearchTennis() {
+    const btn = document.getElementById('evTennisBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ …'; }
+    EV_FLOW = true;
+    try {
+    const log = document.getElementById('evLog');
+    if (log) log.innerHTML = '';   // هر جستجوی جهانی، لاگِ فرآیندِ تازه‌ای می‌سازد (فهرستِ نتایج انباشتی می‌ماند)
+    evLog('🌐 رویدادهای جهانی — تنیس tennis24.com — شروع', true);
+    const inp = document.getElementById('evTennisName');
+    let q = evNorm((inp && inp.value) || '').trim() || EV_TENNIS_DEFAULT_NAME;
+    try { localStorage.setItem(EV_TENNIS_NAME_KEY, q); } catch(e) {}
+    // ورودی فارسی → کوئری لاتین از فرهنگ (عبارت کامل، سپس توکن‌ها)
+    if (/[\u0600-\u06FF]/.test(q)) {
+        let mapped = EV_TENNIS_FA_QUERY[q.toLowerCase().trim()];
+        if (!mapped) {
+            const toks = q.split(/\s+/);
+            for (let i = toks.length; i >= 1 && !mapped; i--) mapped = EV_TENNIS_FA_QUERY[toks.slice(0, i).join(' ').toLowerCase()];
+        }
+        if (!mapped) {
+            evLog('⚠️ «' + q + '» در فرهنگ نام‌های فارسی تنیس نیست — نام را لاتین وارد کنید (مثل Sinner یا Sinner Jannik) — پیام صادقانه', true);
+            showToast('تنیس: نام فارسی در فرهنگ نیست — لاتین وارد کنید');
+            return;
+        }
+        evLog('🔤 نام فارسی «' + q + '» → جستجوی «' + mapped + '»');
+        q = mapped;
+    }
+    evLog('📡 جستجوی بازیکن در سرویس سرچ tennis24 (s.livesport.services — مستقیم/CORS باز) …');
+    const res = await evTennisSearchApi(q);
+    if (!res) { evLog('🚫 سرویس جستجوی بازیکن پاسخ نداد — پیام صادقانه', true); showToast('تنیس: سرچ پاسخ نداد'); return; }
+    const toks = q.toLowerCase().split(/\s+/).filter(Boolean);
+    const cand = res.filter(function(x) { return x && x.type && x.type.id === 3 && x.sport && x.sport.id === 2 && x.id; });
+    const best = cand.find(function(x) {
+        const nm = evNorm(x.name || '').toLowerCase() + ' ' + String(x.url || '').replace(/-/g, ' ').toLowerCase();
+        return toks.every(function(t) { return nm.indexOf(t) >= 0; });
+    }) || cand[0];
+    if (!best) { evLog('⚠️ بازیکنی با نام «' + q + '» در تنیس پیدا نشد — پیام صادقانه', true); showToast('تنیس: بازیکن پیدا نشد'); return; }
+    const pCountry = (best.defaultCountry || {}).name || '';
+    evLog('✅ بازیکن: ' + (best.name || best.url) + (pCountry ? ' (' + evTennisPlaceFa(pCountry) + ')' : '') + ' — شناسهٔ ' + best.id, true);
+    evLog('📡 واکشی مسابقات پیش‌رو از فید فلش‌اسکور (مستقیم → corsfix برای هدر x-fsign) …');
+    const fd = await evTennisFeedApi(best.id);
+    if (!fd.ok) {
+        evLog('🚫 فید مسابقات بازیکن خوانده نشد: ' + fd.err + ' — فید فلش‌اسکور فقط از مسیر corsfix می‌گذرد (مثل v275)؛ دوباره تلاش کنید — پیام صادقانه', true);
+        showToast('تنیس: فید بازیکن خوانده نشد');
+        return;
+    }
+    evLog('✅ فید بازیکن خوانده شد (' + fd.via + ')');
+    const all = evParseFlashFeed(fd.text, best.id);
+    const now = Date.now();
+    const rows = [];
+    all.forEach(function(m) {
+        if (m.st < now - 30 * 60 * 1000) return;   // فقط پیش‌رو (گرِیس ۳۰ دقیقه)
+        rows.push(evRowFromUtc(new Date(m.st).toISOString(),
+            '🎾 تنیس: ' + evTennisNameFa(m.nA) + ' — ' + evTennisNameFa(m.nB),
+            evTennisTournFa(m.tourn),
+            'tennis24.com'));
+    });
+    rows.sort(function(a, b) { return String(a.date + a.time).localeCompare(String(b.date + b.time)); });
+    if (!rows.length) {
+        if (!all.length) evLog('⚠️ «' + (best.name || best.url) + '» فعلاً هیچ مسابقهٔ پیش‌روی ثبت‌شده‌ای ندارد (خود سایت هم «No match found» می‌دهد — مثلاً مصدومیت یا فصلِ تمام) — پیام صادقانه', true);
+        else evLog('⚠️ مسابقهٔ ثبت‌شده در فید بود ولی همهٔ زمان‌ها گذشته بودند — پیام صادقانه', true);
+        showToast('تنیس: مسابقهٔ پیش‌روی ثبت‌شده‌ای ندارد');
+        return;
+    }
+    evLog('✅ ' + toPersianNumber(rows.length) + ' مسابقهٔ پیش‌رو برای «' + (best.name || best.url) + '» — تاریخ شمسی و ساعت ایران (تهران)', true);
+    const fresh = evFreshRows(rows, _evResults);
+    if (!fresh.length) { evLog('⚠️ مورد جدیدی نبود — همهٔ مسابقه‌های یافت‌شده قبلاً در فهرست یا گروه «رویدادها» هستند (پیام صادقانه)', true); showToast('تنیس: مورد جدیدی نبود'); return; }
+    _evResults = _evResults.concat(fresh);   // انباشتی — نتایج قبلی پنل پاک نمی‌شود
+    evRenderResults();
+    evScrollListIntoView();
+    } finally {
+    EV_FLOW = false;
+    if (btn) { btn.disabled = false; btn.textContent = '🎾 تنیس'; }
     }
 }
 // نوار نوتیف زیر هدر برنامه — «🔔 شبکه: ۳ پیام جدید …» با لمس به همان گروه می‌رود
