@@ -8210,6 +8210,20 @@ body.locked .header-actions button {
 //   ۵) عنوان آیتم اعلان‌ها بدون «زنگوله»: «اعلان‌ها».
 //   قانون صفر: هیچ رفتار سالم دیگری تغییر نکرد — پروب ۲۱/۲۱ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
+// 🔧 v279-2026-11-25 (گزارش کاربر: «اسنوکر و فرمول ۱ درست است اما تنیس
+//   خراب است») — ریشه (تشخیص زندهٔ کامل): مسیر اول فید تنیس (corsfix)
+//   فقط Originهای localhost را می‌پذیرد و سهمقهٔ ۶۰ درخواست/روز دارد؛
+//   وقتی تمام شود یا از مبدأ غیر-لوکال فراخوانی شود، مسیر دوم sofascore
+//   (v278) هم کار نمی‌کند چون api.sofascore.com از fetch مرورگر ۴۰۳
+//   challenge (Cloudflare) می‌گیرد و هیچ واسطه‌ای هم از مرورگر جواب
+//   نمی‌دهد. اقدام — کشف زنده: cors-anywhere.herokuapp.com هدر سفارشی
+//   x-fsign را فوروارد می‌کند (تأیید: فید r_2_1 با هدر ۲۰۰/۵۰۷B دادهٔ
+//   واقعی، بدون هدر ۴۰۱) و از هر مبدأی کار می‌کند. evTennisFeedApi حالا
+//   سه‌مسیره است: مستقیم → corsfix (localhost) → cors-anywhere (پشتیبان).
+//   مسیر sofascore حذف شد (مرده) و به‌جای آن پیام صادقانه + راهنما.
+//   آزمون: پروب v279 شبیه‌سازی مبدأ کاربر (corsfix بسته → cors-anywhere)
+//   + E2E واقعی + رگرسیون کامل.
+//
 // ════════════════════════════════════════════════════════════════════
 // 🔧 v278-2026-11-25 (گزارش کاربر: «اسنوکر درست است اما فرمول ۱ و تنیس
 //   کار نمی‌کند») — ریشه (تشخیص زنده): corsfix فقط Originهای localhost را
@@ -8486,7 +8500,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v278-2026-11-25-events-global-f1-tennis-fallback';
+const APP_VERSION = 'v279-2026-11-25-events-tennis-cors-anywhere';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -21480,80 +21494,16 @@ async function evTennisSearchApi(q) {
     if (r.text) { try { const d = JSON.parse(r.text); if (Array.isArray(d)) return d; } catch(e) {} }
     return null;
 }
-// ═══ مسیر دوم تنیس (v278): SofaScore — بدون هدر سفارشی ═══
-// دلیل: فید فلش‌اسکور به هدر x-fsign نیاز دارد و فقط corsfix آن را
-// فوروارد می‌کند که فقط localhost را می‌پذیرد — گزارش کاربر: «تنیس کار
-// نمی‌کند». api.sofascore.com خودش ACAO:* می‌فرستد (تحقیق زنده) پس از
-// مرورگر مستقیم می‌گذرد؛ پشتیبانِ آن هم همان زنجیرهٔ واسطهٔ JSON ساده.
-// شمای داده (ثابت و شناخته‌شده): search/all → results[].entity (type=team،
-// sport.name=Tennis)؛ team/{id}/events/next/0 → events[] با startTimestamp
-// (ثانیه)، tournament.name، uniqueTournament.name، homeTeam/awayTeam.name،
-// status.type='notstarted'.
-const EV_TENNIS_SOFA_SEARCH = 'https://api.sofascore.com/api/v1/search/all?q={Q}';
-const EV_TENNIS_SOFA_EVENTS = 'https://api.sofascore.com/api/v1/team/{ID}/events/next/0';
-function evTennisSofaRelay(u) {
-    // زنجیرهٔ واسطهٔ فقط-واکشی برای JSON ساده (بدون هدر) — همان v275
-    return evRelayList(u);
-}
-function evTennisSofaPickPlayer(results, q) {
-    if (!Array.isArray(results)) return null;
-    const toks = q.toLowerCase().split(/\s+/).filter(Boolean);
-    const cand = results.filter(function(x) {
-        return x && x.type === 'team' && x.entity && x.entity.id &&
-               x.entity.sport && x.entity.sport.name === 'Tennis';
-    });
-    const best = cand.find(function(x) {
-        const nm = evNorm(x.entity.name || '').toLowerCase() + ' ' + String(x.entity.slug || '').replace(/-/g, ' ').toLowerCase();
-        return toks.every(function(t) { return nm.indexOf(t) >= 0; });
-    }) || cand[0];
-    return best ? best.entity : null;
-}
-async function evTennisSofaApi(q) {
-    const su = EV_TENNIS_SOFA_SEARCH.replace('{Q}', encodeURIComponent(q));
-    // ۱) مستقیم (ACAO:* — از مرورگر کاربر می‌گذرد؛ از IP دیتاسنتر ممکن است Cloudflare بلاک کند)
-    let r = await evFetchJson(su, { timeout: 8000, retry: false });
-    let player = evTennisSofaPickPlayer(r.ok ? (r.data && r.data.results) : null, q);
-    if (player) return { ok: true, player: player, via: 'مستقیم' };
-    // ۲) زنجیرهٔ واسطه‌ها — JSON ساده بدون هدر؛ هر دو دامنه (.com/.app)
-    const urls = [su, su.replace('api.sofascore.com', 'api.sofascore.app')];
-    let lastErr = r.err || '';
-    for (const base of urls) {
-        const relays = evTennisSofaRelay(base);
-        const order = (evAntenRelayIdx >= 0) ? [evAntenRelayIdx, 0, 1, 2, 3, 4, 5].filter(function(v, i, arr) { return arr.indexOf(v) === i && v < relays.length; }) : [0, 1, 2, 3, 4, 5];
-        for (const idx of order) {
-            const rl = relays[idx];
-            const rr = await evFetchJson(rl.url, { timeout: 8000, retry: false });
-            let d = rr.ok ? rr.data : (rr.text ? evParseRelayJson(rr.text) : null);
-            if (rr.ok && rr.data && typeof rr.data.contents === 'string') { try { d = JSON.parse(rr.data.contents); } catch(e2) { d = null; } }
-            const pl = evTennisSofaPickPlayer(d ? d.results : null, q);
-            if (pl) { if (evAntenRelayIdx !== idx) evAntenRelayIdx = idx; return { ok: true, player: pl, via: rl.name }; }
-            lastErr = rr.ok ? ('پاسخ ' + rl.name + ' ساختار سرچ نداشت') : (rl.name + ' → ' + rr.err);
-        }
-    }
-    return { ok: false, err: lastErr };
-}
-async function evTennisSofaEvents(pid) {
-    const eu = EV_TENNIS_SOFA_EVENTS.replace('{ID}', pid);
-    let r = await evFetchJson(eu, { timeout: 8000, retry: false });
-    if (r.ok && r.data && r.data.events) return { ok: true, events: r.data.events, via: 'مستقیم' };
-    let lastErr = r.err || '';
-    const urls = [eu, eu.replace('api.sofascore.com', 'api.sofascore.app')];
-    for (const base of urls) {
-        const relays = evTennisSofaRelay(base);
-        const order = (evAntenRelayIdx >= 0) ? [evAntenRelayIdx, 0, 1, 2, 3, 4, 5].filter(function(v, i, arr) { return arr.indexOf(v) === i && v < relays.length; }) : [0, 1, 2, 3, 4, 5];
-        for (const idx of order) {
-            const rl = relays[idx];
-            const rr = await evFetchJson(rl.url, { timeout: 8000, retry: false });
-            let d = rr.ok ? rr.data : (rr.text ? evParseRelayJson(rr.text) : null);
-            if (rr.ok && rr.data && typeof rr.data.contents === 'string') { try { d = JSON.parse(rr.data.contents); } catch(e2) { d = null; } }
-            if (d && d.events) { if (evAntenRelayIdx !== idx) evAntenRelayIdx = idx; return { ok: true, events: d.events, via: rl.name }; }
-            lastErr = rr.ok ? ('پاسخ ' + rl.name + ' ساختار events نداشت') : (rl.name + ' → ' + rr.err);
-        }
-    }
-    return { ok: false, err: lastErr };
-}
+// ═══ مسیر دوم تنیس حذف شد (v279) — تحقیق زنده: sofascore از fetch
+// مرورگر ۴۰۳ challenge (Cloudflare) می‌گیرد و هیچ واسطه‌ای هم از مرورگر
+// جواب نمی‌دهد. به‌جای آن cors-anywhere به‌عنوان مسیر دومِ فید فلش‌اسکور
+// اضافه شد (هدر x-fsign را فوروارد می‌کند — تأیید زنده).
 // واکشی فید بازیکن (global.flashscore.ninja با x-fsign): مستقیم → corsfix
-// (فقط corsfix هدر سفارشی را فوروارد می‌کند — تحقیق زندهٔ v277).
+// واکشی فید بازیکن (global.flashscore.ninja با x-fsign): مستقیم → corsfix
+// → cors-anywhere (تحقیق زندهٔ v279: هرودوکو هدر سفارشی x-fsign را فوروارد
+// می‌کند و از هر مبدأی کار می‌کند — تأیید: فید r_2_1 با هدر ۲۰۰/۵۰۷B دادهٔ
+// واقعی، بدون هدر ۴۰۱). corsfix فقط localhost را قبول می‌کند (گزارش کاربر
+// v278: «تنیس خراب است»)؛ cors-anywhere پشتیبان قطعیِ غیر-لوکال است.
 // متنِ HTTP-200 حتی اگر خالی باشد (فیدِ واقعاً بدون مسابقه) = موفق —
 // evFetchJson بدنهٔ غیرJSON را با text برمی‌گرداند؛ خطای HTTP متن ندارد.
 async function evTennisFeedApi(playerId) {
@@ -21563,13 +21513,19 @@ async function evTennisFeedApi(playerId) {
     let r = await evFetchJson(u, o);   // مستقیم — پرفلایت فقط از میزبان مجاز می‌گذرد
     if (typeof r.text === 'string') return { ok: true, text: r.text, via: 'مستقیم' };
     let lastErr = r.err || '';
-    const relays = evRelayList(u);
-    // فقط واسطه‌های فورواردکنندهٔ هدر (corsfix) برای فید فلش‌اسکور معنا دارند
-    const cf = relays.find(function(x) { return x.name.indexOf('corsfix') >= 0; });
-    if (cf) {
+    // مسیر ۱: corsfix (فقط localhost — روی فایل محلی کار می‌کند)
+    const cf = { name: 'corsfix', url: 'https://proxy.corsfix.com/?' + u };
+    {
         const rr = await evFetchJson(cf.url, o);
         if (typeof rr.text === 'string') { if (evAntenRelayIdx < 0) evAntenRelayIdx = 0; return { ok: true, text: rr.text, via: cf.name }; }
         lastErr = 'corsfix → ' + (rr.err || 'بدنه نیامد');
+    }
+    // مسیر ۲: cors-anywhere (هرودوکو — هدر را فوروارد می‌کند؛ از هر مبدأی)
+    const ca = { name: 'cors-anywhere', url: 'https://cors-anywhere.herokuapp.com/' + u };
+    {
+        const rr = await evFetchJson(ca.url, o);
+        if (typeof rr.text === 'string') { return { ok: true, text: rr.text, via: ca.name }; }
+        lastErr = lastErr + ' | cors-anywhere → ' + (rr.err || 'بدنه نیامد');
     }
     return { ok: false, err: lastErr };
 }
@@ -21660,45 +21616,21 @@ async function evSearchTennis() {
                 'tennis24.com'));
         });
         if (!rows.length) {
-            // فید خالی = جوابِ واقعی سایت (مصدومیت/فصل تمام) — نه خطا؛
-            // مسیر دوم سوفااسکور فقط وقتی است که خود فید خوانده نشود.
+            // فید خالی = جوابِ واقعی سایت (مصرمومیت/فصل تمام) — نه خطا.
             if (!all.length) evLog('⚠️ «' + (best.name || best.url) + '» فعلاً هیچ مسابقهٔ پیش‌روی ثبت‌شده‌ای ندارد (خود سایت هم «No match found» می‌دهد — مثلاً مصدومیت یا فصلِ تمام) — پیام صادقانه', true);
             else evLog('⚠️ مسابقهٔ ثبت‌شده در فید بود ولی همهٔ زمان‌ها گذشته بودند — پیام صادقانه', true);
             showToast('تنیس: مسابقهٔ پیش‌روی ثبت‌شده‌ای ندارد');
             return;
         }
     } else {
-        // v278: مسیر دوم — فید فلش‌اسکور به هدر نیاز دارد و از مبدأهای
-        // غیر-لوکال نمی‌گذرد (گزارش کاربر). SofaScore بدون هدر سفارشی است
-        // (ACAO:* — مستقیم از مرورگر؛ پشتیبان: زنجیرهٔ واسطهٔ JSON).
-        evLog('↪️ مسیر اول خوانده نشد: ' + fd.err + ' — تلاش مسیر دوم: SofaScore (بدون هدر — مستقیم از مرورگر)', true);
-        const sf = await evTennisSofaApi(q);
-        if (!sf.ok) {
-            evLog('🚫 هر دو مسیر تنیس خوانده نشد — فلش‌اسکور: ' + fd.err + ' | سوفااسکور: ' + sf.err + ' — پیام صادقانه', true);
-            showToast('تنیس: هیچ مسیری جواب نداد');
-            return;
-        }
-        evLog('✅ بازیکن در SofaScore: ' + (sf.player.name || '') + ' — شناسهٔ ' + sf.player.id + ' (' + sf.via + ')', true);
-        const se = await evTennisSofaEvents(String(sf.player.id));
-        if (!se.ok) { evLog('🚫 فهرست مسابقه‌های سوفااسکور خوانده نشد: ' + se.err + ' — پیام صادقانه', true); showToast('تنیس: فهرست مسابقه‌ها خوانده نشد'); return; }
-        evLog('✅ فهرست مسابقه‌ها خوانده شد (' + se.via + ')');
-        (se.events || []).forEach(function(e) {
-            if (!e || !e.startTimestamp || !e.homeTeam || !e.awayTeam) return;
-            if (e.status && e.status.type && e.status.type !== 'notstarted') return;   // فقط هنوز انجام‌نشده
-            if (e.startTimestamp * 1000 < now - 30 * 60 * 1000) return;   // فقط پیش‌رو (گرِیس ۳۰ دقیقه)
-            const tn = (e.tournament && e.tournament.uniqueTournament && e.tournament.uniqueTournament.name) ||
-                       (e.uniqueTournament && e.uniqueTournament.name) ||
-                       (e.tournament && e.tournament.name) || '';
-            rows.push(evRowFromUtc(new Date(e.startTimestamp * 1000).toISOString(),
-                '🎾 تنیس: ' + evTennisNameFa(e.homeTeam.name || '') + ' — ' + evTennisNameFa(e.awayTeam.name || ''),
-                evTennisTournFa(tn),
-                'sofascore'));
-        });
-        if (!rows.length) {
-            evLog('⚠️ «' + (sf.player.name || '') + '» فعلاً هیچ مسابقهٔ پیش‌روی ثبت‌شده‌ای ندارد (فصلِ تمام یا بازی بعدی هنوز برنامه‌ریزی نشده) — پیام صادقانه', true);
-            showToast('تنیس: مسابقهٔ پیش‌روی ثبت‌شده‌ای ندارد');
-            return;
-        }
+        // v279: مسیر اول (مستقیم → corsfix → cors-anywhere) همگی شکست خوردند.
+        // تحقیق زنده: sofascore از fetch مرورگر ۴۰۳ challenge (Cloudflare)
+        // می‌گیرد و هیچ واسطه‌ای هم از مرورگر جواب نمی‌دهد — پس مسیر دوم
+        // حذف شد و به‌جای آن پیام صادقانه + راهنما.
+        evLog('🚫 فید مسابقات بازیکن از هیچ مسیری خوانده نشد: ' + fd.err + ' — پیام صادقانه', true);
+        evLog('💡 راهنما: فید فلش‌اسکور به هدر x-fsign نیاز دارد. روی فایل محلی (localhost) مسیر corsfix کار می‌کند؛ اگر سهمقهٔ روزانهٔ corsfix (۶۰ درخواست) تمام شده باشد، مسیر cors-anywhere پشتیبان است. اگر باز هم نشد، چند دقیقه صبر کنید و دوباره تلاش کنید.', true);
+        showToast('تنیس: فید بازیکن خوانده نشد — دوباره تلاش کنید');
+        return;
     }
     rows.sort(function(a, b) { return String(a.date + a.time).localeCompare(String(b.date + b.time)); });
     evLog('✅ ' + toPersianNumber(rows.length) + ' مسابقهٔ پیش‌رو برای «' + (best.name || best.url) + '» — تاریخ شمسی و ساعت ایران (تهران)', true);
