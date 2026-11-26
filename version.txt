@@ -1,1 +1,1 @@
-v282.4-2026-11-26-evsrv-autojoin-names-flashfix
+v282.5-2026-11-26-evsrv-real-group-task-mirror
