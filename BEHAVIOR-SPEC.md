@@ -11,11 +11,11 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v282.1 — ۱۴۰۵ آذر ۵ (لاگ کاربر: تابع ev-sync مستقر شده و جواب می‌دهد ولی «env SUPABASE_SERVICE_ROLE + SUPABASE_URL missing in Secrets» + جدول net_events خوانده شد ۰ ردیف) — تابع بدون Secret: URL از host درخواست + KEY از apikey درخواست + رفع باگ env.get — BA-282.1
-#  نسخهٔ فعلی کد:  APP_VERSION = v282.1-2026-11-26-ev-sync-secrets-free
-#                  CACHE_NAME  = yadavar-cache-v2821 (sw.js)
-#                  version.txt = v282.1-2026-11-26-ev-sync-secrets-free
-#                  تابع:       scripts/edge-ev-sync-v2821.ts (متن مرجع Deploy)
+#  آخرین به‌روزرسانی: v282.2 — ۱۴۰۵ آذر ۵ (لاگ کاربر: تابع v282.1 مستقر و زنده — هر ۵ منبع می‌خواند — ولی نوشتن به DB خطای 403/42501 «permission denied» + hint اشتباه «متن قدیمی» + تنیس با نام فارسی «یانیک سینر» پیدا نشد) — GRANT به service_role + hint درست 42501 + فرهنگ fa→en تنیس — BA-282.2
+#  نسخهٔ فعلی کد:  APP_VERSION = v282.2-2026-11-26-ev-grant-and-fa-name
+#                  CACHE_NAME  = yadavar-cache-v2822 (sw.js)
+#                  version.txt = v282.2-2026-11-26-ev-grant-and-fa-name
+#                  تابع:       scripts/edge-ev-sync-v2822.ts (متن مرجع Deploy)
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -252,11 +252,11 @@
 #                 NET_PUSHING/netRepushLocalTasks/netRepushOne ~22460؛
 #                 مهار بازیابی در netSyncGroupTasks (pendDel) ~22575؛
 #                 فیلتر پنل در netLoadTasks ~22255؛
-#                 v282.1: hint سوم خطای Secrets در evServerAll (~21765؛
-#                 «متن تابع قدیمی — edge-ev-sync-v2821.ts دوباره Deploy»)؛
-#                 متن تابع مرجع = scripts/edge-ev-sync-v2821.ts (envGet
-#                 درست + resolveKey/resolveBaseUrl + cleanupPast + version
-#                 در پاسخ — بدون Secret کار می‌کند)؛
+#                 v282.2: شاخهٔ 42501/permission در evServerAll (hint GRANT
+#                 یک‌خطی؛ hint قدیمی فقط با گارد نسخه — evSrvInvoke version
+#                 را هم پس می‌دهد)؛ متن تابع مرجع = scripts/edge-ev-sync-v2822.ts
+#                 (envGet درست + resolveKey/resolveBaseUrl + cleanupPast +
+#                 FA_EN fa→en برای سرچ تنیس + version در پاسخ)؛
 #                 SQL net_events در NET_SQL_HELP ~19479
 #                 (EV_TENNIS_SOFA_*) ~21360؛ evTennisNameFa ~21264؛
 #                 evTennisTournFa ~21321؛ evTennisSearchApi ~21351؛
@@ -3290,6 +3290,46 @@
 #
 #   (نسخه‌های مفصل از v204 به بعد؛ قدیمی‌ها خلاصه. changelog کامل
 #    تفصیلی در سرآیند HTML موجود است.)
+#
+### v282.2 (۱۴۰۵ آذر ۵) — رفع 403/42501 (GRANT service_role) + hint درست + تنیس با نام فارسی (BA-282.2)
+#   لاگ کاربر (بعد از Deploy موفق v282.1 + گذاشتن Secret):
+#   «↪️ تابع سروری جواب نداد: HTTP 403: {"code":"42501",...,"hint":"Grant
+#   the required privileges... GRANT SELECT, INSERT, UPDATE ON
+#   public.net_events TO service_role;","message":"permis...» + «• تابع:
+#   نسخهٔ تابع: v282.1 — کلید از: Secret service_role» + «• تابع: بازیکن
+#   «یانیک سینر» پیدا نشد». سه یافته:
+#   ① ریشهٔ 42501: اسکریپت جامع SQL فقط «grant ... to anon, authenticated»
+#     داشت — service_role جا مانده بود! (فرض نادرست قبلی: service_role
+#     همیشه همهٔ مجوزها را دارد — روی این پروژه نبود.) تابع با Secret
+#     service_role وصل می‌شد و insert نمی‌توانست.
+#   ② hint اشتباه کلاینت: regex «service_role» در متنِ خطای 42501 هم
+#     match می‌شد → پیام «متن تابع قدیمی است» برای تابع کاملاً جدید!
+#     درس: وقتی تابع version گزارش می‌کند، hintِ «متن قدیمی» را با
+#     گارد نسخه بده؛ پیام‌های خطا را با کد خطا (42501) تشخیص بده نه
+#     با کلمهٔ کلیدیِ ممکن‌تکرارشونده.
+#   ③ تنیس با نام فارسی: کلاینت ورودیِ input («یانیک سینر») را مستقیم
+#     به سرچ livesport می‌فرستد — سرچ لاتین می‌خواهد.
+#   اقدام:
+#   • SQL (دو کپی: download/supabase-sql-comprehensive.sql + NET_SQL_HELP
+#     داخل HTML): سه خط GRANT حالا به anon, authenticated, service_role؛
+#     netErrHint عمومی (خط ~19639) هم سه خطش با service_role به‌روز شد.
+#     یک‌خطِ فوری برای نصب‌های موجود: GRANT SELECT, INSERT, UPDATE,
+#     DELETE ON public.net_events TO anon, authenticated, service_role;
+#   • کلاینت evServerAll: شاخهٔ جدید 42501/permission → پیام راهنمای
+#     GRANT یک‌خطی (+ راه دوم: حذف Secret تا تابع از apikey anon استفاده
+#     کند)؛ hint «متن قدیمی» فقط وقتی inv.version با v282 شروع نمی‌شود؛
+#     evSrvInvoke حالا version پاسخ تابع را در هر دو مسیر (موفق/خطا)
+#     پس می‌دهد؛ ارجاع فایل راهنما → edge-ev-sync-v2822.ts.
+#   • تابع v282.2 (scripts/edge-ev-sync-v2822.ts): فرهنگ FA_EN (fa→en،
+#     کلیدهای بلندتر اول) + searchTerm() در srcTennis — «یانیک سینر»→
+#     sinner؛ نام نالاتینِ خارج از فرهنگ → پیام صادقانهٔ «نام لاتین را
+#     امتحان کنید». FN_VERSION = v282.2. بقیهٔ رفتار v282.1 دست‌نخورده.
+#   • راهنماها: inside گام ۳‌ه جدید (403/42501 → GRANT یک‌خطی) +
+#     setup-guide بخش ۹ li جدید + ارجاع v2822 در هر دو.
+#   نکتهٔ مهم برای کاربر: رفع 42501 به Deploy مجدد تابع نیاز ندارد —
+#     فقط SQL. Deploy مجدد v282.2 اختیاری است (فقط ترجمهٔ نام فارسی).
+#   آزمون: esbuild بلوک برنامه (بدون خطا) + esbuild فایل تابع (بدون
+#     خطا)؛ نسخه‌ها هماهنگ.
 #
 ### v282.1 (۱۴۰۵ آذر ۵) — تابع ev-sync بدون Secret: کلید/آدرس از درخواست + رفع باگ env.get (BA-282.1)
 #   لاگ کاربر: «↪️ تابع سروری جواب نداد: env SUPABASE_SERVICE_ROLE +
