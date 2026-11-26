@@ -5271,7 +5271,7 @@ body.locked .header-actions button {
                 <summary style="font-size:12px;font-weight:700;color:#1a237e;cursor:pointer;">📋 راهنمای سروری (یک‌بار راه‌اندازی Edge Function)</summary>
                 <div id="evSrvGuide" style="font-size:11.5px;color:#444;line-height:1.9;padding:6px 2px;">
                     <b>چرا سروری؟</b> محدودیت‌های مرورگر (CORS و پرفلایت) دیگر مانع نمی‌شوند چون سرور Supabase مستقیم و آزادانه هر ۵ منبع (اسنوکر WST، فرمول‌۱ Ergast، تنیس فلش‌اسکور با هدر، آنتن، و سرچ بازیکن) را می‌خواند، تاریخ شمسی و ساعت ایران و ترجمهٔ فارسی را همان‌جا می‌سازد و در جدول <code>net_events</code> (گروه شبکه‌ای با کد دعوت <b>EVSRV</b>) نگه می‌دارد — همهٔ اعضا می‌بینند و رویدادهای گذشته خودکار پاک می‌شوند.<br>
-                    <b>گام ۱)</b> اسکریپت SQL همین راهنمای شبکه (که بخش v281: جدول <code>net_events</code> را دارد) یک بار در SQL Editor پروژه اجرا شود.<br>
+                    <b>گام ۱)</b> <b>اسکریپت SQL جامع (v281.2)</b> را در SQL Editor پروژه اجرا کنید: در پنل شبکه دکمهٔ «📋 کپی اسکریپت SQL» (یا فایل <code>supabase-sql-comprehensive.sql</code> مخزن). این اسکریپت <b>همه‌چیز</b> را می‌سازد یا تعمیر می‌کند: ۶ جدول شبکه + همهٔ ستون‌های تاریخ (مثل <code>subgroup_id</code> تسک‌ها و <code>net_events</code>) + سیاست‌ها + GRANT + باکت چت + به‌روزرسانی فوری کشِ schema (خط آخر <code>notify pgrst</code>). <b>اجراِ چندباره کاملاً بی‌خطاست</b> — اگر دیتابیس قبلاً با اسکریپت قدیمی ساخته شده، همین یک اجرا همه را تعمیر می‌کند.<br>
                     <b>گام ۲)</b> در داشبورد Supabase → منوی چپ <i>Edge Functions</i> (داخل گروه <i>Build</i>/<i>Products</i>) → دکمهٔ آبی بالا-راست <i>Deploy a new function</i> → از منوی بازشونده <i>Via Editor</i> را انتخاب کنید. در پنجرهٔ بازشده فیلد <b>Name</b> را دقیقاً <code>ev-sync</code> بگذارید، کل متن پیش‌فرض ویرایشگر را پاک کنید و <b>تمامِ محتوای فایل <code>edge-ev-sync-v281.ts</code></b> (در مخزن برنامه) را جای آن بگذارید → دکمهٔ سبزِ پایین <i>Deploy function</i>.<br>
                     <b>گام ۳)</b> روی نام تابع <code>ev-sync</code> در فهرست کلیک کنید → زبانهٔ <i>Secrets</i> → دکمهٔ <i>Add secret</i>. دو Secret بگذارید: <code>SUPABASE_URL</code> (آدرس پروژهٔ خودتان، شکل <code>https://xxxxx.supabase.co</code> بدون اسلش آخر) و <code>SUPABASE_SERVICE_ROLE</code> (کلید service_role از ⚙ <i>Settings</i> → <i>API</i>/<i>API Keys</i> — <b>هرگز</b> در برنامه وارد نشود؛ فقط Secret تابع).<br>
                     <b>گام ۳‌ب) امتحان همین‌جا:</b> روی تابع → زبانهٔ <i>Test</i> → روش <b>GET</b> → <i>Send request</i>؛ باید JSON با <code>"ok":true</code> برگردد.<br>
@@ -19519,130 +19519,7 @@ const NET_DEFAULTS = {
     url: 'https://uuedqototmxgzoltwdxc.supabase.co',
     key: 'sb_publishable_SrK_j002xlTRy58VAl3v3Q_XEB0aAsi'
 };
-const NET_SQL_HELP = '-- یاداوار شبکه — یک بار در SQL Editor پروژهٔ Supabase اجرا شود\n' +
-'-- (اجرای دوباره بی‌ضرر است؛ همهٔ ستون‌ها با if not exists ساخته می‌شوند)\n' +
-'-- 🔧 نسخهٔ جدید: رکورد تسک شبکه «تمام جزئیات تسک معمولی» را دارد:\n' +
-'-- متن، زمان ساخت، سررسید، تکرار، گروه، مسئول، فوری، پین، انجام‌شده،\n' +
-'-- معلق، لغو و حذف. اگر جدول‌ها را قبلاً ساخته‌اید، همین اسکریپت را یک\n' +
-'-- بار دیگر اجرا کنید تا ستون‌های repeat و deleted به net_tasks اضافه شود.\n' +
-'create extension if not exists pgcrypto;\n' +
-'create table if not exists net_groups (\n' +
-'  id uuid primary key default gen_random_uuid(),\n' +
-'  code text unique not null,\n' +
-'  name text not null,\n' +
-'  created_by text not null,\n' +
-'  created_at timestamptz default now()\n' +
-');\n' +
-'create table if not exists net_members (\n' +
-'  group_id uuid references net_groups(id) on delete cascade,\n' +
-'  user_id text not null,\n' +
-'  display_name text not null,\n' +
-'  joined_at timestamptz default now(),\n' +
-'  primary key (group_id, user_id)\n' +
-');\n' +
-'create table if not exists net_tasks (\n' +
-'  id uuid primary key default gen_random_uuid(),\n' +
-'  group_id uuid references net_groups(id) on delete cascade,\n' +
-'  title text not null,\n' +
-'  deadline date,\n' +
-'  owner_id text not null,\n' +
-'  owner_name text not null,\n' +
-'  assignee_id text,\n' +
-'  assignee_name text,\n' +
-'  done boolean not null default false,\n' +
-'  completed_at timestamptz,\n' +
-'  cancelled boolean default false,\n' +
-'  suspended boolean default false,\n' +
-'  urgent boolean default false,\n' +
-'  pinned boolean default false,\n' +
-'  repeat text,\n' +
-'  deleted boolean default false,\n' +
-'  created_at timestamptz default now(),\n' +
-'  updated_at timestamptz default now()\n' +
-');\n' +
-'create table if not exists net_messages (\n' +
-'  id uuid primary key default gen_random_uuid(),\n' +
-'  group_id uuid references net_groups(id) on delete cascade,\n' +
-'  sender_id text not null,\n' +
-'  sender_name text not null,\n' +
-'  text text not null,\n' +
-'  created_at timestamptz default now()\n' +
-');\n' +
-'alter table net_groups enable row level security;\n' +
-'alter table net_members enable row level security;\n' +
-'alter table net_tasks enable row level security;\n' +
-'alter table net_messages enable row level security;\n' +
-'create policy "net_groups_all" on net_groups for all using (true) with check (true);\n' +
-'create policy "net_members_all" on net_members for all using (true) with check (true);\n' +
-'create policy "net_tasks_all" on net_tasks for all using (true) with check (true);\n' +
-'create policy "net_messages_all" on net_messages for all using (true) with check (true);\n' +
-'grant usage on schema public to anon, authenticated;\n' +
-'grant select, insert, update, delete on all tables in schema public to anon, authenticated;\n' +
-'alter default privileges in schema public grant all on tables to anon, authenticated;\n' +
-'alter table net_messages add column if not exists img text;\n' +
-'alter table net_tasks add column if not exists completed_at timestamptz;\n' +
-'alter table net_tasks add column if not exists cancelled boolean default false;\n' +
-'alter table net_tasks add column if not exists suspended boolean default false;\n' +
-'alter table net_tasks add column if not exists urgent boolean default false;\n' +
-'alter table net_tasks add column if not exists pinned boolean default false;\n' +
-'alter table net_tasks add column if not exists repeat text;\n' +
-'alter table net_tasks add column if not exists deleted boolean default false;\n' +
-'-- ─── v259: پیوست‌های چت (صوت/فایل/ویدیو) + ویرایش/حذف پیام ───\n' +
-'alter table net_messages add column if not exists kind text default \'text\';\n' +
-'alter table net_messages add column if not exists url text;\n' +
-'alter table net_messages add column if not exists fname text;\n' +
-'alter table net_messages add column if not exists fsize bigint;\n' +
-'alter table net_messages add column if not exists dur int;\n' +
-'alter table net_messages add column if not exists edited_at timestamptz;\n' +
-'-- ─── v261: زیرگروه تسک (دو سطح: گروه ← زیرگروه؛ زیرگروه زیرمجموعه نمی‌گیرد) ───\n' +
-'alter table net_tasks add column if not exists subgroup_id text;\n' +
-'alter table net_tasks add column if not exists subgroup_name text;\n' +
-'alter table net_messages add column if not exists deleted boolean default false;\n' +
-'create table if not exists net_msg_hides (\n' +
-'  msg_id uuid references net_messages(id) on delete cascade,\n' +
-'  user_id text not null,\n' +
-'  hidden_at timestamptz default now(),\n' +
-'  primary key (msg_id, user_id)\n' +
-');\n' +
-'alter table net_msg_hides enable row level security;\n' +
-'create policy "net_msg_hides_all" on net_msg_hides for all using (true) with check (true);\n' +
-'-- باست پیوست‌های چت (فضای رایگان Supabase: ~۱ گیگ فضا، ۵ گیگ پهنای‌باند ماهانه، حداکثر ۵۰ مگ هر فایل)\n' +
-'insert into storage.buckets (id, name, public) values (\'net-chat\', \'net-chat\', true) on conflict (id) do nothing;\n' +
-'do $$ begin\n' +
-'  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-read\') then\n' +
-'    create policy "net-chat-read" on storage.objects for select using (bucket_id = \'net-chat\');\n' +
-'  end if;\n' +
-'  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-insert\') then\n' +
-'    create policy "net-chat-insert" on storage.objects for insert with check (bucket_id = \'net-chat\');\n' +
-'  end if;\n' +
-'  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-update\') then\n' +
-'    create policy "net-chat-update" on storage.objects for update using (bucket_id = \'net-chat\');\n' +
-'  end if;\n' +
-'  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-delete\') then\n' +
-'    create policy "net-chat-delete" on storage.objects for delete using (bucket_id = \'net-chat\');\n' +
-'  end if;\n' +
-'end $$;\n' +
-'-- ─── v281: رویدادهای سروری (BA-281) — جدول مشترک گروه شبکه‌ای «EVSRV» ───\n' +
-'-- Edge Function «ev-sync» (کد در راهنما) این جدول را پر می‌کند؛ همهٔ اعضا\n' +
-'-- با کد دعوت EVSRV آن را می‌بینند؛ dedup با ev_key یکتا (upsert).\n' +
-'create table if not exists net_events (\n' +
-'  id uuid primary key default gen_random_uuid(),\n' +
-'  ev_key text unique not null,\n' +
-'  group_code text not null default \'EVSRV\',\n' +
-'  title text not null,\n' +
-'  sub text,\n' +
-'  src text not null,\n' +
-'  ev_date date,\n' +
-'  ev_time text,\n' +
-'  date_j text,\n' +
-'  starts_at timestamptz,\n' +
-'  created_at timestamptz default now()\n' +
-');\n' +
-'alter table net_events enable row level security;\n' +
-'create policy "net_events_all" on net_events for all using (true) with check (true);\n' +
-'grant select, insert, update, delete on net_events to anon, authenticated;\n' +
-'-- پاک‌سازی خودکار رویدادهای گذشته (نگهداری): هر بار که اسکریپت اجرا شود\n' +
-'delete from net_events where starts_at < now() - interval \'1 day\';\n';
+const NET_SQL_HELP = '-- ════════════════════════════════════════════════════════════════════\n-- یادآور صوتی — اسکریپت جامع شبکه (v281.2)\n-- این یک اسکریپت است که «همه‌چیز» را می‌سازد یا تعمیر می‌کند:\n--   • جدول‌ها: net_groups، net_members، net_tasks، net_messages،\n--     net_msg_hides، net_events\n--   • همهٔ ستون‌های افزوده‌شده در طول تاریخ (برای دیتابیس‌های قدیمی)\n--   • RLS + سیاست‌های باز + GRANT کامل\n--   • باکت storage «net-chat» (پیوست‌های چت) + سیاست‌هایش\n--   • پاک‌سازی رویدادهای گذشته + به‌روزرسانی فوری کشِ schema\n-- ▶ اجرای چندباره کاملاً بی‌خطاست (idempotent): سیاست‌ها با DO-block\n--   ساخته می‌شوند، پس دیگر خطای «already exists» و برگشتِ کل تراکنش\n--   (علت اصلی خرابی دیتابیس‌های قدیمی) پیش نمی‌آید.\n-- ▶ اجرا: Supabase Dashboard → SQL Editor → New query → کل متن را\n--   پیست کنید → Run. پیام «Success. No rows returned» یعنی موفق.\n-- ════════════════════════════════════════════════════════════════════\n\ncreate extension if not exists pgcrypto;\n\n-- ─── ۱) جدول‌ها ──────────────────────────────────────────────────────\ncreate table if not exists net_groups (\n  id uuid primary key default gen_random_uuid(),\n  code text unique not null,\n  name text not null,\n  created_by text not null,\n  created_at timestamptz default now()\n);\n\ncreate table if not exists net_members (\n  group_id uuid references net_groups(id) on delete cascade,\n  user_id text not null,\n  display_name text not null,\n  joined_at timestamptz default now(),\n  primary key (group_id, user_id)\n);\n\ncreate table if not exists net_tasks (\n  id uuid primary key default gen_random_uuid(),\n  group_id uuid references net_groups(id) on delete cascade,\n  title text not null,\n  deadline date,\n  owner_id text not null,\n  owner_name text not null,\n  assignee_id text,\n  assignee_name text,\n  done boolean not null default false,\n  completed_at timestamptz,\n  cancelled boolean default false,\n  suspended boolean default false,\n  urgent boolean default false,\n  pinned boolean default false,\n  repeat text,\n  deleted boolean default false,\n  subgroup_id text,\n  subgroup_name text,\n  created_at timestamptz default now(),\n  updated_at timestamptz default now()\n);\n\ncreate table if not exists net_messages (\n  id uuid primary key default gen_random_uuid(),\n  group_id uuid references net_groups(id) on delete cascade,\n  sender_id text not null,\n  sender_name text not null,\n  text text not null,\n  created_at timestamptz default now()\n);\n\ncreate table if not exists net_msg_hides (\n  msg_id uuid references net_messages(id) on delete cascade,\n  user_id text not null,\n  hidden_at timestamptz default now(),\n  primary key (msg_id, user_id)\n);\n\n-- v281: رویدادهای سروری (گروه EVSRV) — Edge Function «ev-sync» این را پر می‌کند\ncreate table if not exists net_events (\n  id uuid primary key default gen_random_uuid(),\n  ev_key text unique not null,\n  group_code text not null default \'EVSRV\',\n  title text not null,\n  sub text,\n  src text not null,\n  ev_date date,\n  ev_time text,\n  date_j text,\n  starts_at timestamptz,\n  created_at timestamptz default now()\n);\n\n-- ─── ۲) ستون‌های افزوده‌شده در طول تاریخ (دیتابیس قدیمی را کامل می‌کند) ──\nalter table net_messages add column if not exists img text;\nalter table net_messages add column if not exists kind text default \'text\';\nalter table net_messages add column if not exists url text;\nalter table net_messages add column if not exists fname text;\nalter table net_messages add column if not exists fsize bigint;\nalter table net_messages add column if not exists dur int;\nalter table net_messages add column if not exists edited_at timestamptz;\nalter table net_messages add column if not exists deleted boolean default false;\nalter table net_tasks add column if not exists completed_at timestamptz;\nalter table net_tasks add column if not exists cancelled boolean default false;\nalter table net_tasks add column if not exists suspended boolean default false;\nalter table net_tasks add column if not exists urgent boolean default false;\nalter table net_tasks add column if not exists pinned boolean default false;\nalter table net_tasks add column if not exists repeat text;\nalter table net_tasks add column if not exists deleted boolean default false;\nalter table net_tasks add column if not exists subgroup_id text;\nalter table net_tasks add column if not exists subgroup_name text;\n\n-- ─── ۳) RLS (روی همهٔ جدول‌ها) ───────────────────────────────────────\nalter table net_groups   enable row level security;\nalter table net_members  enable row level security;\nalter table net_tasks    enable row level security;\nalter table net_messages enable row level security;\nalter table net_msg_hides enable row level security;\nalter table net_events   enable row level security;\n\n-- ─── ۴) سیاست‌های باز (idempotent — DO block) ───────────────────────\ndo $$ begin\n  if not exists (select 1 from pg_policies where tablename=\'net_groups\' and policyname=\'net_groups_all\') then\n    create policy "net_groups_all" on net_groups for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_members\' and policyname=\'net_members_all\') then\n    create policy "net_members_all" on net_members for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_tasks\' and policyname=\'net_tasks_all\') then\n    create policy "net_tasks_all" on net_tasks for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_messages\' and policyname=\'net_messages_all\') then\n    create policy "net_messages_all" on net_messages for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_msg_hides\' and policyname=\'net_msg_hides_all\') then\n    create policy "net_msg_hides_all" on net_msg_hides for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_events\' and policyname=\'net_events_all\') then\n    create policy "net_events_all" on net_events for all using (true) with check (true);\n  end if;\nend $$;\n\n-- ─── ۵) GRANT کامل ──────────────────────────────────────────────────\ngrant usage on schema public to anon, authenticated;\ngrant select, insert, update, delete on all tables in schema public to anon, authenticated;\nalter default privileges in schema public grant all on tables to anon, authenticated;\n\n-- ─── ۶) باکت storage پیوست‌های چت + سیاست‌هایش ──────────────────────\ninsert into storage.buckets (id, name, public) values (\'net-chat\', \'net-chat\', true) on conflict (id) do nothing;\ndo $$ begin\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-read\') then\n    create policy "net-chat-read" on storage.objects for select using (bucket_id = \'net-chat\');\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-insert\') then\n    create policy "net-chat-insert" on storage.objects for insert with check (bucket_id = \'net-chat\');\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-update\') then\n    create policy "net-chat-update" on storage.objects for update using (bucket_id = \'net-chat\');\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-delete\') then\n    create policy "net-chat-delete" on storage.objects for delete using (bucket_id = \'net-chat\');\n  end if;\nend $$;\n\n-- ─── ۷) اندیس‌های کمکی (پرس‌وجوهای سریع‌تر — بی‌ضرر) ────────────────\ncreate index if not exists net_tasks_group_idx   on net_tasks (group_id);\ncreate index if not exists net_tasks_upd_idx     on net_tasks (updated_at);\ncreate index if not exists net_messages_grp_idx  on net_messages (group_id, created_at);\ncreate index if not exists net_events_grp_idx    on net_events (group_code, starts_at);\n\n-- ─── ۸) نگهداری: پاک‌سازی رویدادهای گذشته ───────────────────────────\ndelete from net_events where starts_at < now() - interval \'1 day\';\n\n-- ─── ۹) به‌روزرسانی فوری کشِ schema (پیام «schema cache» را فوری می‌خواباند) ──\nnotify pgrst, \'reload schema\';\n\n-- ════════════════════════════════════════════════════════════════════\n-- پایان — «Success. No rows returned» یعنی موفق.\n-- حالا در برنامه: منوی ☰ → 🛰️ شبکه → «↻ اتصال دوباره» (یا رفرش صفحه)\n-- تسک‌ها/پیام‌ها بین همهٔ گوشی‌ها سینک می‌شوند؛ دکمهٔ سروری رویدادها هم\n-- جدول net_events را می‌بیند.\n-- ════════════════════════════════════════════════════════════════════';
 
 let NET_STATE = {
     sb: null,          // کلاینت Supabase
@@ -21799,7 +21676,7 @@ async function evSrvInvoke(tennisQ, snookerQ) {
             const t = await r.text();
             if (!r.ok) return { ok: false, status: r.status, err: 'HTTP ' + r.status + (t ? ' — ' + t.slice(0, 160) : '') };
             let d = null; try { d = JSON.parse(t); } catch(e) { return { ok: false, status: r.status, err: 'پاسخ JSON نبود' }; }
-            if (!d || d.ok === false) return { ok: false, status: r.status, err: (d && d.err) || 'تابع خودش خطا گزارش کرد' };
+            if (!d || d.ok === false) return { ok: false, status: r.status, err: (d && d.err) || 'تابع خودش خطا گزارش کرد', logs: (d && d.logs) || [] };
             return { ok: true, rows: (d && d.rows) || [], logs: (d && d.logs) || [], n_saved: (d && d.n_saved) || 0, n_total: (d && d.n_total) || 0 };
         } catch(e) {
             return { ok: false, status: 0, err: evSrvNetErr(e) };
@@ -21852,7 +21729,7 @@ async function evSrvReadRows() {
 // نکرده — یا صبر کنید یا NOTIFY pgrst در SQL Editor)
 function evSrvSchemaCacheHint(msg) {
     if (/schema cache|could not find the table|PGRST|relation .* does not exist/i.test(msg)) {
-        return 'جدول پیدا نشد — احتمالاً کشِ schema به‌روز نشده. دو راه: (۱) ۲-۳ دقیقه صبر کنید تا خودکار به‌روز شود؛ (۲) در SQL Editor یک‌بار «NOTIFY pgrst, \\\'reload schema\\\';» را Run کنید. اگر اصلاً جدول نساخته‌اید، اسکریپت SQL بخش v281 راهنما را یک‌بار کامل اجرا کنید.';
+        return 'جدول پیدا نشد — احتمالاً کشِ schema به‌روز نشده. دو راه: (۱) ۲-۳ دقیقه صبر کنید تا خودکار به‌روز شود؛ (۲) در SQL Editor یک‌بار «NOTIFY pgrst, \'reload schema\';» را Run کنید. اگر اصلاً جدول نساخته‌اید، اسکریپت SQL بخش v281 راهنما را یک‌بار کامل اجرا کنید.';
     }
     return '';
 }
@@ -21887,6 +21764,8 @@ async function evServerAll() {
                 } else {
                     evLog('💡 راهنما: تابع هنوز مستقر نشده یا سرویس موقتاً خاموش است — وابسته نیستیم: جدول را می‌خوانیم و دکمه‌های جدا (اسنوکر/فرمول‌۱/تنیس/جستجوی رویدادها) با زنجیره‌های مرورگری همان کار را می‌کنند (v280). راهنمای مستقرسازی در «راهنمای سروری» پایین پنل.', true);
                 }
+                // v281.2: لاگ‌های داخل خود تابع (منابع/ذخیره) را هم نشان بده — عیب‌یابی فوری
+                (inv.logs || []).slice(0, 6).forEach(function(l) { evLog('   • تابع: ' + l, false); });
             }
         } else {
             evLog('⏭ فراخوانی سروری لازم نبود (کمتر از ۳۰ دقیقه از آخرین به‌روزرسانی) — خواندن مستقیم جدول', true);

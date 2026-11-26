@@ -1,1 +1,1 @@
-v281.1-2026-11-26-ev-sync-auth-fix
+v281.2-2026-11-26-comprehensive-sql-and-sync-fix

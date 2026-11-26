@@ -11,10 +11,10 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v281 — ۱۴۰۵ آذر ۴ (درخواست کاربر: «کدی روی سرور supabase.com که همیشه رویدادها را سرچ و نگهداری و آپدیت کند در گروه شبکه‌ای» — Edge Function ev-sync + جدول net_events + گروه EVSRV — BA-281)
-#  نسخهٔ فعلی کد:  APP_VERSION = v281-2026-11-25-events-server-edge-sync
+#  آخرین به‌روزرسانی: v281.2 — ۱۴۰۵ آذر ۵ (گزارش کاربر: تسکِ گوشی اول در گوشی دوم دیده نمی‌شود + عکس خطا «Could not find the 'subgroup_id' column of 'net_tasks'» + جدول net_events نیست + پیام «تابع خودش خطا گزارش کرد») — ریشه: دیتابیس با اسکریپت قدیمی ساخته شده و اسکریپت‌های قبلی idempotent واقعی نبودند (create policy ساده → خطا → برگشتِ کل تراکنش) — اسکریپت جامع v281.2 + err در پاسخ تابع + لاگ‌های تابع در کلاینت — BA-281.2
+#  نسخهٔ فعلی کد:  APP_VERSION = v281.2-2026-11-26-comprehensive-sql-and-sync-fix
 #                  CACHE_NAME  = yadavar-cache-v281
-#                  version.txt = v281-2026-11-25-events-server-edge-sync
+#                  version.txt = v281.2-2026-11-26-comprehensive-sql-and-sync-fix
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -241,8 +241,11 @@
 #                 (cors-anywhere حذف؛ sofascore قبلاً حذف)؛
 #                 evSearchTennis ~21566؛
 #                 v281 سروری: EVSRV_CODE/EVSRV_FN/evSrvFnUrl/evSrvInvoke
-#                 (GET+query بدون پیش‌فرایت) /evSrvReadRows/evServerAll/
-#                 evApplyWantedFilters/evSrvJoinNetGroup/evSrvNetErr ~21730؛
+#                 (v281.1: دو-مسیره — هدر apikey+Authorization سپس fallback
+#                 query؛ تشخیص ۴۰۱ → راهنمای Verify JWT) /evSrvReadRows/
+#                 evSrvSchemaCacheHint (v281.1: hint برای schema cache)/
+#                 evServerAll/evApplyWantedFilters/evSrvJoinNetGroup/
+#                 evSrvNetErr ~21730؛
 #                 SQL net_events در NET_SQL_HELP ~19479
 #                 (EV_TENNIS_SOFA_*) ~21360؛ evTennisNameFa ~21264؛
 #                 evTennisTournFa ~21321؛ evTennisSearchApi ~21351؛
@@ -1665,6 +1668,40 @@
 #          جدول → 404 relation صادقانه؛ v280 دست‌نخورده: WST مستقیم ۲۰۰)
 #          + رگرسیون کامل (v280 13/13 + v275–v279 + e2e_v204 14/14 +
 #          audit 10/10 + syntax + static_audit فقط فلگ‌های شناخته‌شده).
+#   🔑 BA-281.1 (v281.1 — ۱۴۰۵ آذر ۵؛ رفع دو خطای واقعی گزارش‌شدهٔ کاربر
+#          بعد از مستقرسازی اولیهٔ تابع): دو خطا آمد:
+#          «۴۰۱ UNAUTHORIZED_NO_AUTH_HEADER» (تابع مستقر شده ولی gateway
+#          درخواست را رد می‌کرد) و «Could not find the table 'net_events'
+#          in the schema cache» (PostgREST کش schema را به‌روز نکرده).
+#          • ریشهٔ ۴۰۱: کلاینت v281 کلید را فقط در query-string ?apikey=
+#            می‌فرستاد (برای دور زدن پیش‌فرایتِ CORS)؛ ولی gateway
+#            Supabase با «Verify JWT» روشن فقط هدر Authorization را قبول
+#            می‌کند نه query. → کلاینت دو-مسیره شد: مسیر۱ = GET با هدر
+#            «apikey»+«Authorization: Bearer <anon>» (روی GET ساده =
+#            simple request = بدون پیش‌فرایت؛ کلید anon یک JWT امضا‌شده
+#            است پس با Verify-JWT-روشن هم می‌گذرد)؛ مسیر۲ (fallback روی
+#            ۴۰۱/شبکه) = GET با ?apikey= در query (برای حالت Verify-JWT-
+#            خاموش). تابع تشخیص ۴۰۱ در inv.err → پیام فارسیِ راهنمای
+#            «Verify JWT خاموش» در evLog.
+#          • ریشهٔ schema-cache: جدول ساخته شده ولی PostgREST کش را هنوز
+#            به‌روز نکرده. → تابع کمکی evSrvSchemaCacheHint(msg) تشخیص
+#            regex «schema cache|could not find the table|PGRST|relation
+#            does not exist» → پیام: «۲-۳ دقیقه صبر یا NOTIFY pgrst,
+#            'reload schema' در SQL Editor». در jریان evServerAll، اگر
+#            پول جدول شکست خورد hint به جای پیام عمومی نشان داده می‌شود.
+#          • راهنما (دو جا هماهنگ): speech-to-text-reminder.html
+#            (راهنمای inside پنل: گام ۳‌ج Verify JWT خاموش + گام ۳‌د
+#            schema cache) + supabase-setup-guide.html (مرحلهٔ ۹: همین
+#            دو گام). مسیر مستقرسازی هم به رابط جدید Supabase به‌روز شد:
+#            Edge Functions → Deploy a new function → Via Editor → نام
+#            ev-sync → Deploy function → Secrets tab → Add secret.
+#          • امنیت: تابع فقط جدول عمومی net_events (RLS باز، GRANT به
+#            anon/authenticated) را می‌خواند/می‌نویسد — خاموش‌بودن Verify
+#            JWT خطرناک نیست. service_role فقط در Secret تابع است (هرگز
+#            کلاینت).
+#          آزمون: esbuild کل بلوک <script> برنامه را بدون خطای parse
+#          باندل کرد (۳۰۴KB، ۳۸ms) — فقط دو هشدار کهن از قبل (کلید
+#          تکراری lastMsgAt + کلید فارسی) که به این تغییرات ربطی ندارند.
 #   🔑 BA-280 (v280 — گزارش کاربر: «آپارات‌اسپرت خراب، تنیس خراب؛ آنتن و
 #          اسنوکر و فرمول یک با بعضی فیلترشکن‌ها کار می‌کنند و با بعضی نه
 #          و بدون فیلترشکن هیچ‌کدام؛ همان اول که گفتم یک‌بار همه را بررسی
@@ -3242,6 +3279,66 @@
 #
 #   (نسخه‌های مفصل از v204 به بعد؛ قدیمی‌ها خلاصه. changelog کامل
 #    تفصیلی در سرآیند HTML موجود است.)
+#
+### v281.2 (۱۴۰۵ آذر ۵) — اسکریپت SQL جامع idempotent + سینک تسک بین گوشی‌ها + err تابع (BA-281.2)
+#   گزارش کاربر: «در گوشی اول تسک می‌سازم در گوشی دوم دیده نمی‌شود و گوشی
+#   اول خطای عکس می‌دهد» + عکس: «Could not find the 'subgroup_id' column
+#   of 'net_tasks' in the schema cache» + «جدول net_events نیست» + پیام
+#   «تابع خودش خطا گزارش کرد».
+#   ریشه‌ها (سه‌گانه):
+#   ① دیتابیس کاربر با اسکریپت قدیمی ساخته شده (net_tasks بدون
+#     subgroup_id/subgroup_name از v261؛ net_events از v281 نیست) —
+#     پس insert تسک کدِ جدید روی ستونِ نبود شکست می‌خورد → تسک اصلاً به
+#     سرور نمی‌رود → گوشی دوم چیزی نبیند. (این یعنی «سینک تسک» خرابیِ
+#     سمت دیتابیس بود، نه کد کلاینت.)
+#   ② اسکریپت‌های قبلی idempotent واقعی نبودند: create policy ساده
+#     (بدون DO-block) روی اجرای دوباره خطا می‌داد و (تراکنشِ SQL Editor)
+#     کل تغییرات از جمله ALTERها را برمی‌گرداند → دیتابیس قدیمی هرگز
+#     تعمیر نمی‌شد. (hint قدیمی «already exists مهم نیست» گمراه‌کننده بود.)
+#   ③ تابع ev-sync وقتی insertBatch شکست می‌خورد (مثلاً Secrets خالی)
+#     ok:false برمی‌گرداند ولی err در بدنه نبود → کلاینت پیام کلی
+#     «تابع خودش خطا گزارش کرد» بدون جزئیات می‌داد.
+#   اقدام:
+#   • اسکریپت جامع supabase-sql-comprehensive.sql (فایل + NET_SQL_HELP
+#     برنامه + راهنمای مستقل — سه‌جا یکسان): ۶ جدول + همهٔ ستون‌های
+#     تاریخ (ALTER ADD COLUMN IF NOT EXISTS) + RLS + سیاست‌های DO-block
+#     + GRANT + باکت net-chat + اندیس‌ها + پاک‌سازی رویدادهای گذشته +
+#     notify pgrst,'reload schema' (خط آخر — کش فوری به‌روز). اجرای
+#     چندباره کاملاً بی‌خطاست.
+#   • تابع: err در بدنهٔ پاسخ (err: ins.ok ? '' : ins.err) — فایل
+#     ev-sync-clean.ts به‌روز؛ کاربر باید متن تابع را دوباره Deploy کند.
+#   • کلاینت: evSrvInvoke در شکست ok:false هم logs را برمی‌گرداند؛
+#     evServerAll لاگ‌های تابع را («   • تابع: …») در پنل نشان می‌دهد؛
+#     hint schema-cache دیگر بک‌اسلش اضافه نمایش نمی‌دهد (باگ escaping).
+#   • راهنما (دو جا): گام ۱ = اسکریپت جامع؛ okbox تعمیر دیتابیس‌های
+#     قدیمی + حذف hint گمراه‌کنندهٔ «already exists مهم نیست».
+#   ⚠️ درس ماندگار (قانون جدید): هر تغییری در NET_SQL_HELP باید
+#     idempotent واقعی باشد (DO-block برای policy/مراحل چندجزئی) —
+#     تراکنش SQL Editor کل اسکریپت را با اولین خطا برمی‌گرداند.
+#   آزمون: esbuild کل <script> پارس سبز (پس از بازگردانی escA که
+#     جایگزینیِ بک‌اسلشِ NOTIFY خراب کرده بود — با git diff کشف و فوراً
+#     revert شد)؛ diff نهایی فقط NET_SQL_HELP + hint.
+#
+### v281.1 (۱۴۰۵ آذر ۵) — رفع دو خطای واقعی مستقرسازی: ۴۰۱ gateway + schema cache (BA-281.1)
+#   ریشه: کاربر بعد از مستقرسازی اولیه دو خطا گرفت: ۴۰۱
+#   UNAUTHORIZED_NO_AUTH_HEADER (تابع مستقر شده ولی gateway رد کرد) و
+#   «Could not find the table 'net_events' in the schema cache».
+#   اقدام ۴۰۱: evSrvInvoke دو-مسیره — مسیر۱ GET با هدر apikey+
+#   Authorization:Bearer<anon> (simple request، کلید anon = JWT معتبر
+#   پس با Verify-JWT-روشن هم می‌گذرد)؛ مسیر۲ fallback روی ۴۰۱/شبکه =
+#   GET با ?apikey= (برای Verify-JWT-خاموش). تشخیص ۴۰۱ در inv.err →
+#   پیام فارسی راهنمای «Verify JWT خاموش» در evLog.
+#   اقدام schema-cache: evSrvSchemaCacheHint(msg) با regex تشخیص و
+#   راهنمایی «صبر ۲-۳ دقیقه یا NOTIFY pgrst,'reload schema'». در
+#   evServerAll اگر پول شکست خورد hint نشان داده می‌شود.
+#   راهنما (دو جا هماهنگ): inside پنل (گام ۳‌ج/۳‌د) + supabase-setup-
+#   guide.html (مرحلهٔ ۹) — مسیر مستقرسازی هم به رابط جدید به‌روز شد:
+#   Edge Functions → Deploy a new function → Via Editor → Deploy
+#   function → Secrets tab.
+#   امنیت: تابع فقط net_events (RLS باز) را می‌خواند — خاموش‌بودن
+#   Verify JWT خطرناک نیست. service_role فقط در Secret تابع.
+#   آزمون: esbuild کل <script> را بدون خطای parse باندل کرد (۳۰۴KB،
+#   ۳۸ms)؛ دو هشدار کهن از قبل ربطی ندارند.
 #
 ### v281 (۱۴۰۵ آذر ۴) — رویدادهای سروری: Edge Function ev-sync + جدول net_events + گروه EVSRV (BA-281)
 #   معماری: سرور ۵ منبع را مستقیم می‌خواند (بدون CORS مرورگر؛ حتی هدر
