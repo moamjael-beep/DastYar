@@ -11,10 +11,11 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v281.2 — ۱۴۰۵ آذر ۵ (گزارش کاربر: تسکِ گوشی اول در گوشی دوم دیده نمی‌شود + عکس خطا «Could not find the 'subgroup_id' column of 'net_tasks'» + جدول net_events نیست + پیام «تابع خودش خطا گزارش کرد») — ریشه: دیتابیس با اسکریپت قدیمی ساخته شده و اسکریپت‌های قبلی idempotent واقعی نبودند (create policy ساده → خطا → برگشتِ کل تراکنش) — اسکریپت جامع v281.2 + err در پاسخ تابع + لاگ‌های تابع در کلاینت — BA-281.2
-#  نسخهٔ فعلی کد:  APP_VERSION = v281.2-2026-11-26-comprehensive-sql-and-sync-fix
-#                  CACHE_NAME  = yadavar-cache-v281
-#                  version.txt = v281.2-2026-11-26-comprehensive-sql-and-sync-fix
+#  آخرین به‌روزرسانی: v282.1 — ۱۴۰۵ آذر ۵ (لاگ کاربر: تابع ev-sync مستقر شده و جواب می‌دهد ولی «env SUPABASE_SERVICE_ROLE + SUPABASE_URL missing in Secrets» + جدول net_events خوانده شد ۰ ردیف) — تابع بدون Secret: URL از host درخواست + KEY از apikey درخواست + رفع باگ env.get — BA-282.1
+#  نسخهٔ فعلی کد:  APP_VERSION = v282.1-2026-11-26-ev-sync-secrets-free
+#                  CACHE_NAME  = yadavar-cache-v2821 (sw.js)
+#                  version.txt = v282.1-2026-11-26-ev-sync-secrets-free
+#                  تابع:       scripts/edge-ev-sync-v2821.ts (متن مرجع Deploy)
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -246,6 +247,16 @@
 #                 evSrvSchemaCacheHint (v281.1: hint برای schema cache)/
 #                 evServerAll/evApplyWantedFilters/evSrvJoinNetGroup/
 #                 evSrvNetErr ~21730؛
+#                 v282 صف آفلاین تسک: NET_PEND_KEY/netPendLoad/netPendSave/
+#                 netPendAdd/netPendRemove/NET_PEND_TRY_AT/netPendRetry/
+#                 NET_PUSHING/netRepushLocalTasks/netRepushOne ~22460؛
+#                 مهار بازیابی در netSyncGroupTasks (pendDel) ~22575؛
+#                 فیلتر پنل در netLoadTasks ~22255؛
+#                 v282.1: hint سوم خطای Secrets در evServerAll (~21765؛
+#                 «متن تابع قدیمی — edge-ev-sync-v2821.ts دوباره Deploy»)؛
+#                 متن تابع مرجع = scripts/edge-ev-sync-v2821.ts (envGet
+#                 درست + resolveKey/resolveBaseUrl + cleanupPast + version
+#                 در پاسخ — بدون Secret کار می‌کند)؛
 #                 SQL net_events در NET_SQL_HELP ~19479
 #                 (EV_TENNIS_SOFA_*) ~21360؛ evTennisNameFa ~21264؛
 #                 evTennisTournFa ~21321؛ evTennisSearchApi ~21351؛
@@ -3279,6 +3290,87 @@
 #
 #   (نسخه‌های مفصل از v204 به بعد؛ قدیمی‌ها خلاصه. changelog کامل
 #    تفصیلی در سرآیند HTML موجود است.)
+#
+### v282.1 (۱۴۰۵ آذر ۵) — تابع ev-sync بدون Secret: کلید/آدرس از درخواست + رفع باگ env.get (BA-282.1)
+#   لاگ کاربر: «↪️ تابع سروری جواب نداد: env SUPABASE_SERVICE_ROLE +
+#   SUPABASE_URL missing in Secrets» + «✅ ۰ رویداد از سرور خوانده شد» —
+#   یعنی ① تابع مستقر شده و زنده است ② جدول net_events ساخته و خوانده
+#   می‌شود ③ فقط نوشتنِ تابع به DB زنجیرِ Secret دارد.
+#   دو ریشه:
+#   ① باگ واقعی v281: env با property خوانده می‌شد («DB.SUPABASE_URL» با
+#     DB = Deno.env) — روی Deno.env این همیشه undefined است؛ API درست
+#     «Deno.env.get('...')» است. یعنی حتی اگر کاربر Secret می‌گذاشت هم
+#     تابع نمی‌دید. (درس: API runtime را با signature واقعی‌اش صدا بزن،
+#     حدس نزن.)
+#   ② وابستگی اضافه: اصلاً به Secret نیازی نیست — کلاینت v281.1 همیشه
+#     هدر «apikey» (کلید anon، JWT معتبر) می‌فرستد و host خودِ درخواست
+#     آدرس پروژه را لو می‌دهد؛ جدول net_events RLS باز + GRANT دارد.
+#   اقدام (فایل تابع جدید scripts/edge-ev-sync-v2821.ts — متن مرجع Deploy):
+#   • envGet(name) با Deno.env.get درست (fallback process.env).
+#   • resolveKey(req, u): ترتیب Secret service_role (کرون بیرونی) → هدر
+#     apikey → Authorization Bearer → query apikey → env پیش‌فرض تابع‌ها
+#     (SUPABASE_ANON_KEY/PUBLISHABLE) → اگر هیچ: ok:false صادقانه «کلیدی
+#     به تابع نرسید».
+#   • resolveBaseUrl(u): env SUPABASE_URL override، وگرنه «https://»+host
+#     خودِ درخواست.
+#   • cleanupPast: DELETE ردیف‌های EVSRV با starts_at < ۲۴h (قول پاک‌سازی
+#     SPEC v281 که در فایل واقعاً نبود) — غیرمرگبار، در لاگ.
+#   • پاسخ: version: 'v282.1' + خط اول لاگ «کلید از: ...» برای عیب‌یابی.
+#   کلاینت (BA-282.1):
+#   • evServerAll: hint سوم برای /Secrets|SUPABASE_URL|service_role|کلیدی
+#     به تابع نرسید/ → «متن تابع قدیمی است — edge-ev-sync-v2821.ts را روی
+#     همان تابع دوباره Deploy کنید (پاک نکنید)».
+#   راهنماها (سه جا هماهنگ): راهنمای inside پنل (گام ۲ → v2821 + نکتهٔ
+#     جایگزینی متن قدیمی؛ گام ۳ → Secrets اختیاری فقط برای کرون) +
+#     supabase-setup-guide.html (بخش ۹: همین دو + okbox تفسیر ok:false
+#     GET خالی + version در پاسخ) — درس: هر متن تابعی که کاربر مستقر
+#     می‌کند باید «جایگزین‌پذیر» باشد: راهنما صریح بگوید متن جدید روی
+#     تابع قبلی Deploy می‌شود.
+#   محدودیت‌های شناخته‌شده: متنِ واقعاً مستقرشدهٔ کاربر (با پیام انگلیسی
+#     missing in Secrets) در مخزن نبود — احتمالاً پیش‌نویس چتِ جلسهٔ قبل؛
+#     hint کلاینت هر دو را می‌گیرد. نسخهٔ v281.ts کهن مستند ماند.
+#   آزمون: esbuild هر دو فایل تابع (v281/v2821) + کل بلوک <script> برنامه
+#     پارس سبز؛ نسخه‌ها هماهنگ (APP_VERSION/sw.js/version.txt).
+#
+### v282 (۱۴۰۵ آذر ۵) — صف آفلاین تسک‌های شبکه: مهار بازیابی حذف + repush تسک‌های قطعی (BA-282)
+#   گزارش کاربر: عکس «TypeError: Failed to fetch» + «تسک پاک می‌کنم بعد یک
+#   ثانیه برمی‌گردد» + «تسک‌های قبلی یک نفر دیده نمی‌شود، جدیدش دیده می‌شود».
+#   ریشه‌ها:
+#   ① بازیابی حذف (resurrection): deleteItem (خط ~15401) آیتم محلی را
+#     «بدون‌منتظرِ» نتیجهٔ شبکه حذف می‌کند (netDeleteTask بدون await)؛ اگر
+#     update سرور شکست بخورد (قطعی/فیلترشکن — خطای Failed to fetch)، سینکِ
+#     بعدی (پول/رندر پنل) ردیفِ هنوز‌محذوف‌نشدهٔ سرور را دوباره محلی می‌سازد
+#     → تسک برمی‌گردد + توست خطا.
+#   ② تسک‌های پوش‌نشده: netCreateTaskFromMain اگر insert شکست بخورد
+#     («if (!t) return») آیتم محلی هرگز netId نمی‌گیرد و «هیچ ساز‌و‌کارِ
+#     پوشِ مجددی وجود نداشت» → تسک‌های ساخته‌شده در دوران جدولِ خراب
+#     (v281.2 قبلی) یا قطعی، فقط محلی می‌مانند و برای بقیهٔ اعضا نامرئی‌اند.
+#     تسک‌های جدید چون همین حالا ساخته و پوش می‌شوند دیده می‌شوند — دقیقاً
+#     همان الگوی گزارش کاربر.
+#   اقدام (صف آفلاین دو جزئی، همه در کلاینت — SQL لازم ندارد):
+#   • صف حذف: localStorage «net_pend_v1» (netPendLoad/Add/Remove)؛
+#     netDeleteTask در شکست → netPendAdd({kind:'del',netId,code}) + پیام
+#     صادقانهٔ «از این دستگاه حذف شد؛ به‌محض برگشتن اینترنت از سرور بقیه
+#     هم حذف می‌کنند»؛ در موفقیت → netPendRemove. netPendRetry (گرم‌نگهدار
+#     ۱۵s) در هر چرخهٔ سینک حذف‌های در صف را دوباره روی سرور می‌زند.
+#     مهار بازیابی: netSyncGroupTasks این idها را «زنده» نمی‌بیند
+#     (pendDel.indexOf ≥ 0 → skip) و netLoadTasks (پنل) هم آن‌ها را فیلتر
+#     می‌کند → دیگر هیچ‌وقت برنمی‌گردند.
+#   • repush: netRepushLocalTasks (هر چرخهٔ سینک، حداکثر ۵، NET_PUSHING
+#     ضدِ دوبله) → netRepushOne: insert تسک‌های محلیِ netCode‌دارِ بدون
+#     netId با تمام جزئیات (netTaskSharedFields + owner/assignee/created_at)
+#     + تخصیص netId + حذف دوبل‌ها (همان الگوی netCreateTaskFromMain)؛
+#     group_id با گارد UUID (در نبود id معتبر، lookup با کد گروه).
+#     → تسک‌های قدیمیِ دوران قطعی خودکار به سرور می‌روند و همه می‌بینند.
+#   محدودیت‌های شناخته‌شده: بک‌اند Gist (gh) صف ندارد (رفتار قبلی حفظ شد)؛
+#     done/ویرایشِ ناموفق هنوز «سرور-محور» است (پولِ بعدی وضعیت سرور را
+#     برمی‌گرداند) — صف عمومی upd در نسخه‌های آینده.
+#   درس: روی شبکهٔ ناپایدار کاربر، هر عملیات شبکه باید یا صف آفلاین داشته
+#     باشد یا شکستش را صادقانه کامل نگه دارد؛ حذفِ محلیِ «امیدوارانه» بدون
+#     صف = بازیابیِ تضمینی.
+#   آزمون: esbuild کل <script> پارس سبز (۳۰۷KB، ۳۸ms)؛ توابع جدید ×۱ هر
+#     کدام (netPendLoad/Add/Remove/Retry + netRepushLocalTasks/One)؛
+#     مهار بازیابی در merge (خط ۲۲۵۸۲) + فیلتر پنل.
 #
 ### v281.2 (۱۴۰۵ آذر ۵) — اسکریپت SQL جامع idempotent + سینک تسک بین گوشی‌ها + err تابع (BA-281.2)
 #   گزارش کاربر: «در گوشی اول تسک می‌سازم در گوشی دوم دیده نمی‌شود و گوشی

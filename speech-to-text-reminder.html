@@ -5272,8 +5272,8 @@ body.locked .header-actions button {
                 <div id="evSrvGuide" style="font-size:11.5px;color:#444;line-height:1.9;padding:6px 2px;">
                     <b>چرا سروری؟</b> محدودیت‌های مرورگر (CORS و پرفلایت) دیگر مانع نمی‌شوند چون سرور Supabase مستقیم و آزادانه هر ۵ منبع (اسنوکر WST، فرمول‌۱ Ergast، تنیس فلش‌اسکور با هدر، آنتن، و سرچ بازیکن) را می‌خواند، تاریخ شمسی و ساعت ایران و ترجمهٔ فارسی را همان‌جا می‌سازد و در جدول <code>net_events</code> (گروه شبکه‌ای با کد دعوت <b>EVSRV</b>) نگه می‌دارد — همهٔ اعضا می‌بینند و رویدادهای گذشته خودکار پاک می‌شوند.<br>
                     <b>گام ۱)</b> <b>اسکریپت SQL جامع (v281.2)</b> را در SQL Editor پروژه اجرا کنید: در پنل شبکه دکمهٔ «📋 کپی اسکریپت SQL» (یا فایل <code>supabase-sql-comprehensive.sql</code> مخزن). این اسکریپت <b>همه‌چیز</b> را می‌سازد یا تعمیر می‌کند: ۶ جدول شبکه + همهٔ ستون‌های تاریخ (مثل <code>subgroup_id</code> تسک‌ها و <code>net_events</code>) + سیاست‌ها + GRANT + باکت چت + به‌روزرسانی فوری کشِ schema (خط آخر <code>notify pgrst</code>). <b>اجراِ چندباره کاملاً بی‌خطاست</b> — اگر دیتابیس قبلاً با اسکریپت قدیمی ساخته شده، همین یک اجرا همه را تعمیر می‌کند.<br>
-                    <b>گام ۲)</b> در داشبورد Supabase → منوی چپ <i>Edge Functions</i> (داخل گروه <i>Build</i>/<i>Products</i>) → دکمهٔ آبی بالا-راست <i>Deploy a new function</i> → از منوی بازشونده <i>Via Editor</i> را انتخاب کنید. در پنجرهٔ بازشده فیلد <b>Name</b> را دقیقاً <code>ev-sync</code> بگذارید، کل متن پیش‌فرض ویرایشگر را پاک کنید و <b>تمامِ محتوای فایل <code>edge-ev-sync-v281.ts</code></b> (در مخزن برنامه) را جای آن بگذارید → دکمهٔ سبزِ پایین <i>Deploy function</i>.<br>
-                    <b>گام ۳)</b> روی نام تابع <code>ev-sync</code> در فهرست کلیک کنید → زبانهٔ <i>Secrets</i> → دکمهٔ <i>Add secret</i>. دو Secret بگذارید: <code>SUPABASE_URL</code> (آدرس پروژهٔ خودتان، شکل <code>https://xxxxx.supabase.co</code> بدون اسلش آخر) و <code>SUPABASE_SERVICE_ROLE</code> (کلید service_role از ⚙ <i>Settings</i> → <i>API</i>/<i>API Keys</i> — <b>هرگز</b> در برنامه وارد نشود؛ فقط Secret تابع).<br>
+                    <b>گام ۲)</b> در داشبورد Supabase → منوی چپ <i>Edge Functions</i> (داخل گروه <i>Build</i>/<i>Products</i>) → دکمهٔ آبی بالا-راست <i>Deploy a new function</i> → از منوی بازشونده <i>Via Editor</i> را انتخاب کنید. در پنجرهٔ بازشده فیلد <b>Name</b> را دقیقاً <code>ev-sync</code> بگذارید، کل متن پیش‌فرض ویرایشگر را پاک کنید و <b>تمامِ محتوای فایل <code>edge-ev-sync-v2821.ts</code></b> (در مخزن برنامه) را جای آن بگذارید → دکمهٔ سبزِ پایین <i>Deploy function</i>. <b>نکتهٔ v282.1:</b> اگر تابع را قبلاً با متن قدیمی (<code>v281</code>) مستقر کرده‌اید، همین متن جدید را روی همان تابع دوباره Deploy کنید — قبلی را پاک نکنید، جایگزین می‌شود.<br>
+                    <b>گام ۳) Secrets — دیگر لازم نیست:</b> از <code>v282.1</code> تابع بدون هیچ Secret‌ای کار می‌کند: آدرس پروژه را از خودِ host درخواست می‌گیرد و کلید را از هدر <code>apikey</code> که برنامه هر بار می‌فرستد (جدول <code>net_events</code> سیاست RLS باز دارد؛ کلید anon کامل جواب می‌دهد). گذاشتن Secret <b>اختیاری</b> است — فقط اگر با سرویس زمان‌بند بیرونی (کرون) مستقیم POST می‌زنید و می‌خواهید بدون کلید هم کار کند، دو Secret بگذارید: <code>SUPABASE_URL</code> و <code>SUPABASE_SERVICE_ROLE</code> (از ⚙ <i>Settings</i> → <i>API Keys</i> — <b>هرگز</b> در برنامه وارد نشود).<br>
                     <b>گام ۳‌ب) امتحان همین‌جا:</b> روی تابع → زبانهٔ <i>Test</i> → روش <b>GET</b> → <i>Send request</i>؛ باید JSON با <code>"ok":true</code> برگردد.<br>
                     <b>گام ۳‌ج) مهم — Verify JWT خاموش:</b> روی تابع <code>ev-sync</code> کلیک کنید → زبانهٔ <i>Details</i> (یا دکمهٔ <b>⋯</b> کنار نام تابع → <i>Function settings</i>) → کلید <b>Verify JWT</b> را خاموش کنید → <i>Save</i>. بدون این کار، gateway خطای <code>401 UNAUTHORIZED_NO_AUTH_HEADER</code> می‌دهد چون درخواست‌های کلاینت ما هدر جداگانهٔ Authorization ندارند.<br>
                     <b>گام ۳‌د) اگر پیام «جدول پیدا نشد»:</b> اگر در برنامه نوشت «Could not find the table 'net_events' in the schema cache»، یعنی جدول ساخته شده ولی PostgREST هنوز کش schema را به‌روز نکرده. یا چند دقیقه صبر کنید (خودکار به‌روز می‌شود) یا در SQL Editor یک‌بار <code>NOTIFY pgrst, 'reload schema';</code> اجرا کنید.<br>
@@ -8567,7 +8567,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v281-2026-11-25-events-server-edge-sync';
+const APP_VERSION = 'v282.1-2026-11-26-ev-sync-secrets-free';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -21761,6 +21761,9 @@ async function evServerAll() {
                 evLog('↪️ تابع سروری جواب نداد: ' + inv.err, true);
                 if (/UNAUTHORIZED|401|Missing authorization header/i.test(inv.err || '')) {
                     evLog('💡 راهنما: خطای 401 یعنی «Verify JWT» روی تابع هنوز روشن است. در داشبورد: Edge Functions → روی «ev-sync» → Details/⋯ → Function settings → «Verify JWT» را خاموش کنید → Save. سپس دوباره امتحان کنید. (تابع فقط جدول عمومی net_events را می‌خواند — امن است.)', true);
+                } else if (/Secrets|SUPABASE_URL|SUPABASE_SERVICE_ROLE|service_role|کلیدی به تابع نرسید/i.test(inv.err || '')) {
+                    // v282.1: متن تابع قدیمی است — نسخهٔ جدید بدون Secret کار می‌کند
+                    evLog('💡 راهنما (v282.1): این یعنی متن تابع شما «قدیمی» است — نسخهٔ جدید دیگر به Secret نیاز ندارد (آدرس را از host درخواست و کلید را از هدر apikey خودش می‌گیرد؛ حتی خواندن env در متن قدیمی هم باگ داشت). در «راهنمای سروری» گام ۲: کل متن فایل edge-ev-sync-v2821.ts را روی همان تابع دوباره Deploy کنید؛ تابع قبلی را پاک نکنید. بعد دکمهٔ سروری را دوباره بزنید.', true);
                 } else {
                     evLog('💡 راهنما: تابع هنوز مستقر نشده یا سرویس موقتاً خاموش است — وابسته نیستیم: جدول را می‌خوانیم و دکمه‌های جدا (اسنوکر/فرمول‌۱/تنیس/جستجوی رویدادها) با زنجیره‌های مرورگری همان کار را می‌کنند (v280). راهنمای مستقرسازی در «راهنمای سروری» پایین پنل.', true);
                 }
@@ -22251,7 +22254,12 @@ async function netLoadTasks() {
     if (!NET_STATE.sb) return;
     try {
         const r = await NET_STATE.sb.from('net_tasks').select('*').eq('group_id', g.id).order('created_at', { ascending: true });
-        if (!r.error) { NET_STATE.tasks = r.data || []; netSyncToMain(); }
+        if (!r.error) {
+            // v282: تسک‌های در-صفِ حذف آفلاین هم از پنل پنهان شوند (هماهنگ با صفحهٔ اصلی)
+            const _pd = netPendLoad().filter(function(p) { return p.kind === 'del'; }).map(function(p) { return p.netId; });
+            NET_STATE.tasks = (r.data || []).filter(function(t) { return !t.deleted && _pd.indexOf(t.id) < 0; });
+            netSyncToMain();
+        }
     } catch(e) {}
 }
 // BA-231: جهش مشترک روی تسک‌های یک گروه در بک‌اند گیت‌هاب
@@ -22425,10 +22433,18 @@ async function netDeleteTask(id) {
     try {
         const r = await NET_STATE.sb.from('net_tasks').update({ deleted: true, updated_at: new Date().toISOString() }).eq('id', id);
         if (r.error) throw new Error(r.error.message);
+        netPendRemove('del', id);   // v282: اگر از صف حذف بود، حالا قطعی‌شد
         NET_broadcast('tasks-refresh', {});
         await netLoadTasksAll();
         showToast('تسک حذف شد');
-    } catch(e) { showToast('⚠️ ' + (e.message || e)); }
+        return true;
+    } catch(e) {
+        // v282: حذف محلی انجام شده (deleteItem) — در صف بگذار تا سینکِ بعدی
+        // آن را «زنده» نبیند و به‌محض برگشتن اینترنت از سرورِ همه هم حذف شود
+        netPendAdd({ kind: 'del', netId: id, code: g ? g.code : '' });
+        showToast('⚠️ ' + (e.message || e) + ' — از این دستگاه حذف شد؛ به‌محض برگشتن اینترنت از سرور بقیه هم حذف می‌کنند');
+        return false;
+    }
 }
 
 // ─── BA-237..241: چند گروه هم‌زمان + مدیریت تسک از صفحهٔ اصلی + ویرایش/حذف گروه ───
@@ -22456,6 +22472,97 @@ function netEnsureGroupInMain(g, isOwner) {
         if (typeof currentView !== 'undefined' && currentView === 'groups') { try { renderGroupsView(); } catch(e) {} }
     } catch(e) {}
 }
+// ─── v282 (BA-282): صف آفلاین تسک‌های شبکه — دو باگ واقعی کاربر ───
+//   باگ ۱ «تسک پاک می‌کنم بعد یک ثانیه برمی‌گردد + Failed to fetch»:
+//     deleteItem محلی را بلافاصله حذف می‌کرد و netDeleteTask بدون await
+//     می‌فرستاد؛ اگر update سرور شکست می‌خورد (قطعی/فیلترشکن)، سینک بعدی
+//     ردیفِ هنوز‌محذوف‌نشدهٔ سرور را دوباره محلی می‌ساخت (resurrection).
+//   باگ ۲ «تسک‌های قبلی یک نفر دیده نمی‌شود ولی جدیدش دیده می‌شود»:
+//     تسک‌هایی که هنگام قطعی ساخته می‌شدند (insert شکست خورد) هیچ‌وقت
+//     netId نمی‌گرفتند و هیچ‌وقت دوباره پوش نمی‌شدند → فقط محلی می‌ماندند
+//     و برای بقیه اعضا نامرئی بودند.
+//   راه‌حل: ① صف حذف (net_pend_v1) — حذف ناموفق ثبت و هر چرخهٔ سینک
+//     دوباره امتحان می‌شود؛ تا وقتی در صف است، سینک آن id را «زنده»
+//     نمی‌بیند (مهار بازیابی). ② repush — هر چرخه، تسک‌های محلیِ
+//     netCode‌دارِ بدون netId (حداکثر ۵ در چرخه) به سرور پوش می‌شوند و
+//     netId می‌گیرند → تسک‌های دوران قطعی خودکار ترمیم می‌شوند.
+const NET_PEND_KEY = 'net_pend_v1';
+function netPendLoad() {
+    try { const a = JSON.parse(localStorage.getItem(NET_PEND_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch(e) { return []; }
+}
+function netPendSave(a) {
+    try { localStorage.setItem(NET_PEND_KEY, JSON.stringify(a.slice(-200))); } catch(e) {}
+}
+function netPendAdd(op) {
+    const a = netPendLoad();
+    if (!a.some(function(p) { return p.kind === op.kind && p.netId === op.netId; })) {
+        a.push(Object.assign({ at: new Date().toISOString() }, op));
+        netPendSave(a);
+    }
+}
+function netPendRemove(kind, netId) {
+    netPendSave(netPendLoad().filter(function(p) { return !(p.kind === kind && p.netId === netId); }));
+}
+let NET_PEND_TRY_AT = 0;
+// هر چرخهٔ سینک (۱۵ ثانیه گرم‌نگهدار): حذف‌های در صف را دوباره روی سرور می‌زند
+function netPendRetry() {
+    if (!NET_STATE.sb) return;
+    const now = Date.now();
+    if (now - NET_PEND_TRY_AT < 15000) return;
+    NET_PEND_TRY_AT = now;
+    netPendLoad().forEach(function(p) {
+        if (p.kind !== 'del' || !p.netId) return;
+        try {
+            NET_STATE.sb.from('net_tasks')
+                .update({ deleted: true, updated_at: new Date().toISOString() }).eq('id', p.netId)
+                .then(function(r) { if (!r.error) netPendRemove('del', p.netId); })
+                .catch(function() {});
+        } catch(e) {}
+    });
+}
+const NET_PUSHING = {};   // id محلی → true؛ جلوگیری از پوش دوبلهٔ هم‌زمان
+function netRepushLocalTasks(g, items) {
+    if (!g || !g.code || !NET_STATE.sb) return;
+    const list = (items || []).filter(function(x) {
+        return x && x.netCode === g.code && !x.netId && x.text && x.id.indexOf('nt_') !== 0 && !NET_PUSHING[x.id];
+    });
+    list.slice(0, 5).forEach(function(x) {   // هر چرخه حداکثر ۵ — بدون طوفان درخواست
+        NET_PUSHING[x.id] = true;
+        Promise.resolve(netRepushOne(g, x)).catch(function() {}).finally(function() { delete NET_PUSHING[x.id]; });
+    });
+}
+async function netRepushOne(g, x) {
+    try {
+        // group_id واقعی سرور: اگر g.id معتبر نبود، با کد گروه بپرس
+        let gid = g.id;
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(gid || ''))) {
+            const gr = await NET_STATE.sb.from('net_groups').select('id').eq('code', g.code).limit(1);
+            gid = ((gr.data || [])[0] || {}).id;
+        }
+        if (!gid) return;
+        const row = Object.assign({
+            group_id: gid, title: x.text,
+            deadline: x.deadline ? String(x.deadline).slice(0, 10) : null,
+            owner_id: x.netOwnerId || netMyUid(), owner_name: x.netOwner || NET_STATE.myName,
+            assignee_id: x.netAssigneeId || netMyUid(), assignee_name: x.netAssignee || NET_STATE.myName
+        }, netTaskSharedFields(x));
+        row.created_at = x.createdAt || new Date().toISOString();
+        const r = await NET_STATE.sb.from('net_tasks').insert(row).select();
+        if (r.error) throw new Error(r.error.message);
+        const t = (r.data || [])[0];
+        if (!t) return;
+        const items = getDB();
+        const it = items.find(function(y) { return y.id === x.id; });
+        if (it) { it.netId = t.id; it.netOwner = it.netOwner || NET_STATE.myName; it.netOwnerId = it.netOwnerId || netMyUid(); }
+        const dupes = it ? items.filter(function(y) { return y.netId === t.id && y.id !== it.id; }) : [];
+        if (dupes.length) {
+            const keep = items.filter(function(y) { return !dupes.some(function(d) { return d.id === y.id; }); });
+            items.length = 0; Array.prototype.push.apply(items, keep);
+        }
+        setDB(items);
+    } catch(e) { /* قطعی — چرخهٔ بعدی دوباره امتحان می‌کند */ }
+}
+
 // BA-237: هم‌گام‌سازی تسک‌های یک گروه مشخص (نه فقط گروه فعال)
 // K4 (BA-250): «تمام جزئیات» سینک می‌شود — متن، سررسید، تکرار، انجام‌شده(+زمان)،
 // معلق، لغو، فوری، پین، مسئول، سازنده. حذف هم با پرچم deleted از سرور می‌آید و
@@ -22471,8 +22578,11 @@ function netSyncGroupTasks(g, tasks) {
         let changed = false;
         const gid = 'net_' + g.code;
         const alive = {};   // K4: تسک‌های زندهٔ سرور — بقیه از محلی حذف می‌شوند
+        // v282: صف حذف آفلاین — این idها هنوز روی سرور حذف نشده‌اند ولی کاربر
+        // محلی حذفشان کرده؛ سینک نباید آن‌ها را «زنده» ببیند (مهار بازیابی)
+        const pendDel = netPendLoad().filter(function(p) { return p.kind === 'del' && p.code === g.code; }).map(function(p) { return p.netId; });
         (tasks || []).forEach(function(t) {
-            if (t.deleted) return;   // K4: تومبستون حذف — پایین‌تر پاک می‌شود
+            if (t.deleted || pendDel.indexOf(t.id) >= 0) return;   // K4 + v282: تومبستون یا در صف حذف
             alive[t.id] = true;
             let it = items.find(function(x) { return x.netId === t.id; });
             if (!it) {
@@ -22516,6 +22626,11 @@ function netSyncGroupTasks(g, tasks) {
         if (changed) {
             localStorage.setItem(DB_KEY, JSON.stringify(items));
             if (typeof currentView !== 'undefined' && (currentView === 'tasks' || currentView === 'groups')) { try { render(); } catch(e) {} }
+        }
+        // v282: صف آفلاین — حذف‌های در صف دوباره امتحان + تسک‌های بدون netId پوش
+        if (NET_STATE.sb && !ghEnabled()) {
+            netPendRetry();
+            netRepushLocalTasks(g, items);
         }
     } catch(e) {}
 }
