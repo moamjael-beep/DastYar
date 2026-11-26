@@ -1,1 +1,1 @@
-v281-2026-11-25-events-server-edge-sync
+v281.1-2026-11-26-ev-sync-auth-fix

@@ -5275,6 +5275,8 @@ body.locked .header-actions button {
                     <b>گام ۲)</b> در داشبورد Supabase → منوی چپ <i>Edge Functions</i> (داخل گروه <i>Build</i>/<i>Products</i>) → دکمهٔ آبی بالا-راست <i>Deploy a new function</i> → از منوی بازشونده <i>Via Editor</i> را انتخاب کنید. در پنجرهٔ بازشده فیلد <b>Name</b> را دقیقاً <code>ev-sync</code> بگذارید، کل متن پیش‌فرض ویرایشگر را پاک کنید و <b>تمامِ محتوای فایل <code>edge-ev-sync-v281.ts</code></b> (در مخزن برنامه) را جای آن بگذارید → دکمهٔ سبزِ پایین <i>Deploy function</i>.<br>
                     <b>گام ۳)</b> روی نام تابع <code>ev-sync</code> در فهرست کلیک کنید → زبانهٔ <i>Secrets</i> → دکمهٔ <i>Add secret</i>. دو Secret بگذارید: <code>SUPABASE_URL</code> (آدرس پروژهٔ خودتان، شکل <code>https://xxxxx.supabase.co</code> بدون اسلش آخر) و <code>SUPABASE_SERVICE_ROLE</code> (کلید service_role از ⚙ <i>Settings</i> → <i>API</i>/<i>API Keys</i> — <b>هرگز</b> در برنامه وارد نشود؛ فقط Secret تابع).<br>
                     <b>گام ۳‌ب) امتحان همین‌جا:</b> روی تابع → زبانهٔ <i>Test</i> → روش <b>GET</b> → <i>Send request</i>؛ باید JSON با <code>"ok":true</code> برگردد.<br>
+                    <b>گام ۳‌ج) مهم — Verify JWT خاموش:</b> روی تابع <code>ev-sync</code> کلیک کنید → زبانهٔ <i>Details</i> (یا دکمهٔ <b>⋯</b> کنار نام تابع → <i>Function settings</i>) → کلید <b>Verify JWT</b> را خاموش کنید → <i>Save</i>. بدون این کار، gateway خطای <code>401 UNAUTHORIZED_NO_AUTH_HEADER</code> می‌دهد چون درخواست‌های کلاینت ما هدر جداگانهٔ Authorization ندارند.<br>
+                    <b>گام ۳‌د) اگر پیام «جدول پیدا نشد»:</b> اگر در برنامه نوشت «Could not find the table 'net_events' in the schema cache»، یعنی جدول ساخته شده ولی PostgREST هنوز کش schema را به‌روز نکرده. یا چند دقیقه صبر کنید (خودکار به‌روز می‌شود) یا در SQL Editor یک‌بار <code>NOTIFY pgrst, 'reload schema';</code> اجرا کنید.<br>
                     <b>گام ۴)</b> دکمهٔ «🌐 سروری — همه (شبکه‌ای)» را بزنید: تابع اجرا و جدول پر می‌شود؛ سپس همهٔ اعضا با دکمهٔ «🛰️ عضویت…» یا همان دکمهٔ سروری جدول را می‌خوانند.<br>
                     <b>نگهداری/به‌روزرسانی همیشگی:</b> تابع هر بار فراخوانی، همهٔ منابع را دوباره می‌خواند و upsert می‌کند و رویدادهای گذشته را پاک می‌کند. فراخوانی خودکار: دکمهٔ سروری هر ۳۰ دقیقه حداکثر یک بار invoke می‌کند (هر عضوی که پنل را باز کند کافی است)؛ برای کاملاً خودکار، هر سرویس زمان‌بندی بیرونی (مثل GitHub Actions cron) می‌تواند هر ۶ ساعت POST بزند — لازم نیست، پول جدول همیشه جواب می‌دهد.<br>
                     <b>بدون تابع هم کار می‌کند:</b> جدول مستقل از تابع خوانده می‌شود؛ دکمه‌های جدا (اسنوکر/فرمول‌۱/تنیس) زنجیره‌های مرورگری v280 را دارند و نتایج‌شان با افزودن، در همان گروه «رویدادها» می‌نشیند.
@@ -21770,34 +21772,45 @@ function evSrvKey() {
     const st = (typeof netSettings === 'function' && netSettings()) || null;
     return (st && st.key) || ((typeof NET_DEFAULTS !== 'undefined') ? NET_DEFAULTS.key : '');
 }
-// فراخوانی سروریِ هر ۵ منبع — GET با پارامترهای query (tennis/snooker/apikey)
-// نه POST+JSON: تحقیق زندهٔ v281 — POST با هدرهای سفارشی (Authorization/
-// apikey/content-type) پیش‌فرایت OPTIONS می‌خواهد و پاسخ پیش‌فرایتِ تابع‌ها
-// ACAH کامل ندارد → مرورگر fetch را می‌بندد («Failed to fetch»)؛ اما GET
-// بدون هیچ هدر سفارشی = simple request = بدون پیش‌فرایت، همیشه مستقیم
-// می‌گذرد (تأیید زنده: 404 واقعی «function not found» از مرورگر آمد —
-// یعنی درخواست رسیده است). کلید از query-string «apikey» می‌گذرد (تابع
-// همان‌جا می‌خواندش؛ مثل REST Supabase). پاسخ: {ok, n_total, n_saved,
-// rows[], logs[]}; fallback: زنجیره‌های v280.
+// فراخوانی سروریِ هر ۵ منبع. دو مسیر امتحان می‌شود:
+//   مسیر ۱ (اصلی): GET + هدر «apikey» (هدر apikey در فهرست ACAHِ تابع هست؛
+//     gateway Supabase با Verify-JWT-روشن آن را قبول می‌کند چون کلید anon یک
+//     JWT معتبر است). هدر apikey روی GET ساده = simple request = بدون پیش‌فرایت.
+//   مسیر ۲ (fallback): GET ساده با ?apikey= در query-string — فقط اگر تابع
+//     Verify-JWT-خاموش داشته باشد کار می‌کند؛ در غیر این صورت 401 می‌آورد.
+// در هر دو حالت، اگر gateway 401 داد → راهنمای «Verify JWT خاموش» را نشان
+// می‌دهیم (در داشبورد: Edge Functions → تابع → ... → Disable JWT verification).
+// تحقیق زندهٔ v281: POST+JSON با هدرهای سفارشی → پیش‌فرایت OPTIONS ناقص →
+// «Failed to fetch»؛ GET با هدر apikey یا query = simple request = بدون پیش‌فرایت.
 async function evSrvInvoke(tennisQ, snookerQ) {
     const u = evSrvFnUrl();
     if (!u) return { ok: false, err: 'تنظیمات شبکه (URL) موجود نیست' };
     const key = evSrvKey();
     const ctl = (window.AbortController ? new AbortController() : null);
     const to = ctl ? setTimeout(function() { ctl.abort(); }, 25000) : null;
-    try {
-        const qs = '?apikey=' + encodeURIComponent(key) + '&tennis=' + encodeURIComponent(tennisQ || '') + '&snooker=' + encodeURIComponent(snookerQ || '');
-        const r = await fetch(u + qs, { signal: ctl ? ctl.signal : undefined });   // GET ساده — بدون هدر سفارشی = بدون پیش‌فرایت
-        if (to) clearTimeout(to);
-        const t = await r.text();
-        if (!r.ok) return { ok: false, err: 'HTTP ' + r.status + (t ? ' — ' + t.slice(0, 160) : '') };
-        let d = null; try { d = JSON.parse(t); } catch(e) { return { ok: false, err: 'پاسخ JSON نبود' }; }
-        if (!d || d.ok === false) return { ok: false, err: (d && d.err) || 'تابع خودش خطا گزارش کرد' };
-        return { ok: true, rows: (d && d.rows) || [], logs: (d && d.logs) || [], n_saved: (d && d.n_saved) || 0, n_total: (d && d.n_total) || 0 };
-    } catch(e) {
-        if (to) clearTimeout(to);
-        return { ok: false, err: evSrvNetErr(e) };
+    const q = 'tennis=' + encodeURIComponent(tennisQ || '') + '&snooker=' + encodeURIComponent(snookerQ || '');
+    // مسیر ۱: هدر apikey (Authorization نیز اضافه می‌شود تا gateway با Verify-JWT
+    // روشن هم بپذیرد — کلید anon یک JWT امضا‌شده است). روی GET ساده = simple.
+    const tryRequest = async function(withHeader) {
+        const qs = '?' + (withHeader ? '' : 'apikey=' + encodeURIComponent(key) + '&') + q;
+        const hdrs = withHeader ? { 'apikey': key, 'Authorization': 'Bearer ' + key } : {};
+        try {
+            const r = await fetch(u + qs, { signal: ctl ? ctl.signal : undefined, headers: hdrs });
+            const t = await r.text();
+            if (!r.ok) return { ok: false, status: r.status, err: 'HTTP ' + r.status + (t ? ' — ' + t.slice(0, 160) : '') };
+            let d = null; try { d = JSON.parse(t); } catch(e) { return { ok: false, status: r.status, err: 'پاسخ JSON نبود' }; }
+            if (!d || d.ok === false) return { ok: false, status: r.status, err: (d && d.err) || 'تابع خودش خطا گزارش کرد' };
+            return { ok: true, rows: (d && d.rows) || [], logs: (d && d.logs) || [], n_saved: (d && d.n_saved) || 0, n_total: (d && d.n_total) || 0 };
+        } catch(e) {
+            return { ok: false, status: 0, err: evSrvNetErr(e) };
+        }
+    };
+    let res = await tryRequest(true);          // مسیر ۱: هدر apikey + Authorization
+    if (!res.ok && (res.status === 401 || res.status === 0)) {
+        res = await tryRequest(false);         // مسیر ۲: query-string (برای Verify-JWT-خاموش)
     }
+    if (to) clearTimeout(to);
+    return res;
 }
 // پیام خطای شبکه‌ای سروری — همان فرهنگِ netErrHint ولی مختصر رویدادها
 // (v281: نامش evSrvNetErr است — evNetErr قدیمیِ v272 (خط ۲۰۵۰۱) دست‌نخورده می‌ماند؛
@@ -21835,6 +21848,14 @@ async function evSrvReadRows() {
         }) };
     } catch(e) { return { ok: false, err: evSrvNetErr(e) }; }
 }
+// تشخیص پیام «schema cache» و راهنمایی صریح (PostgREST کش schema را به‌روز
+// نکرده — یا صبر کنید یا NOTIFY pgrst در SQL Editor)
+function evSrvSchemaCacheHint(msg) {
+    if (/schema cache|could not find the table|PGRST|relation .* does not exist/i.test(msg)) {
+        return 'جدول پیدا نشد — احتمالاً کشِ schema به‌روز نشده. دو راه: (۱) ۲-۳ دقیقه صبر کنید تا خودکار به‌روز شود؛ (۲) در SQL Editor یک‌بار «NOTIFY pgrst, \\\'reload schema\\\';» را Run کنید. اگر اصلاً جدول نساخته‌اید، اسکریپت SQL بخش v281 راهنما را یک‌بار کامل اجرا کنید.';
+    }
+    return '';
+}
 // جریان کامل دکمهٔ «سروری همه»: ① اگر TTL گذشته → invoke تابع (سرور هر ۵
 // منبع را می‌خواند و جدول را آپدیت/نگهداری می‌کند) ② پول جدول ③ فیلتر
 // خواسته/ناخواستهٔ کاربر ④ رندر در همان فهرست پنل ⑤ پیام راهنما در نبود
@@ -21861,7 +21882,11 @@ async function evServerAll() {
                 (inv.logs || []).slice(0, 6).forEach(function(l) { evLog('   • ' + l, false); });
             } else {
                 evLog('↪️ تابع سروری جواب نداد: ' + inv.err, true);
-                evLog('💡 راهنما: تابع هنوز مستقر نشده یا سرویس موقتاً خاموش است — وابسته نیستیم: جدول را می‌خوانیم و دکمه‌های جدا (اسنوکر/فرمول‌۱/تنیس/جستجوی رویدادها) با زنجیره‌های مرورگری همان کار را می‌کنند (v280). راهنمای مستقرسازی در «راهنمای سروری» پایین پنل.', true);
+                if (/UNAUTHORIZED|401|Missing authorization header/i.test(inv.err || '')) {
+                    evLog('💡 راهنما: خطای 401 یعنی «Verify JWT» روی تابع هنوز روشن است. در داشبورد: Edge Functions → روی «ev-sync» → Details/⋯ → Function settings → «Verify JWT» را خاموش کنید → Save. سپس دوباره امتحان کنید. (تابع فقط جدول عمومی net_events را می‌خواند — امن است.)', true);
+                } else {
+                    evLog('💡 راهنما: تابع هنوز مستقر نشده یا سرویس موقتاً خاموش است — وابسته نیستیم: جدول را می‌خوانیم و دکمه‌های جدا (اسنوکر/فرمول‌۱/تنیس/جستجوی رویدادها) با زنجیره‌های مرورگری همان کار را می‌کنند (v280). راهنمای مستقرسازی در «راهنمای سروری» پایین پنل.', true);
+                }
             }
         } else {
             evLog('⏭ فراخوانی سروری لازم نبود (کمتر از ۳۰ دقیقه از آخرین به‌روزرسانی) — خواندن مستقیم جدول', true);
@@ -21869,7 +21894,12 @@ async function evServerAll() {
         // ② پول جدول
         evLog('📡 خواندن جدول net_events (گروه EVSRV — همهٔ اعضا همین را می‌بینند) …', true);
         const rr = await evSrvReadRows();
-        if (!rr.ok) { evLog('🚫 جدول net_events خوانده نشد: ' + (rr.err || '') + ' — اسکریپت SQL جدید (بخش v281) را یک بار در SQL Editor اجرا کنید', true); showToast('سروری: جدول خوانده نشد'); return; }
+        if (!rr.ok) {
+            const hint = evSrvSchemaCacheHint(rr.err || '');
+            evLog('🚫 جدول net_events خوانده نشد: ' + (rr.err || '') + (hint ? '\n' + hint : ' — اسکریپت SQL جدید (بخش v281) را یک بار در SQL Editor اجرا کنید'), true);
+            showToast('سروری: جدول خوانده نشد');
+            return;
+        }
         let rows = rr.rows || [];
         // فقط آینده (نگهداری سرور گذشته‌ها را پاک می‌کند؛ این هم گارد)
         const now = Date.now();
