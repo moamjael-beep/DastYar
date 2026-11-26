@@ -5277,7 +5277,7 @@ body.locked .header-actions button {
                     <b>گام ۳‌ب) امتحان همین‌جا:</b> روی تابع → زبانهٔ <i>Test</i> → روش <b>GET</b> → <i>Send request</i>؛ باید JSON با <code>"ok":true</code> برگردد.<br>
                     <b>گام ۳‌ج) مهم — Verify JWT خاموش:</b> روی تابع <code>ev-sync</code> کلیک کنید → زبانهٔ <i>Details</i> (یا دکمهٔ <b>⋯</b> کنار نام تابع → <i>Function settings</i>) → کلید <b>Verify JWT</b> را خاموش کنید → <i>Save</i>. بدون این کار، gateway خطای <code>401 UNAUTHORIZED_NO_AUTH_HEADER</code> می‌دهد چون درخواست‌های کلاینت ما هدر جداگانهٔ Authorization ندارند.<br>
                     <b>گام ۳‌د) اگر پیام «جدول پیدا نشد»:</b> اگر در برنامه نوشت «Could not find the table 'net_events' in the schema cache»، یعنی جدول ساخته شده ولی PostgREST هنوز کش schema را به‌روز نکرده. یا چند دقیقه صبر کنید (خودکار به‌روز می‌شود) یا در SQL Editor یک‌بار <code>NOTIFY pgrst, 'reload schema';</code> اجرا کنید.<br>
-                    <b>گام ۳‌ه) اگر خطای ۴۰۳/۴۲۵۰۱ دیدید (permission denied):</b> یعنی جدول <code>net_events</code> به نقش دیتابیسِ تابع اجازهٔ نوشتن نمی‌دهد (اسکریپت‌های SQL قدیمی فقط به <code>anon, authenticated</code> اجازه می‌دادند و <code>service_role</code> جا مانده بود). در داشبورد → <i>SQL Editor</i> این یک خط را Run کنید — فوری است و به Deploy مجدد نیازی ندارد: <code>GRANT SELECT, INSERT, UPDATE, DELETE ON public.net_events TO anon, authenticated, service_role;</code> سپس دکمهٔ سروری را دوباره بزنید. اسکریپت جامع v282.2 (گام ۱) این اجازه را هم می‌دهد.<br>
+                    <b>گام ۳‌ه) اگر خطای ۴۰۳/۴۲۵۰۱ دیدید (permission denied):</b> یعنی جدول <code>net_events</code> به نقش دیتابیسِ تابع اجازهٔ نوشتن نمی‌دهد (اسکریپت‌های SQL قدیمی فقط به <code>anon, authenticated</code> اجازه می‌دادند و <code>service_role</code> جا مانده بود). در داشبورد → <i>SQL Editor</i> این یک خط را Run کنید — فوری است و به Deploy مجدد نیازی ندارد: <code>GRANT SELECT, INSERT, UPDATE, DELETE ON public.net_events TO anon, authenticated, service_role;</code> سپس دکمهٔ سروری را دوباره بزنید. اسکریپت جامع v282.3 (گام ۱) این اجازه را هم می‌دهد.<br>
                     <b>گام ۴)</b> دکمهٔ «🌐 سروری — همه (شبکه‌ای)» را بزنید: تابع اجرا و جدول پر می‌شود؛ سپس همهٔ اعضا با دکمهٔ «🛰️ عضویت…» یا همان دکمهٔ سروری جدول را می‌خوانند.<br>
                     <b>نگهداری/به‌روزرسانی همیشگی:</b> تابع هر بار فراخوانی، همهٔ منابع را دوباره می‌خواند و upsert می‌کند و رویدادهای گذشته را پاک می‌کند. فراخوانی خودکار: دکمهٔ سروری هر ۳۰ دقیقه حداکثر یک بار invoke می‌کند (هر عضوی که پنل را باز کند کافی است)؛ برای کاملاً خودکار، هر سرویس زمان‌بندی بیرونی (مثل GitHub Actions cron) می‌تواند هر ۶ ساعت POST بزند — لازم نیست، پول جدول همیشه جواب می‌دهد.<br>
                     <b>بدون تابع هم کار می‌کند:</b> جدول مستقل از تابع خوانده می‌شود؛ دکمه‌های جدا (اسنوکر/فرمول‌۱/تنیس) زنجیره‌های مرورگری v280 را دارند و نتایج‌شان با افزودن، در همان گروه «رویدادها» می‌نشیند.
@@ -8568,7 +8568,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v282.2-2026-11-26-ev-grant-and-fa-name';
+const APP_VERSION = 'v282.3-2026-11-26-net-task-dedup-deadline';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -19520,7 +19520,7 @@ const NET_DEFAULTS = {
     url: 'https://uuedqototmxgzoltwdxc.supabase.co',
     key: 'sb_publishable_SrK_j002xlTRy58VAl3v3Q_XEB0aAsi'
 };
-const NET_SQL_HELP = '-- ════════════════════════════════════════════════════════════════════\n-- یادآور صوتی — اسکریپت جامع شبکه (v281.2)\n-- این یک اسکریپت است که «همه‌چیز» را می‌سازد یا تعمیر می‌کند:\n--   • جدول‌ها: net_groups، net_members، net_tasks، net_messages،\n--     net_msg_hides، net_events\n--   • همهٔ ستون‌های افزوده‌شده در طول تاریخ (برای دیتابیس‌های قدیمی)\n--   • RLS + سیاست‌های باز + GRANT کامل\n--   • باکت storage «net-chat» (پیوست‌های چت) + سیاست‌هایش\n--   • پاک‌سازی رویدادهای گذشته + به‌روزرسانی فوری کشِ schema\n-- ▶ اجرای چندباره کاملاً بی‌خطاست (idempotent): سیاست‌ها با DO-block\n--   ساخته می‌شوند، پس دیگر خطای «already exists» و برگشتِ کل تراکنش\n--   (علت اصلی خرابی دیتابیس‌های قدیمی) پیش نمی‌آید.\n-- ▶ اجرا: Supabase Dashboard → SQL Editor → New query → کل متن را\n--   پیست کنید → Run. پیام «Success. No rows returned» یعنی موفق.\n-- ════════════════════════════════════════════════════════════════════\n\ncreate extension if not exists pgcrypto;\n\n-- ─── ۱) جدول‌ها ──────────────────────────────────────────────────────\ncreate table if not exists net_groups (\n  id uuid primary key default gen_random_uuid(),\n  code text unique not null,\n  name text not null,\n  created_by text not null,\n  created_at timestamptz default now()\n);\n\ncreate table if not exists net_members (\n  group_id uuid references net_groups(id) on delete cascade,\n  user_id text not null,\n  display_name text not null,\n  joined_at timestamptz default now(),\n  primary key (group_id, user_id)\n);\n\ncreate table if not exists net_tasks (\n  id uuid primary key default gen_random_uuid(),\n  group_id uuid references net_groups(id) on delete cascade,\n  title text not null,\n  deadline date,\n  owner_id text not null,\n  owner_name text not null,\n  assignee_id text,\n  assignee_name text,\n  done boolean not null default false,\n  completed_at timestamptz,\n  cancelled boolean default false,\n  suspended boolean default false,\n  urgent boolean default false,\n  pinned boolean default false,\n  repeat text,\n  deleted boolean default false,\n  subgroup_id text,\n  subgroup_name text,\n  created_at timestamptz default now(),\n  updated_at timestamptz default now()\n);\n\ncreate table if not exists net_messages (\n  id uuid primary key default gen_random_uuid(),\n  group_id uuid references net_groups(id) on delete cascade,\n  sender_id text not null,\n  sender_name text not null,\n  text text not null,\n  created_at timestamptz default now()\n);\n\ncreate table if not exists net_msg_hides (\n  msg_id uuid references net_messages(id) on delete cascade,\n  user_id text not null,\n  hidden_at timestamptz default now(),\n  primary key (msg_id, user_id)\n);\n\n-- v281: رویدادهای سروری (گروه EVSRV) — Edge Function «ev-sync» این را پر می‌کند\ncreate table if not exists net_events (\n  id uuid primary key default gen_random_uuid(),\n  ev_key text unique not null,\n  group_code text not null default \'EVSRV\',\n  title text not null,\n  sub text,\n  src text not null,\n  ev_date date,\n  ev_time text,\n  date_j text,\n  starts_at timestamptz,\n  created_at timestamptz default now()\n);\n\n-- ─── ۲) ستون‌های افزوده‌شده در طول تاریخ (دیتابیس قدیمی را کامل می‌کند) ──\nalter table net_messages add column if not exists img text;\nalter table net_messages add column if not exists kind text default \'text\';\nalter table net_messages add column if not exists url text;\nalter table net_messages add column if not exists fname text;\nalter table net_messages add column if not exists fsize bigint;\nalter table net_messages add column if not exists dur int;\nalter table net_messages add column if not exists edited_at timestamptz;\nalter table net_messages add column if not exists deleted boolean default false;\nalter table net_tasks add column if not exists completed_at timestamptz;\nalter table net_tasks add column if not exists cancelled boolean default false;\nalter table net_tasks add column if not exists suspended boolean default false;\nalter table net_tasks add column if not exists urgent boolean default false;\nalter table net_tasks add column if not exists pinned boolean default false;\nalter table net_tasks add column if not exists repeat text;\nalter table net_tasks add column if not exists deleted boolean default false;\nalter table net_tasks add column if not exists subgroup_id text;\nalter table net_tasks add column if not exists subgroup_name text;\n\n-- ─── ۳) RLS (روی همهٔ جدول‌ها) ───────────────────────────────────────\nalter table net_groups   enable row level security;\nalter table net_members  enable row level security;\nalter table net_tasks    enable row level security;\nalter table net_messages enable row level security;\nalter table net_msg_hides enable row level security;\nalter table net_events   enable row level security;\n\n-- ─── ۴) سیاست‌های باز (idempotent — DO block) ───────────────────────\ndo $$ begin\n  if not exists (select 1 from pg_policies where tablename=\'net_groups\' and policyname=\'net_groups_all\') then\n    create policy "net_groups_all" on net_groups for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_members\' and policyname=\'net_members_all\') then\n    create policy "net_members_all" on net_members for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_tasks\' and policyname=\'net_tasks_all\') then\n    create policy "net_tasks_all" on net_tasks for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_messages\' and policyname=\'net_messages_all\') then\n    create policy "net_messages_all" on net_messages for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_msg_hides\' and policyname=\'net_msg_hides_all\') then\n    create policy "net_msg_hides_all" on net_msg_hides for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_events\' and policyname=\'net_events_all\') then\n    create policy "net_events_all" on net_events for all using (true) with check (true);\n  end if;\nend $$;\n\n-- ─── ۵) GRANT کامل (v282.2: service_role هم — تابع ev-sync با Secret آن وصل می‌شود؛ بدون GRANT خطای ۴۰۳/۴۲۵۰۱ permission denied می‌دهد) ──\ngrant usage on schema public to anon, authenticated, service_role;\ngrant select, insert, update, delete on all tables in schema public to anon, authenticated, service_role;\nalter default privileges in schema public grant all on tables to anon, authenticated, service_role;\n\n-- ─── ۶) باکت storage پیوست‌های چت + سیاست‌هایش ──────────────────────\ninsert into storage.buckets (id, name, public) values (\'net-chat\', \'net-chat\', true) on conflict (id) do nothing;\ndo $$ begin\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-read\') then\n    create policy "net-chat-read" on storage.objects for select using (bucket_id = \'net-chat\');\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-insert\') then\n    create policy "net-chat-insert" on storage.objects for insert with check (bucket_id = \'net-chat\');\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-update\') then\n    create policy "net-chat-update" on storage.objects for update using (bucket_id = \'net-chat\');\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-delete\') then\n    create policy "net-chat-delete" on storage.objects for delete using (bucket_id = \'net-chat\');\n  end if;\nend $$;\n\n-- ─── ۷) اندیس‌های کمکی (پرس‌وجوهای سریع‌تر — بی‌ضرر) ────────────────\ncreate index if not exists net_tasks_group_idx   on net_tasks (group_id);\ncreate index if not exists net_tasks_upd_idx     on net_tasks (updated_at);\ncreate index if not exists net_messages_grp_idx  on net_messages (group_id, created_at);\ncreate index if not exists net_events_grp_idx    on net_events (group_code, starts_at);\n\n-- ─── ۸) نگهداری: پاک‌سازی رویدادهای گذشته ───────────────────────────\ndelete from net_events where starts_at < now() - interval \'1 day\';\n\n-- ─── ۹) به‌روزرسانی فوری کشِ schema (پیام «schema cache» را فوری می‌خواباند) ──\nnotify pgrst, \'reload schema\';\n\n-- ════════════════════════════════════════════════════════════════════\n-- پایان — «Success. No rows returned» یعنی موفق.\n-- حالا در برنامه: منوی ☰ → 🛰️ شبکه → «↻ اتصال دوباره» (یا رفرش صفحه)\n-- تسک‌ها/پیام‌ها بین همهٔ گوشی‌ها سینک می‌شوند؛ دکمهٔ سروری رویدادها هم\n-- جدول net_events را می‌بیند.\n-- ════════════════════════════════════════════════════════════════════';
+const NET_SQL_HELP = '-- ════════════════════════════════════════════════════════════════════\n-- یادآور صوتی — اسکریپت جامع شبکه (v282.3 — GRANT service_role + سررسید text)\n-- این یک اسکریپت است که «همه‌چیز» را می‌سازد یا تعمیر می‌کند:\n--   • جدول‌ها: net_groups، net_members، net_tasks، net_messages،\n--     net_msg_hides، net_events\n--   • همهٔ ستون‌های افزوده‌شده در طول تاریخ (برای دیتابیس‌های قدیمی)\n--   • RLS + سیاست‌های باز + GRANT کامل\n--   • باکت storage «net-chat» (پیوست‌های چت) + سیاست‌هایش\n--   • پاک‌سازی رویدادهای گذشته + به‌روزرسانی فوری کشِ schema\n-- ▶ اجرای چندباره کاملاً بی‌خطاست (idempotent): سیاست‌ها با DO-block\n--   ساخته می‌شوند، پس دیگر خطای «already exists» و برگشتِ کل تراکنش\n--   (علت اصلی خرابی دیتابیس‌های قدیمی) پیش نمی‌آید.\n-- ▶ اجرا: Supabase Dashboard → SQL Editor → New query → کل متن را\n--   پیست کنید → Run. پیام «Success. No rows returned» یعنی موفق.\n-- ════════════════════════════════════════════════════════════════════\n\ncreate extension if not exists pgcrypto;\n\n-- ─── ۱) جدول‌ها ──────────────────────────────────────────────────────\ncreate table if not exists net_groups (\n  id uuid primary key default gen_random_uuid(),\n  code text unique not null,\n  name text not null,\n  created_by text not null,\n  created_at timestamptz default now()\n);\n\ncreate table if not exists net_members (\n  group_id uuid references net_groups(id) on delete cascade,\n  user_id text not null,\n  display_name text not null,\n  joined_at timestamptz default now(),\n  primary key (group_id, user_id)\n);\n\ncreate table if not exists net_tasks (\n  id uuid primary key default gen_random_uuid(),\n  group_id uuid references net_groups(id) on delete cascade,\n  title text not null,\n  -- v282.3: text تا «ساعتِ» سررسید هم می‌ماند (با date ساعت بی‌صدا قیچی می‌شد)\n  deadline text,\n  owner_id text not null,\n  owner_name text not null,\n  assignee_id text,\n  assignee_name text,\n  done boolean not null default false,\n  completed_at timestamptz,\n  cancelled boolean default false,\n  suspended boolean default false,\n  urgent boolean default false,\n  pinned boolean default false,\n  repeat text,\n  deleted boolean default false,\n  subgroup_id text,\n  subgroup_name text,\n  created_at timestamptz default now(),\n  updated_at timestamptz default now()\n);\n\ncreate table if not exists net_messages (\n  id uuid primary key default gen_random_uuid(),\n  group_id uuid references net_groups(id) on delete cascade,\n  sender_id text not null,\n  sender_name text not null,\n  text text not null,\n  created_at timestamptz default now()\n);\n\ncreate table if not exists net_msg_hides (\n  msg_id uuid references net_messages(id) on delete cascade,\n  user_id text not null,\n  hidden_at timestamptz default now(),\n  primary key (msg_id, user_id)\n);\n\n-- v281: رویدادهای سروری (گروه EVSRV) — Edge Function «ev-sync» این را پر می‌کند\ncreate table if not exists net_events (\n  id uuid primary key default gen_random_uuid(),\n  ev_key text unique not null,\n  group_code text not null default \'EVSRV\',\n  title text not null,\n  sub text,\n  src text not null,\n  ev_date date,\n  ev_time text,\n  date_j text,\n  starts_at timestamptz,\n  created_at timestamptz default now()\n);\n\n-- ─── ۲) ستون‌های افزوده‌شده در طول تاریخ (دیتابیس قدیمی را کامل می‌کند) ──\n-- v282.3: سررسید تسک text شود تا ساعتش روی سرور بماند (قدیمی date بود)\nalter table net_tasks alter column deadline type text;\nalter table net_messages add column if not exists img text;\nalter table net_messages add column if not exists kind text default \'text\';\nalter table net_messages add column if not exists url text;\nalter table net_messages add column if not exists fname text;\nalter table net_messages add column if not exists fsize bigint;\nalter table net_messages add column if not exists dur int;\nalter table net_messages add column if not exists edited_at timestamptz;\nalter table net_messages add column if not exists deleted boolean default false;\nalter table net_tasks add column if not exists completed_at timestamptz;\nalter table net_tasks add column if not exists cancelled boolean default false;\nalter table net_tasks add column if not exists suspended boolean default false;\nalter table net_tasks add column if not exists urgent boolean default false;\nalter table net_tasks add column if not exists pinned boolean default false;\nalter table net_tasks add column if not exists repeat text;\nalter table net_tasks add column if not exists deleted boolean default false;\nalter table net_tasks add column if not exists subgroup_id text;\nalter table net_tasks add column if not exists subgroup_name text;\n\n-- ─── ۳) RLS (روی همهٔ جدول‌ها) ───────────────────────────────────────\nalter table net_groups   enable row level security;\nalter table net_members  enable row level security;\nalter table net_tasks    enable row level security;\nalter table net_messages enable row level security;\nalter table net_msg_hides enable row level security;\nalter table net_events   enable row level security;\n\n-- ─── ۴) سیاست‌های باز (idempotent — DO block) ───────────────────────\ndo $$ begin\n  if not exists (select 1 from pg_policies where tablename=\'net_groups\' and policyname=\'net_groups_all\') then\n    create policy "net_groups_all" on net_groups for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_members\' and policyname=\'net_members_all\') then\n    create policy "net_members_all" on net_members for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_tasks\' and policyname=\'net_tasks_all\') then\n    create policy "net_tasks_all" on net_tasks for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_messages\' and policyname=\'net_messages_all\') then\n    create policy "net_messages_all" on net_messages for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_msg_hides\' and policyname=\'net_msg_hides_all\') then\n    create policy "net_msg_hides_all" on net_msg_hides for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_events\' and policyname=\'net_events_all\') then\n    create policy "net_events_all" on net_events for all using (true) with check (true);\n  end if;\nend $$;\n\n-- ─── ۵) GRANT کامل (v282.2: service_role هم — تابع ev-sync با Secret آن وصل می‌شود؛ بدون GRANT خطای ۴۰۳/۴۲۵۰۱ permission denied می‌دهد) ──\ngrant usage on schema public to anon, authenticated, service_role;\ngrant select, insert, update, delete on all tables in schema public to anon, authenticated, service_role;\nalter default privileges in schema public grant all on tables to anon, authenticated, service_role;\n\n-- ─── ۶) باکت storage پیوست‌های چت + سیاست‌هایش ──────────────────────\ninsert into storage.buckets (id, name, public) values (\'net-chat\', \'net-chat\', true) on conflict (id) do nothing;\ndo $$ begin\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-read\') then\n    create policy "net-chat-read" on storage.objects for select using (bucket_id = \'net-chat\');\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-insert\') then\n    create policy "net-chat-insert" on storage.objects for insert with check (bucket_id = \'net-chat\');\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-update\') then\n    create policy "net-chat-update" on storage.objects for update using (bucket_id = \'net-chat\');\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-delete\') then\n    create policy "net-chat-delete" on storage.objects for delete using (bucket_id = \'net-chat\');\n  end if;\nend $$;\n\n-- ─── ۷) اندیس‌های کمکی (پرس‌وجوهای سریع‌تر — بی‌ضرر) ────────────────\ncreate index if not exists net_tasks_group_idx   on net_tasks (group_id);\ncreate index if not exists net_tasks_upd_idx     on net_tasks (updated_at);\ncreate index if not exists net_messages_grp_idx  on net_messages (group_id, created_at);\ncreate index if not exists net_events_grp_idx    on net_events (group_code, starts_at);\n\n-- ─── ۸) نگهداری: پاک‌سازی رویدادهای گذشته ───────────────────────────\ndelete from net_events where starts_at < now() - interval \'1 day\';\n\n-- ─── ۹) به‌روزرسانی فوری کشِ schema (پیام «schema cache» را فوری می‌خواباند) ──\nnotify pgrst, \'reload schema\';\n\n-- ════════════════════════════════════════════════════════════════════\n-- پایان — «Success. No rows returned» یعنی موفق.\n-- حالا در برنامه: منوی ☰ → 🛰️ شبکه → «↻ اتصال دوباره» (یا رفرش صفحه)\n-- تسک‌ها/پیام‌ها بین همهٔ گوشی‌ها سینک می‌شوند؛ دکمهٔ سروری رویدادها هم\n-- جدول net_events را می‌بیند.\n-- ════════════════════════════════════════════════════════════════════';
 
 let NET_STATE = {
     sb: null,          // کلاینت Supabase
@@ -19534,6 +19534,7 @@ let NET_STATE = {
     voice: { in: false, mic: false, pcs: {}, stream: null, members: {} },  // BA-232 + L-1(BA-251): میک پیش‌فرض بسته
     unread: 0,         // BA-233: پیام‌های خوانده‌نشدهٔ چت
     lastMsgAt: {},     // L-5 (BA-252): آخرین پیام دیده‌شدهٔ هر گروه (پشتیبان پول)
+    dlHeal: {},        // v282.3: سررسیدهای ترمیم‌شده {netId: true} — ضد حلقهٔ آپدیت
     notifKeys: {},     // L-5 (BA-252): کلیدهای پیام‌های نوتیف‌شده — ضد دوباره‌نوتیف
     unreadByGroup: {}, // L-5 (BA-252): تعداد پیام خوانده‌نشدهٔ هر گروه {code: n}
     lastMsgAt: {},     // L-5 (BA-252): آخرین پیام دیده‌شدهٔ هر گروه (پشتیبان پول)
@@ -21765,7 +21766,7 @@ async function evServerAll() {
                     evLog('💡 راهنما: خطای 401 یعنی «Verify JWT» روی تابع هنوز روشن است. در داشبورد: Edge Functions → روی «ev-sync» → Details/⋯ → Function settings → «Verify JWT» را خاموش کنید → Save. سپس دوباره امتحان کنید. (تابع فقط جدول عمومی net_events را می‌خواند — امن است.)', true);
                 } else if (/42501|permission denied|Grant the required privileges/i.test(inv.err || '')) {
                     // v282.2: جدول به نقش دیتابیسِ تابع اجازه نمی‌دهد — یک خط SQL فوری می‌کشد
-                    evLog('💡 راهنما (۴۰۳/۴۲۵۰۱): جدول net_events به نقش دیتابیسِ تابع اجازهٔ نوشتن نمی‌دهد (اسکریپت‌های قدیمی فقط به anon/authenticated اجازه می‌دادند). در داشبورد → SQL Editor این یک خط را Run کنید — فوری است و به Deploy مجدد نیازی ندارد: «GRANT SELECT, INSERT, UPDATE, DELETE ON public.net_events TO anon, authenticated, service_role;» سپس دکمهٔ سروری را دوباره بزنید. (راه دوم: Secret «SUPABASE_SERVICE_ROLE» را از تابع حذف کنید تا تابع از کلید apikey خودِ برنامه استفاده کند — آن هم اجازه دارد. اسکریپت جامع v282.2 داخل برنامه این اجازه را هم می‌دهد.)', true);
+                    evLog('💡 راهنما (۴۰۳/۴۲۵۰۱): جدول net_events به نقش دیتابیسِ تابع اجازهٔ نوشتن نمی‌دهد (اسکریپت‌های قدیمی فقط به anon/authenticated اجازه می‌دادند). در داشبورد → SQL Editor این یک خط را Run کنید — فوری است و به Deploy مجدد نیازی ندارد: «GRANT SELECT, INSERT, UPDATE, DELETE ON public.net_events TO anon, authenticated, service_role;» سپس دکمهٔ سروری را دوباره بزنید. (راه دوم: Secret «SUPABASE_SERVICE_ROLE» را از تابع حذف کنید تا تابع از کلید apikey خودِ برنامه استفاده کند — آن هم اجازه دارد. اسکریپت جامع v282.3 داخل برنامه این اجازه را هم می‌دهد.)', true);
                 } else if (/Secrets|SUPABASE_URL|SUPABASE_SERVICE_ROLE|service_role|کلیدی به تابع نرسید/i.test(inv.err || '') && !/^v282/.test(fnVer)) {
                     // v282.1: متن تابع قدیمی است — نسخهٔ جدید بدون Secret کار می‌کند
                     // (فقط وقتی تابع نسخهٔ v282+ را گزارش نکرده — v282.2: hint اشتباهِ خطای ۴۲۵۰۱ رفع شد)
@@ -22289,7 +22290,11 @@ async function ghMutateTask(code, fn) {
 function netTaskSharedFields(item) {
     return {
         title: item.text,
-        deadline: item.deadline ? String(item.deadline).slice(0, 10) : null,
+        // v282.3: رشتهٔ کامل سررسید (با ساعت) — قبلاً slice(0,10) ساعت را
+        // قیچی می‌کرد و رندر «X ساعت مانده» بین دستگاه‌ها متفاوت می‌شد.
+        // روی دیتابیس‌های قدیمی (ستون date) پستگرس بی‌صدا به تاریخ می‌بُرد؛
+        // با اسکریپت v282.3 ستون text می‌شود و ساعت می‌ماند.
+        deadline: item.deadline ? String(item.deadline) : null,
         repeat: (item.repeat && item.repeat.type && item.repeat.type !== 'none')
             ? JSON.stringify({ type: item.repeat.type, value: item.repeat.value, endDate: item.repeat.endDate || '' })
             : null,
@@ -22345,13 +22350,13 @@ async function netAddTaskCore(title, deadline, assigneeId, groupOverride, extra)
         } catch(e) { showToast('⚠️ ' + ((e && e.message) || e)); return null; }
     }
     if (!NET_STATE.sb) { showToast('⚠️ گروه فعال نیست'); return null; }
+    const row = {   // v282.3: بیرون از try تا catchِ 23505 هم به id کلاینت برسد
+        group_id: g.id, title: title, deadline: deadline || null,
+        owner_id: netMyUid(), owner_name: NET_STATE.myName,
+        assignee_id: asg.id, assignee_name: asg.name
+    };
+    if (extra) Object.assign(row, extra);   // K4: تمام جزئیات تسک معمولی (+ id کلاینت در v282.3)
     try {
-        const row = {
-            group_id: g.id, title: title, deadline: deadline || null,
-            owner_id: netMyUid(), owner_name: NET_STATE.myName,
-            assignee_id: asg.id, assignee_name: asg.name
-        };
-        if (extra) Object.assign(row, extra);   // K4: تمام جزئیات تسک معمولی
         const r = await NET_STATE.sb.from('net_tasks').insert(row).select();
         if (r.error) throw new Error(r.error.message);
         NET_broadcast('tasks-refresh', {});
@@ -22359,6 +22364,20 @@ async function netAddTaskCore(title, deadline, assigneeId, groupOverride, extra)
         return r.data[0];
     } catch(e) {
         const m = (e && e.message) || String(e);
+        // 🔧 v282.3: خطای تکرار (23505) با id کلاینت یعنی ردیف «قبلاً» رفته
+        // (تلاش قبلی موفق بوده ولی نوشتن netId گم شده) — موفق در نظر بگیر و
+        // همان ردیف را برگردان؛ نه ردیف دوم، نه پیام خطا به کاربر
+        if (/23505|duplicate key|unique/i.test(m) && row && row.id && NET_STATE.sb) {
+            try {
+                const g2 = await NET_STATE.sb.from('net_tasks').select('*').eq('id', row.id).limit(1);
+                const found = (g2.data || [])[0];
+                if (found && !found.deleted) {
+                    NET_broadcast('tasks-refresh', {});
+                    await netLoadTasks();
+                    return found;
+                }
+            } catch(e2) {}
+        }
         showToast('⚠️ ' + m + (m.indexOf('column') >= 0 || m.indexOf('repeat') >= 0 || m.indexOf('deleted') >= 0 ? ' — اسکریپت SQL جدید را در Supabase اجرا کنید' : ''));
         return null;
     }
@@ -22527,6 +22546,16 @@ function netPendRetry() {
     });
 }
 const NET_PUSHING = {};   // id محلی → true؛ جلوگیری از پوش دوبلهٔ هم‌زمان
+// 🔧 v282.3 (BA-282.3): شناسهٔ uuid استاندارد ساخته‌شده در کلاینت — ردیف سرور
+// با همین id ساخته می‌شود؛ پس تلاش دوبارهٔ همان تسک (قطعیِ لحظه‌ای، رقابت
+// سینک، رفرش وسط کار) به unique violation می‌خورد و «بازیابی netId» می‌شود،
+// نه ردیف دوم. (الگوی ev_key جدول net_events — ضدتکرار ساختاریافته.)
+function netUuid() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    const h = '0123456789abcdef'; let s = '';
+    for (let i = 0; i < 32; i++) s += h[Math.floor(Math.random() * 16)];
+    return s.slice(0, 8) + '-' + s.slice(8, 12) + '-4' + s.slice(13, 16) + '-a' + s.slice(17, 20) + '-' + s.slice(20, 32);
+}
 function netRepushLocalTasks(g, items) {
     if (!g || !g.code || !NET_STATE.sb) return;
     const list = (items || []).filter(function(x) {
@@ -22537,6 +22566,20 @@ function netRepushLocalTasks(g, items) {
         Promise.resolve(netRepushOne(g, x)).catch(function() {}).finally(function() { delete NET_PUSHING[x.id]; });
     });
 }
+// v282.3: نوشتن netId روی تسک محلی + حذف آینه‌های تکراری همان ردیف
+function netClaimServerRow(localId, serverId, ownerName) {
+    try {
+        const items = getDB();
+        const it = items.find(function(y) { return y.id === localId; });
+        if (it) { it.netId = serverId; it.netOwner = it.netOwner || ownerName || NET_STATE.myName; it.netOwnerId = it.netOwnerId || netMyUid(); }
+        const dupes = it ? items.filter(function(y) { return y.netId === serverId && y.id !== it.id; }) : [];
+        if (dupes.length) {
+            const keep = items.filter(function(y) { return !dupes.some(function(d) { return d.id === y.id; }); });
+            items.length = 0; Array.prototype.push.apply(items, keep);
+        }
+        setDB(items);
+    } catch(e) {}
+}
 async function netRepushOne(g, x) {
     try {
         // group_id واقعی سرور: اگر g.id معتبر نبود، با کد گروه بپرس
@@ -22546,27 +22589,41 @@ async function netRepushOne(g, x) {
             gid = ((gr.data || [])[0] || {}).id;
         }
         if (!gid) return;
+        // v282.3: شناسهٔ ثابت کلاینت (یک‌بار ساخته و ذخیره می‌شود) — retry همان
+        // id را می‌زند؛ 23505 یعنی ردیف قبلاً رفته → netId بازیابی، نه ردیف دوم
+        const items0 = getDB();
+        const it0 = items0.find(function(y) { return y.id === x.id; });
+        let cid = (it0 && it0.netClientId) || '';
+        if (!cid) {
+            cid = netUuid();
+            if (it0) { it0.netClientId = cid; setDB(items0); }
+        }
         const row = Object.assign({
+            id: cid,
             group_id: gid, title: x.text,
-            deadline: x.deadline ? String(x.deadline).slice(0, 10) : null,
+            // v282.3: ساعتِ سررسید هم می‌رود — قبلاً slice(0,10) آن را قیچی می‌کرد
+            // و همهٔ دستگاه‌ها زمانِ متفاوتی نشان می‌دادند (ستون هم در SQL حالا text است)
+            deadline: x.deadline ? String(x.deadline) : null,
             owner_id: x.netOwnerId || netMyUid(), owner_name: x.netOwner || NET_STATE.myName,
             assignee_id: x.netAssigneeId || netMyUid(), assignee_name: x.netAssignee || NET_STATE.myName
         }, netTaskSharedFields(x));
         row.created_at = x.createdAt || new Date().toISOString();
         const r = await NET_STATE.sb.from('net_tasks').insert(row).select();
-        if (r.error) throw new Error(r.error.message);
+        if (r.error) {
+            const em = String((r.error && (r.error.code || '')) || '') + ' ' + String((r.error && r.error.message) || '');
+            if (/23505|duplicate key|unique/i.test(em)) {
+                // ردیف با همین id قبلاً روی سرور هست — فقط netId را بازیابی کن
+                const g2 = await NET_STATE.sb.from('net_tasks').select('*').eq('id', cid).limit(1);
+                const found = (g2.data || [])[0];
+                if (found && !found.deleted) { netClaimServerRow(x.id, found.id, found.owner_name); return; }
+                if (found && found.deleted) return;   // تومبستون — pull خودش پاکش می‌کند
+            }
+            throw new Error((r.error && r.error.message) || 'insert failed');
+        }
         const t = (r.data || [])[0];
         if (!t) return;
-        const items = getDB();
-        const it = items.find(function(y) { return y.id === x.id; });
-        if (it) { it.netId = t.id; it.netOwner = it.netOwner || NET_STATE.myName; it.netOwnerId = it.netOwnerId || netMyUid(); }
-        const dupes = it ? items.filter(function(y) { return y.netId === t.id && y.id !== it.id; }) : [];
-        if (dupes.length) {
-            const keep = items.filter(function(y) { return !dupes.some(function(d) { return d.id === y.id; }); });
-            items.length = 0; Array.prototype.push.apply(items, keep);
-        }
-        setDB(items);
-    } catch(e) { /* قطعی — چرخهٔ بعدی دوباره امتحان می‌کند */ }
+        netClaimServerRow(x.id, t.id, t.owner_name);
+    } catch(e) { /* قطعی — چرخهٔ بعدی دوباره امتحان می‌کند (با همان netClientId) */ }
 }
 
 // BA-237: هم‌گام‌سازی تسک‌های یک گروه مشخص (نه فقط گروه فعال)
@@ -22622,6 +22679,16 @@ function netSyncGroupTasks(g, tasks) {
                 // کاربر زیرگروه را ندارد، نام سرور مرجع نمایش می‌شود
                 if ((it.subgroupId || null) !== (t.subgroup_id || null)) { it.subgroupId = t.subgroup_id || null; changed = true; }
                 if ((it.netOwner || '') !== (t.owner_name || '') || (it.netOwnerId || '') !== (t.owner_id || '')) { it.netOwner = t.owner_name || ''; it.netOwnerId = t.owner_id || ''; changed = true; }
+                // 🔧 v282.3: ترمیم سررسیدِ بدون‌ساعت — ردیف‌های قدیمی (ستون date +
+                // slice(0,10) قدیم) ساعت را از دست داده بودند و هر دستگاه «X ساعت
+                // مانده»ٔ متفاوتی نشان می‌داد. اگر نسخهٔ محلیِ همین تسک ساعت دارد
+                // (دستگاه سازنده)، یک‌بار به سرور می‌فرستد (ستون حالا text است)
+                // تا همه یکسان ببینند. dlHeal ضد حلقهٔ آپدیت بی‌پایان.
+                if (it.netId && NET_STATE.sb && !ghEnabled() && !NET_STATE.dlHeal[it.netId]
+                    && String(t.deadline || '').length <= 10 && (it.deadline || '') && String(it.deadline).length > 10) {
+                    NET_STATE.dlHeal[it.netId] = true;
+                    NET_STATE.sb.from('net_tasks').update({ deadline: String(it.deadline), updated_at: new Date().toISOString() }).eq('id', it.netId).then(function() {}).catch(function() {});
+                }
             }
         });
         // K4: تسک‌های حذف‌شده روی سرور (تومبستون یا ردیف پاک‌شده) از محلی هم حذف شوند
@@ -22629,6 +22696,10 @@ function netSyncGroupTasks(g, tasks) {
             const x = items[i];
             if (x.netCode === g.code && x.netId && !alive[x.netId]) { items.splice(i, 1); changed = true; }
         }
+        // 🔧 v282.3: پاک‌سازی تکراری‌های موجود سرور (اثر رقابتِ قدیمیِ push) —
+        // دو ردیف هم‌عنوان + هم‌سررسید (روز) + هم‌سازنده + هم‌مسئول که در
+        // پنجرهٔ ۱۲۰ ثانیه ساخته شده‌اند: قدیمی‌ترش می‌ماند، بقیه تومبستون.
+        if (NET_STATE.sb && !ghEnabled()) netDedupServerRows(g, tasks);
         if (changed) {
             localStorage.setItem(DB_KEY, JSON.stringify(items));
             if (typeof currentView !== 'undefined' && (currentView === 'tasks' || currentView === 'groups')) { try { render(); } catch(e) {} }
@@ -22638,6 +22709,32 @@ function netSyncGroupTasks(g, tasks) {
             netPendRetry();
             netRepushLocalTasks(g, items);
         }
+    } catch(e) {}
+}
+// 🔧 v282.3 (BA-282.3): حذفِ ردیف‌های تکراریِ سرورِ پیش‌آمده با رقابت قدیمی —
+// شرط‌ها محافظه‌کارانه‌اند (عنوان + روز سررسید + سازنده + مسئول یکسان،
+// ساخت در ۱۲۰ ثانیه) تا تسک واقعیِ مشابه اشتباهی پاک نشود.
+function netDedupServerRows(g, tasks) {
+    try {
+        if (!NET_STATE.sb || ghEnabled() || !g || !g.code) return;
+        const rows = (tasks || []).filter(function(t) { return t && !t.deleted && !t.done && !t.cancelled; });
+        const buckets = {};
+        rows.forEach(function(t) {
+            const k = g.code + '|' + String(t.title || '') + '|' + String(t.deadline || '').slice(0, 10) + '|' + String(t.owner_id || '') + '|' + String(t.assignee_id || '');
+            (buckets[k] = buckets[k] || []).push(t);
+        });
+        Object.keys(buckets).forEach(function(k) {
+            const arr = buckets[k];
+            if (arr.length < 2) return;
+            arr.sort(function(a, b) { return String(a.created_at || '').localeCompare(String(b.created_at || '')); });
+            const first = new Date(arr[0].created_at || 0).getTime();
+            for (let i = 1; i < arr.length; i++) {
+                const at = new Date(arr[i].created_at || 0).getTime();
+                if (!first || !at || at - first > 120000) continue;   // بیرون از پنجرهٔ رقابت — تسک واقعی جداگانه
+                const row = arr[i];
+                NET_STATE.sb.from('net_tasks').update({ deleted: true, updated_at: new Date().toISOString() }).eq('id', row.id).then(function(r) {}).catch(function() {});
+            }
+        });
     } catch(e) {}
 }
 // BA-237: دریافت تسک‌های همهٔ گروه‌ها + به‌روزرسانی نام/سازنده و هم‌گام‌سازی
@@ -22980,33 +23077,56 @@ async function netCreateTaskFromMain(item, assigneeId) {
     item.netCode = item.netCode || _codeM;   // 🔧 U (v268): کد شبکه روی تسک محلی هم ثبت شود — تغییر محلیِ مسئول به آن نیاز دارد
     item.netAssigneeId = _aM ? _aM.user_id : netMyUid();
     item.netAssignee = _aM ? _aM.display_name : NET_STATE.myName;
+    // 🔧 v282.3 (BA-282.3) — ریشهٔ «هر تسک دو بار ذخیره شد»: بینِ ساختِ تسک
+    // محلی (خط setDB فرم اصلی) و نوشتنِ netId پس از پاسخ سرور، هر سینکی که
+    // می‌دوید (حتی netLoadTasks داخل خود netAddTaskCore) تسکِ بدون‌netId را
+    // در netRepushLocalTasks می‌دید و «ردیف دوم» می‌ساخت. الان از همین
+    // لحظه تا پایانِ نوشتن netId، تسک قفل می‌شود (NET_PUSHING) و netRepush
+    // آن را نمی‌بیند. + شناسهٔ ثابت کلاینت: هر تلاشِ دوباره همان id را می‌زند
+    // و unique violation می‌خورد — تکرار روی سرور دیگر ممکن نیست.
+    if (!item.netClientId) item.netClientId = netUuid();
+    try {
+        const _items0 = getDB();
+        const _it0 = _items0.find(function(x) { return x.id === item.id; });
+        if (_it0 && !_it0.netClientId) { _it0.netClientId = item.netClientId; setDB(_items0); }
+    } catch(e) {}
     // K4 (BA-250): رکورد شبکه «تمام جزئیات» تسک را دارد — متن، زمان ساختِ
     // اصلی، سررسید، تکرار، گروه، مسئول، فوری، پین، انجام‌شده، معلق، لغو.
     // 🔒 K5: فیلدهای شخصی (شخص/contactId و غیره) ارسال نمی‌شوند و تعریف
     // محلیِ سازنده هم دست‌نخورده می‌ماند.
     const extra = netTaskSharedFields(item);
     extra.created_at = item.createdAt || new Date().toISOString();   // K4: «زمان ساخت» اصلی حفظ شود
-    const t = await netAddTaskCore(item.text, item.deadline ? String(item.deadline).slice(0, 10) : '', assigneeId || null, gOverride, extra);
-    if (!t) return;
+    extra.id = item.netClientId;   // v282.3: id ردیف سرور = شناسهٔ ثابت کلاینت
+    NET_PUSHING[item.id] = true;
+    let t = null;
     try {
-        const items = getDB();
-        const it = items.find(function(x) { return x.id === item.id; });
-        if (it) {
-            it.netId = t.id;
-            it.netCode = item.netCode || (gOverride ? gOverride.code : (((NET_STATE.group || netActiveGroup()) || {}).code || ''));
-            it.netOwner = NET_STATE.myName;
-            it.netOwnerId = netMyUid();
-            it.netAssignee = t.assignee_name || '';
-            it.netAssigneeId = t.assignee_id || '';
+        // v282.3: سررسید کامل (با ساعت) — قبلاً slice(0,10) می‌فرستاد
+        t = await netAddTaskCore(item.text, item.deadline ? String(item.deadline) : '', assigneeId || null, gOverride, extra);
+        if (t) {
+            try {
+                const items = getDB();
+                const it = items.find(function(x) { return x.id === item.id; });
+                if (it) {
+                    it.netId = t.id;
+                    it.netCode = item.netCode || (gOverride ? gOverride.code : (((NET_STATE.group || netActiveGroup()) || {}).code || ''));
+                    it.netOwner = NET_STATE.myName;
+                    it.netOwnerId = netMyUid();
+                    it.netAssignee = t.assignee_name || '';
+                    it.netAssigneeId = t.assignee_id || '';
+                }
+                const dupes = it ? items.filter(function(x) { return x.netId === t.id && x.id !== it.id; }) : [];
+                if (dupes.length) {
+                    const keep = items.filter(function(x) { return !dupes.some(function(d) { return d.id === x.id; }); });
+                    items.length = 0;
+                    for (var i = 0; i < keep.length; i++) items.push(keep[i]);
+                }
+                setDB(items);
+            } catch(e) {}
         }
-        const dupes = it ? items.filter(function(x) { return x.netId === t.id && x.id !== it.id; }) : [];
-        if (dupes.length) {
-            const keep = items.filter(function(x) { return !dupes.some(function(d) { return d.id === x.id; }); });
-            items.length = 0;
-            for (var i = 0; i < keep.length; i++) items.push(keep[i]);
-        }
-        setDB(items);
-    } catch(e) {}
+    } finally {
+        delete NET_PUSHING[item.id];   // v282.3: قفل همیشه باز شود — حتی روی خطا (repush چرخهٔ بعد دوباره امتحان می‌کند)
+    }
+    if (!t) return;
 }
 // BA-240: ویرایش تسک شبکه‌ای از برنامهٔ اصلی → «تمام جزئیات» به شبکه برسد (K4)
 async function netUpdateTaskFromMain(item, assigneeId) {
