@@ -1,1 +1,1 @@
-v282.5-2026-11-26-evsrv-real-group-task-mirror
+v282.6-2026-11-26-fa-names-tours-query-purge
