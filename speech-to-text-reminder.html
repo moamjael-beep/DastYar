@@ -3876,6 +3876,16 @@ body.locked .header-actions button {
 .contacts-table thead tr:first-child th:nth-child(2) { width: 35%; }
 .contacts-table thead tr:first-child th:nth-child(3) { width: 35%; }
 .contacts-table thead tr:first-child th:nth-child(4) { width: auto; }
+/* 🔧 v283.1: جدول اصلی بانک اشخاص حالا ۶ ستون دارد (نوع و کلیدواژه جدا شدند —
+   الزام کاربر) — عرض ستون‌هایش با کلاس اختصاصی تنظیم می‌شود تا نشان‌های
+   انواع/کلیدواژه در ستون‌های جدید جا شوند؛ جدول نتایج جستجو همان
+   عرض‌های قدیمی v186 را نگه می‌دارد. */
+.contacts-table-main thead tr:first-child th:nth-child(1) { width: 30px; }
+.contacts-table-main thead tr:first-child th:nth-child(2) { width: 24%; }
+.contacts-table-main thead tr:first-child th:nth-child(3) { width: 22%; }
+.contacts-table-main thead tr:first-child th:nth-child(4) { width: 16%; }
+.contacts-table-main thead tr:first-child th:nth-child(5) { width: 19%; }
+.contacts-table-main thead tr:first-child th:nth-child(6) { width: 19%; }
 /* 🔧 v136: هدر قابل کلیک برای sort + textbox فیلتر */
 .contacts-table th.sortable {
     cursor: pointer;
@@ -8648,7 +8658,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v283.0-2026-11-27-server-ev-readonly-manual-search-crm-tags-call-route';
+const APP_VERSION = 'v283.1-2026-11-27-crm-table-type-keyword-separate-columns';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -17363,7 +17373,7 @@ function refreshFloatingContactBtn() {
 // وقتی کاربر در textbox تایپ می‌کند یا روی هدر کلیک می‌کند،
 // renderContactsList دوباره صدا زده می‌شود و این مقادیر اعمال می‌شوند.
 let _contactsSort = { field: null, dir: 'asc' };  // field: 'company' | 'name' | 'position' | null
-let _contactsFilter = { company: '', name: '', position: '', tags: '' };  // متن فیلتر برای هر ستون (+ tags = نوع/کلیدواژه v283.0)
+let _contactsFilter = { company: '', name: '', position: '', type: '', kw: '' };  // متن فیلتر برای هر ستون (+ type/kw = ستون‌های جدا «نوع» و «کلیدواژه» — v283.1)
 
 // تابع کمکی: مقایسهٔ فارسی برای sort
 // از localeCompare با 'fa' استفاده می‌کند تا حروف فارسی درست مرتب شوند.
@@ -17432,10 +17442,15 @@ function renderContactsList() {
         const q = _contactsFilter.position.toLowerCase();
         filtered = filtered.filter(c => (c.position || '').toLowerCase().includes(q));
     }
-    // 🔧 v283.0: فیلتر نوع/کلیدواژه — هر چیزی که در انواع یا کلیدواژه‌ها باشد
-    if (_contactsFilter.tags) {
-        const q = _contactsFilter.tags.toLowerCase();
-        filtered = filtered.filter(c => (contactTypesOf(c).concat(contactKeywordsOf(c)).join(' ') || '').toLowerCase().includes(q));
+    // 🔧 v283.1: فیلتر نوع و کلیدواژه — دو ستون جدا شدند؛ هر کدام فیلتر خودش را دارد
+    // (مثال: نوع «فروشنده» + کلیدواژه «کفش» = فقط فروشندگانی که کفش میفروشند)
+    if (_contactsFilter.type) {
+        const q = _contactsFilter.type.toLowerCase();
+        filtered = filtered.filter(c => (contactTypesOf(c).join(' ') || '').toLowerCase().includes(q));
+    }
+    if (_contactsFilter.kw) {
+        const q = _contactsFilter.kw.toLowerCase();
+        filtered = filtered.filter(c => (contactKeywordsOf(c).join(' ') || '').toLowerCase().includes(q));
     }
 
     // 🔧 v136: اعمال sort
@@ -17451,7 +17466,8 @@ function renderContactsList() {
     // 🔧 v144: جدول — بدون ستون تلفن و عملیات. ردیف‌ها قابل کلیک.
     // ستون‌ها: ردیف | نام شرکت | نام | سمت
     // هر ردیف قابل کلیک → منوی لمسی باز می‌شود
-    let html = '<table class="contacts-table"><thead>';
+    // 🔧 v283.1: کلاس contacts-table-main برای عرض ستون‌های اختصاصی (۶ ستون)
+    let html = '<table class="contacts-table contacts-table-main"><thead>';
     // ردیف اول: عناوین
     html += '<tr>';
     html += '<th>ردیف</th>';
@@ -17470,8 +17486,9 @@ function renderContactsList() {
     html += '<th class="sortable ' + positionSortClass + '" onclick="toggleContactsSort(\'position\')">';
     html += '<span class="sort-indicator"></span>سمت';
     html += '</th>';
-    // 🔧 v283.0: ستون نوع/کلیدواژه
-    html += '<th>نوع / کلیدواژه</th>';
+    // 🔧 v283.1: ستون «نوع» و «کلیدواژه» — جدا از هم (الزام کاربر)
+    html += '<th>نوع</th>';
+    html += '<th>کلیدواژه</th>';
     html += '</tr>';
     // ردیف دوم: textbox فیلتر
     html += '<tr>';
@@ -17480,37 +17497,39 @@ function renderContactsList() {
     html += '<th class="filter-header"><input type="text" data-field="name" value="' + escapeHtml(_contactsFilter.name) + '" placeholder="فیلتر نام..." oninput="updateContactsFilter(\'name\', this.value)"></th>';
     // 🔧 v144: textbox فیلتر سمت (جدید)
     html += '<th class="filter-header"><input type="text" data-field="position" value="' + escapeHtml(_contactsFilter.position) + '" placeholder="فیلتر سمت..." oninput="updateContactsFilter(\'position\', this.value)"></th>';
-    // 🔧 v283.0: فیلتر نوع/کلیدواژه (مثلاً «فروشنده» یا «کفش»)
-    html += '<th class="filter-header"><input type="text" data-field="tags" value="' + escapeHtml(_contactsFilter.tags) + '" placeholder="فیلتر نوع/کلیدواژه..." oninput="updateContactsFilter(\'tags\', this.value)"></th>';
+    // 🔧 v283.1: فیلتر نوع (مثلاً «فروشنده») و فیلتر کلیدواژه (مثلاً «کفش») — دو کادر جدا
+    html += '<th class="filter-header"><input type="text" data-field="type" value="' + escapeHtml(_contactsFilter.type) + '" placeholder="فیلتر نوع..." oninput="updateContactsFilter(\'type\', this.value)"></th>';
+    html += '<th class="filter-header"><input type="text" data-field="kw" value="' + escapeHtml(_contactsFilter.kw) + '" placeholder="فیلتر کلیدواژه..." oninput="updateContactsFilter(\'kw\', this.value)"></th>';
     html += '</tr>';
     html += '</thead><tbody>';
 
     if (filtered.length === 0) {
-        const cols = 5;
+        const cols = 6;  // 🔧 v283.1: ۶ ستون شد (نوع و کلیدواژه جدا)
         html += '<tr><td colspan="' + cols + '" style="text-align:center; padding:30px; color:#999;">';
         html += 'هیچ شخصی با این فیلتر یافت نشد';
         html += '</td></tr>';
     } else {
         filtered.forEach((c, idx) => {
-            // 🔧 v283.0: نشان‌های نوع/کلیدواژه در ردیف
-            const _tags = contactTypesOf(c).map(function(t) { return '<span class="contact-tag-badge">' + escapeHtml(t) + '</span>'; }).join('')
-                        + contactKeywordsOf(c).map(function(t) { return '<span class="contact-tag-badge kw">🔑 ' + escapeHtml(t) + '</span>'; }).join('');
+            // 🔧 v283.1: نشان‌های نوع و کلیدواژه — هر کدام در ستون خودش
+            const _typeBadges = contactTypesOf(c).map(function(t) { return '<span class="contact-tag-badge">' + escapeHtml(t) + '</span>'; }).join('');
+            const _kwBadges = contactKeywordsOf(c).map(function(t) { return '<span class="contact-tag-badge kw">🔑 ' + escapeHtml(t) + '</span>'; }).join('');
             // 🔧 v144: ردیف قابل کلیک — منوی لمسی باز می‌شود
             html += '<tr class="contact-clickable" onclick="showContactActionMenu(\'' + c.id + '\')">';
             html += '<td>' + toPersianNumber(idx + 1) + '</td>';
             html += '<td>' + escapeHtml(c.company || '—') + '</td>';
             html += '<td>' + escapeHtml(c.name || '—') + '</td>';
             html += '<td>' + escapeHtml(c.position || '—') + '</td>';
-            html += '<td style="max-width:220px;">' + (_tags || '—') + '</td>';
+            html += '<td style="max-width:150px;">' + (_typeBadges || '—') + '</td>';
+            html += '<td style="max-width:150px;">' + (_kwBadges || '—') + '</td>';
             html += '</tr>';
         });
     }
 
     html += '</tbody></table>';
-    if (_contactsFilter.company || _contactsFilter.name || _contactsFilter.position || _contactsFilter.tags) {
+    if (_contactsFilter.company || _contactsFilter.name || _contactsFilter.position || _contactsFilter.type || _contactsFilter.kw) {
         html += '<div style="text-align:center; padding:10px; color:#666; font-size:12px;">';
         html += toPersianNumber(filtered.length) + ' نفر از ' + toPersianNumber(allContacts.length) + ' نفر نمایش داده شد';
-        html += ' — <a href="javascript:void(0)" onclick="_contactsFilter={company:\'\',name:\'\',position:\'\',tags:\'\'}; _contactsSort={field:null,dir:\'asc\'}; renderContactsList();" style="color:#1976D2; font-weight:600;">پاک کردن فیلتر</a>';
+        html += ' — <a href="javascript:void(0)" onclick="_contactsFilter={company:\'\',name:\'\',position:\'\',type:\'\',kw:\'\'}; _contactsSort={field:null,dir:\'asc\'}; renderContactsList();" style="color:#1976D2; font-weight:600;">پاک کردن فیلتر</a>';
         html += '</div>';
     }
     body.innerHTML = html;
