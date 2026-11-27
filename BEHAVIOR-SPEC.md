@@ -11,11 +11,11 @@
 #  به آن بیتفاوتی نشود — مانند سابقهٔ v199 تا v203 که اسپک عقب ماند.
 #  چنین اتفاقی نباید تکرار شود.
 #
-#  آخرین به‌روزرسانی: v282.6 — ۱۴۰۵ آذر ۵ (درخواست کاربر: «سرور اسم رویداد و حریفان و تاریخ را فارسی و هجری شمسی درست ترجمه و تبدیل و بنویسد» + «با تغییر/ریست نام بازیکن، موارد قبلیِ مغایر حذف شوند»): ① کشف و رفع باگ فاحش jalali سرور (خروجی «۱۹۸۹/۲۵۱/۳۲۶»!) → تقویم رسمی ICU (ca-persian) ② فرهنگ بزرگ بازیکنان/تورنمنت‌ها/دورها با faLookup طولانی‌ترین-اول ③ ستون net_events.query + purgeStale + حذف تسک یتیم + debounce کلاینت — BA-282.6
-#  نسخهٔ فعلی کد:  APP_VERSION = v282.6-2026-11-26-fa-names-tours-query-purge
-#                  CACHE_NAME  = yadavar-cache-v2826 (sw.js)
-#                  version.txt = v282.6-2026-11-26-fa-names-tours-query-purge
-#                  تابع:       scripts/edge-ev-sync-v2826.ts (متن مرجع Deploy — v282.6: ترجمهٔ کامل + jalali درست + purgeStale؛ Deploy مجدد لازم است — v2825 هم jalali فیکس شد)
+#  آخرین به‌روزرسانی: v283.0 — ۱۴۰۵ آذر ۶ (بستهٔ شش‌گانهٔ کاربر): ① رویدادهای سروری فقط‌خواندنی (همهٔ کلیدها/جزییات) + انجام‌شدهٔ خودکار ۱۲ساعته (سرور PATCH + سینک محلی) ② جستجوی آنتن/آپارات با تنظیمات کاربر در سرور → خروجی manual بدون گروه + بخش پایین پنل با افزودن دستی حتی تکراری ③ آنتن/آپارات از net_events خارج شدند ④ اشخاص: انواع + کلیدواژه‌های چندگانه (چیپ + مهاجرت + جستجو + گزارش «فروشندگانِ کفش») ⑤ تماس ۱:۱: کلید گوشی/بلندگو با پیش‌فرض گوشی ⑥ چت صوتی: باگ lis در presence sync + TURN پیش‌فرض + ضدگلیر + پول ۱۲ثانیه با تزریق — BA-283.0
+#  نسخهٔ فعلی کد:  APP_VERSION = v283.0-2026-11-27-server-ev-readonly-manual-search-crm-tags-call-route
+#                  CACHE_NAME  = yadavar-cache-v2830 (sw.js)
+#                  version.txt = v283.0-2026-11-27-server-ev-readonly-manual-search-crm-tags-call-route
+#                  تابع:       scripts/edge-ev-sync-v2830.ts (متن مرجع Deploy — v283.0: manual آنتن/آپارات + ۱۲ساعته + خروج آنتن از گروه؛ Deploy مجدد لازم است)
 #
 # ══════════════════════════════════════════════════════════════════════
 
@@ -255,6 +255,12 @@
 #                 v282.6: jalali با تقویم ICU (باگ «۱۹۸۹/۲۵۱/۳۲۶» رفع) +
 #                 faLookup/faTour/faRound + EvRow.query + purgeStale +
 #                 قانون یتیم mirrorTasks + evNamesSave debounce ۲.۵ث؛
+#                 v283.0: isServerEvTask/evTaskAutoDone/netMirror12hPast +
+#                 evRenderManual/evAddManual (نتایج دستی) + چیپ‌های
+#                 types/keywords اشخاص + netCallToggleRoute +
+#                 netVoiceApplyRoute + netMsgPushUnique + TURN پیش‌فرض؛
+#                 تابع: srcAparat + evMatchesServer + purgeManualSources +
+#                 evMirrorDone (۱۲ساعته)؛
 #                 v282.5: گروه واقعی EVSRV (SQL + تابع + خودترمیمی کلاینت)
 #                 + تسک‌های آینه در edge-ev-sync-v2825.ts (ensureEvsrvGroup
 #                 + mirrorTasks + cleanupPastTasks با نگاشت subgroup_id=
@@ -3308,6 +3314,46 @@
 #
 #   (نسخه‌های مفصل از v204 به بعد؛ قدیمی‌ها خلاصه. changelog کامل
 #    تفصیلی در سرآیند HTML موجود است.)
+#
+### v283.0 (۱۴۰۵ آذر ۶) — بستهٔ شش‌گانه: فقط‌خواندنی سروری + جستجوی دستی سرور + انواع اشخاص + مسیر تماس + رفع چت صوتی (BA-283.0)
+#   ① رویدادهای سروری فقط‌خواندنی: isServerEvTask (netOwnerId/netOwner =
+#     'ev-sync') — کلید پین حذف؛ جزییات: فقط دیدن (منبع/ساخته/سررسید/
+#     انجام + قفل 🔒 + بستن) بدون گروه/زیرگروه/مسئول/فوری/شخص/دکمه‌ها؛
+#     گارد toast در ۱۰ تابع: toggleDone/toggleCancelled/toggleSuspended/
+#     togglePinTask/deleteItem/changeTaskGroup/toggleTaskUrgent/
+#     changeTaskContact/netChangeAssignee/editTask. انجام‌شدهٔ خودکار:
+#     evMirrorDeadlineTs + evTaskAutoDone/netMirror12hPast (کلاینت —
+#     نشان ✓ + سینک) و evMirrorDone در mirrorTasks تابع (PATCH
+#     done+completed_at؛ ساخت هم با done پیش‌فرض).
+#   ② جستجوی دستی سرور: تابع srcAparat (پورت پارسر کلاینت، ۱۱ روز) +
+#     evMatchesServer (wanted/unwanted/agere از پارامتر) → پاسخ JSON
+#     «manual» (بدون ذخیره، بدون گروه)؛ srcAnten از net_events خارج و
+#     purgeManualSources ردیف‌های قدیمی آنتن/آپارات را پاک می‌کند (تسک
+#     آینه با قانون یتیم). کلاینت: evSrvInvoke پارامترهای فیلتر را
+#     می‌فرستد؛ evServerAll(force) با فشار دستی TTL را دور می‌زند (هر
+#     فشار = همهٔ جستجوها در سرور)؛ _evManualResults → evRenderManual در
+#     «بخش پایین پنل» (#evManualWrap) با 👁 دیدن و ➕ افزودن دستی حتی
+#     تکراری (evAddManual/evAddAllManual — بدون evIsDupRecord) و گروه با
+#     evEnsureEvGroup ساخته می‌شود.
+#   ③ اشخاص: contact.types[] + contact.keywords[] (نامحدود ۴۰/۶۰) —
+#     مهاجرت خودکار (type رشته‌ای قدیمی)؛ چیپ‌ادیتور فرم با datalist از
+#     دادهٔ موجود (allContactTypes/Keywords)؛ ستون + فیلتر «نوع/کلیدواژه»
+#     در جدول لیست؛ دو فیلد در جستجو و گزارش (با ویرگول، «و» بین جملات:
+#     نوع:فروشنده + کلیدواژه:کفش)؛ ستون + توزیع انواع در گزارش؛ نشان‌ها
+#     در منوی جزئیات شخص.
+#   ④ تماس ۱:۱: کلید 🎧/🔊 بین میک و قطع — پیش‌فرض «گوشی» (عنصر audio خام
+#     = مسیر تماس اندروید)؛ «بلندگو» = WebAudio MediaStreamSource→
+#     destination (مسیر رسانه) چون setSinkId در اندروید نیست؛ اعمال در
+#     ontrack، ریست در NET_callCleanup؛ برچسب پاسخ‌گویی/قطع روی دکمه‌ها.
+#   ⑤ چت صوتی گروهی: (باگ) presence sync فیلد lis را ریخته بود → «حاضر
+#     در چت» همیشه خالی؛ حالا نگه داشته می‌شود. (صدا) ICE فقط STUN بود →
+#     در شبکهٔ ایران P2P می‌شکست؛ TURN رایگان OpenRelay (80/443/TCP)
+#     پیش‌فرض شد + تلاش دوبارهٔ offer پس از failed. ضدگلیر/دوبلهٔ PC.
+#     کلید گوشی/بلندگو در هدر چت (netVoiceApplyRoute روی همهٔ عناصر).
+#     (تاخیر پیام) پول ۲۰→۱۲ ثانیه + netMsgPushUnique: پیام تازهٔ گروهِ
+#     فعال از پول هم فوری در فهرست رندر می‌شود (پشتیبانِ کانال).
+#   آزمون: scripts/test-v2830-net-features.js — ۲۵ آزمون سبز + esbuild
+#     دوتایی + رگرسیون v282.6/v282.5/v282.4. Deploy تابع v2830 لازم است.
 #
 ### v282.6 (۱۴۰۵ آذر ۵) — فارسی‌سازی کامل سرور + باگ فاحش تاریخ شمسی + پاک‌سازی مغایرت نام (BA-282.6)
 #   درخواست کاربر: «سرور اسم رویداد و حریفان و تاریخ را فارسی و هجری

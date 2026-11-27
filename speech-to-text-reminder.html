@@ -4870,7 +4870,27 @@ body.locked .header-actions button {
 .ev-btn:disabled { opacity: 0.5; }
 .ev-log { background: #fff; border: 1px solid #e3e5ea; border-radius: 10px; padding: 8px 10px; font-size: 11.5px; max-height: 150px; overflow-y: auto; line-height: 1.9; text-align: right; }
 .ev-log .b { font-weight: 900; }
+.contact-chip-row { display: flex; gap: 6px; align-items: center; }
+.contact-chip-row input[type="text"] { flex: 1; }
+.contact-chip-add { border: 0; background: #0a7ea4; color: #fff; border-radius: 8px; width: 34px; height: 34px; cursor: pointer; flex-shrink: 0; }
+.contact-chip-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.contact-chip { display: inline-flex; align-items: center; gap: 6px; background: #e0f4fb; color: #0a7ea4; border-radius: 14px; padding: 4px 10px; font-size: 12px; }
+.contact-chip.keyword { background: #eef7e9; color: #33691e; }
+.contact-chip button { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 13px; padding: 0; }
+.contact-tag-badge { display: inline-block; background: #e0f4fb; color: #0a7ea4; border-radius: 10px; padding: 1px 7px; font-size: 10.5px; margin: 1px 2px; white-space: nowrap; }
+.contact-tag-badge.kw { background: #eef7e9; color: #33691e; }
 .ev-item { display: flex; align-items: flex-start; gap: 8px; background: #fff; border: 1px solid #e3e5ea; border-radius: 10px; padding: 8px 10px; font-size: 13px; line-height: 1.8; text-align: right; }
+/* 🔧 v283.0: نتایج دستی آنتن/آپارات از سرور — بخش پایین پنل رویدادها */
+.ev-manual-item { display: flex; align-items: center; gap: 8px; background: #f4fbfd; border: 1px solid #bfe3ee; border-radius: 10px; padding: 8px 10px; }
+.ev-manual-text { flex: 1; min-width: 0; font-size: 13px; line-height: 1.7; }
+.ev-manual-text b { display: block; font-size: 12.5px; }
+.ev-manual-text small { color: #78909c; font-size: 11px; }
+.ev-manual-btns { display: flex; gap: 6px; flex-shrink: 0; }
+.ev-manual-btn { border: 0; border-radius: 8px; padding: 5px 9px; font-size: 11.5px; cursor: pointer; }
+.ev-manual-btn.view { background: #e0f4fb; color: #0a7ea4; }
+.ev-manual-btn.add { background: #0a7ea4; color: #fff; }
+.ev-manual-btn:disabled { opacity: .6; cursor: default; }
+@media (max-width: 640px) { .ev-manual-item { flex-direction: column; align-items: stretch; } .ev-manual-btns { justify-content: flex-end; } }
 .ev-item small { color: #777; font-size: 10.5px; }
 .net-call-btn.mute { background: #455a64; }
 .net-call-btn.mute.on { background: #E65100; }
@@ -5248,7 +5268,7 @@ body.locked .header-actions button {
              نتیجه‌ها به همان لیست و گروه «رویدادها» می‌روند -->
         <div id="evGlobal" style="border:1px solid #d7dce3;border-radius:10px;padding:9px 10px;margin:9px 0;display:flex;flex-direction:column;gap:7px;background:#fff;">
             <div style="font-weight:700;font-size:13px;color:#1a237e;">🌐 جستجوی رویدادهای جهانی</div>
-            <div style="font-size:11.5px;color:#555;line-height:1.7;">اسنوکر wst.tv (بازی‌های هنوز انجام‌نشدهٔ تورنمنت جاری)، فرمول ۱ formula1.com (گرندپری بعدی) و تنیس tennis24.com (مسابقات پیش‌روی بازیکن) — با تاریخ شمسی و ساعت ایران؛ نتیجه‌ها به لیست زیر می‌آیند و به گروه «رویدادها» اضافه می‌شوند. <b>مسیر سروری (v282.6):</b> با دکمهٔ «🌐 سروری» همهٔ منابع از سرور Supabase خوانده و در گروه شبکه‌ای «رویدادها» (کد EVSRV) نگه داشته می‌شوند — نام رویداد/حریفان/تورنمنت فارسی و تاریخ هجری شمسی — و هر رویداد به‌صورت <b>تسک واقعی با سررسید</b> به‌طور خودکار داخل همان گروه برای همهٔ اعضا نشسته می‌شود (عضویت هم اتوماتیک است)؛ با تغییر نام بازیکن (یا پاک‌کردن کادر به پیش‌فرض) رویدادهای قبلیِ نامغایر خودکار پاک می‌شوند — بدون محدودیت مرورگر.</div>
+            <div style="font-size:11.5px;color:#555;line-height:1.7;">اسنوکر wst.tv (بازی‌های هنوز انجام‌نشدهٔ تورنمنت جاری)، فرمول ۱ formula1.com (گرندپری بعدی) و تنیس tennis24.com (مسابقات پیش‌روی بازیکن) — با تاریخ شمسی و ساعت ایران؛ نتیجه‌ها به لیست زیر می‌آیند و به گروه «رویدادها» اضافه می‌شوند. <b>مسیر سروری (v283.0):</b> با دکمهٔ «🌐 سروری» همهٔ منابع از سرور Supabase خوانده و در گروه شبکه‌ای «رویدادها» (کد EVSRV) نگه داشته می‌شوند — نام رویداد/حریفان/تورنمنت فارسی و تاریخ هجری شمسی — و هر رویداد به‌صورت <b>تسک واقعی با سررسید</b> به‌طور خودکار داخل همان گروه برای همهٔ اعضا نشسته می‌شود (عضویت هم اتوماتیک است)؛ با تغییر نام بازیکن (یا پاک‌کردن کادر به پیش‌فرض) رویدادهای قبلیِ نامغایر خودکار پاک می‌شوند — بدون محدودیت مرورگر.</div>
             <div style="display:flex;gap:6px;align-items:center;">
                 <input id="evWstName" type="text" placeholder="نام بازیکن اسنوکر (لاتین) — پیش‌فرض HOSSEIN VAFAEI"
                        oninput="evNamesSave()" onchange="evNamesSave()"
@@ -5267,20 +5287,20 @@ body.locked .header-actions button {
             <!-- 🔧 v281 (BA-281): دکمهٔ سروری — Edge Function «ev-sync» همهٔ منابع را
                  از سرور می‌خواند و در جدول net_events (گروه EVSRV) نگه می‌دارد؛ همهٔ
                  اعضای شبکه همان را می‌بینند؛ محدودیت مرورگر (CORS/پرفلایت) از بین می‌رود -->
-            <button class="ev-btn" id="evSrvBtn" onclick="evServerAll()">🌐 سروری — همه (شبکه‌ای)</button>
+            <button class="ev-btn" id="evSrvBtn" onclick="evServerAll(true)">🌐 سروری — همه (شبکه‌ای)</button>
             <button class="ev-btn" id="evSrvJoinBtn" onclick="evSrvJoinNetGroup()">🛰️ عضویت در گروه شبکه‌ای «رویدادها»</button>
             <details style="border:1px solid #d7dce3;border-radius:8px;padding:6px 9px;background:#f8f9fb;">
                 <summary style="font-size:12px;font-weight:700;color:#1a237e;cursor:pointer;">📋 راهنمای سروری (یک‌بار راه‌اندازی Edge Function)</summary>
                 <div id="evSrvGuide" style="font-size:11.5px;color:#444;line-height:1.9;padding:6px 2px;">
                     <b>چرا سروری؟</b> محدودیت‌های مرورگر (CORS و پرفلایت) دیگر مانع نمی‌شوند چون سرور Supabase مستقیم و آزادانه هر ۵ منبع (اسنوکر WST، فرمول‌۱ Ergast، تنیس فلش‌اسکور با هدر، آنتن، و سرچ بازیکن) را می‌خواند، تاریخ شمسی و ساعت ایران و ترجمهٔ فارسی را همان‌جا می‌سازد و در جدول <code>net_events</code> (گروه شبکه‌ای با کد دعوت <b>EVSRV</b>) نگه می‌دارد — همهٔ اعضا می‌بینند و رویدادهای گذشته خودکار پاک می‌شوند.<br>
                     <b>گام ۱)</b> <b>اسکریپت SQL جامع (v282.5)</b> را در SQL Editor پروژه اجرا کنید: در پنل شبکه دکمهٔ «📋 کپی اسکریپت SQL» (یا فایل <code>supabase-sql-comprehensive.sql</code> مخزن). این اسکریپت <b>همه‌چیز</b> را می‌سازد یا تعمیر می‌کند: ۶ جدول شبکه + همهٔ ستون‌های تاریخ (مثل <code>subgroup_id</code> تسک‌ها و <code>net_events</code>) + <b>خودِ گروه «رویدادها» (کد EVSRV) — از v282.5 ردیف واقعی آن در <code>net_groups</code> ساخته می‌شود و «گروهی با این کد پیدا نشد» دیگر رخ نمی‌دهد</b> + سیاست‌ها + GRANT + باکت چت + به‌روزرسانی فوری کشِ schema (خط آخر <code>notify pgrst</code>). <b>اجراِ چندباره کاملاً بی‌خطاست</b> — اگر دیتابیس قبلاً با اسکریپت قدیمی ساخته شده، همین یک اجرا همه را تعمیر می‌کند.<br>
-                    <b>گام ۲)</b> در داشبورد Supabase → منوی چپ <i>Edge Functions</i> (داخل گروه <i>Build</i>/<i>Products</i>) → دکمهٔ آبی بالا-راست <i>Deploy a new function</i> → از منوی بازشونده <i>Via Editor</i> را انتخاب کنید. در پنجرهٔ بازشده فیلد <b>Name</b> را دقیقاً <code>ev-sync</code> بگذارید، کل متن پیش‌فرض ویرایشگر را پاک کنید و <b>تمامِ محتوای فایل <code>edge-ev-sync-v2826.ts</code></b> (در مخزن برنامه) را جای آن بگذارید → دکمهٔ سبزِ پایین <i>Deploy function</i>. <b>نکتهٔ v282.6 — Deploy مجدد لازم است:</b> تابع جدید ① نام رویداد/حریفان/تورنمنت را با فرهنگ‌های بزرگ‌تر فارسی می‌کند و تاریخ شمسی و ساعت ایران را می‌سازد ② هر رویداد را به‌صورت تسک واقعی در گروه «رویدادها» نشسته می‌کند (تسک آینه؛ رویداد منقضی → تسکش حذف؛ تسکِ حذف‌شده توسط شما → بازنمایی نمی‌شود) ③ ردیف گروه EVSRV را می‌سازد ④ با تغییر نام بازیکن (یا پاک‌کردن کادر تا پیش‌فرض)، ردیف‌های بازیکن قبلی را از جدول و تسک‌هایشان را از گروه پاک می‌کند. اگر تابع قبلی (<code>v281</code>/<code>v2821</code>/<code>v2822</code>/<code>v2825</code>) را دارید، همین متن جدید را روی همان تابع دوباره Deploy کنید — قبلی را پاک نکنید، جایگزین می‌شود.<br>
+                    <b>گام ۲)</b> در داشبورد Supabase → منوی چپ <i>Edge Functions</i> (داخل گروه <i>Build</i>/<i>Products</i>) → دکمهٔ آبی بالا-راست <i>Deploy a new function</i> → از منوی بازشونده <i>Via Editor</i> را انتخاب کنید. در پنجرهٔ بازشده فیلد <b>Name</b> را دقیقاً <code>ev-sync</code> بگذارید، کل متن پیش‌فرض ویرایشگر را پاک کنید و <b>تمامِ محتوای فایل <code>edge-ev-sync-v2830.ts</code></b> (در مخزن برنامه) را جای آن بگذارید → دکمهٔ سبزِ پایین <i>Deploy function</i>. <b>نکتهٔ v283.0 — Deploy مجدد لازم است:</b> تابع جدید ① رویدادهای سروری را فقط‌خواندنی می‌کند (بعد از ۱۲ ساعت از پخش خودکار «انجام‌شده») ② جستجوی آنتن/آپارات را با تنظیمات کلمات شما سمت سرور انجام می‌دهد و به‌صورت «دستی» (بدون گروه) در پایین پنل برمی‌گرداند ③ نام رویداد/حریفان/تورنمنت را فارسی و تاریخ را شمسی می‌سازد ④ هر رویداد را به‌صورت تسک واقعی در گروه «رویدادها» نشسته می‌کند ⑤ ردیف گروه EVSRV را می‌سازد ⑥ با تغییر نام بازیکن، ردیف‌های قبلی مغایر را پاک می‌کند. اگر تابع قبلی (<code>v281</code>/<code>v2821</code>/<code>v2822</code>/<code>v2825</code>/<code>v2826</code>) را دارید، همین متن جدید را روی همان تابع دوباره Deploy کنید — قبلی را پاک نکنید، جایگزین می‌شود.<br>
                     <b>گام ۳) Secrets — دیگر لازم نیست:</b> از <code>v282.1</code> تابع بدون هیچ Secret‌ای کار می‌کند: آدرس پروژه را از خودِ host درخواست می‌گیرد و کلید را از هدر <code>apikey</code> که برنامه هر بار می‌فرستد (جدول <code>net_events</code> سیاست RLS باز دارد؛ کلید anon کامل جواب می‌دهد). گذاشتن Secret <b>اختیاری</b> است — فقط اگر با سرویس زمان‌بند بیرونی (کرون) مستقیم POST می‌زنید و می‌خواهید بدون کلید هم کار کند، دو Secret بگذارید: <code>SUPABASE_URL</code> و <code>SUPABASE_SERVICE_ROLE</code> (از ⚙ <i>Settings</i> → <i>API Keys</i> — <b>هرگز</b> در برنامه وارد نشود).<br>
                     <b>گام ۳‌ب) امتحان همین‌جا:</b> روی تابع → زبانهٔ <i>Test</i> → روش <b>GET</b> → <i>Send request</i>؛ باید JSON با <code>"ok":true</code> برگردد.<br>
                     <b>گام ۳‌ج) مهم — Verify JWT خاموش:</b> روی تابع <code>ev-sync</code> کلیک کنید → زبانهٔ <i>Details</i> (یا دکمهٔ <b>⋯</b> کنار نام تابع → <i>Function settings</i>) → کلید <b>Verify JWT</b> را خاموش کنید → <i>Save</i>. بدون این کار، gateway خطای <code>401 UNAUTHORIZED_NO_AUTH_HEADER</code> می‌دهد چون درخواست‌های کلاینت ما هدر جداگانهٔ Authorization ندارند.<br>
                     <b>گام ۳‌د) اگر پیام «جدول پیدا نشد»:</b> اگر در برنامه نوشت «Could not find the table 'net_events' in the schema cache»، یعنی جدول ساخته شده ولی PostgREST هنوز کش schema را به‌روز نکرده. یا چند دقیقه صبر کنید (خودکار به‌روز می‌شود) یا در SQL Editor یک‌بار <code>NOTIFY pgrst, 'reload schema';</code> اجرا کنید.<br>
                     <b>گام ۳‌ه) اگر خطای ۴۰۳/۴۲۵۰۱ دیدید (permission denied):</b> یعنی جدول <code>net_events</code> به نقش دیتابیسِ تابع اجازهٔ نوشتن نمی‌دهد (اسکریپت‌های SQL قدیمی فقط به <code>anon, authenticated</code> اجازه می‌دادند و <code>service_role</code> جا مانده بود). در داشبورد → <i>SQL Editor</i> این یک خط را Run کنید — فوری است و به Deploy مجدد نیازی ندارد: <code>GRANT SELECT, INSERT, UPDATE, DELETE ON public.net_events TO anon, authenticated, service_role;</code> سپس دکمهٔ سروری را دوباره بزنید. اسکریپت جامع v282.3 (گام ۱) این اجازه را هم می‌دهد.<br>
-                    <b>گام ۴)</b> دکمهٔ «🌐 سروری — همه (شبکه‌ای)» را بزنید: تابع اجرا، جدول پر می‌شود و <b>در لاگ می‌بینید با کدام نام‌ها جست‌وجو کرد</b> (مثلاً «تنیس «یانیک سینر» / اسنوکر «حسین وفایی»»). عضویت در گروه شبکه‌ای «رویدادها» اتوماتیک است (با وصل‌شدن شبکه بی‌صدا می‌پیوندید؛ حتی اگر گروه هنوز در سرور نباشد، خود برنامه می‌سازدش — پیام «گروهی با این کد پیدا نشد» دیگر رخ نمی‌دهد). بعد از اجرای تابع، <b>رویدادها به‌صورت تسک واقعی با سررسید داخل گروه «رویدادها» می‌نشینند</b> — گروه را از صفحهٔ گروه‌ها (آیکون 🛰️) باز کنید. نام بازیکن اسنوکر/تنیس را در دو کادر بالای همین بخش بنویسید — فوری ذخیره می‌شود؛ از v282.6، ۲.۵ ثانیه بعد از آخرین تایپ، سروری <b>خودکار</b> اجرا می‌شود: رویدادهای بازیکن قبلی از جدول و تسک‌هایشان از گروه پاک و رویدادهای بازیکن جدید با نام فارسی و تاریخ شمسی می‌نشیند (پاک‌کردن کادر = برگشت به پیش‌فرض و پاک‌سازی مغایرت‌ها — کرون بیرونیِ بدون پارامتر هیچ‌چیز را پاک نمی‌کند).<br>
+                    <b>گام ۴)</b> دکمهٔ «🌐 سروری — همه (شبکه‌ای)» را بزنید: تابع اجرا، جدول پر می‌شود و <b>در لاگ می‌بینید با کدام نام‌ها جست‌وجو کرد</b> (مثلاً «تنیس «یانیک سینر» / اسنوکر «حسین وفایی»»). عضویت در گروه شبکه‌ای «رویدادها» اتوماتیک است (با وصل‌شدن شبکه بی‌صدا می‌پیوندید؛ حتی اگر گروه هنوز در سرور نباشد، خود برنامه می‌سازدش — پیام «گروهی با این کد پیدا نشد» دیگر رخ نمی‌دهد). بعد از اجرای تابع، <b>رویدادها به‌صورت تسک واقعی با سررسید داخل گروه «رویدادها» می‌نشینند</b> — گروه را از صفحهٔ گروه‌ها (آیکون 🛰️) باز کنید. نام بازیکن اسنوکر/تنیس را در دو کادر بالای همین بخش بنویسید — فوری ذخیره می‌شود؛ از v282.6، ۲.۵ ثانیه بعد از آخرین تایپ، سروری <b>خودکار</b> اجرا می‌شود: رویدادهای بازیکن قبلی از جدول و تسک‌هایشان از گروه پاک و رویدادهای بازیکن جدید با نام فارسی و تاریخ شمسی می‌نشیند (پاک‌کردن کادر = برگشت به پیش‌فرض و پاک‌سازی مغایرت‌ها — کرون بیرونیِ بدون پارامتر هیچ‌چیز را پاک نمی‌کند). از v283.0 هر فشارِ دکمهٔ «🌐 سروری» همهٔ جستجوها (اسنوکر/تنیس/فرمول‌۱/آنتن/آپارات) را در فضای سرور انجام می‌دهد؛ نتایج آنتن/آپارات با فیلتر کلمات شما <b>در بخش پایین پنل</b> با دکمهٔ «افزودن دستی» (حتی تکراری) و «دیدن» ظاهر می‌شوند و «در گروه نیستند» — فقط هر کدام را خودتان اضافه کنید. رویدادهای سروری گروه <b>فقط‌خواندنی</b>‌اند و ۱۲ ساعت بعد از پخش خودکار «انجام‌شده» می‌شوند.<br>
                     <b>نگهداری/به‌روزرسانی همیشگی:</b> تابع هر بار فراخوانی، همهٔ منابع را دوباره می‌خواند و upsert می‌کند و رویدادهای گذشته را پاک می‌کند. فراخوانی خودکار: دکمهٔ سروری هر ۳۰ دقیقه حداکثر یک بار invoke می‌کند (هر عضوی که پنل را باز کند کافی است)؛ برای کاملاً خودکار، هر سرویس زمان‌بندی بیرونی (مثل GitHub Actions cron) می‌تواند هر ۶ ساعت POST بزند — لازم نیست، پول جدول همیشه جواب می‌دهد.<br>
                     <b>بدون تابع هم کار می‌کند:</b> جدول مستقل از تابع خوانده می‌شود؛ دکمه‌های جدا (اسنوکر/فرمول‌۱/تنیس) زنجیره‌های مرورگری v280 را دارند و نتایج‌شان با افزودن، در همان گروه «رویدادها» می‌نشیند.
                 </div>
@@ -5293,6 +5313,16 @@ body.locked .header-actions button {
         <div class="ev-log" id="evLog"></div>
         <div class="ev-list" id="evList" style="display:flex;flex-direction:column;gap:6px;"></div>
         <button class="ev-btn main" id="evAddBtn" style="display:none;" onclick="evAddSelected()">➕ افزودن</button>
+        <!-- 🔧 v283.0: نتایج دستیِ آنتن/آپارات از سرور — «در پایین صفحه برای
+             اد کردن دستی یا دیدن کاربر اگرچه تکراری در گروه باشد» -->
+        <div id="evManualWrap" style="display:none;margin-top:14px;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <div style="font-weight:700;font-size:13.5px;color:#0a7ea4;">🛰️ نتایج دستی آنتن/آپارات از سرور (<span id="evManualCount">۰</span>)</div>
+                <button class="ev-btn" id="evManualAddAll" onclick="evAddAllManual()" style="padding:4px 10px;font-size:12px;">➕ افزودن همه</button>
+            </div>
+            <div style="font-size:11.5px;color:#78909c;margin-top:2px;">این فهرست از سرور با تنظیمات کلمات شما آمده و «در گروه نیست» — با دکمهٔ افزودن دستی، هر مورد که خواستید (حتی تکراری) به گروه «رویدادها» اضافه می‌شود.</div>
+            <div class="ev-list" id="evManualList" style="display:flex;flex-direction:column;gap:6px;margin-top:8px;"></div>
+        </div>
     </div>
 </div>
 
@@ -5395,6 +5425,28 @@ body.locked .header-actions button {
                         <input type="text" id="contactPosition" placeholder="سمت">
                     </div>
                 </div>
+            </div>
+
+            <!-- 🔧 v283.0: انواع شخص (نامحدود — مشتری، فروشنده، پیمانکار و هر چه کاربر بخواهد) -->
+            <div class="contact-form-section">
+                <div class="contact-form-section-title">🏷️ انواع شخص (نامحدود — مشتری، فروشنده، پیمانکار و…)</div>
+                <div class="contact-chip-row">
+                    <input type="text" id="contactTypeInput" list="contactTypesDl" placeholder="نوع جدید بنویسید یا از فهرست انتخاب کنید…" onkeydown="if(event.key==='Enter'){event.preventDefault();contactChipAdd('type');}">
+                    <datalist id="contactTypesDl"></datalist>
+                    <button type="button" class="contact-chip-add" onclick="contactChipAdd('type')">➕</button>
+                </div>
+                <div class="contact-chip-list" id="contactTypesChips"></div>
+            </div>
+
+            <!-- 🔧 v283.0: کلیدواژه‌های شخص (نامحدود — مثلاً چه اجناسی از او می‌خریم) -->
+            <div class="contact-form-section">
+                <div class="contact-form-section-title">🔑 کلیدواژه‌ها (نامحدود — مثلاً چه اجناسی از او می‌خریم: کفش، لباس و…)</div>
+                <div class="contact-chip-row">
+                    <input type="text" id="contactKeywordInput" list="contactKeywordsDl" placeholder="کلیدواژه بنویسید یا از فهرست انتخاب کنید…" onkeydown="if(event.key==='Enter'){event.preventDefault();contactChipAdd('keyword');}">
+                    <datalist id="contactKeywordsDl"></datalist>
+                    <button type="button" class="contact-chip-add" onclick="contactChipAdd('keyword')">➕</button>
+                </div>
+                <div class="contact-chip-list" id="contactKeywordsChips"></div>
             </div>
 
             <!-- بخش تاریخ‌ها -->
@@ -5502,6 +5554,19 @@ body.locked .header-actions button {
                         <input type="text" id="searchPhone" placeholder="شماره تلفن">
                     </div>
                 </div>
+                <!-- 🔧 v283.0: فیلتر نوع و کلیدواژه — مثال: نوع «فروشنده» + کلیدواژه «کفش» = فقط فروشندگانی که کفش میفروشند -->
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>🏷️ نوع (با ویرگول جدا کنید)</label>
+                        <input type="text" id="searchTypes" placeholder="مثال: فروشنده، مشتری" list="searchTypesDl">
+                        <datalist id="searchTypesDl"></datalist>
+                    </div>
+                    <div class="contact-form-field">
+                        <label>🔑 کلیدواژه (با ویرگول جدا کنید)</label>
+                        <input type="text" id="searchKeywords" placeholder="مثال: کفش، لباس" list="searchKeywordsDl">
+                        <datalist id="searchKeywordsDl"></datalist>
+                    </div>
+                </div>
                 <div class="contact-form-row">
                     <div class="contact-form-field">
                         <label>اشانتیون خواسته شده (کالا)</label>
@@ -5577,6 +5642,19 @@ body.locked .header-actions button {
                     <div class="contact-form-field">
                         <label>تلفن</label>
                         <input type="text" id="reportPhone" placeholder="شماره تلفن">
+                    </div>
+                </div>
+                <!-- 🔧 v283.0: فیلتر نوع و کلیدواژه در گزارش — مثال: نوع «فروشنده» + کلیدواژه «کفش» -->
+                <div class="contact-form-row">
+                    <div class="contact-form-field">
+                        <label>🏷️ نوع (با ویرگول جدا کنید)</label>
+                        <input type="text" id="reportTypes" placeholder="مثال: فروشنده، مشتری" list="reportTypesDl">
+                        <datalist id="reportTypesDl"></datalist>
+                    </div>
+                    <div class="contact-form-field">
+                        <label>🔑 کلیدواژه (با ویرگول جدا کنید)</label>
+                        <input type="text" id="reportKeywords" placeholder="مثال: کفش، لباس" list="reportKeywordsDl">
+                        <datalist id="reportKeywordsDl"></datalist>
                     </div>
                 </div>
                 <div class="contact-form-row">
@@ -8570,7 +8648,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v282.6-2026-11-26-fa-names-tours-query-purge';
+const APP_VERSION = 'v283.0-2026-11-27-server-ev-readonly-manual-search-crm-tags-call-route';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -12607,6 +12685,7 @@ function editTask(id) {
         showToast('تسک یافت نشد');
         return;
     }
+    if (isServerEvTask(item)) { evServerEvGuardToast(); return; }   // 🔧 v283.0: رویداد سروری فقط‌خواندنی
 
     // If this is a CHILD task (has parentId), ask the user: edit the parent
     // (which cascades to all children) or just this child?
@@ -13733,6 +13812,7 @@ function togglePinTask(taskId) {
     const items = getDB();
     const item = items.find(i => i.id === taskId);
     if (!item) return;
+    if (isServerEvTask(item)) { evServerEvGuardToast(); return; }   // 🔧 v283.0: رویداد سروری فقط‌خواندنی
 
     if (item.pinned === true) {
         // 🔧 نپین کردن — فیلدهای pinned کاملاً حذف می‌شوند (delete + null)
@@ -14621,6 +14701,33 @@ function renderGroupsView() {
 // نمایش تسک‌های یک گروه
 // ────────────────────────────────────────────────────────────────────
 // ============ Tasks View ============
+// 🔧 v283.0 (BA-283.0) — تسک‌های رویداد سروری (owner_id='ev-sync') فقط‌خواندنی‌اند:
+// الزام کاربر: «رویدادهای سروری که توسط سرور ایجاد می‌شوند غیرقابل تغییر
+// باشند توسط کاربر در تمام کلیدها و محتوای جزییات تسک و فقط جزییات باز
+// بشود و کاربر بتواند ببیند. بعد از ۱۲ ساعت از آن انجام شد بشود».
+function isServerEvTask(item) {
+    return !!item && (item.netOwnerId === 'ev-sync' || item.netOwner === 'ev-sync');
+}
+// سررسید آینهٔ سرور («YYYY-MM-DDTHH:MM» تهران‌محلی یا ISO) → epoch
+function evMirrorDeadlineTs(dl) {
+    const s = String(dl || '');
+    if (!s || s.length < 10) return NaN;
+    let iso = s;
+    if (s.length === 10) iso = s + 'T00:00:00+03:30';
+    else if (!/[zZ]$|[+-]\d{2}:?\d{2}$/.test(s)) iso = s + ':00+03:30';
+    return Date.parse(iso);
+}
+// نمایش محلیِ «۱۲ ساعت بعد از شروع = انجام‌شده» — سرور هم واقعاً done=true
+// می‌نویسد (PATCH در mirrorTasks)؛ این گارد فقط برای تازگیِ نمایش است.
+function evTaskAutoDone(item) {
+    if (!isServerEvTask(item) || item.done == true || !item.deadline) return false;
+    const st = evMirrorDeadlineTs(item.deadline);
+    return !isNaN(st) && Date.now() >= st + 12 * 3600 * 1000;
+}
+function evServerEvGuardToast() {
+    showToast('🔒 رویدادهای سروری قابل تغییر نیستند — فقط قابل دیدن (بعد از ۱۲ ساعت خودکار «انجام‌شده» می‌شوند)');
+}
+
 function renderTasksView(groupId) {
     const container = document.getElementById('container');
     const group = getGroupById(groupId);
@@ -14845,7 +14952,8 @@ function renderTasksView(groupId) {
 
         const row = document.createElement('div');
         row.className = 'item-row';
-        if (item.done) { const m = document.createElement('div'); m.className='item-done-mark'; m.textContent='✓'; row.appendChild(m); }
+        // 🔧 v283.0: رویداد سروری ۱۲ ساعت بعد از پخش — نشان «انجام‌شده» محلی
+        if (item.done || evTaskAutoDone(item)) { const m = document.createElement('div'); m.className='item-done-mark'; m.textContent='✓'; row.appendChild(m); }
         // 🔧 v133: نشانگرهای حالت تسک (لغوشده/معلق)
         if (item.cancelled == true) { const m = document.createElement('div'); m.className='item-done-mark'; m.textContent='✕'; m.style.color='#E53935'; row.appendChild(m); }
         if (item.suspended == true) { const m = document.createElement('div'); m.className='item-done-mark'; m.textContent='⏸'; m.style.color='#FFB74D'; row.appendChild(m); }
@@ -14880,15 +14988,18 @@ function renderTasksView(groupId) {
         const remEl = document.createElement('div'); remEl.className='item-remaining'; remEl.textContent=toPersianDigits(formatRemaining(item.deadline, item.done, item.cancelled, item.suspended)); row.appendChild(remEl);
         // 🔧 آیکون پین — سمت چپ (در RTL، آخرین عنصر در row)
         // کم‌رنگ وقتی پین نیست، پررنگ (با چرخش) وقتی پین شده
-        const pinBtn = document.createElement('button');
-        pinBtn.className = 'task-pin-btn' + (item.pinned ? ' pinned' : '') + (item.urgent == true ? ' urgent' : '');
-        pinBtn.title = item.pinned ? 'حذف پین' : 'پین کردن';
-        pinBtn.textContent = '📌';
-        pinBtn.onclick = function(e) {
-            e.stopPropagation();
-            togglePinTask(item.id);
-        };
-        row.appendChild(pinBtn);
+        // 🔧 v283.0: رویداد سروری — کلید پین ندارد (فقط‌خواندنی)
+        if (!isServerEvTask(item)) {
+            const pinBtn = document.createElement('button');
+            pinBtn.className = 'task-pin-btn' + (item.pinned ? ' pinned' : '') + (item.urgent == true ? ' urgent' : '');
+            pinBtn.title = item.pinned ? 'حذف پین' : 'پین کردن';
+            pinBtn.textContent = '📌';
+            pinBtn.onclick = function(e) {
+                e.stopPropagation();
+                togglePinTask(item.id);
+            };
+            row.appendChild(pinBtn);
+        }
 
         const groups = getGroups();
         // 🔧 گروه «کارهای فوری» یک گروه نمایشی است و نباید در dropdown
@@ -14897,8 +15008,23 @@ function renderTasksView(groupId) {
         const selectableGroups = groups.filter(g => g.id !== 'urgent');
         const groupOpts = selectableGroups.map(g => `<option value="${g.id}" ${g.id === (item.groupId || 'all') ? 'selected' : ''}>${escapeHtml(g.name)}</option>`).join('');
 
+        const _sv = isServerEvTask(item);   // 🔧 v283.0: رویداد سروری = فقط خواندنی
         const details = document.createElement('div');
         details.className = 'item-details';
+        if (_sv) {
+            // 🔧 v283.0 — الزام کاربر: «غیرقابل تغییر در تمام کلیدها و محتوای
+            // جزییات؛ فقط جزییات باز شود و کاربر بتواند ببیند» — همهٔ
+            // ویرایشگرها (گروه/زیرگروه/مسئول/فوری/شخص/دکمه‌ها) حذف؛ فقط دیدن.
+            details.innerHTML = `
+            <div class="detail-row"><span class="detail-label">📡 منبع:</span><span class="detail-value">رویداد سروری — ساختهٔ تابع ev-sync برای همهٔ اعضا</span></div>
+            <div class="detail-row"><span class="detail-label">ساخته شد:</span><span class="detail-value">${toPersianDigits(toJalaliFull(item.createdAt))}</span></div>
+            <div class="deadline-box"><div class="detail-row"><span class="detail-label">سررسید:</span><span class="detail-value">${toPersianDigits(toJalaliFull(item.deadline))}</span></div><div class="detail-row"><span class="detail-label">روز سررسید:</span><span class="detail-value">${toJalaliLong(item.deadline)}</span></div></div>
+            <div class="detail-row"><span class="detail-label">انجام شد:</span><span class="detail-value">${item.completedAt ? toPersianDigits(toJalaliFull(item.completedAt)) : (evTaskAutoDone(item) ? 'بله — خودکار (۱۲ ساعت بعد از پخش)' : 'هنوز انجام نشده')}</span></div>
+            ${item.netOwner ? `<div class="detail-row"><span class="detail-label">👤 سازنده:</span><span class="detail-value">${escapeHtml(item.netOwner)}</span></div>` : ''}
+            <div class="detail-row" style="color:#0a7ea4;font-size:12px;">🔒 این رویداد توسط سرور ساخته شده و قابل تغییر نیست — ۱۲ ساعت بعد از پخش خودکار «انجام‌شده» می‌شود و سرور بعد از ۲۴ ساعت آن را پاک می‌کند.</div>
+            <div class="item-actions"><button class="action-btn secondary" data-action="close-details">✕ بستن</button></div>
+        `;
+        } else {
         details.innerHTML = `
             <div class="detail-row"><span class="detail-label">ساخته شد:</span><span class="detail-value">${toPersianDigits(toJalaliFull(item.createdAt))}</span></div>
             <div class="deadline-box"><div class="detail-row"><span class="detail-label">سررسید:</span><span class="detail-value">${toPersianDigits(toJalaliFull(item.deadline))}</span></div><div class="detail-row"><span class="detail-label">روز سررسید:</span><span class="detail-value">${toJalaliLong(item.deadline)}</span></div></div>
@@ -14918,10 +15044,15 @@ function renderTasksView(groupId) {
                     : '<button class="action-btn" data-action="edit">✏️ ویرایش</button><button class="action-btn" data-action="suspend">⏸ معلق شد</button><button class="action-btn" data-action="cancel-task">❌ لغو شد</button><button class="action-btn" data-action="toggle">' + (item.done ? '↩ بازگردانی' : '✓ انجام شد') + '</button><button class="action-btn danger" data-action="delete">🗑 حذف</button><button class="action-btn secondary" data-action="close-details">✕ انصراف</button>'
             }</div>
         `;
+        }
         div.appendChild(row);
         div.appendChild(details);
         div.addEventListener('click', (e) => {
             const action = e.target.dataset.action;
+            if (_sv) {   // 🔧 v283.0: رویداد سروری — فقط «بستن»؛ هیچ تغییر مجاز نیست
+                if (action === 'close-details') { e.stopPropagation(); toggleExpand(item.id); }
+                return;
+            }
             if (action === 'toggle') { e.stopPropagation(); toggleDone(item.id); return; }
             if (action === 'delete') { e.stopPropagation(); deleteItem(item.id); return; }
             if (action === 'edit') { e.stopPropagation(); editTask(item.id); return; }
@@ -15026,6 +15157,7 @@ function changeTaskGroup(taskId, newGroupId, assigneeId) {
     const items = getDB();
     const item = items.find(i => i.id === taskId);
     if (!item) return;
+    if (isServerEvTask(item)) { evServerEvGuardToast(); return; }   // 🔧 v283.0: رویداد سروری فقط‌خواندنی
     const _ng = getGroupById(newGroupId);
     // 🔧 U (v268) — BA-263: ارسال کار عادی به گروه شبکه‌ای → «ابتدا» انتخاب
     // مسئول (الزام کاربر) — انتخابگر باز می‌شود و با مسئولِ انتخابی ادامه می‌یابد.
@@ -15160,6 +15292,7 @@ function toggleDone(id) {
     const items = getDB();
     const item = items.find(i => i.id === id);
     if (!item) return;
+    if (isServerEvTask(item)) { evServerEvGuardToast(); return; }   // 🔧 v283.0: رویداد سروری فقط‌خواندنی
 
     // Toggle done state
     item.done = !item.done;
@@ -15239,6 +15372,7 @@ function toggleCancelled(id) {
     const items = getDB();
     const item = items.find(i => i.id === id);
     if (!item) return;
+    if (isServerEvTask(item)) { evServerEvGuardToast(); return; }   // 🔧 v283.0: رویداد سروری فقط‌خواندنی
 
     if (item.cancelled == true) {
         // بازگردانی از حالت لغو → فعال
@@ -15295,6 +15429,7 @@ function toggleSuspended(id) {
     const items = getDB();
     const item = items.find(i => i.id === id);
     if (!item) return;
+    if (isServerEvTask(item)) { evServerEvGuardToast(); return; }   // 🔧 v283.0: رویداد سروری فقط‌خواندنی
 
     if (item.suspended == true) {
         // بازگردانی از حالت معلق → فعال
@@ -15351,6 +15486,7 @@ function toggleTaskUrgent(id) {
     const items = getDB();
     const item = items.find(i => i.id === id);
     if (!item) return;
+    if (isServerEvTask(item)) { evServerEvGuardToast(); return; }   // 🔧 v283.0: رویداد سروری فقط‌خواندنی
     if (item.urgent === true) {
         // 🔧 حذف فوری — فیلد urgent کاملاً حذف می‌شود (delete + null) تا
         // هیچ اثری از آن باقی نماند و کلاس urgent-task قطعاً حذف شود.
@@ -15395,7 +15531,8 @@ function migrateUrgentField() {
 function deleteItem(id) {
     const items = getDB();
     const item = items.find(i => i.id === id);
-    // If this is a PARENT task, also delete all its children
+
+    if (isServerEvTask(item)) { evServerEvGuardToast(); return; }   // 🔧 v283.0: رویداد سروری فقط‌خواندنی    // If this is a PARENT task, also delete all its children
     const childCount = items.filter(i => i.parentId === id).length;
     const msg = childCount > 0
         ? `این تسک و ${childCount} تسک تکرارشونده‌ی آن حذف شوند؟`
@@ -16911,6 +17048,7 @@ function changeTaskContact(taskId) {
     const items = getDB();
     const item = items.find(i => i.id === taskId);
     if (!item) return;
+    if (isServerEvTask(item)) { evServerEvGuardToast(); return; }   // 🔧 v283.0: رویداد سروری فقط‌خواندنی
     // نمایش منوی انتخاب شخص
     showContactPickerForTask(function(contact) {
         if (contact) {
@@ -17225,7 +17363,7 @@ function refreshFloatingContactBtn() {
 // وقتی کاربر در textbox تایپ می‌کند یا روی هدر کلیک می‌کند،
 // renderContactsList دوباره صدا زده می‌شود و این مقادیر اعمال می‌شوند.
 let _contactsSort = { field: null, dir: 'asc' };  // field: 'company' | 'name' | 'position' | null
-let _contactsFilter = { company: '', name: '', position: '' };  // متن فیلتر برای هر ستون
+let _contactsFilter = { company: '', name: '', position: '', tags: '' };  // متن فیلتر برای هر ستون (+ tags = نوع/کلیدواژه v283.0)
 
 // تابع کمکی: مقایسهٔ فارسی برای sort
 // از localeCompare با 'fa' استفاده می‌کند تا حروف فارسی درست مرتب شوند.
@@ -17294,6 +17432,11 @@ function renderContactsList() {
         const q = _contactsFilter.position.toLowerCase();
         filtered = filtered.filter(c => (c.position || '').toLowerCase().includes(q));
     }
+    // 🔧 v283.0: فیلتر نوع/کلیدواژه — هر چیزی که در انواع یا کلیدواژه‌ها باشد
+    if (_contactsFilter.tags) {
+        const q = _contactsFilter.tags.toLowerCase();
+        filtered = filtered.filter(c => (contactTypesOf(c).concat(contactKeywordsOf(c)).join(' ') || '').toLowerCase().includes(q));
+    }
 
     // 🔧 v136: اعمال sort
     if (_contactsSort.field) {
@@ -17327,6 +17470,8 @@ function renderContactsList() {
     html += '<th class="sortable ' + positionSortClass + '" onclick="toggleContactsSort(\'position\')">';
     html += '<span class="sort-indicator"></span>سمت';
     html += '</th>';
+    // 🔧 v283.0: ستون نوع/کلیدواژه
+    html += '<th>نوع / کلیدواژه</th>';
     html += '</tr>';
     // ردیف دوم: textbox فیلتر
     html += '<tr>';
@@ -17335,31 +17480,37 @@ function renderContactsList() {
     html += '<th class="filter-header"><input type="text" data-field="name" value="' + escapeHtml(_contactsFilter.name) + '" placeholder="فیلتر نام..." oninput="updateContactsFilter(\'name\', this.value)"></th>';
     // 🔧 v144: textbox فیلتر سمت (جدید)
     html += '<th class="filter-header"><input type="text" data-field="position" value="' + escapeHtml(_contactsFilter.position) + '" placeholder="فیلتر سمت..." oninput="updateContactsFilter(\'position\', this.value)"></th>';
+    // 🔧 v283.0: فیلتر نوع/کلیدواژه (مثلاً «فروشنده» یا «کفش»)
+    html += '<th class="filter-header"><input type="text" data-field="tags" value="' + escapeHtml(_contactsFilter.tags) + '" placeholder="فیلتر نوع/کلیدواژه..." oninput="updateContactsFilter(\'tags\', this.value)"></th>';
     html += '</tr>';
     html += '</thead><tbody>';
 
     if (filtered.length === 0) {
-        const cols = 4;
+        const cols = 5;
         html += '<tr><td colspan="' + cols + '" style="text-align:center; padding:30px; color:#999;">';
         html += 'هیچ شخصی با این فیلتر یافت نشد';
         html += '</td></tr>';
     } else {
         filtered.forEach((c, idx) => {
+            // 🔧 v283.0: نشان‌های نوع/کلیدواژه در ردیف
+            const _tags = contactTypesOf(c).map(function(t) { return '<span class="contact-tag-badge">' + escapeHtml(t) + '</span>'; }).join('')
+                        + contactKeywordsOf(c).map(function(t) { return '<span class="contact-tag-badge kw">🔑 ' + escapeHtml(t) + '</span>'; }).join('');
             // 🔧 v144: ردیف قابل کلیک — منوی لمسی باز می‌شود
             html += '<tr class="contact-clickable" onclick="showContactActionMenu(\'' + c.id + '\')">';
             html += '<td>' + toPersianNumber(idx + 1) + '</td>';
             html += '<td>' + escapeHtml(c.company || '—') + '</td>';
             html += '<td>' + escapeHtml(c.name || '—') + '</td>';
             html += '<td>' + escapeHtml(c.position || '—') + '</td>';
+            html += '<td style="max-width:220px;">' + (_tags || '—') + '</td>';
             html += '</tr>';
         });
     }
 
     html += '</tbody></table>';
-    if (_contactsFilter.company || _contactsFilter.name || _contactsFilter.position) {
+    if (_contactsFilter.company || _contactsFilter.name || _contactsFilter.position || _contactsFilter.tags) {
         html += '<div style="text-align:center; padding:10px; color:#666; font-size:12px;">';
         html += toPersianNumber(filtered.length) + ' نفر از ' + toPersianNumber(allContacts.length) + ' نفر نمایش داده شد';
-        html += ' — <a href="javascript:void(0)" onclick="_contactsFilter={company:\'\',name:\'\',position:\'\'}; _contactsSort={field:null,dir:\'asc\'}; renderContactsList();" style="color:#1976D2; font-weight:600;">پاک کردن فیلتر</a>';
+        html += ' — <a href="javascript:void(0)" onclick="_contactsFilter={company:\'\',name:\'\',position:\'\',tags:\'\'}; _contactsSort={field:null,dir:\'asc\'}; renderContactsList();" style="color:#1976D2; font-weight:600;">پاک کردن فیلتر</a>';
         html += '</div>';
     }
     body.innerHTML = html;
@@ -17795,6 +17946,18 @@ function showContactActionMenu(contactId) {
         });
     }
 
+    // 🔧 v283.0: انواع + کلیدواژه‌ها در جزئیات شخص
+    const _tArr = contactTypesOf(c), _kArr = contactKeywordsOf(c);
+    if (_tArr.length || _kArr.length) {
+        const tagsDiv = document.createElement('div');
+        tagsDiv.className = 'contact-action-commission-row';
+        tagsDiv.style.flexWrap = 'wrap';
+        tagsDiv.innerHTML = '<span class="contact-action-commission-idx">🏷</span> '
+            + _tArr.map(function(t) { return '<span class="contact-tag-badge">' + escapeHtml(t) + '</span>'; }).join(' ')
+            + ' ' + _kArr.map(function(t) { return '<span class="contact-tag-badge kw">🔑 ' + escapeHtml(t) + '</span>'; }).join(' ');
+        itemsContainer.appendChild(tagsDiv);
+    }
+
     const closeBtn = document.createElement('button');
     closeBtn.className = 'contact-action-menu-close';
     closeBtn.textContent = '✕ بستن';
@@ -17838,6 +18001,8 @@ function openContactForm(id) {
         renderDynamicList('contactPhonesList', c.phones || [], 'تلفن', c.primaryPhone);
         renderDynamicList('contactAddressesList', c.addresses || [], 'آدرس');
         renderDynamicList('contactNotesList', c.notes || [], 'توضیح');
+        // 🔧 v283.0: چیپ‌های نوع/کلیدواژه — اشخاص قبلی خودکار مهاجرت می‌شوند
+        contactChipsInit(contactTypesOf(c), contactKeywordsOf(c));
     } else {
         document.getElementById('contactCompany').value = '';
         document.getElementById('contactName').value = '';
@@ -17851,6 +18016,7 @@ function openContactForm(id) {
         renderDynamicList('contactPhonesList', [''], 'تلفن');
         renderDynamicList('contactAddressesList', [''], 'آدرس');
         renderDynamicList('contactNotesList', [''], 'توضیح');
+        contactChipsInit([], []);   // 🔧 v283.0
     }
 
     var cfOverlay = document.getElementById('contactFormOverlay');
@@ -18275,6 +18441,85 @@ function importPhoneContacts() {
     });
 }
 
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v283.0 — الزام کاربر: «اشخاص نوع داشته باشند به هر تعدادی که کاربر
+// خواست مثلا مشتری و فروشنده و.... برای هر شخص بتوان کلمات کلیدی زیادی
+// تعریف کرد مثل اینکه چه اجناسی از آن میخریم. اشخاص قبلی هم توسعه داده
+// شوند. جستجو و گزارشات همه به روز شوند (مثلاً فقط فروشندگانی که کفش
+// میفروشند)». مدل: contact.types[] + contact.keywords[] — مهاجرت اشخاص
+// قدیمی خودکار است (فیلد نبود = خالی؛ نوع قدیمیِ رشته‌ای هم پذیرفته).
+// ════════════════════════════════════════════════════════════════════
+let _contactFormTypes = [];
+let _contactFormKeywords = [];
+function contactTypesOf(c) {
+    if (!c) return [];
+    if (Array.isArray(c.types)) return c.types.filter(Boolean);
+    if (typeof c.type === 'string' && c.type.trim()) return [c.type.trim()];   // مهاجرت مدل قدیمی
+    return [];
+}
+function contactKeywordsOf(c) {
+    if (!c) return [];
+    if (Array.isArray(c.keywords)) return c.keywords.filter(Boolean);
+    return [];
+}
+function allContactTypes() {
+    const seen = {}; const out = [];
+    getContacts().forEach(function(c) { contactTypesOf(c).forEach(function(t) { const k = normalizeContactRefText(t); if (k && !seen[k]) { seen[k] = 1; out.push(t); } }); });
+    return out;
+}
+function allContactKeywords() {
+    const seen = {}; const out = [];
+    getContacts().forEach(function(c) { contactKeywordsOf(c).forEach(function(t) { const k = normalizeContactRefText(t); if (k && !seen[k]) { seen[k] = 1; out.push(t); } }); });
+    return out;
+}
+function contactChipRender(kind) {
+    const box = document.getElementById(kind === 'type' ? 'contactTypesChips' : 'contactKeywordsChips');
+    if (!box) return;
+    const arr = kind === 'type' ? _contactFormTypes : _contactFormKeywords;
+    const cls = kind === 'type' ? 'contact-chip' : 'contact-chip keyword';
+    box.innerHTML = arr.map(function(t, i) {
+        return '<span class="' + cls + '">' + escapeHtml(t) + '<button type="button" onclick="contactChipRemove(\'' + kind + '\',' + i + ')" title="حذف">✕</button></span>';
+    }).join('') || '<span style="font-size:11px;color:#9e9e9e;">هیچ‌کدام تعریف نشده — بنویسید و ➕ بزنید</span>';
+}
+function contactChipFillDatalists() {
+    const tdl = document.getElementById('contactTypesDl');
+    const kdl = document.getElementById('contactKeywordsDl');
+    if (tdl) tdl.innerHTML = allContactTypes().map(function(t) { return '<option value="' + escA(t) + '">'; }).join('');
+    if (kdl) kdl.innerHTML = allContactKeywords().map(function(t) { return '<option value="' + escA(t) + '">'; }).join('');
+}
+function contactChipAdd(kind) {
+    const inp = document.getElementById(kind === 'type' ? 'contactTypeInput' : 'contactKeywordInput');
+    if (!inp) return;
+    const raw = String(inp.value || '').trim();
+    if (!raw) { showToast('متن نوع/کلیدواژه را بنویسید'); return; }
+    // چندمقداری با ویرگول هم پذیرفته است
+    const parts = raw.split(/[,،]/).map(function(x) { return x.trim(); }).filter(Boolean).slice(0, 40);
+    const arr = kind === 'type' ? _contactFormTypes : _contactFormKeywords;
+    let added = 0;
+    parts.forEach(function(p) {
+        const key = normalizeContactRefText(p);
+        if (!key) return;
+        if (arr.some(function(x) { return normalizeContactRefText(x) === key; })) return;   // بدون تکرار
+        arr.push(p); added++;
+    });
+    inp.value = '';
+    contactChipRender(kind);
+    if (!added) showToast('قبلاً اضافه شده');
+}
+function contactChipRemove(kind, idx) {
+    const arr = kind === 'type' ? _contactFormTypes : _contactFormKeywords;
+    if (idx < 0 || idx >= arr.length) return;
+    arr.splice(idx, 1);
+    contactChipRender(kind);
+}
+function contactChipsInit(types, keywords) {
+    _contactFormTypes = (types || []).slice(0, 40);
+    _contactFormKeywords = (keywords || []).slice(0, 60);
+    contactChipRender('type');
+    contactChipRender('keyword');
+    contactChipFillDatalists();
+}
+
 function saveContact() {
     const name = document.getElementById('contactName').value.trim();
     if (!name) {
@@ -18295,6 +18540,9 @@ function saveContact() {
         primaryPhone: getPrimaryPhone(),  // 🔧 موبایل اصلی
         addresses: getDynamicListValues('contactAddressesList'),
         notes: getDynamicListValues('contactNotesList'),
+        // 🔧 v283.0: انواع + کلیدواژه‌ها (چندتایی نامحدود)
+        types: _contactFormTypes.slice(0, 40),
+        keywords: _contactFormKeywords.slice(0, 60),
     };
 
     const contacts = getContacts();
@@ -18438,6 +18686,13 @@ function openContactSearch() {
     document.getElementById('searchName').value = '';
     document.getElementById('searchPosition').value = '';
     document.getElementById('searchPhone').value = '';
+    // 🔧 v283.0: فیلدهای نوع/کلیدواژه + فهرست پیشنهادی از دادهٔ موجود
+    document.getElementById('searchTypes').value = '';
+    document.getElementById('searchKeywords').value = '';
+    const _stDl = document.getElementById('searchTypesDl');
+    const _skDl = document.getElementById('searchKeywordsDl');
+    if (_stDl) _stDl.innerHTML = allContactTypes().map(function(t) { return '<option value="' + escA(t) + '">'; }).join('');
+    if (_skDl) _skDl.innerHTML = allContactKeywords().map(function(t) { return '<option value="' + escA(t) + '">'; }).join('');
     document.getElementById('searchCommissionAskedMin').value = '';
     document.getElementById('searchCommissionPaidMin').value = '';
     document.getElementById('searchCommissionMode').value = 'all';
@@ -18473,6 +18728,9 @@ function executeContactSearch() {
         // 🔧 v146: ۴ حالت درصد کارپردازی
         commissionMode: document.getElementById('searchCommissionMode').value,
         commissionValue: document.getElementById('searchCommissionValue').value.trim(),
+        // 🔧 v283.0: انواع/کلیدواژه‌ها — هر جمله باید وجود داشته باشد (و بین جمله‌ها «و»)
+        types: document.getElementById('searchTypes').value.split(/[,،]/).map(x => x.trim()).filter(Boolean),
+        keywords: document.getElementById('searchKeywords').value.split(/[,،]/).map(x => x.trim()).filter(Boolean),
     };
 
     const results = filterContacts(criteria);
@@ -18496,6 +18754,21 @@ function filterContacts(criteria) {
     }
     if (criteria.phone) {
         contacts = contacts.filter(c => (c.phones || []).some(p => p.toLowerCase().includes(criteria.phone)));
+    }
+    // 🔧 v283.0: فیلتر نوع — همهٔ جملاتِ واردشده باید در انواع شخص باشند
+    if (criteria.types && criteria.types.length) {
+        contacts = contacts.filter(c => {
+            const mine = contactTypesOf(c).map(x => normalizeContactRefText(x));
+            return criteria.types.every(t => mine.some(m => m.indexOf(normalizeContactRefText(t)) >= 0));
+        });
+    }
+    // 🔧 v283.0: فیلتر کلیدواژه — همهٔ جملات باید در کلیدواژه‌های شخص باشند
+    // («فروشندگانی که کفش میفروشند» = نوع: فروشنده + کلیدواژه: کفش)
+    if (criteria.keywords && criteria.keywords.length) {
+        contacts = contacts.filter(c => {
+            const mine = contactKeywordsOf(c).map(x => normalizeContactRefText(x));
+            return criteria.keywords.every(t => mine.some(m => m.indexOf(normalizeContactRefText(t)) >= 0));
+        });
     }
     if (criteria.commissionAskedMin) {
         // 🔧 v169: جستجوی متنی در همهٔ رکوردهای commissions[].asked
@@ -18701,6 +18974,13 @@ function openContactReport() {
     document.getElementById('reportName').value = '';
     document.getElementById('reportPosition').value = '';
     document.getElementById('reportPhone').value = '';
+    // 🔧 v283.0
+    document.getElementById('reportTypes').value = '';
+    document.getElementById('reportKeywords').value = '';
+    const _rtDl = document.getElementById('reportTypesDl');
+    const _rkDl = document.getElementById('reportKeywordsDl');
+    if (_rtDl) _rtDl.innerHTML = allContactTypes().map(function(t) { return '<option value="' + escA(t) + '">'; }).join('');
+    if (_rkDl) _rkDl.innerHTML = allContactKeywords().map(function(t) { return '<option value="' + escA(t) + '">'; }).join('');
     document.getElementById('reportCommissionAskedMin').value = '';
     document.getElementById('reportCommissionPaidMin').value = '';
     // 🔧 v146: درصد کارپردازی — ۴ حالت
@@ -18737,6 +19017,9 @@ function executeContactReport() {
         // 🔧 v146: ۴ حالت درصد کارپردازی
         commissionMode: document.getElementById('reportCommissionMode').value,
         commissionValue: document.getElementById('reportCommissionValue').value.trim(),
+        // 🔧 v283.0: انواع/کلیدواژه‌ها
+        types: document.getElementById('reportTypes').value.split(/[,،]/).map(x => x.trim()).filter(Boolean),
+        keywords: document.getElementById('reportKeywords').value.split(/[,،]/).map(x => x.trim()).filter(Boolean),
     };
 
     const results = filterContacts(criteria);
@@ -18786,11 +19069,23 @@ function showContactReportResults(results, criteria) {
         html += '<div>🎁 دارای اشانتیون خواسته شده: <b>' + toPersianNumber(askedCount) + '</b></div>';
         html += '<div>🎁 دارای اشانتیون داده شده: <b>' + toPersianNumber(paidCount) + '</b></div>';
         html += '<div>٪ دارای درصد کارپردازی: <b>' + toPersianNumber(withPercentCount) + '</b></div>';
+        // 🔧 v283.0: توزیع انواع در نتایج گزارش
+        const _typeCount = {};
+        results.forEach(c => contactTypesOf(c).forEach(t => { const k = t.trim(); if (k) _typeCount[k] = (_typeCount[k] || 0) + 1; }));
+        const _typePairs = Object.keys(_typeCount).sort(function(a, b) { return _typeCount[b] - _typeCount[a]; }).slice(0, 12);
+        if (_typePairs.length) {
+            html += '</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">';
+            _typePairs.forEach(function(t) {
+                html += '<span class="contact-tag-badge">' + escapeHtml(t) + ': ' + toPersianNumber(_typeCount[t]) + '</span>';
+            });
+        }
         html += '</div></div>';
 
         // جدول کامل
         html += '<table class="search-results-table"><thead><tr>';
         html += '<th>ردیف</th><th>نام شرکت</th><th>نام</th><th>سمت</th>';
+        // 🔧 v283.0: ستون انواع/کلیدواژه‌ها
+        html += '<th>انواع / کلیدواژه‌ها</th>';
         html += '<th>تلفن‌ها</th><th>آدرس</th><th>شروع همکاری</th><th>تولد</th>';
         html += '<th>درصد</th><th>اشانتیون‌ها (خواسته / داده)</th><th>توضیحات</th>';
         html += '</tr></thead><tbody>';
@@ -18814,6 +19109,8 @@ function showContactReportResults(results, criteria) {
             html += '<td>' + escapeHtml(c.company || '—') + '</td>';
             html += '<td>' + escapeHtml(c.name || '—') + '</td>';
             html += '<td>' + escapeHtml(c.position || '—') + '</td>';
+            // 🔧 v283.0: نشان‌های نوع/کلیدواژه
+            html += '<td style="max-width:200px;">' + (contactTypesOf(c).map(function(t) { return '<span class="contact-tag-badge">' + escapeHtml(t) + '</span>'; }).join('') + contactKeywordsOf(c).map(function(t) { return '<span class="contact-tag-badge kw">🔑 ' + escapeHtml(t) + '</span>'; }).join('') || '—') + '</td>';
             html += '<td>' + renderClickablePhones(c.phones) + '</td>';
             html += '<td>' + (c.addresses || []).map(a => escapeHtml(a)).join('<br>') + '</td>';
             html += '<td>' + escapeHtml(c.startDate || '—') + '</td>';
@@ -19522,7 +19819,7 @@ const NET_DEFAULTS = {
     url: 'https://uuedqototmxgzoltwdxc.supabase.co',
     key: 'sb_publishable_SrK_j002xlTRy58VAl3v3Q_XEB0aAsi'
 };
-const NET_SQL_HELP = '-- ════════════════════════════════════════════════════════════════════\n-- یادآور صوتی — اسکریپت جامع شبکه (v282.6 — GRANT service_role + سررسید text + گروه رویدادها EVSRV + ستون query رویدادها)\n-- این یک اسکریپت است که «همه‌چیز» را می‌سازد یا تعمیر می‌کند:\n--   • جدول‌ها: net_groups، net_members، net_tasks، net_messages،\n--     net_msg_hides، net_events\n--   • 🔧 v282.5: گروه «رویدادها» (کد EVSRV) — ردیف واقعی در net_groups؛\n--     پیوستن با کد EVSRV و عضویت اتوماتیک برنامه دیگر «پیدا نشد» نمی‌دهد\n--   • همهٔ ستون‌های افزوده‌شده در طول تاریخ (برای دیتابیس‌های قدیمی)\n--   • RLS + سیاست‌های باز + GRANT کامل\n--   • باکت storage «net-chat» (پیوست‌های چت) + سیاست‌هایش\n--   • پاک‌سازی رویدادهای گذشته + به‌روزرسانی فوری کشِ schema\n-- ▶ اجرای چندباره کاملاً بی‌خطاست (idempotent): سیاست‌ها با DO-block\n--   ساخته می‌شوند، پس دیگر خطای «already exists» و برگشتِ کل تراکنش\n--   (علت اصلی خرابی دیتابیس‌های قدیمی) پیش نمی‌آید.\n-- ▶ اجرا: Supabase Dashboard → SQL Editor → New query → کل متن را\n--   پیست کنید → Run. پیام «Success. No rows returned» یعنی موفق.\n-- ════════════════════════════════════════════════════════════════════\n\ncreate extension if not exists pgcrypto;\n\n-- ─── ۱) جدول‌ها ──────────────────────────────────────────────────────\ncreate table if not exists net_groups (\n  id uuid primary key default gen_random_uuid(),\n  code text unique not null,\n  name text not null,\n  created_by text not null,\n  created_at timestamptz default now()\n);\n\n-- 🔧 v282.5: گروه «رویدادها» از همین اسکریپت ردیف واقعی می‌گیرد —\n-- پیوستن دستی با کد EVSRV و عضویت اتوماتیک برنامه کار می‌کند\ninsert into net_groups (code, name, created_by) values (\'EVSRV\', \'رویدادها\', \'system\') on conflict (code) do nothing;\n\ncreate table if not exists net_members (\n  group_id uuid references net_groups(id) on delete cascade,\n  user_id text not null,\n  display_name text not null,\n  joined_at timestamptz default now(),\n  primary key (group_id, user_id)\n);\n\ncreate table if not exists net_tasks (\n  id uuid primary key default gen_random_uuid(),\n  group_id uuid references net_groups(id) on delete cascade,\n  title text not null,\n  -- v282.3: text تا «ساعتِ» سررسید هم می‌ماند (با date ساعت بی‌صدا قیچی می‌شد)\n  deadline text,\n  owner_id text not null,\n  owner_name text not null,\n  assignee_id text,\n  assignee_name text,\n  done boolean not null default false,\n  completed_at timestamptz,\n  cancelled boolean default false,\n  suspended boolean default false,\n  urgent boolean default false,\n  pinned boolean default false,\n  repeat text,\n  deleted boolean default false,\n  subgroup_id text,\n  subgroup_name text,\n  created_at timestamptz default now(),\n  updated_at timestamptz default now()\n);\n\ncreate table if not exists net_messages (\n  id uuid primary key default gen_random_uuid(),\n  group_id uuid references net_groups(id) on delete cascade,\n  sender_id text not null,\n  sender_name text not null,\n  text text not null,\n  created_at timestamptz default now()\n);\n\ncreate table if not exists net_msg_hides (\n  msg_id uuid references net_messages(id) on delete cascade,\n  user_id text not null,\n  hidden_at timestamptz default now(),\n  primary key (msg_id, user_id)\n);\n\n-- v281: رویدادهای سروری (گروه EVSRV) — Edge Function «ev-sync» این را پر می‌کند\ncreate table if not exists net_events (\n  id uuid primary key default gen_random_uuid(),\n  ev_key text unique not null,\n  group_code text not null default \'EVSRV\',\n  title text not null,\n  sub text,\n  src text not null,\n  ev_date date,\n  ev_time text,\n  date_j text,\n  starts_at timestamptz,\n  created_at timestamptz default now()\n);\n\n-- ─── ۲) ستون‌های افزوده‌شده در طول تاریخ (دیتابیس قدیمی را کامل می‌کند) ──\n-- v282.3: سررسید تسک text شود تا ساعتش روی سرور بماند (قدیمی date بود)\nalter table net_tasks alter column deadline type text;\nalter table net_events add column if not exists query text;   -- 🔧 v282.6: پیکربندی نامی سازندهٔ ردیف (پاک‌سازی خودکار مغایرت‌ها با تغییر نام بازیکن)\nalter table net_messages add column if not exists img text;\nalter table net_messages add column if not exists kind text default \'text\';\nalter table net_messages add column if not exists url text;\nalter table net_messages add column if not exists fname text;\nalter table net_messages add column if not exists fsize bigint;\nalter table net_messages add column if not exists dur int;\nalter table net_messages add column if not exists edited_at timestamptz;\nalter table net_messages add column if not exists deleted boolean default false;\nalter table net_tasks add column if not exists completed_at timestamptz;\nalter table net_tasks add column if not exists cancelled boolean default false;\nalter table net_tasks add column if not exists suspended boolean default false;\nalter table net_tasks add column if not exists urgent boolean default false;\nalter table net_tasks add column if not exists pinned boolean default false;\nalter table net_tasks add column if not exists repeat text;\nalter table net_tasks add column if not exists deleted boolean default false;\nalter table net_tasks add column if not exists subgroup_id text;\nalter table net_tasks add column if not exists subgroup_name text;\n\n-- ─── ۳) RLS (روی همهٔ جدول‌ها) ───────────────────────────────────────\nalter table net_groups   enable row level security;\nalter table net_members  enable row level security;\nalter table net_tasks    enable row level security;\nalter table net_messages enable row level security;\nalter table net_msg_hides enable row level security;\nalter table net_events   enable row level security;\n\n-- ─── ۴) سیاست‌های باز (idempotent — DO block) ───────────────────────\ndo $$ begin\n  if not exists (select 1 from pg_policies where tablename=\'net_groups\' and policyname=\'net_groups_all\') then\n    create policy "net_groups_all" on net_groups for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_members\' and policyname=\'net_members_all\') then\n    create policy "net_members_all" on net_members for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_tasks\' and policyname=\'net_tasks_all\') then\n    create policy "net_tasks_all" on net_tasks for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_messages\' and policyname=\'net_messages_all\') then\n    create policy "net_messages_all" on net_messages for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_msg_hides\' and policyname=\'net_msg_hides_all\') then\n    create policy "net_msg_hides_all" on net_msg_hides for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_events\' and policyname=\'net_events_all\') then\n    create policy "net_events_all" on net_events for all using (true) with check (true);\n  end if;\nend $$;\n\n-- ─── ۵) GRANT کامل (v282.2: service_role هم — تابع ev-sync با Secret آن وصل می‌شود؛ بدون GRANT خطای ۴۰۳/۴۲۵۰۱ permission denied می‌دهد) ──\ngrant usage on schema public to anon, authenticated, service_role;\ngrant select, insert, update, delete on all tables in schema public to anon, authenticated, service_role;\nalter default privileges in schema public grant all on tables to anon, authenticated, service_role;\n\n-- ─── ۶) باکت storage پیوست‌های چت + سیاست‌هایش ──────────────────────\ninsert into storage.buckets (id, name, public) values (\'net-chat\', \'net-chat\', true) on conflict (id) do nothing;\ndo $$ begin\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-read\') then\n    create policy "net-chat-read" on storage.objects for select using (bucket_id = \'net-chat\');\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-insert\') then\n    create policy "net-chat-insert" on storage.objects for insert with check (bucket_id = \'net-chat\');\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-update\') then\n    create policy "net-chat-update" on storage.objects for update using (bucket_id = \'net-chat\');\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-delete\') then\n    create policy "net-chat-delete" on storage.objects for delete using (bucket_id = \'net-chat\');\n  end if;\nend $$;\n\n-- ─── ۷) اندیس‌های کمکی (پرس‌وجوهای سریع‌تر — بی‌ضرر) ────────────────\ncreate index if not exists net_tasks_group_idx   on net_tasks (group_id);\ncreate index if not exists net_tasks_upd_idx     on net_tasks (updated_at);\ncreate index if not exists net_messages_grp_idx  on net_messages (group_id, created_at);\ncreate index if not exists net_events_grp_idx    on net_events (group_code, starts_at);\n\n-- ─── ۸) نگهداری: پاک‌سازی رویدادهای گذشته + تسک‌های آینهٔ منقضی (v282.5) ──\ndelete from net_events where starts_at < now() - interval \'1 day\';\ndelete from net_tasks where owner_id = \'ev-sync\' and deadline is not null\n  and deadline < to_char((now() - interval \'1 day\') at time zone \'Asia/Tehran\', \'YYYY-MM-DD"T"HH24:MI\');\n\n-- ─── ۹) به‌روزرسانی فوری کشِ schema (پیام «schema cache» را فوری می‌خواباند) ──\nnotify pgrst, \'reload schema\';\n\n-- ════════════════════════════════════════════════════════════════════\n-- پایان — «Success. No rows returned» یعنی موفق.\n-- حالا در برنامه: منوی ☰ → 🛰️ شبکه → «↻ اتصال دوباره» (یا رفرش صفحه)\n-- تسک‌ها/پیام‌ها بین همهٔ گوشی‌ها سینک می‌شوند؛ دکمهٔ سروری رویدادها هم\n-- جدول net_events را می‌بیند.\n-- ════════════════════════════════════════════════════════════════════';
+const NET_SQL_HELP = '-- ════════════════════════════════════════════════════════════════════\n-- یادآور صوتی — اسکریپت جامع شبکه (v283.0 — GRANT service_role + سررسید text + گروه رویدادها EVSRV + ستون query رویدادها)\n-- این یک اسکریپت است که «همه‌چیز» را می‌سازد یا تعمیر می‌کند:\n--   • جدول‌ها: net_groups، net_members، net_tasks، net_messages،\n--     net_msg_hides، net_events\n--   • 🔧 v282.5: گروه «رویدادها» (کد EVSRV) — ردیف واقعی در net_groups؛\n--     پیوستن با کد EVSRV و عضویت اتوماتیک برنامه دیگر «پیدا نشد» نمی‌دهد\n--   • همهٔ ستون‌های افزوده‌شده در طول تاریخ (برای دیتابیس‌های قدیمی)\n--   • RLS + سیاست‌های باز + GRANT کامل\n--   • باکت storage «net-chat» (پیوست‌های چت) + سیاست‌هایش\n--   • پاک‌سازی رویدادهای گذشته + به‌روزرسانی فوری کشِ schema\n-- ▶ اجرای چندباره کاملاً بی‌خطاست (idempotent): سیاست‌ها با DO-block\n--   ساخته می‌شوند، پس دیگر خطای «already exists» و برگشتِ کل تراکنش\n--   (علت اصلی خرابی دیتابیس‌های قدیمی) پیش نمی‌آید.\n-- ▶ اجرا: Supabase Dashboard → SQL Editor → New query → کل متن را\n--   پیست کنید → Run. پیام «Success. No rows returned» یعنی موفق.\n-- ════════════════════════════════════════════════════════════════════\n\ncreate extension if not exists pgcrypto;\n\n-- ─── ۱) جدول‌ها ──────────────────────────────────────────────────────\ncreate table if not exists net_groups (\n  id uuid primary key default gen_random_uuid(),\n  code text unique not null,\n  name text not null,\n  created_by text not null,\n  created_at timestamptz default now()\n);\n\n-- 🔧 v282.5: گروه «رویدادها» از همین اسکریپت ردیف واقعی می‌گیرد —\n-- پیوستن دستی با کد EVSRV و عضویت اتوماتیک برنامه کار می‌کند\ninsert into net_groups (code, name, created_by) values (\'EVSRV\', \'رویدادها\', \'system\') on conflict (code) do nothing;\n\ncreate table if not exists net_members (\n  group_id uuid references net_groups(id) on delete cascade,\n  user_id text not null,\n  display_name text not null,\n  joined_at timestamptz default now(),\n  primary key (group_id, user_id)\n);\n\ncreate table if not exists net_tasks (\n  id uuid primary key default gen_random_uuid(),\n  group_id uuid references net_groups(id) on delete cascade,\n  title text not null,\n  -- v282.3: text تا «ساعتِ» سررسید هم می‌ماند (با date ساعت بی‌صدا قیچی می‌شد)\n  deadline text,\n  owner_id text not null,\n  owner_name text not null,\n  assignee_id text,\n  assignee_name text,\n  done boolean not null default false,\n  completed_at timestamptz,\n  cancelled boolean default false,\n  suspended boolean default false,\n  urgent boolean default false,\n  pinned boolean default false,\n  repeat text,\n  deleted boolean default false,\n  subgroup_id text,\n  subgroup_name text,\n  created_at timestamptz default now(),\n  updated_at timestamptz default now()\n);\n\ncreate table if not exists net_messages (\n  id uuid primary key default gen_random_uuid(),\n  group_id uuid references net_groups(id) on delete cascade,\n  sender_id text not null,\n  sender_name text not null,\n  text text not null,\n  created_at timestamptz default now()\n);\n\ncreate table if not exists net_msg_hides (\n  msg_id uuid references net_messages(id) on delete cascade,\n  user_id text not null,\n  hidden_at timestamptz default now(),\n  primary key (msg_id, user_id)\n);\n\n-- v281: رویدادهای سروری (گروه EVSRV) — Edge Function «ev-sync» این را پر می‌کند\ncreate table if not exists net_events (\n  id uuid primary key default gen_random_uuid(),\n  ev_key text unique not null,\n  group_code text not null default \'EVSRV\',\n  title text not null,\n  sub text,\n  src text not null,\n  ev_date date,\n  ev_time text,\n  date_j text,\n  starts_at timestamptz,\n  created_at timestamptz default now()\n);\n\n-- ─── ۲) ستون‌های افزوده‌شده در طول تاریخ (دیتابیس قدیمی را کامل می‌کند) ──\n-- v282.3: سررسید تسک text شود تا ساعتش روی سرور بماند (قدیمی date بود)\nalter table net_tasks alter column deadline type text;\nalter table net_events add column if not exists query text;   -- 🔧 v282.6: پیکربندی نامی سازندهٔ ردیف (پاک‌سازی خودکار مغایرت‌ها با تغییر نام بازیکن)\nalter table net_messages add column if not exists img text;\nalter table net_messages add column if not exists kind text default \'text\';\nalter table net_messages add column if not exists url text;\nalter table net_messages add column if not exists fname text;\nalter table net_messages add column if not exists fsize bigint;\nalter table net_messages add column if not exists dur int;\nalter table net_messages add column if not exists edited_at timestamptz;\nalter table net_messages add column if not exists deleted boolean default false;\nalter table net_tasks add column if not exists completed_at timestamptz;\nalter table net_tasks add column if not exists cancelled boolean default false;\nalter table net_tasks add column if not exists suspended boolean default false;\nalter table net_tasks add column if not exists urgent boolean default false;\nalter table net_tasks add column if not exists pinned boolean default false;\nalter table net_tasks add column if not exists repeat text;\nalter table net_tasks add column if not exists deleted boolean default false;\nalter table net_tasks add column if not exists subgroup_id text;\nalter table net_tasks add column if not exists subgroup_name text;\n\n-- ─── ۳) RLS (روی همهٔ جدول‌ها) ───────────────────────────────────────\nalter table net_groups   enable row level security;\nalter table net_members  enable row level security;\nalter table net_tasks    enable row level security;\nalter table net_messages enable row level security;\nalter table net_msg_hides enable row level security;\nalter table net_events   enable row level security;\n\n-- ─── ۴) سیاست‌های باز (idempotent — DO block) ───────────────────────\ndo $$ begin\n  if not exists (select 1 from pg_policies where tablename=\'net_groups\' and policyname=\'net_groups_all\') then\n    create policy "net_groups_all" on net_groups for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_members\' and policyname=\'net_members_all\') then\n    create policy "net_members_all" on net_members for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_tasks\' and policyname=\'net_tasks_all\') then\n    create policy "net_tasks_all" on net_tasks for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_messages\' and policyname=\'net_messages_all\') then\n    create policy "net_messages_all" on net_messages for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_msg_hides\' and policyname=\'net_msg_hides_all\') then\n    create policy "net_msg_hides_all" on net_msg_hides for all using (true) with check (true);\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'net_events\' and policyname=\'net_events_all\') then\n    create policy "net_events_all" on net_events for all using (true) with check (true);\n  end if;\nend $$;\n\n-- ─── ۵) GRANT کامل (v282.2: service_role هم — تابع ev-sync با Secret آن وصل می‌شود؛ بدون GRANT خطای ۴۰۳/۴۲۵۰۱ permission denied می‌دهد) ──\ngrant usage on schema public to anon, authenticated, service_role;\ngrant select, insert, update, delete on all tables in schema public to anon, authenticated, service_role;\nalter default privileges in schema public grant all on tables to anon, authenticated, service_role;\n\n-- ─── ۶) باکت storage پیوست‌های چت + سیاست‌هایش ──────────────────────\ninsert into storage.buckets (id, name, public) values (\'net-chat\', \'net-chat\', true) on conflict (id) do nothing;\ndo $$ begin\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-read\') then\n    create policy "net-chat-read" on storage.objects for select using (bucket_id = \'net-chat\');\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-insert\') then\n    create policy "net-chat-insert" on storage.objects for insert with check (bucket_id = \'net-chat\');\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-update\') then\n    create policy "net-chat-update" on storage.objects for update using (bucket_id = \'net-chat\');\n  end if;\n  if not exists (select 1 from pg_policies where tablename=\'objects\' and policyname=\'net-chat-delete\') then\n    create policy "net-chat-delete" on storage.objects for delete using (bucket_id = \'net-chat\');\n  end if;\nend $$;\n\n-- ─── ۷) اندیس‌های کمکی (پرس‌وجوهای سریع‌تر — بی‌ضرر) ────────────────\ncreate index if not exists net_tasks_group_idx   on net_tasks (group_id);\ncreate index if not exists net_tasks_upd_idx     on net_tasks (updated_at);\ncreate index if not exists net_messages_grp_idx  on net_messages (group_id, created_at);\ncreate index if not exists net_events_grp_idx    on net_events (group_code, starts_at);\n\n-- ─── ۸) نگهداری: پاک‌سازی رویدادهای گذشته + تسک‌های آینهٔ منقضی (v282.5) ──\ndelete from net_events where starts_at < now() - interval \'1 day\';\ndelete from net_tasks where owner_id = \'ev-sync\' and deadline is not null\n  and deadline < to_char((now() - interval \'1 day\') at time zone \'Asia/Tehran\', \'YYYY-MM-DD"T"HH24:MI\');\n\n-- ─── ۹) به‌روزرسانی فوری کشِ schema (پیام «schema cache» را فوری می‌خواباند) ──\nnotify pgrst, \'reload schema\';\n\n-- ════════════════════════════════════════════════════════════════════\n-- پایان — «Success. No rows returned» یعنی موفق.\n-- حالا در برنامه: منوی ☰ → 🛰️ شبکه → «↻ اتصال دوباره» (یا رفرش صفحه)\n-- تسک‌ها/پیام‌ها بین همهٔ گوشی‌ها سینک می‌شوند؛ دکمهٔ سروری رویدادها هم\n-- جدول net_events را می‌بیند.\n-- ════════════════════════════════════════════════════════════════════';
 
 let NET_STATE = {
     sb: null,          // کلاینت Supabase
@@ -19533,7 +19830,7 @@ let NET_STATE = {
     gh: false,         // BA-231: بک‌اند گیت‌هاب (Gist) فعال
     ghdb: null,        // BA-231: محتوای JSON داخل Gist
     ghPoll: null,      // BA-231: شناسهٔ interval نظرسنجی ۴ ثانیه‌ای
-    voice: { in: false, mic: false, pcs: {}, stream: null, members: {} },  // BA-232 + L-1(BA-251): میک پیش‌فرض بسته
+    voice: { in: false, mic: false, pcs: {}, stream: null, members: {}, route: 'ear', audioCtx: null, spkSrcs: {} },  // BA-232 + L-1 + v283.0: مسیر صدا پیش‌فرض گوشی
     unread: 0,         // BA-233: پیام‌های خوانده‌نشدهٔ چت
     lastMsgAt: {},     // L-5 (BA-252): آخرین پیام دیده‌شدهٔ هر گروه (پشتیبان پول)
     dlHeal: {},        // v282.3: سررسیدهای ترمیم‌شده {netId: true} — ضد حلقهٔ آپدیت
@@ -19907,7 +20204,7 @@ function NET_subscribe() {
         const p = m && m.payload;
         if (!p || !p.msg) return;
         if (p.msg.sender_id === netMyUid()) return;
-        NET_STATE.msgs.push(p.msg);
+        netMsgPushUnique(p.msg);   // 🔧 v283.0: ضدتکرار با تزریق پولی
         NET_STATE.lastMsgAt[g.code] = p.msg.created_at || NET_STATE.lastMsgAt[g.code];
         netNotifyIncoming(g.code, p.msg);   // L-5: نوتیف هدر + سیستم حتی برای گروه فعال
         if (NET_STATE.tab === 'chat') netRenderChatList();
@@ -19980,7 +20277,9 @@ function NET_subscribe() {
         try {
             const st = ch.presenceState();
             Object.keys(st).forEach(function(k) {
-                (st[k] || []).forEach(function(pl) { if (pl && pl.uid) map[pl.uid] = { name: (pl.name || 'کاربر'), mic: !!pl.mic }; });
+                // 🔧 v283.0: lis هم نگه داشته می‌شود — قبلاً ریخته می‌شد و
+                // فیلتر «حاضر در چت» (o.lis === true) هیچ‌وقت درست نمی‌شد
+                (st[k] || []).forEach(function(pl) { if (pl && pl.uid) map[pl.uid] = { name: (pl.name || 'کاربر'), mic: !!pl.mic, lis: !!pl.lis }; });
             });
         } catch(e) {}
         NET_STATE.online = map;
@@ -20637,6 +20936,8 @@ function evParseAparatApi(payload, dateStr) {
     return out;
 }
 let _evResults = [];
+// 🔧 v283.0: نتایج دستی آنتن/آپارات از سرور — بخش پایین پنل؛ در گروه نیست
+let _evManualResults = [];
 // 🔧 X (v271) — BA-269: تشخیص تکراری — الزام کاربر: «اگر یک بار دیگر جستجو
 // کردیم تسک قبلی موجود بود در گروه رویدادها دوباره تکراری اضافه نشود».
 // کلیدِ دقیقِ v269 (۶۰ نویسهٔ اول متن) قدیمی‌های با فرمت قدیم (متن = فقط
@@ -20858,6 +21159,80 @@ function evAddSelected() {
     EV_FLOW = false;
     if (typeof render === 'function') { try { render(); } catch(e) {} }
     if (typeof renderGroupsView === 'function') { try { renderGroupsView(); } catch(e) {} }
+}
+
+// 🔧 v283.0 — الزام کاربر: «هربار کاربر دستی سروری — همه را فشار میدهد همه
+// جستجوهای صفحه جستجوی رویدادها در فضای سرور انجام و در پایین صفحه برای اد
+// کردن دستی یا دیدن کاربر اگرچه تکراری در گروه باشد نمایش داده شود».
+// فهرست پایین = نتایج آنتن/آپاراتِ سرور با فیلتر کاربر؛ افزودن دستی آزاد است
+// (گارد تکراری ندارد) و «دیدن» جزئیات را در لاگ/توست نشان می‌دهد.
+function evRenderManual() {
+    const wrap = document.getElementById('evManualWrap');
+    const list = document.getElementById('evManualList');
+    const cnt = document.getElementById('evManualCount');
+    if (!wrap || !list) return;
+    if (!_evManualResults.length) { wrap.style.display = 'none'; list.innerHTML = ''; return; }
+    wrap.style.display = '';
+    if (cnt) cnt.textContent = toPersianNumber(_evManualResults.length);
+    list.innerHTML = _evManualResults.map(function(r, i) {
+        return '<div class="ev-manual-item">'
+            + '<div class="ev-manual-text"><b>' + escapeHtml(r.title || '') + '</b>'
+            + '<small>' + (r.time ? r.time + ' — ' : '') + (r.dateJ ? r.dateJ + ' — ' : '') + escapeHtml(r.sub || '') + ' — ' + escapeHtml(r.src || '') + '</small></div>'
+            + '<div class="ev-manual-btns"><button class="ev-manual-btn view" onclick="evViewManual(' + i + ')">👁 دیدن</button>'
+            + '<button class="ev-manual-btn add" onclick="evAddManual(' + i + ', this)">➕ افزودن دستی</button></div>'
+            + '</div>';
+    }).join('');
+}
+function evViewManual(i) {
+    const r = _evManualResults[i];
+    if (!r) return;
+    const line = r.title + (r.time ? ' — ساعت ' + r.time : '') + (r.dateJ ? ' — ' + r.dateJ : '') + (r.sub ? ' — ' + r.sub : '') + ' — منبع: ' + r.src;
+    evLog('👁 ' + line, false);
+    showToast('👁 ' + line.slice(0, 120));
+}
+function evEnsureEvGroup() {
+    let groups = getGroups();
+    let g = groups.find(function(x) { return (x.name || '').trim() === EV_GROUP_NAME; });
+    if (!g) {
+        addGroup(EV_GROUP_NAME, '#00695C');
+        const gs2 = getGroups();
+        const g2 = gs2.find(function(x) { return (x.name || '').trim() === EV_GROUP_NAME; });
+        if (g2) g2.headerIcon = '🏟️';
+        setGroups(gs2);
+        g = gs2.find(function(x) { return (x.name || '').trim() === EV_GROUP_NAME; }) || g;
+        evLog('📁 گروه «رویدادها» ساخته شد', true);
+    }
+    return g;
+}
+function evAddManual(i, btn) {
+    const r = _evManualResults[i];
+    if (!r) return;
+    EV_FLOW = true;
+    try {
+        const g = evEnsureEvGroup();
+        const db = getDB();
+        db.push({ id: 'ev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), text: evTaskText(r), groupId: g.id, createdAt: new Date().toISOString(), deadline: evDeadlineIso(r), done: false, eventSource: r.src });
+        setDB(db);
+        evLog('✅ افزودن دستی: ' + r.title + (r.time ? ' — ' + r.time : '') + (r.dateJ ? ' — ' + r.dateJ : ''), true);
+        if (btn) { btn.textContent = '✓ اضافه شد'; btn.disabled = true; }
+        showToast('✅ به گروه «رویدادها» اضافه شد');
+    } finally { EV_FLOW = false; }
+}
+function evAddAllManual() {
+    if (!_evManualResults.length) return;
+    EV_FLOW = true;
+    try {
+        const g = evEnsureEvGroup();
+        const db = getDB();
+        _evManualResults.forEach(function(r) {
+            db.push({ id: 'ev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), text: evTaskText(r), groupId: g.id, createdAt: new Date().toISOString(), deadline: evDeadlineIso(r), done: false, eventSource: r.src });
+        });
+        setDB(db);
+        evLog('✅ ' + toPersianNumber(_evManualResults.length) + ' مورد دستی به گروه «رویدادها» اضافه شد (حتی تکراری‌ها — الزام شما)', true);
+        const list = document.getElementById('evManualList');
+        if (list) list.querySelectorAll('.ev-manual-btn.add').forEach(function(b) { b.textContent = '✓'; b.disabled = true; });
+        showToast('✅ همه به گروه اضافه شد');
+    } finally { EV_FLOW = false; }
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -21700,7 +22075,16 @@ async function evSrvInvoke(tennisQ, snookerQ) {
     const key = evSrvKey();
     const ctl = (window.AbortController ? new AbortController() : null);
     const to = ctl ? setTimeout(function() { ctl.abort(); }, 25000) : null;
-    const q = 'tennis=' + encodeURIComponent(tennisQ || '') + '&snooker=' + encodeURIComponent(snookerQ || '');
+    // 🔧 v283.0: تنظیمات کاربر برای جستجوی دستی آنتن/آپارات در سرور —
+    // کلمات خواسته/ناخواستهٔ مؤثر (با پیش‌فرض‌ها) + کلید ردهٔ سنی
+    let _wf = [], _un = [], _ag = '1';
+    try { _wf = evWanted(); } catch(e0) { _wf = []; }
+    try { _un = evUnwanted(); } catch(e1) { _un = []; }
+    try { _ag = evAgeReOn() ? '1' : '0'; } catch(e2) {}
+    const q = 'tennis=' + encodeURIComponent(tennisQ || '') + '&snooker=' + encodeURIComponent(snookerQ || '')
+        + '&wanted=' + encodeURIComponent(JSON.stringify(_wf || []))
+        + '&unwanted=' + encodeURIComponent(JSON.stringify(_un || []))
+        + '&agere=' + _ag;
     // مسیر ۱: هدر apikey (Authorization نیز اضافه می‌شود تا gateway با Verify-JWT
     // روشن هم بپذیرد — کلید anon یک JWT امضا‌شده است). روی GET ساده = simple.
     const tryRequest = async function(withHeader) {
@@ -21772,7 +22156,7 @@ function evSrvSchemaCacheHint(msg) {
 // منبع را می‌خواند و جدول را آپدیت/نگهداری می‌کند) ② پول جدول ③ فیلتر
 // خواسته/ناخواستهٔ کاربر ④ رندر در همان فهرست پنل ⑤ پیام راهنما در نبود
 // تابع (deploy) با fallback زنجیره‌های v280 که همان دکمه‌های جدا هستند.
-async function evServerAll() {
+async function evServerAll(force) {
     const btn = document.getElementById('evSrvBtn');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ …'; }
     EV_FLOW = true;
@@ -21799,8 +22183,10 @@ async function evServerAll() {
         if (!tennisQ) { try { tennisQ = localStorage.getItem(EV_TENNIS_NAME_KEY) || ''; } catch(e) {} }
         if (!snookerQ) { try { snookerQ = localStorage.getItem(EV_WST_NAME_KEY) || ''; } catch(e) {} }
         const namesChanged = (tennisQ !== lastPull.tennis) || (snookerQ !== lastPull.snooker);
-        // ① invoke فقط اگر ۳۰ دقیقه گذشته «یا نام بازیکن عوض شده» (کرون بیرونی/عضو دیگری هم تازه کرده باشد)
-        if (Date.now() - lastPull.at > EVSRV_TTL || namesChanged) {
+        // ① invoke — 🔧 v283.0: با فشار دستی دکمه (force=true) هر بار همهٔ
+        // جستجوها در فضای سرور انجام می‌شود (TTL دور زده می‌شود)؛ مسیرهای
+        // خودکار (باز شدن پنل/تغییر نام) همان TTL را دارند
+        if (force || Date.now() - lastPull.at > EVSRV_TTL || namesChanged) {
             if (namesChanged) evLog('🔄 نام بازیکن عوض شده — به‌روزرسانی تازهٔ سرور با نام‌های جدید …', true);
             // 🔧 v282.5: نام‌های ارسالی شفاف نشان داده می‌شود — سرور دقیقاً همین
             // دو نام را جست‌وجو می‌کند (خالی = پیش‌فرض: تنیس یانیک سینر / اسنوکر حسین وفایی)
@@ -21810,6 +22196,10 @@ async function evServerAll() {
                 try { localStorage.setItem(EVSRV_LAST_KEY, JSON.stringify({ at: Date.now(), tennis: tennisQ, snooker: snookerQ })); } catch(e) {}
                 evLog('✅ سرور ' + toPersianNumber(inv.n_total || 0) + ' رویداد خواند و ' + toPersianNumber(inv.n_saved || 0) + ' ردیف را در گروه شبکه‌ای ذخیره/به‌روز کرد', true);
                 (inv.logs || []).slice(0, 6).forEach(function(l) { evLog('   • ' + l, false); });
+                // 🔧 v283.0: نتایج دستی آنتن/آپارات با تنظیمات شما — در پایین صفحه
+                _evManualResults = Array.isArray(inv.manual) ? inv.manual : [];
+                evRenderManual();
+                if (_evManualResults.length) evLog('🛰️ ' + toPersianNumber(_evManualResults.length) + ' نتیجهٔ دستی آنتن/آپارات (با فیلتر شما) در پایین پنل — افزودن دستی یا دیدن؛ در گروه نیست', true);
             } else {
                 evLog('↪️ تابع سروری جواب نداد: ' + inv.err, true);
                 const fnVer = inv.version || '';
@@ -21818,7 +22208,7 @@ async function evServerAll() {
                 } else if (/42501|permission denied|Grant the required privileges/i.test(inv.err || '')) {
                     // v282.2: جدول به نقش دیتابیسِ تابع اجازه نمی‌دهد — یک خط SQL فوری می‌کشد
                     evLog('💡 راهنما (۴۰۳/۴۲۵۰۱): جدول net_events به نقش دیتابیسِ تابع اجازهٔ نوشتن نمی‌دهد (اسکریپت‌های قدیمی فقط به anon/authenticated اجازه می‌دادند). در داشبورد → SQL Editor این یک خط را Run کنید — فوری است و به Deploy مجدد نیازی ندارد: «GRANT SELECT, INSERT, UPDATE, DELETE ON public.net_events TO anon, authenticated, service_role;» سپس دکمهٔ سروری را دوباره بزنید. (راه دوم: Secret «SUPABASE_SERVICE_ROLE» را از تابع حذف کنید تا تابع از کلید apikey خودِ برنامه استفاده کند — آن هم اجازه دارد. اسکریپت جامع v282.3 داخل برنامه این اجازه را هم می‌دهد.)', true);
-                } else if (/Secrets|SUPABASE_URL|SUPABASE_SERVICE_ROLE|service_role|کلیدی به تابع نرسید/i.test(inv.err || '') && !/^v282/.test(fnVer)) {
+                } else if (/Secrets|SUPABASE_URL|SUPABASE_SERVICE_ROLE|service_role|کلیدی به تابع نرسید/i.test(inv.err || '') && !/^v28[2-9]/.test(fnVer)) {
                     // v282.1: متن تابع قدیمی است — نسخهٔ جدید بدون Secret کار می‌کند
                     // (فقط وقتی تابع نسخهٔ v282+ را گزارش نکرده — v282.2: hint اشتباهِ خطای ۴۲۵۰۱ رفع شد)
                     evLog('💡 راهنما (v282.1): این یعنی متن تابع شما «قدیمی» است — نسخهٔ جدید دیگر به Secret نیاز ندارد (آدرس را از host درخواست و کلید را از هدر apikey خودش می‌گیرد؛ حتی خواندن env در متن قدیمی هم باگ داشت). در «راهنمای سروری» گام ۲: کل متن فایل edge-ev-sync-v2822.ts را روی همان تابع دوباره Deploy کنید؛ تابع قبلی را پاک نکنید. بعد دکمهٔ سروری را دوباره بزنید.', true);
@@ -22518,6 +22908,7 @@ async function netChangeAssignee(localId, uid) {
     const items = getDB();
     const item = items.find(function(x) { return x.id === localId; });
     if (!item || !uid) return;
+    if (isServerEvTask(item)) { evServerEvGuardToast(); return; }   // 🔧 v283.0: رویداد سروری فقط‌خواندنی
     // 🔧 U (v268) — BA-263: تسکِ شبکه‌ایِ بدون رکورد شبکه (آفلاین‌ساخته) —
     // تغییر مسئول روی آینهٔ محلی ذخیره می‌شود؛ تگ کارت و ردیف جزئیات همان را
     // نشان می‌دهند و قابل تغییر می‌مانند.
@@ -22740,6 +23131,13 @@ async function netRepushOne(g, x) {
 // نسخهٔ محلی تسک از برنامهٔ همه پاک می‌شود.
 // 🔒 K5: فیلدهای شخصی (شخص/contactId و غیره) هرگز بازنویسی نمی‌شوند —
 // هر کاربر برای نسخهٔ محلیِ خودش شخصِ خودش را می‌گذارد؛ تعریف سازنده هم حفظ می‌شود.
+// 🔧 v283.0: ۱۲ ساعت بعد از شروع رویداد سروری = «انجام‌شده» — نمایش محلی
+// فوری (سرور هم در mirrorTasks واقعاً done=true می‌نویسد)
+function netMirror12hPast(t) {
+    if (!t || t.owner_id !== 'ev-sync') return false;
+    const st = evMirrorDeadlineTs(t.deadline);
+    return !isNaN(st) && Date.now() >= st + 12 * 3600 * 1000;
+}
 function netSyncGroupTasks(g, tasks) {
     if (!g || !g.code) return;
     if (!NET_STATE.sb && !NET_STATE.gh) return;
@@ -22769,9 +23167,10 @@ function netSyncGroupTasks(g, tasks) {
                 if (cand) { cand.netId = t.id; it = cand; changed = true; }
             }
             if (!it) {
+                const _ad = netMirror12hPast(t);   // 🔧 v283.0: انجام‌شدهٔ خودکار ۱۲ساعته
                 it = { id: 'nt_' + t.id, netId: t.id, netCode: g.code, groupId: gid,
-                    text: t.title, deadline: t.deadline || null, done: !!t.done,
-                    completedAt: t.done ? (t.completed_at || t.created_at || new Date().toISOString()) : null,
+                    text: t.title, deadline: t.deadline || null, done: (!!t.done || _ad),
+                    completedAt: (t.done || _ad) ? (t.completed_at || t.created_at || new Date().toISOString()) : null,
                     cancelled: !!t.cancelled, suspended: !!t.suspended, urgent: !!t.urgent, pinned: !!t.pinned,
                     repeat: netParseRepeat(t.repeat),
                     subgroupId: t.subgroup_id || null,   // 🔧 N-3 (v261)
@@ -22783,8 +23182,9 @@ function netSyncGroupTasks(g, tasks) {
             } else {
                 if (it.text !== t.title) { it.text = t.title; changed = true; }
                 if (String(it.deadline || '').slice(0, 10) !== String(t.deadline || '')) { it.deadline = t.deadline || null; changed = true; }
-                if (!!it.done !== !!t.done) { it.done = !!t.done; changed = true; }
-                const _ca = t.done ? (t.completed_at || null) : null;
+                const _adu = netMirror12hPast(t);   // 🔧 v283.0
+                if (!!it.done !== (!!t.done || _adu)) { it.done = (!!t.done || _adu); changed = true; }
+                const _ca = (t.done || _adu) ? (t.completed_at || null) : null;
                 if ((it.completedAt || null) !== _ca) { it.completedAt = _ca; changed = true; }
                 if ((it.netAssignee || '') !== (t.assignee_name || '') || (it.netAssigneeId || '') !== (t.assignee_id || '')) { it.netAssignee = t.assignee_name || ''; it.netAssigneeId = t.assignee_id || ''; changed = true; }
                 // 🔧 BA-242: فلگ‌های وضعیت هم دوطرفه
@@ -22896,7 +23296,7 @@ function netStartGroupPoll() {
         if (ghEnabled() || !NET_STATE.sb) return;
         netLoadTasksAll();
         netPollAllChats();   // L-5: پیام‌های تازهٔ همهٔ گروه‌ها — پشتیبانِ کانال‌ها
-    }, 20000);
+    }, 12000);   // 🔧 v283.0: ۲۰→۱۲ ثانیه — پشتیبانِ کانال زودتر می‌آید
 }
 function netStopGroupPoll() { if (netGroupPoll) { clearInterval(netGroupPoll); netGroupPoll = null; } }
 // L-5 (BA-252): نظرسنجی چت همهٔ گروه‌ها — اگر کانال Realtime پیامی را از دست
@@ -22918,6 +23318,7 @@ async function netPollAllChats() {
             rows.forEach(function(x) {
                 if (x.created_at > last) {
                     NET_STATE.lastMsgAt[m.code] = x.created_at;
+                    netMsgPushUnique(x);   // 🔧 v283.0: اگر همین گروه فعال است — فوری در فهرست رندر می‌شود
                     netNotifyIncoming(m.code, x);
                 }
             });
@@ -23680,6 +24081,8 @@ function netRenderChatHeader() {
         // ورود به چت خودکار به حالت شنیداری می‌رود و صدای اعضا همان‌جا شنیده می‌شود.
         // کلید میک همیشه دیده می‌شود و پیش‌فرض «بسته» است؛ فقط کاربر بازش می‌کند.
         btns = '<button class="net-btn small' + (v.mic ? '' : ' secondary') + '" onclick="netVoiceMicToggle()">' + (v.mic ? '🎙 میک: باز' : '🔇 میک: بسته') + '</button>';
+        // 🔧 v283.0: کلید گوشی/بلندگو — پیش‌فرض گوشی
+        btns += '<button class="net-btn small' + (v.route === 'speaker' ? '' : ' secondary') + '" onclick="netVoiceRouteToggle()">' + (v.route === 'speaker' ? '🔊 بلندگو' : '🎧 گوشی') + '</button>';
     }
     const stay = netStayChat();
     btns += '<button class="net-btn small' + (stay ? '' : ' secondary') + '" onclick="netToggleStayChat()">🚪 ترک چت: ' + (stay ? 'فعال' : 'غیرفعال') + '</button>';
@@ -23698,6 +24101,7 @@ function netVoiceEnsureAudio(uid) {
         a.style.display = 'none';
         document.body.appendChild(a);
     }
+    if (NET_STATE.voice.route === 'speaker') { try { a.muted = true; } catch(e) {} }
     return a;
 }
 function netVoiceNewPC(peerUid) {
@@ -23708,14 +24112,62 @@ function netVoiceNewPC(peerUid) {
     pc.ontrack = function(ev) {
         const a = netVoiceEnsureAudio(peerUid);
         if (ev.streams && ev.streams[0]) { try { a.srcObject = ev.streams[0]; if (a.play) a.play(); } catch(e) {} }
+        if (NET_STATE.voice.route === 'speaker') netVoiceApplyRoute();   // 🔧 v283.0
     };
     pc.onconnectionstatechange = function() {
-        if (pc.connectionState === 'failed') netVoiceClosePeer(peerUid);
+        if (pc.connectionState === 'failed') { netVoiceClosePeer(peerUid); if (NET_STATE.voice.in && NET_STATE.voice.members[peerUid]) netVoiceOfferTo(peerUid); }   // 🔧 v283.0: تلاش دوباره
     };
     return pc;
 }
+// 🔧 v283.0 — کلید «گوشی/بلندگو» برای چت صوتی گروهی: پیش‌فرض «گوشی»
+// (عنصر <audio> خام = مسیر تماس اندروید)؛ «بلندگو» = پخش با WebAudio
+// (مسیر رسانه = اسپیکر). روی دسکتاپ هر دو به خروجی پیش‌فرض می‌روند.
+function netVoiceApplyRoute() {
+    const v = NET_STATE.voice;
+    const els = document.querySelectorAll('audio[id^="netVoiceAudio-"]');
+    if (v.route === 'speaker') {
+        try {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return;
+            if (!v.audioCtx || v.audioCtx.state === 'closed') v.audioCtx = new AC();
+            if (v.audioCtx.state === 'suspended') { try { v.audioCtx.resume().catch(function(){}); } catch(e) {} }
+            Object.keys(v.spkSrcs || {}).forEach(function(k) { try { v.spkSrcs[k].disconnect(); } catch(e) {} });
+            v.spkSrcs = {};
+            els.forEach(function(a) {
+                try {
+                    if (a.srcObject) { const src = v.audioCtx.createMediaStreamSource(a.srcObject); src.connect(v.audioCtx.destination); v.spkSrcs[a.id] = src; }
+                    a.muted = true;
+                } catch(e) {}
+            });
+        } catch(e) {}
+    } else {
+        try { Object.keys(v.spkSrcs || {}).forEach(function(k) { try { v.spkSrcs[k].disconnect(); } catch(e) {} }); } catch(e) {}
+        v.spkSrcs = {};
+        try { if (v.audioCtx && v.audioCtx.state !== 'closed') { try { v.audioCtx.close().catch(function(){}); } catch(e) {} } } catch(e) {}
+        v.audioCtx = null;
+        els.forEach(function(a) { try { a.muted = false; if (a.play) { try { const p = a.play(); if (p && p.catch) p.catch(function(){}); } catch(e) {} } } catch(e) {} });
+    }
+}
+function netVoiceRouteToggle() {
+    NET_STATE.voice.route = (NET_STATE.voice.route === 'speaker') ? 'ear' : 'speaker';
+    netVoiceApplyRoute();
+    netRenderChatHeader();
+    showToast(NET_STATE.voice.route === 'speaker' ? '🔊 صدای گروه روی بلندگو رفت' : '🎧 صدای گروه روی گوشی (گیرنده) رفت');
+}
+function netMsgPushUnique(msg) {
+    if (!msg || !msg.id) return;
+    const g = NET_STATE.group || netActiveGroup();
+    if (!g || msg.group_id !== g.id) return;
+    if (NET_STATE.msgs.some(function(y) { return y.id === msg.id; })) return;
+    NET_STATE.msgs.push(msg);
+    if (NET_STATE.tab === 'chat') netRenderChatList();
+}
 async function netVoiceOfferTo(peerUid) {
     try {
+        // 🔧 v283.0: ضدگلیر/دوبله — PC در حال اتصال/متصل دوباره offer نمی‌شود
+        const _oldPc = NET_STATE.voice.pcs[peerUid];
+        if (_oldPc && (_oldPc.connectionState === 'connecting' || _oldPc.connectionState === 'connected')) return;
+        if (_oldPc) netVoiceClosePeer(peerUid);
         const pc = netVoiceNewPC(peerUid);
         NET_STATE.voice.pcs[peerUid] = pc;
         if (NET_STATE.voice.stream) NET_STATE.voice.stream.getAudioTracks().forEach(function(t) { pc.addTrack(t, NET_STATE.voice.stream); });
@@ -23756,6 +24208,12 @@ function netVoiceLeave(silent) {
     NET_STATE.voice.mic = false;   // L-1: میک پیش‌فرض بسته — بعد از خروج هم
     NET_STATE.voice.pcs = {};
     NET_STATE.voice.stream = null;
+    // 🔧 v283.0: مسیر صدا به «گوشی» برگردد و WebAudio بسته شود
+    try { Object.keys(NET_STATE.voice.spkSrcs || {}).forEach(function(k) { try { NET_STATE.voice.spkSrcs[k].disconnect(); } catch(e2) {} }); } catch(e3) {}
+    NET_STATE.voice.spkSrcs = {};
+    try { if (NET_STATE.voice.audioCtx && NET_STATE.voice.audioCtx.state !== 'closed') { try { NET_STATE.voice.audioCtx.close().catch(function(){}); } catch(e2) {} } } catch(e) {}
+    NET_STATE.voice.audioCtx = null;
+    NET_STATE.voice.route = 'ear';
     try { if (NET_STATE.ch) NET_STATE.ch.track({ uid: netMyUid(), name: NET_STATE.myName, mic: false, lis: false }); } catch(e) {}   // 🔧 N-4: از فهرست حاضران خارج شو
     netRenderChatHeader();
     if (!silent) showToast('از گفتگوی صوتی خارج شدید');
@@ -23909,6 +24367,16 @@ async function netSyncTaskFromMain(item) {
 // ─── تماس صوتی دوطرفهٔ ۱:۱ (WebRTC + سیگنالینگ روی کانال گروه) ───
 function NET_iceServers() {
     const ice = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
+    // 🔧 v283.0 — ریشهٔ «چت صوتی گروهی صدایش نمی‌رود»: تا حالا فقط STUN
+    // بود و روی شبکهٔ موبایل ایران UDP دوطرفهِ P2P معمولاً بسته است →
+    // connectionState 'failed'. TURN عمومیِ رایگان (OpenRelay/Metered)
+    // به‌صورت پیش‌فرض اضافه شد — TCP/443 هم پوشش شبکه‌های سخت‌گیر.
+    const TURN_DEF = [
+        { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+        { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+        { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+    ];
+    TURN_DEF.forEach(function(t) { ice.push(t); });
     const st = netSettings() || {};
     const t = (st.turn || '').trim();
     if (t) {
@@ -24218,6 +24686,7 @@ function NET_newPC(peerUid) {
     pc.ontrack = function(ev) {
         const a = document.getElementById('netRemoteAudio');
         if (a && ev.streams && ev.streams[0]) { try { a.srcObject = ev.streams[0]; a.play && a.play(); } catch(e) {} }
+        if (NET_STATE.call && NET_STATE.call.route === 'speaker') netCallApplyRoute(true);   // 🔧 v283.0
     };
     pc.onconnectionstatechange = function() {
         if ((pc.connectionState === 'failed' || pc.connectionState === 'disconnected') &&
@@ -24381,6 +24850,42 @@ function netCallToggleMute() {
     C.stream.getAudioTracks().forEach(function(t) { t.enabled = !C.muted; });
     netCallShow('active', C.peerName, C.muted ? '🔇 بی‌صدا' : '🎙️ در حال تماس…');
 }
+// 🔧 v283.0 — الزام کاربر: «دکمه گوشی و بلندگو داشته باشیم. الان وقتی تماس
+// برقرار می‌شود روی بلندگوست اول روی گوشی باشد». پیش‌فرض «گوشی» است: عنصر
+// <audio> خامِ WebRTC روی اندروید به مسیر صوتی تماس (گیرنده) می‌رود.
+// «بلندگو» = پخش با WebAudio (مسیر رسانه = اسپیکر) — متد شناخته‌شدهٔ
+// وب‌فون‌ها چون مرورگر API مستقیمِ تغییر مسیر ندارد (setSinkId در
+// اندروید موجود نیست).
+function netCallApplyRoute(speaker) {
+    const C = NET_STATE.call;
+    const a = document.getElementById('netRemoteAudio');
+    if (speaker) {
+        try {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return;
+            if (!C.audioCtx || C.audioCtx.state === 'closed') C.audioCtx = new AC();
+            if (C.audioCtx.state === 'suspended') { try { C.audioCtx.resume().catch(function(){}); } catch(e) {} }
+            if (a && a.srcObject) {
+                if (!C.spkSrc) { try { C.spkSrc = C.audioCtx.createMediaStreamSource(a.srcObject); } catch(e) {} }
+                if (C.spkSrc) { try { C.spkSrc.connect(C.audioCtx.destination); } catch(e) {} }
+            }
+            if (a) { try { a.muted = true; } catch(e) {} }
+        } catch(e) {}
+    } else {
+        try { if (C.spkSrc) { try { C.spkSrc.disconnect(); } catch(e2) {} C.spkSrc = null; } } catch(e3) {}
+        try { if (C.audioCtx && C.audioCtx.state !== 'closed') { try { C.audioCtx.close().catch(function(){}); } catch(e2) {} } } catch(e) {}
+        C.audioCtx = null;
+        if (a) { try { a.muted = false; if (a.play) { try { const p = a.play(); if (p && p.catch) p.catch(function(){}); } catch(e) {} } } catch(e) {} }
+    }
+}
+function netCallToggleRoute() {
+    const C = NET_STATE.call;
+    const toSpeaker = (C.route !== 'speaker');
+    C.route = toSpeaker ? 'speaker' : 'ear';
+    netCallApplyRoute(toSpeaker);
+    netCallShow('active', C.peerName, C.muted ? '🔇 بی‌صدا' : '🎙️ در حال تماس…');
+    showToast(toSpeaker ? '🔊 صدا روی بلندگو رفت' : '🎧 صدا روی گوشی (گیرنده) رفت');
+}
 // ─── Q (v264): زنگ تماس ورودی — سنتز «ماریمبا» با Web Audio ───
 // پلاک‌های چوبی کوتاه با فاد سریع؛ چرخهٔ ۳ ثانیه‌ای تا پاسخ/رد/پایان.
 // AudioContext معلق → resume؛ در بدترین حالت صفحهٔ تماس بی‌صدا نمایش
@@ -24444,12 +24949,15 @@ function netCallShow(mode, name, status) {
     const b = document.getElementById('netCallBtns');
     if (!b) return;
     if (mode === 'ringing') {
-        b.innerHTML = '<button class="net-call-btn accept" onclick="netCallAccept()">✓</button>'
-                    + '<button class="net-call-btn decline" onclick="netCallDecline()">✕</button>';
+        // 🔧 v283.0: دکمهٔ پاسخ‌گویی و قطع با برچسب واضح
+        b.innerHTML = '<button class="net-call-btn accept" onclick="netCallAccept()" title="پاسخ‌گویی" aria-label="پاسخ‌گویی">✓</button>'
+                    + '<button class="net-call-btn decline" onclick="netCallDecline()" title="قطع/رد تماس" aria-label="قطع تماس">✕</button>';
     } else {
         const C = NET_STATE.call;
-        b.innerHTML = '<button class="net-call-btn mute' + (C.muted ? ' on' : '') + '" onclick="netCallToggleMute()">' + (C.muted ? '🔇' : '🎤') + '</button>'
-                    + '<button class="net-call-btn end" onclick="netCallEnd()">✕</button>';
+        // 🔧 v283.0: کلید گوشی/بلندگو بین میک و قطع — پیش‌فرض گوشی (🎧)
+        b.innerHTML = '<button class="net-call-btn mute' + (C.muted ? ' on' : '') + '" onclick="netCallToggleMute()" title="' + (C.muted ? 'بازکردن میکروفون' : 'بی‌صدا کردن میکروفون') + '">' + (C.muted ? '🔇' : '🎤') + '</button>'
+                    + '<button class="net-call-btn mute' + (C.route === 'speaker' ? ' on' : '') + '" onclick="netCallToggleRoute()" title="' + (C.route === 'speaker' ? 'سوییچ به گوشی (گیرنده)' : 'سوییچ به بلندگو') + '">' + (C.route === 'speaker' ? '🔊' : '🎧') + '</button>'
+                    + '<button class="net-call-btn end" onclick="netCallEnd()" title="قطع تماس">✕</button>';
     }
 }
 function NET_callCleanup() {
@@ -24458,6 +24966,10 @@ function NET_callCleanup() {
     
     if (C.timerIv) clearInterval(C.timerIv);
     if (C.ringT) clearTimeout(C.ringT);
+    // 🔧 v283.0: مسیر صدا ریست به گوشی + WebAudio بسته شود
+    try { if (C.spkSrc) { try { C.spkSrc.disconnect(); } catch(e2) {} C.spkSrc = null; } } catch(e3) {}
+    try { if (C.audioCtx && C.audioCtx.state !== 'closed') { try { C.audioCtx.close().catch(function(){}); } catch(e2) {} } } catch(e) {}
+    C.audioCtx = null; C.route = 'ear';
     if (C.stream) { try { C.stream.getTracks().forEach(function(t) { t.stop(); }); } catch(e) {} }
     if (C.pc) { try { C.pc.close(); } catch(e) {} }
     NET_STATE.call = { active:false, role:null, peerUid:'', peerName:'', pc:null, stream:null,
