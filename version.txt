@@ -1,1 +1,1 @@
-v283.1-2026-11-27-crm-table-type-keyword-separate-columns
+v283.2-2026-11-27-server-ev-details-restore-tag-suggestions
