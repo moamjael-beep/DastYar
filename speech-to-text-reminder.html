@@ -4613,6 +4613,16 @@ body.locked .header-actions button {
 }
 /* 🔧 v186: zebra striping برای جدول نتایج جستجو هم — پررنگ‌تر */
 .search-results-table tbody tr:nth-child(even) { background: #d6eaff; }
+/* 🔧 v283.11 (الزام کاربر): ستون آدرس در جدول نهایی گزارش اشخاص —
+   عرض ۱۰ برابر ستون معمولی (~۶۰۰px) تا آدرس کامل و خوانا بماند */
+.search-results-table th:nth-child(7),
+.search-results-table td:nth-child(7) {
+    min-width: 600px;
+    white-space: normal;
+    word-break: break-word;
+}
+/* ظرف جدول نهایی گزارش اشخاص — اسکرول افقی برای ستون پهن آدرس */
+.report-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .search-results-table tbody tr:nth-child(odd) { background: white; }
 .search-results-table tbody tr:hover { background: #bbdefb; }
 .report-header {
@@ -5019,7 +5029,8 @@ body.locked .header-actions button {
         <!-- 🔧 v212 (الزام کاربر): نقطهٔ فعال‌ساز زنگوله حذف شد — notif-badge
              دیگر ساخته نمی‌شود. -->
         <button class="icon-btn share-btn" id="importBtn" onclick="importDatabase()" title="وارد کردن دیتابیس از فایل JSON" style="display:none;">📥</button>
-        <button class="icon-btn share-btn" id="notifBtn" onclick="openNotifMenu()" title="منوی اعلان‌ها">🔔</button>
+        <!-- 🔧 v283.11 (الزام کاربر): آیکن اعلان از هدر حذف شد — «همان داخل منو کافی است»
+             (آیتم «🔔 اعلان‌ها» در منوی همبرگری) -->
         <button class="icon-btn share-btn" id="shareBtn" onclick="confirmBackup()" title="ذخیره بک‌آپ در فضای ذخیره‌سازی" style="display:none;">📤</button>
         <button class="icon-btn add-btn" id="addBtn" onclick="handleAddButtonClick()" title="افزودن یادآور / شخص">+</button>
     </div>
@@ -8836,7 +8847,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v283.10-2026-11-28-dd-local';
+const APP_VERSION = 'v283.11-2026-11-28-net-backup';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -15844,8 +15855,12 @@ function deleteItem(id) {
 // tried to add a new task.
 function confirmBackup() {
     const items = getDB();
+    const netLine = (typeof netMyGroups === 'function' && netMyGroups().length)
+        ? ('گروه‌های شبکه: ' + netMyGroups().length + ' (با کد دعوت و نام عضویت — بعد از بازیابی خودکار برمی‌گردند)\n')
+        : '';
     const msg = 'آیا از گرفتن بک‌آپ مطمئن هستید؟\n' +
         'تعداد تسک‌ها: ' + items.length + '\n' +
+        'تمام بخش‌های برنامه + تنظیمات + هویت شبکه ذخیره می‌شود\n' + netLine +
         'فایل در پوشه Downloads ذخیره می‌شود.\n\n' +
         'برای تأیید = بله\n' +
         'برای انصراف = خیر';
@@ -15870,11 +15885,34 @@ function saveBackupToLocal() {
         }
     }
 
-    // 🔧 نسخه v7: شامل یادداشت‌های هر گروه + تمام داده‌های قبلی
-    // 🔧 v209: + accounting (سندهای حسابداری) — فیلد اختیاری؛ بک‌آپ‌های
-    //    قدیمی‌تر بدون این فیلد همچنان قابل ورود هستند (BA-071)
+    // 🔧 v283.11 (الزام کاربر) — بکاپ «تمامِ» برنامه: همهٔ کلیدهای
+    // localStorage (تنظیمات اعلان‌ها، حافظه‌های UI، حسابداری پنهان و…) +
+    // بخش هویت شبکه: uid + نام عضویت + گروه‌های عضو با کد دعوت + سازنده‌بودن.
+    // با بازگشت بکاپ، برنامه دقیقاً به وضعیت لحظهٔ بکاپ برمی‌گردد و عضویت
+    // شبکه خودکار با همان اکانت (همان uid — بدون لاشهٔ اکانت جدید) برقرار می‌شود.
+    const kv = {};
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.indexOf('yadavar_notes_v1') !== 0) kv[key] = localStorage.getItem(key);   // یادداشت‌ها جدا هستند
+    }
+    let net = null;
+    try {
+        if (typeof netMyGroups === 'function' && typeof netMyUid === 'function') {
+            const joined = netMyGroups().map(function(g) { return { code: g.code, name: g.name, isOwner: !!g.isOwner }; });
+            if (joined.length) {
+                net = {
+                    uid: netMyUid(),
+                    name: (typeof NET_STATE !== 'undefined' && NET_STATE.myName) || null,
+                    joined: joined
+                };
+            }
+        }
+    } catch(e) { net = null; }
+
+    // 🔧 نسخه v8: + kv (تمام کلیدها) + net (هویت شبکه) — فیلدهای اختیاری؛
+    //    بک‌آپ‌های قدیمی‌تر همچنان قابل ورود هستند
     const dbContent = JSON.stringify({
-        version: 7,
+        version: 8,
         appVersion: APP_VERSION,
         exportedAt: new Date().toISOString(),
         exportedAtJalali: toJalaliLong(new Date()),
@@ -15882,11 +15920,15 @@ function saveBackupToLocal() {
         groupsCount: customGroups.length,
         contactsCount: contacts.length,
         accountingDocs: (accounting && Array.isArray(accounting.docs)) ? accounting.docs.length : 0,
+        kvCount: Object.keys(kv).length,
+        netGroups: net ? net.joined.length : 0,
         groups: customGroups,
         items: items,
         contacts: contacts,
         accounting: accounting,  // 🔧 v209
         notes: notes,  // 🔧 v7: یادداشت‌های هر گروه
+        kv: kv,        // 🔧 v283.11: تمام کلیدهای localStorage (بکاپ کامل)
+        net: net,      // 🔧 v283.11: هویت شبکه (uid/نام/گروه‌ها/کدها/سازندگی)
         settings: {
             appVersion: APP_VERSION,
             notificationPermission: ('Notification' in window) ? Notification.permission : 'unsupported'
@@ -15950,6 +15992,9 @@ function importDatabase() {
                 let importedGroups = [];
                 let importedContacts = [];
                 let importedAccounting = null;  // 🔧 v209
+                let importKv = null;            // 🔧 v283.11: بکاپ کامل (تمام کلیدها)
+                let importNet = null;           // 🔧 v283.11: هویت شبکه
+                let restoredMode = null;        // 🔧 v283.11: 'merge' | 'replace'
                 let backupVersion = 1;  // پیش‌فرض: قدیمی‌ترین نسخه
 
                 // تشخیص نسخه بک‌آپ و استخراج داده‌ها
@@ -15978,6 +16023,15 @@ function importDatabase() {
                                 localStorage.setItem(noteKey, data.notes[noteKey]);
                             }
                         }
+                    }
+                    // 🔧 v283.11: استخراج بکاپ کامل (تمام کلیدهای localStorage)
+                    // و هویت شبکه (uid/نام/گروه‌ها/کدها)
+                    importKv = (data.kv && typeof data.kv === 'object') ? data.kv : null;
+                    importNet = (data.net && data.net.uid && Array.isArray(data.net.joined)) ? data.net : null;
+                    if (importNet) {
+                        // 🔧 همان uid بکاپ = همان اکانت روی سرور (نه اکانت جدید —
+                        // بدون لاشهٔ اکانت قبلی). قبل از هر کاری نوشته شود.
+                        try { if (typeof netMyUid === 'function' && netMyUid() !== importNet.uid) localStorage.setItem('net_uid', importNet.uid); } catch(e) {}
                     }
                 } else {
                     throw new Error('ساختار فایل نامعتبر است');
@@ -16015,12 +16069,19 @@ function importDatabase() {
                 const accountingLine = importedAccounting && importedAccounting.docs.length > 0
                     ? `فایل شامل ${importedAccounting.docs.length} سند حسابداری است\n`
                     : '';
+                // 🔧 v283.11: اطلاعِ بکاپ کامل + هویت شبکه در پیام تأیید
+                const netLine = importNet
+                    ? `🌐 هویت شبکه هم هست: نام «${importNet.name || ''}» + ${toPersianNumber(importNet.joined.length)} گروه — بعد از بازیابی با همان اکانت خودکار عضو می‌شوید\n`
+                    : '';
+                const kvLine = importKv
+                    ? `⚙️ بکاپ کامل است — تمام تنظیمات و داده‌های برنامه هم به وضعیت لحظهٔ بکاپ برمی‌گردد\n`
+                    : '';
                 const versionLine = backupVersion < 5
                     ? `⚠️ بک‌آپ نسخه ${toPersianNumber(backupVersion)} است — به‌طور خودکار مهاجرت می‌شود\n`
                     : '';
                 const msg = versionLine +
                     `فایل دارای ${normalizedItems.length} یادآور است.\n` +
-                    groupsLine + contactsLine + accountingLine +
+                    groupsLine + contactsLine + accountingLine + netLine + kvLine +
                     `دیتابیس فعلی: ${currentItems.length} مورد\n` +
                     (dupCount > 0 ? `${dupCount} مورد تکراری شناسایی شد\n` : '') +
                     `\nبرای «ادغام» = بله\n` +
@@ -16028,6 +16089,7 @@ function importDatabase() {
 
                 if (confirm(msg)) {
                     // ===== MERGE MODE =====
+                    restoredMode = 'merge';
                     // 1. ادغام گروه‌ها
                     const currentGroups = getGroups();
                     const existingGroupIds = new Set(currentGroups.map(g => g.id));
@@ -16117,6 +16179,8 @@ function importDatabase() {
                         `(شامل عکس‌ها، رنگ‌ها، آیکون‌ها، پین‌ها و فوری‌ها)\n\n` +
                         `برای تأیید = بله`;
                     if (confirm(replaceMsg)) {
+                        // ===== REPLACE MODE =====
+                        restoredMode = 'replace';
                         // 1. جایگزینی گروه‌ها — گروه‌های سیستمی (all, urgent) خودکار ساخته می‌شوند
                         //    فقط گروه‌های سفارشی از بک‌آپ می‌آیند
                         const replacedGroups = [
@@ -16165,6 +16229,21 @@ function importDatabase() {
                         parts.push(`${(importedAccounting || accDefaultDB()).docs.length} سند حسابداری`);
                         showToast(parts.join('، ') + ' ✓');
                     }
+                }
+
+                // 🔧 v283.11 (الزام کاربر): بازگشتِ کامل برنامه — بعد از نوشتن
+                // داده‌ها، تمام کلیدهای localStorage بکاپ (تنظیمات، هویت،
+                // حافظه‌ها و…) اعمال می‌شود تا برنامه دقیقاً به وضعیت لحظهٔ
+                // بکاپ برگردد؛ بعد عضویت شبکه «خودکار» با همان uid و کدها.
+                if (restoredMode && importKv) {
+                    Object.keys(importKv).forEach(function(k) {
+                        if (k.indexOf('yadavar_notes_v1') === 0) return;   // بالا بازیابی شد
+                        try { localStorage.setItem(k, importKv[k]); } catch(e) {}
+                    });
+                    showToast('⚙️ تنظیمات و داده‌های کامل بکاپ برگردانده شد');
+                }
+                if (restoredMode && importNet) {
+                    try { netRestoreMemberships(importNet); } catch(e) {}
                 }
             } catch(e) {
                 console.error('Import error:', e);
@@ -19570,7 +19649,8 @@ function showContactReportResults(results, criteria) {
         }
         html += '</div></div>';
 
-        // جدول کامل
+        // جدول کامل — 🔧 v283.11: داخل ظرف اسکرول افقی (ستون پهن آدرس)
+        html += '<div class="report-table-scroll">';
         html += '<table class="search-results-table"><thead><tr>';
         html += '<th>ردیف</th><th>نام شرکت</th><th>نام</th><th>سمت</th>';
         // 🔧 v283.0: ستون انواع/کلیدواژه‌ها
@@ -19610,6 +19690,7 @@ function showContactReportResults(results, criteria) {
             html += '</tr>';
         });
         html += '</tbody></table>';
+        html += '</div>';   // 🔧 v283.11: پایان ظرف اسکرول افقی جدول
     }
 
     body.innerHTML = html;
@@ -23439,6 +23520,75 @@ async function netLeaveGroup() {
     NET_STATE.members = []; NET_STATE.tasks = []; NET_STATE.msgs = []; NET_STATE.online = {}; NET_STATE._presenceBaselined = false;   // 🔧 v283.5: sync بعدی دوباره «مبنا» — بدون زنگ
     netRenderTab();
     showToast('از گروه خارج شدید');
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔧 v283.11 — الزام کاربر: «بعد از برگرداندن بکاپ باید اتوماتیک در شبکه
+// با اون نام قبلی عضو بشم … همان قبلی باشد نه یک REZA جدید و لاشهٔ اکانت
+// قبلی بدون دسترسی در سرور باقی نماند».
+// هویت روی سرور = net_uid (نه نام). بکاپ v8 این uid + کد دعوت هر گروه +
+// سازنده‌بودن را ذخیره می‌کند؛ بعد از بازیابی: همان uid برمی‌گردد →
+// پیوستن با همان کد = «همان» ردیف عضویت (insert نمی‌خورد چون عضو هست) →
+// نه اکانت جدید ساخته می‌شود نه لاشه می‌ماند؛ created_by گروه‌های ساختهٔ
+// شخص (سازندگی) و پیام‌ها/تسک‌های او روی سرور دست‌نخورده می‌مانند.
+// اگر اینترنت نبود، نقشه در net_restore_join_v1 می‌ماند و در بوت بعدی
+// دوباره تلاش می‌شود (قلاب در boot).
+// ════════════════════════════════════════════════════════════════════
+const NET_RESTORE_KEY = 'net_restore_join_v1';
+function netRestoreMemberships(plan) {
+    if (!plan || !plan.uid || !Array.isArray(plan.joined) || !plan.joined.length) return;
+    try { localStorage.setItem(NET_RESTORE_KEY, JSON.stringify(plan)); } catch(e) { return; }
+    (async function() {
+        // تا ~۳۰ ثانیه برای اتصال صبر (تنظیمات شبکه از بکاپ برگشته)
+        let ok = false;
+        for (let i = 0; i < 10 && !ok; i++) {
+            try { ok = !!(await netEnsureConnected()); } catch(e) {}
+            if (!ok) await new Promise(function(r) { setTimeout(r, 3000); });
+        }
+        if (!ok) { showToast('⚠️ عضویت‌های شبکه بعد از «↻ اتصال دوباره» خودکار برمی‌گردند'); return; }
+        let done = 0;
+        for (let i = 0; i < plan.joined.length; i++) {
+            try { if (await netSilentJoinByCode(plan.joined[i].code)) done++; } catch(e) {}
+        }
+        if (done > 0) {
+            try { localStorage.removeItem(NET_RESTORE_KEY); } catch(e) {}
+            showToast('✅ عضویت شبکه با همان نام برگشت (' + toPersianNumber(done) + ' گروه)');
+            netRenderTab();
+        }
+    })();
+}
+async function netSilentJoinByCode(code) {
+    code = (code || '').trim().toUpperCase();
+    if (!code) return false;
+    if (typeof ghEnabled === 'function' && ghEnabled()) {
+        try {
+            const db = await ghGet();
+            const gr = db.groups[code];
+            if (!gr) return false;
+            if (!(gr.members || []).some(function(m) { return m.user_id === netMyUid(); })) {
+                gr.members = gr.members || [];
+                gr.members.push({ user_id: netMyUid(), display_name: NET_STATE.myName, joined_at: new Date().toISOString() });
+                await ghSave(db);
+            }
+            NET_STATE.ghdb = db;
+            netEnsureGroupInMain({ id: code, code: code, name: gr.name }, gr.createdBy === netMyUid());
+            return true;
+        } catch(e) { return false; }
+    }
+    if (!NET_STATE.sb) return false;
+    try {
+        const r = await NET_STATE.sb.from('net_groups').select('*').eq('code', code).limit(1);
+        if (r.error) return false;
+        const g = (r.data || [])[0];
+        if (!g) return false;
+        // عضو بودن با همان uid → ردیف همان است؛ فقط اگر واقعاً نبود insert
+        const mem = await NET_STATE.sb.from('net_members').select('*').eq('group_id', g.id).eq('user_id', netMyUid()).limit(1);
+        if (!((mem.data || []).length)) {
+            await NET_STATE.sb.from('net_members').insert({ group_id: g.id, user_id: netMyUid(), display_name: NET_STATE.myName });
+        }
+        netEnsureGroupInMain(g, g.created_by === netMyUid());   // سازندگی از حقیقت سرور
+        return true;
+    } catch(e) { return false; }
 }
 
 // ─── تب اعضا (BA-246: تب دوم = اعضای گروه فعال؛ تسک‌ها فقط از صفحهٔ اصلی) ───
@@ -31708,6 +31858,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         if (changed) setDB(items);
     })();
+
+    // 🔧 v283.11: عضویت خودکار شبکه بعد از بازیابی بکاپ — اگر نقشهٔ
+    // net_restore_join_v1 مانده (اتصال قبلاً نشده بود)، بعد از نشستن بوت
+    // و اتصال خودکارِ شروع، تلاش دوباره می‌شود.
+    setTimeout(function() {
+        try {
+            const raw = localStorage.getItem('net_restore_join_v1');
+            if (raw) netRestoreMemberships(JSON.parse(raw));
+        } catch(e) {}
+    }, 6000);
 
     // Ensure default group exists
     getGroups();
