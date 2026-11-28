@@ -8814,7 +8814,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v283.7-2026-11-28-contact-dd';
+const APP_VERSION = 'v283.8-2026-11-28-presence-ding';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -16494,8 +16494,8 @@ function showBellSettings() {
 
     // شیء زندهٔ تنظیمات — همان var settings بالای تابع؛ همهٔ تغییرهای این منو
     // روی همین شیء می‌رود تا ذخیرهٔ بعدی هیچ تغییری را پاک نکند
-    settings.sections = Object.assign({ deadlines: true, netMsgs: true, netCalls: true }, settings.sections || {});
-    const sectionsAllOn = () => settings.sections.deadlines !== false && settings.sections.netMsgs !== false && settings.sections.netCalls !== false;
+    settings.sections = Object.assign({ deadlines: true, netMsgs: true, netCalls: true, netPresence: true }, settings.sections || {});
+    const sectionsAllOn = () => settings.sections.deadlines !== false && settings.sections.netMsgs !== false && settings.sections.netCalls !== false && settings.sections.netPresence !== false;
 
     // کلید اصلی — قابلیت قبلی
     const masterRow = bellSwitchRow('اعلان‌ها (کلید اصلی)', settings.enabled, function(on, sw) {
@@ -16512,6 +16512,7 @@ function showBellSettings() {
         settings.sections.deadlines = on;
         settings.sections.netMsgs = on;
         settings.sections.netCalls = on;
+        settings.sections.netPresence = on;
         saveNotifSettings(settings);
         sectionRows.forEach(function(r) { r.cb.checked = on; });
         refreshDependentUI();
@@ -16534,6 +16535,9 @@ function showBellSettings() {
     appendSectionRow('⏰ یادآورهای سررسید تسک‌ها', 'deadlines');
     appendSectionRow('💬 پیام‌های شبکه (گروهی و خصوصی)', 'netMsgs');
     appendSectionRow('📞 تماس‌های شبکه', 'netCalls');
+    // 🔧 v283.8 (الزام کاربر): گزینهٔ جدایی برای دینگ آنلاین‌شدن اعضای
+    // «تمام گروه‌های فعال منوی شبکه، غیر از رویدادها» — مستقل از پیام/تماس
+    appendSectionRow('🔊 دینگ آنلاین‌شدن اعضای گروه‌های شبکه (غیر از رویدادها)', 'netPresence');
 
     function refreshSectionRows() {
         sectionRows.forEach(function(r) {
@@ -20301,6 +20305,7 @@ let NET_STATE = {
     unreadByGroup: {}, // L-5 (BA-252): تعداد پیام خوانده‌نشدهٔ هر گروه {code: n}
     lastMsgAt: {},     // L-5 (BA-252): آخرین پیام دیده‌شدهٔ هر گروه (پشتیبان پول)
     sideChs: {},       // L-5 (BA-252): کانال‌های جانبی همهٔ گروه‌های عضو
+    sideOnline: {},    // 🔧 v283.8: نقشهٔ حضور هر گروهِ جانبی — مبنای مقایسهٔ دینگ آنلاین‌شدن
     lastNotifCode: null, // L-5 (BA-252): گروه آخرین نوتیف — با لمس نوار هدر باز می‌شود
     group: null,       // {id, code, name}
     members: [], tasks: [], msgs: [],
@@ -20730,8 +20735,14 @@ function netPlayOnlineDing() {
         }, 260);
     }
 }
-function netPresenceDiffs(oldMap, newMap) {
+function netPresenceDiffs(oldMap, newMap, groupCode) {
     // در هندلر «sync» presence صدا زده می‌شود — «قبل از» جایگزینی NET_STATE.online
+    // 🔧 v283.8 — الزام کاربر: کلید جدای «دینگ آنلاین‌شدن اعضای گروه‌های
+    // شبکه (غیر از رویدادها)» در منوی اعلان‌ها — خاموش → هیچ دینگِ آنلاین‌شدنی نه
+    if (!notifSectionOn('netPresence')) return;
+    // گروه رویدادهای سروری (EVSRV) دینگ ندارد — همهٔ اعضا به‌طور خودکار
+    // عضو آن می‌شوند و «آنلاین شدن» در آن معنا ندارد.
+    if (groupCode === EVSRV_CODE) return;
     if (!NET_STATE._presenceBaselined) { NET_STATE._presenceBaselined = true; return; }
     const now = Date.now();
     Object.keys(newMap || {}).forEach(function(uid) {
@@ -20842,7 +20853,8 @@ function NET_subscribe() {
             });
         } catch(e) {}
         // 🔧 v283.5: دینگ آنلاین‌شدن کاربر دیگر — مقایسه با نقشهٔ قبلی، قبل از جایگزینی
-        netPresenceDiffs(NET_STATE.online, map);
+        // 🔧 v283.8: کد گروه هم پاس داده می‌شود (استثنای EVSRV)
+        netPresenceDiffs(NET_STATE.online, map, g.code);
         NET_STATE.online = map;
         if (document.getElementById('netChatHeader')) netRenderChatHeader();
         const ov = document.getElementById('netOverlay');
@@ -20877,6 +20889,7 @@ function netEnsureSideChannels() {
         if (!want[code]) {
             try { NET_STATE.sb.removeChannel(NET_STATE.sideChs[code]); } catch(e) {}
             delete NET_STATE.sideChs[code];
+            delete NET_STATE.sideOnline[code];   // 🔧 v283.8: نقشهٔ حضور گروه حذف‌شده
         }
     });
     Object.keys(want).forEach(function(code) {
@@ -20908,7 +20921,30 @@ function netEnsureSideChannels() {
             if (!p || !p.code) return;
             netAfterGroupRenamed(p.code, p.name || '');
         });
-        c.subscribe(function() {});
+        // 🔧 v283.8 — رفع «یک نفر دیگر آنلاین شد پخش این صدا انجام نشد»:
+        // کانال‌های جانبی از قدیم فقط broadcast داشتند — نه presence sync و نه
+        // track؛ یعنی آنلاین‌شدن عضو در هر گروهی «غیر از گروهِ باز» اصلاً دیده
+        // نمی‌شد و دینگ فقط برای گروه فعال کار می‌کرد. حالا هر کانال جانبی هم
+        // حضور همه را می‌بیند (sync) و خودش هم track می‌شود تا بقیه او را ببینند.
+        // sync اولِ هر گروه «مبنا» است و زنگ نمی‌خورد (آنلاین شدن رخ نداده).
+        c.on('presence', { event: 'sync' }, function() {
+            const smap = {};
+            try {
+                const st = c.presenceState();
+                Object.keys(st).forEach(function(k) {
+                    (st[k] || []).forEach(function(pl) { if (pl && pl.uid) smap[pl.uid] = { name: (pl.name || 'کاربر'), mic: !!pl.mic, lis: !!pl.lis }; });
+                });
+            } catch(e) {}
+            const prev = NET_STATE.sideOnline[code];
+            if (prev === undefined) { NET_STATE.sideOnline[code] = smap; return; }   // مبنا
+            netPresenceDiffs(prev, smap, code);
+            NET_STATE.sideOnline[code] = smap;
+        });
+        c.subscribe(function(status) {
+            if (status === 'SUBSCRIBED') {
+                try { c.track({ uid: netMyUid(), name: NET_STATE.myName, mic: NET_STATE.voice.in ? NET_STATE.voice.mic : false, lis: !!NET_STATE.voice.in }); } catch(e) {}
+            }
+        });
         NET_STATE.sideChs[code] = c;
     });
 }
