@@ -1,1 +1,1 @@
-v283.3-2026-11-27-server-keep-past-manual-section-fix
+v283.4-2026-11-28-group-flat-view-toggle

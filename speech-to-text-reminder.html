@@ -3531,6 +3531,35 @@ body.locked .header-actions button {
     box-shadow: 0 1px 3px rgba(0,0,0,0.15);
     border: 2px solid rgba(255,255,255,0.3);
 }
+/* 🔧 v283.4 — الزام کاربر: «کلید آیکن روی هدر داخلی هر گروه را به عنوان یک
+   کلید در نظر بگیر که اگر کلیک شود گروه به صورت یکپارچه بدون زیرگروه‌ها
+   نمایش داده می‌شود … بعد از کلیک دوباره به حالت اول برگردیم» — آیکنِ هدر
+   داخلی (همان که قبل از این فقط نمایشی بود) حالا کلید toggle است. */
+.group-header-icon.flat-toggle {
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.group-header-icon.flat-toggle:active { transform: scale(0.92); }
+.group-header-icon.flat-toggle.flat-on {
+    background: rgba(255,255,255,0.55);
+    border-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.35), 0 1px 3px rgba(0,0,0,0.2);
+}
+.group-flat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: rgba(255,255,255,0.85);
+    color: #37474f;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    line-height: 1.4;
+    flex-shrink: 0;
+}
 
 /* دکمه بازگردانی ترتیب در هدر گروه (همچنان مستقل قابل نمایش) */
 .group-reset-btn {
@@ -8664,7 +8693,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v283.3-2026-11-27-server-keep-past-manual-section-fix';
+const APP_VERSION = 'v283.4-2026-11-28-group-flat-view-toggle';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -14744,6 +14773,40 @@ function evServerEvGuardToast() {
     showToast('🔒 رویدادهای سروری قابل تغییر نیستند — فقط قابل دیدن (بعد از ۱۲ ساعت خودکار «انجام‌شده» می‌شوند)');
 }
 
+// 🔧 v283.4 — الزام کاربر: «کلید آیکن روی هدر داخلی هر گروه را به عنوان یک
+// کلید در نظر بگیر که اگر کلیک شود گروه به صورت یکپارچه بدون زیرگروه‌ها
+// نمایش داده می‌شود. انگار که تسک‌ها هیچ زیرگروهی ندارند و گروه هم هدرهای
+// زیرگروه و اضافه کردن زیرگروه ناپدید شود و بعد از کلیک دوباره به حالت اول
+// برگردیم». آیکنِ هدر داخلی (group-header-icon — قبلاً فقط نمایشی بود) حالا
+// کلید toggle است: یک بار → نمای یکپارچه (بدون کارت‌های زیرگروه و بدون باکس
+// «افزودن زیرگروه جدید»؛ همهٔ تسک‌ها در یک فهرست، انگار زیرگروه ندارند)؛
+// دوباره → حالت اول. وضعیت برای هر گروه جدا در localStorage می‌ماند تا با
+// بستن/بازکردن برنامه هم پابرجا باشد؛ خودِ تسک‌ها و زیرگروه‌شان دست نمی‌خورد
+// (فقط «نمایش») و صفحهٔ داخلی زیرگروه از این حالت پیروی نمی‌کند.
+const GROUP_FLAT_KEY = 'group_flat_view_v1';
+function groupFlatMap() {
+    try {
+        const m = JSON.parse(localStorage.getItem(GROUP_FLAT_KEY) || '{}');
+        return (m && typeof m === 'object' && !Array.isArray(m)) ? m : {};
+    } catch (e) { return {}; }
+}
+function isGroupFlat(groupId) { return !!groupFlatMap()[groupId]; }
+function toggleGroupFlat(groupId) {
+    if (!groupId || groupId === 'all' || groupId === 'urgent') return;   // گروه‌های نمایشی زیرگروه ندارند — کلید بی‌اثر
+    const m = groupFlatMap();
+    if (m[groupId]) {
+        delete m[groupId];
+        showToast('نمای زیرگروه‌ها برگشت ✓');
+    } else {
+        m[groupId] = true;
+        showToast('نمایش یکپارچه بدون زیرگروه — همهٔ تسک‌ها در یک فهرست ✓');
+    }
+    try { localStorage.setItem(GROUP_FLAT_KEY, JSON.stringify(m)); } catch (e) {}
+    expandedId = null;
+    renderTasksView(groupId);
+    window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
 function renderTasksView(groupId) {
     const container = document.getElementById('container');
     const group = getGroupById(groupId);
@@ -14873,9 +14936,22 @@ function renderTasksView(groupId) {
         // بازگشت به نمای گروه — با history.back (popstate نمای گروه را بازیابی می‌کند)
         backBtnHtml = `<button class="back-btn" onclick="navBack()" title="بازگشت به گروه">◄</button>`;
     }
-    const iconHtml = headerIconChar
-        ? `<div class="group-header-icon">${headerIconChar}</div>`
-        : '';
+    // 🔧 v283.4: آیکن هدر داخلی گروه‌های سفارشی = کلید toggle نمای یکپارچه
+    // (قبل از این فقط نمایشی بود). گروه‌های نمایشی («همه کارها»/«فوری»)
+    // زیرگروه ندارند و صفحهٔ داخلی زیرگروه هم پیروی نمی‌کند — آنجا آیکن
+    // مثل قبل نمایشی است. اگر گروه آیکن نداشته باشد، 🗂️ پیش‌فرض می‌شود تا
+    // کلید همیشه موجود باشد.
+    const _flatToggleable = !activeSub && groupId !== 'all' && groupId !== 'urgent';
+    const _flatNow = _flatToggleable && isGroupFlat(groupId);
+    let iconHtml;
+    if (_flatToggleable) {
+        iconHtml = `<div class="group-header-icon flat-toggle${_flatNow ? ' flat-on' : ''}" role="button" tabindex="0"`
+            + ` title="${_flatNow ? 'بازگشت به نمای زیرگروه‌ها (نمایش یکپارچه فعال است)' : 'نمایش یکپارچه بدون زیرگروه‌ها'}"`
+            + ` onclick="event.stopPropagation(); toggleGroupFlat('${group.id}')"`
+            + ` onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleGroupFlat('${group.id}');}">${headerIconChar || '🗂️'}</div>`;
+    } else {
+        iconHtml = headerIconChar ? `<div class="group-header-icon">${headerIconChar}</div>` : '';
+    }
 
     // منوی همبرگری — فقط برای گروه‌های سفارشی (نه «همه کارها»)
     // 🔧 O (v262): منوی زیرگروه — تغییر نام / فیلتر گروه / حذف زیرگروه
@@ -14937,13 +15013,17 @@ function renderTasksView(groupId) {
     // 🔧 O (v262): در صفحهٔ داخلی زیرگروه دکمهٔ 📝 گروه نشان داده نمی‌شود.
     const notesBtnHtml = activeSub ? '' : `<button class="group-notes-btn" onclick="event.stopPropagation(); openNotes('${group.id}')" title="یادداشت">📝</button>`;
 
+    // 🔧 v283.4: قرص نشانگر «نمایش یکپارچه» — وقتی نمای یکپارچه فعال است
+    // کنار شمارنده‌ها دیده می‌شود تا وضعیت فعلی از هدر معلوم باشد.
+    const flatPillHtml = _flatNow ? `<span class="group-flat-pill" title="نمایش یکپارچه بدون زیرگروه — با کلیک روی آیکن هدر برمی‌گردد">▤ یکپارچه</span>` : '';
+
     // چیدمان: back → icon → title (flex:1) → menu → count
     // 🔧 منوی کشویی (dropdownHtml) مستقیماً در هدر قرار می‌گیرد (نه داخل
     // wrapper داخلی). چون منو position: fixed دارد، موقعیت آن مستقل از
     // والد DOM است و با جاوا اسکریپت تنظیم می‌شود.
     header.innerHTML = `<div style="display: flex; flex-direction: column; width: 100%; gap: 8px;">
         <div style="text-align: center; font-size: 16px; font-weight: 700; color: white; padding: 2px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(headerTitle)}</div>
-        <div style="display: flex; align-items: center; gap: 10px;">${backBtnHtml}${iconHtml}<div style="flex: 1;"></div>${menuHtml}${countHtml}${notesBtnHtml}</div>
+        <div style="display: flex; align-items: center; gap: 10px;">${backBtnHtml}${iconHtml}<div style="flex: 1;"></div>${menuHtml}${flatPillHtml}${countHtml}${notesBtnHtml}</div>
     </div><div class="back-touch-area" onclick="event.stopPropagation(); ${activeSub ? 'navBack()' : 'goToGroups()'}"></div>${dropdownHtml}`;
     container.appendChild(header);
 
@@ -15073,7 +15153,7 @@ function renderTasksView(groupId) {
             const _lockNote = document.createElement('div');
             _lockNote.className = 'detail-row';
             _lockNote.style.cssText = 'color:#0a7ea4;font-size:12px;';
-            _lockNote.textContent = '🔒 این رویداد توسط سرور ساخته شده و قابل تغییر نیست — ۱۲ ساعت بعد از پخش خودکار «انجام‌شده» می‌شود و سرور بعد از ۲۴ ساعت آن را پاک می‌کند.';
+            _lockNote.textContent = '🔒 این رویداد توسط سرور ساخته شده و قابل تغییر نیست — ۱۲ ساعت بعد از پخش خودکار «انجام‌شده» می‌شود و در گروه می‌ماند (از v283.3 حذف خودکار ندارد).';
             const _acts = details.querySelector('.item-actions');
             if (_acts) details.insertBefore(_lockNote, _acts);
         }
@@ -15128,7 +15208,10 @@ function renderTasksView(groupId) {
     // 🔧 O (v262): مکانیزم زیرگروه دقیقاً مثل صفحهٔ اصلی گروه‌ها —
     // کارت قابل‌کلیک برای هر زیرگروه + مستطیل «+ افزودن زیرگروه جدید +»
     // زیر آخرین کارت (اگر زیرگروهی نیست: زیر هدر داخلی)، بعد تسک‌های ریشه.
-    if (groupId !== 'all' && groupId !== 'urgent') {
+    // 🔧 v283.4: در «نمایش یکپارچه» (کلید آیکن هدر) کل این بلوک — کارت‌های
+    // زیرگروه و باکس افزودن زیرگروه — ناپدید می‌شود؛ الزام کاربر: «هدرهای
+    // زیرگروه و اضافه کردن زیرگروه ناپدید شود».
+    if (groupId !== 'all' && groupId !== 'urgent' && !isGroupFlat(groupId)) {
         groupSubgroups(groupId).forEach(sg => {
             const sgItems = items.filter(i => i.subgroupId === sg.id);
             const card = document.createElement('div');
@@ -15155,8 +15238,16 @@ function renderTasksView(groupId) {
         container.appendChild(addSub);
     }
     // تسک‌های بدون زیرگروه (ریشهٔ گروه) — بعد از کارت‌ها و باکس افزودن
-    const rootList = items.filter(i => !i.subgroupId || !subgroupById(groupId, i.subgroupId));
-    rootList.forEach(renderOneTask);
+    // 🔧 v283.4: در «نمایش یکپارچه» همهٔ تسک‌ها (ریشه + همهٔ زیرگروه‌ها) در
+    // «یک فهرست» با همان ترتیب سراسری رندر می‌شوند — «انگار که تسک‌ها هیچ
+    // زیرگروهی ندارند». زیرگروهِ هر تسک داخل جزئیات همان‌جا انتخاب می‌شود
+    // و با برگشت به حالت اول، همه سر جای خودشان برمی‌گردند.
+    if (isGroupFlat(groupId)) {
+        items.forEach(renderOneTask);
+    } else {
+        const rootList = items.filter(i => !i.subgroupId || !subgroupById(groupId, i.subgroupId));
+        rootList.forEach(renderOneTask);
+    }
     setTimeout(initSortable, 0);
 }
 
