@@ -5019,7 +5019,7 @@ body.locked .header-actions button {
         <!-- 🔧 v212 (الزام کاربر): نقطهٔ فعال‌ساز زنگوله حذف شد — notif-badge
              دیگر ساخته نمی‌شود. -->
         <button class="icon-btn share-btn" id="importBtn" onclick="importDatabase()" title="وارد کردن دیتابیس از فایل JSON" style="display:none;">📥</button>
-        <button class="icon-btn share-btn" id="notifBtn" onclick="openNotifMenu()" title="منوی اعلان‌ها" style="display:none;">🔔</button>
+        <button class="icon-btn share-btn" id="notifBtn" onclick="openNotifMenu()" title="منوی اعلان‌ها">🔔</button>
         <button class="icon-btn share-btn" id="shareBtn" onclick="confirmBackup()" title="ذخیره بک‌آپ در فضای ذخیره‌سازی" style="display:none;">📤</button>
         <button class="icon-btn add-btn" id="addBtn" onclick="handleAddButtonClick()" title="افزودن یادآور / شخص">+</button>
     </div>
@@ -6017,7 +6017,10 @@ body.locked .header-actions button {
         <div class="hamburger-item" onclick="closeHamburgerMenu(); importDatabase();">
             <span class="h-ico">📥</span><span>بازیابی بک‌آپ</span>
         </div>
-        <div class="hamburger-item" onclick="closeHamburgerMenu(); openNotifMenu();">
+        <!-- 🔧 v283.6b: silent + navReplace اتمیک (الگوی BA-218) — navBackِ
+             معمولی با popstate تأخیری، منوی اعلان‌های تازه‌بازشده را فوراً
+             می‌بست و کاربر «هیچ صفحه‌ای» نمی‌دید -->
+        <div class="hamburger-item" onclick="closeHamburgerMenuSilent(); openNotifMenu();">
             <span class="h-ico">🔔</span><span>اعلان‌ها</span>
         </div>
         <div class="hamburger-item" onclick="closeHamburgerMenuSilent(); openHolidaysPanel();">
@@ -8723,7 +8726,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v283.6-2026-11-28-notif-menu-fix';
+const APP_VERSION = 'v283.6b-2026-11-28-notif-menu-fix';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -16267,11 +16270,18 @@ function getNotifThresholds() {
 //  • داخل منو: کلید اصلی «اعلان‌ها» (همان قابلیت قبلی — روشن/خاموش کلی) +
 //    کلید «همهٔ بخش‌ها» + کلید جدا برای هر بخش: یادآورهای سررسید، پیام‌های
 //    شبکه (گروهی و خصوصی)، تماس‌های شبکه.
+// 🔧 v283.6b — رفع «اعلان‌ها را در منو کلیک می‌کنم هیچ صفحه‌ای نمی‌بینم»: سه علت
+//  ۱) رِیس popstate (BA-218 — همان باگ مستند v244 پنل تعطیلات): آیتم همبرگری
+//     از closeHamburgerMenu معمولی استفاده می‌کرد؛ navBack آن یک popstate
+//     تأخیری می‌ساخت که مودال bellSettings تازه‌بازشده را فوراً می‌بست — منو
+//     باز و بی‌درنگ بسته می‌شد. حالا: closeHamburgerMenuSilent + navReplace
+//     اتمیک در showBellSettings (الگوی v212/v244).
+//  ۲) گیت «مرورگرتان اعلان را پشتیبانی نمی‌کند» منو را اصلاً باز نمی‌کرد
+//     (فقط toast گذرا) — در WebView و مرورگرهای درون‌برنامه‌ای منو هرگز باز
+//     نمی‌شد. حالا منو همیشه باز می‌شود؛ بدون API اعلان سیستمی هم بنر
+//     درون‌صفحه‌ای کار می‌کند و کلید اصلی داخل منو همان حالت banner-only.
+//  ۳) دکمهٔ 🔔 هدر از قدیم display:none بود — حالا همیشه دیده می‌شود.
 function openNotifMenu() {
-    if (!('Notification' in window)) {
-        showToast('مرورگر شما از اعلان‌ها پشتیبانی نمی‌کند');
-        return;
-    }
     try { warmAudioContextOnUserGesture(); } catch(e) {}
     showBellSettings();
 }
@@ -16290,6 +16300,17 @@ function notifSectionOn(key) {
 async function setNotificationsEnabled(on, liveSettings) {
     const settings = liveSettings || getNotifSettings();
     if (on) {
+        // 🔧 v283.6b: مرورگر بدون API اعلان سیستمی (WebView و امثال آن) —
+        // فعال‌سازی در حالت بنر درون‌صفحه‌ای، بدون اشاره به Notification
+        if (!('Notification' in window)) {
+            try { warmAudioContextOnUserGesture(); } catch(e) {}
+            settings.enabled = true;
+            saveNotifSettings(settings);
+            updateNotifButton();
+            showToast('🔔 اعلان‌ها فعال شد (بنر درون‌صفحه‌ای — مرورگر شما اعلان سیستمی ندارد)');
+            checkNotifications();
+            return true;
+        }
         if (Notification.permission === 'denied') {
             showToast('اعلان‌ها مسدود شده‌اند. در تنظیمات مرورگر اجازه دهید');
             return false;
@@ -16624,7 +16645,18 @@ function showBellSettings() {
     overlay.onclick = function(e) { if (e.target === overlay) closeBellSettings(); };
     document.body.appendChild(overlay);
     // 🔧 v216: marker مودال + track — Back موبایل تنظیمات زنگوله را می‌بندد
-    navPush({ view: 'modal', type: 'bellSettings' });
+    // 🔧 v283.6b (BA-218 — الگوی اتمیک v212/v244): اگر منو از آیتم همبرگری
+    // باز شده، ورودی فعلی تاریخچه marker همان منو است؛ navPush تازه یک ورودی
+    // دوم می‌ساخت و navBackِ تأخیریِ منو مودال تازه‌بازشده را فوراً می‌بست
+    // (گزارش کاربر: «کلیک می‌کنم هیچ صفحه‌ای نمی‌بینم»). حالا: ورودی hamburger
+    // با navReplace به bellSettings تبدیل می‌شود — نه popstate ساخته می‌شود
+    // نه ورودی stale می‌ماند. در فراخوانی مستقیم (دکمهٔ 🔔 هدر) navPush عادی.
+    const _curNav = history.state;
+    if (_curNav && _curNav.view === 'modal' && _curNav.type === 'hamburger') {
+        navReplace({ view: 'modal', type: 'bellSettings' });
+    } else {
+        navPush({ view: 'modal', type: 'bellSettings' });
+    }
     trackModalOpen('bellSettings');
 }
 
