@@ -5485,17 +5485,39 @@ body.locked .header-actions button {
                 <div class="contact-form-row">
                     <div class="contact-form-field">
                         <label>نام شرکت</label>
-                        <input type="text" id="contactCompany" placeholder="نام شرکت">
+                        <!-- 🔧 v283.10 (الزام کاربر): پایین‌ریزندهٔ گزارش‌کارها — منبع =
+                             بانک اطلاعات اشخاص برنامه (سایر اشخاصِ ثبت‌شده).
+                             کلیک = لیست مقادیر قبلاً-استفاده‌شده، تایپ بخشی از
+                             کلمه = فیلتر همان لیست زیر کادر، لمس = انتخاب -->
+                        <div style="position:relative;">
+                            <input type="text" id="contactCompany" placeholder="نام شرکت" autocomplete="off"
+                                oninput="filterReportDropdown('contactCompany','company')"
+                                onfocus="showReportDropdown('contactCompany','company')"
+                                onblur="setTimeout(function(){hideReportDropdown('contactCompany')},200)">
+                            <div id="contactCompany_dd" class="report-search-dropdown"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="contact-form-row">
                     <div class="contact-form-field">
                         <label>نام شخص *</label>
-                        <input type="text" id="contactName" placeholder="نام و نام خانوادگی">
+                        <div style="position:relative;">
+                            <input type="text" id="contactName" placeholder="نام و نام خانوادگی" autocomplete="off"
+                                oninput="filterReportDropdown('contactName','contactName')"
+                                onfocus="showReportDropdown('contactName','contactName')"
+                                onblur="setTimeout(function(){hideReportDropdown('contactName')},200)">
+                            <div id="contactName_dd" class="report-search-dropdown"></div>
+                        </div>
                     </div>
                     <div class="contact-form-field">
                         <label>سمت</label>
-                        <input type="text" id="contactPosition" placeholder="سمت">
+                        <div style="position:relative;">
+                            <input type="text" id="contactPosition" placeholder="سمت" autocomplete="off"
+                                oninput="filterReportDropdown('contactPosition','position')"
+                                onfocus="showReportDropdown('contactPosition','position')"
+                                onblur="setTimeout(function(){hideReportDropdown('contactPosition')},200)">
+                            <div id="contactPosition_dd" class="report-search-dropdown"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -8814,7 +8836,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v283.8-2026-11-28-presence-ding';
+const APP_VERSION = 'v283.10-2026-11-28-dd-local';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -23973,6 +23995,7 @@ function netStartGroupPoll() {
     }, 12000);   // 🔧 v283.0: ۲۰→۱۲ ثانیه — پشتیبانِ کانال زودتر می‌آید
 }
 function netStopGroupPoll() { if (netGroupPoll) { clearInterval(netGroupPoll); netGroupPoll = null; } }
+
 // L-5 (BA-252): نظرسنجی چت همهٔ گروه‌ها — اگر کانال Realtime پیامی را از دست
 // داده باشد (قطع‌وصلی، آپدیت برنامه، بسته بودن صفحه) با پول هم نوتیف می‌آید.
 async function netPollAllChats() {
