@@ -5512,16 +5512,24 @@ body.locked .header-actions button {
                 <div class="contact-chip-list contact-suggest-list" id="contactTypesSuggestions"></div>
             </div>
 
-            <!-- 🔧 v283.0: کلیدواژه‌های شخص (نامحدود — مثلاً چه اجناسی از او می‌خریم) -->
+            <!-- 🔧 v283.0: کلیدواژه‌های شخص — 🔧 v283.7 (الزام کاربر): پیشنهاد
+                 کلیدواژه‌های قبلاً-استفاده‌شده با پایین‌ریزندهٔ گزارش‌کارها روی خود
+                 کادر می‌آید (لمس پیشنهاد = افزودن فوری چیپ)؛ دیگر «همهٔ واژه‌ها زیر
+                 کادر» مثل انواع شخص نمایش داده نمی‌شود -->
             <div class="contact-form-section">
                 <div class="contact-form-section-title">🔑 کلیدواژه‌ها (نامحدود — مثلاً چه اجناسی از او می‌خریم: کفش، لباس و…)</div>
                 <div class="contact-chip-row">
-                    <input type="text" id="contactKeywordInput" list="contactKeywordsDl" placeholder="کلیدواژه بنویسید یا از فهرست انتخاب کنید…" onkeydown="if(event.key==='Enter'){event.preventDefault();contactChipAdd('keyword');}">
-                    <datalist id="contactKeywordsDl"></datalist>
+                    <div style="position:relative;flex:1;">
+                        <input type="text" id="contactKeywordInput" placeholder="کلیدواژه بنویسید یا از فهرست انتخاب کنید…" autocomplete="off"
+                            oninput="filterReportDropdown('contactKeywordInput','contactKeywords')"
+                            onfocus="showReportDropdown('contactKeywordInput','contactKeywords')"
+                            onblur="setTimeout(function(){hideReportDropdown('contactKeywordInput')},200)"
+                            onkeydown="if(event.key==='Enter'){event.preventDefault();contactChipAdd('keyword');}">
+                        <div id="contactKeywordInput_dd" class="report-search-dropdown"></div>
+                    </div>
                     <button type="button" class="contact-chip-add" onclick="contactChipAdd('keyword')">➕</button>
                 </div>
                 <div class="contact-chip-list" id="contactKeywordsChips"></div>
-                <div class="contact-chip-list contact-suggest-list" id="contactKeywordsSuggestions"></div>
             </div>
 
             <!-- بخش تاریخ‌ها -->
@@ -5610,17 +5618,35 @@ body.locked .header-actions button {
                 <div class="contact-form-row">
                     <div class="contact-form-field">
                         <label>نام شرکت</label>
-                        <input type="text" id="searchCompany" placeholder="نام شرکت">
+                        <div style="position:relative;">
+                            <input type="text" id="searchCompany" placeholder="نام شرکت" autocomplete="off"
+                                oninput="filterReportDropdown('searchCompany','company')"
+                                onfocus="showReportDropdown('searchCompany','company')"
+                                onblur="setTimeout(function(){hideReportDropdown('searchCompany')},200)">
+                            <div id="searchCompany_dd" class="report-search-dropdown"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="contact-form-row">
                     <div class="contact-form-field">
                         <label>نام شخص</label>
-                        <input type="text" id="searchName" placeholder="نام و نام خانوادگی">
+                        <div style="position:relative;">
+                            <input type="text" id="searchName" placeholder="نام و نام خانوادگی" autocomplete="off"
+                                oninput="filterReportDropdown('searchName','contactName')"
+                                onfocus="showReportDropdown('searchName','contactName')"
+                                onblur="setTimeout(function(){hideReportDropdown('searchName')},200)">
+                            <div id="searchName_dd" class="report-search-dropdown"></div>
+                        </div>
                     </div>
                     <div class="contact-form-field">
                         <label>سمت</label>
-                        <input type="text" id="searchPosition" placeholder="سمت">
+                        <div style="position:relative;">
+                            <input type="text" id="searchPosition" placeholder="سمت" autocomplete="off"
+                                oninput="filterReportDropdown('searchPosition','position')"
+                                onfocus="showReportDropdown('searchPosition','position')"
+                                onblur="setTimeout(function(){hideReportDropdown('searchPosition')},200)">
+                            <div id="searchPosition_dd" class="report-search-dropdown"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="contact-form-row">
@@ -5633,23 +5659,45 @@ body.locked .header-actions button {
                 <div class="contact-form-row">
                     <div class="contact-form-field">
                         <label>🏷️ نوع (با ویرگول جدا کنید)</label>
-                        <input type="text" id="searchTypes" placeholder="مثال: فروشنده، مشتری" list="searchTypesDl">
-                        <datalist id="searchTypesDl"></datalist>
+                        <div style="position:relative;">
+                            <input type="text" id="searchTypes" placeholder="مثال: فروشنده، مشتری" autocomplete="off"
+                                oninput="filterReportDropdown('searchTypes','contactTypes')"
+                                onfocus="showReportDropdown('searchTypes','contactTypes')"
+                                onblur="setTimeout(function(){hideReportDropdown('searchTypes')},200)">
+                            <div id="searchTypes_dd" class="report-search-dropdown"></div>
+                        </div>
                     </div>
                     <div class="contact-form-field">
                         <label>🔑 کلیدواژه (با ویرگول جدا کنید)</label>
-                        <input type="text" id="searchKeywords" placeholder="مثال: کفش، لباس" list="searchKeywordsDl">
-                        <datalist id="searchKeywordsDl"></datalist>
+                        <div style="position:relative;">
+                            <input type="text" id="searchKeywords" placeholder="مثال: کفش، لباس" autocomplete="off"
+                                oninput="filterReportDropdown('searchKeywords','contactKeywords')"
+                                onfocus="showReportDropdown('searchKeywords','contactKeywords')"
+                                onblur="setTimeout(function(){hideReportDropdown('searchKeywords')},200)">
+                            <div id="searchKeywords_dd" class="report-search-dropdown"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="contact-form-row">
                     <div class="contact-form-field">
                         <label>اشانتیون خواسته شده (کالا)</label>
-                        <input type="text" id="searchCommissionAskedMin" placeholder="نام کالا">
+                        <div style="position:relative;">
+                            <input type="text" id="searchCommissionAskedMin" placeholder="نام کالا" autocomplete="off"
+                                oninput="filterReportDropdown('searchCommissionAskedMin','commissionAsked')"
+                                onfocus="showReportDropdown('searchCommissionAskedMin','commissionAsked')"
+                                onblur="setTimeout(function(){hideReportDropdown('searchCommissionAskedMin')},200)">
+                            <div id="searchCommissionAskedMin_dd" class="report-search-dropdown"></div>
+                        </div>
                     </div>
                     <div class="contact-form-field">
                         <label>اشانتیون داده شده (کالا)</label>
-                        <input type="text" id="searchCommissionPaidMin" placeholder="نام کالا">
+                        <div style="position:relative;">
+                            <input type="text" id="searchCommissionPaidMin" placeholder="نام کالا" autocomplete="off"
+                                oninput="filterReportDropdown('searchCommissionPaidMin','commissionPaid')"
+                                onfocus="showReportDropdown('searchCommissionPaidMin','commissionPaid')"
+                                onblur="setTimeout(function(){hideReportDropdown('searchCommissionPaidMin')},200)">
+                            <div id="searchCommissionPaidMin_dd" class="report-search-dropdown"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="contact-form-row">
@@ -5700,17 +5748,35 @@ body.locked .header-actions button {
                 <div class="contact-form-row">
                     <div class="contact-form-field">
                         <label>نام شرکت</label>
-                        <input type="text" id="reportCompany" placeholder="نام شرکت">
+                        <div style="position:relative;">
+                            <input type="text" id="reportCompany" placeholder="نام شرکت" autocomplete="off"
+                                oninput="filterReportDropdown('reportCompany','company')"
+                                onfocus="showReportDropdown('reportCompany','company')"
+                                onblur="setTimeout(function(){hideReportDropdown('reportCompany')},200)">
+                            <div id="reportCompany_dd" class="report-search-dropdown"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="contact-form-row">
                     <div class="contact-form-field">
                         <label>نام شخص</label>
-                        <input type="text" id="reportName" placeholder="نام">
+                        <div style="position:relative;">
+                            <input type="text" id="reportName" placeholder="نام" autocomplete="off"
+                                oninput="filterReportDropdown('reportName','contactName')"
+                                onfocus="showReportDropdown('reportName','contactName')"
+                                onblur="setTimeout(function(){hideReportDropdown('reportName')},200)">
+                            <div id="reportName_dd" class="report-search-dropdown"></div>
+                        </div>
                     </div>
                     <div class="contact-form-field">
                         <label>سمت</label>
-                        <input type="text" id="reportPosition" placeholder="سمت">
+                        <div style="position:relative;">
+                            <input type="text" id="reportPosition" placeholder="سمت" autocomplete="off"
+                                oninput="filterReportDropdown('reportPosition','position')"
+                                onfocus="showReportDropdown('reportPosition','position')"
+                                onblur="setTimeout(function(){hideReportDropdown('reportPosition')},200)">
+                            <div id="reportPosition_dd" class="report-search-dropdown"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="contact-form-row">
@@ -5723,23 +5789,45 @@ body.locked .header-actions button {
                 <div class="contact-form-row">
                     <div class="contact-form-field">
                         <label>🏷️ نوع (با ویرگول جدا کنید)</label>
-                        <input type="text" id="reportTypes" placeholder="مثال: فروشنده، مشتری" list="reportTypesDl">
-                        <datalist id="reportTypesDl"></datalist>
+                        <div style="position:relative;">
+                            <input type="text" id="reportTypes" placeholder="مثال: فروشنده، مشتری" autocomplete="off"
+                                oninput="filterReportDropdown('reportTypes','contactTypes')"
+                                onfocus="showReportDropdown('reportTypes','contactTypes')"
+                                onblur="setTimeout(function(){hideReportDropdown('reportTypes')},200)">
+                            <div id="reportTypes_dd" class="report-search-dropdown"></div>
+                        </div>
                     </div>
                     <div class="contact-form-field">
                         <label>🔑 کلیدواژه (با ویرگول جدا کنید)</label>
-                        <input type="text" id="reportKeywords" placeholder="مثال: کفش، لباس" list="reportKeywordsDl">
-                        <datalist id="reportKeywordsDl"></datalist>
+                        <div style="position:relative;">
+                            <input type="text" id="reportKeywords" placeholder="مثال: کفش، لباس" autocomplete="off"
+                                oninput="filterReportDropdown('reportKeywords','contactKeywords')"
+                                onfocus="showReportDropdown('reportKeywords','contactKeywords')"
+                                onblur="setTimeout(function(){hideReportDropdown('reportKeywords')},200)">
+                            <div id="reportKeywords_dd" class="report-search-dropdown"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="contact-form-row">
                     <div class="contact-form-field">
                         <label>اشانتیون خواسته شده (کالا)</label>
-                        <input type="text" id="reportCommissionAskedMin" placeholder="نام کالا">
+                        <div style="position:relative;">
+                            <input type="text" id="reportCommissionAskedMin" placeholder="نام کالا" autocomplete="off"
+                                oninput="filterReportDropdown('reportCommissionAskedMin','commissionAsked')"
+                                onfocus="showReportDropdown('reportCommissionAskedMin','commissionAsked')"
+                                onblur="setTimeout(function(){hideReportDropdown('reportCommissionAskedMin')},200)">
+                            <div id="reportCommissionAskedMin_dd" class="report-search-dropdown"></div>
+                        </div>
                     </div>
                     <div class="contact-form-field">
                         <label>اشانتیون داده شده (کالا)</label>
-                        <input type="text" id="reportCommissionPaidMin" placeholder="نام کالا">
+                        <div style="position:relative;">
+                            <input type="text" id="reportCommissionPaidMin" placeholder="نام کالا" autocomplete="off"
+                                oninput="filterReportDropdown('reportCommissionPaidMin','commissionPaid')"
+                                onfocus="showReportDropdown('reportCommissionPaidMin','commissionPaid')"
+                                onblur="setTimeout(function(){hideReportDropdown('reportCommissionPaidMin')},200)">
+                            <div id="reportCommissionPaidMin_dd" class="report-search-dropdown"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="contact-form-row">
@@ -8726,7 +8814,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v283.6b-2026-11-28-notif-menu-fix';
+const APP_VERSION = 'v283.7-2026-11-28-contact-dd';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -18843,6 +18931,15 @@ let _contactSugCache = { type: [], keyword: [] };
 function contactChipRenderSuggestions(kind) {
     const box = document.getElementById(kind === 'type' ? 'contactTypesSuggestions' : 'contactKeywordsSuggestions');
     if (!box) return;
+    // 🔧 v283.7 — الزام کاربر: کلیدواژه‌ها دیگر «همهٔ واژه‌ها زیر کادر» ندارند
+    // (برخلاف انواع شخص) — پیشنهادشان با پایین‌ریزندهٔ گزارش‌کارها روی خودِ
+    // کادر ورودی می‌آید (contactKeywordInput_dd).
+    if (kind === 'keyword') {
+        box.style.display = 'none';
+        box.innerHTML = '';
+        _contactSugCache.keyword = [];
+        return;
+    }
     const list = contactSuggestionList(kind);
     _contactSugCache[kind] = list;
     if (!list.length) {
@@ -18856,10 +18953,9 @@ function contactChipRenderSuggestions(kind) {
         }).join('');
 }
 function contactChipFillDatalists() {
+    // 🔧 v283.7: فقط datalist انواع — کلیدواژه‌ها با پایین‌ریزندهٔ گزارش‌کارها
     const tdl = document.getElementById('contactTypesDl');
-    const kdl = document.getElementById('contactKeywordsDl');
     if (tdl) tdl.innerHTML = allContactTypes().map(function(t) { return '<option value="' + escA(t) + '">'; }).join('');
-    if (kdl) kdl.innerHTML = allContactKeywords().map(function(t) { return '<option value="' + escA(t) + '">'; }).join('');
 }
 function contactChipAdd(kind) {
     const inp = document.getElementById(kind === 'type' ? 'contactTypeInput' : 'contactKeywordInput');
@@ -19060,13 +19156,10 @@ function openContactSearch() {
     document.getElementById('searchName').value = '';
     document.getElementById('searchPosition').value = '';
     document.getElementById('searchPhone').value = '';
-    // 🔧 v283.0: فیلدهای نوع/کلیدواژه + فهرست پیشنهادی از دادهٔ موجود
+    // 🔧 v283.0: فیلدهای نوع/کلیدواژه — 🔧 v283.7: پیشنهادها حالا با
+    // پایین‌ریزندهٔ گزارش‌کارها (report-search-dropdown) روی خود کادرند
     document.getElementById('searchTypes').value = '';
     document.getElementById('searchKeywords').value = '';
-    const _stDl = document.getElementById('searchTypesDl');
-    const _skDl = document.getElementById('searchKeywordsDl');
-    if (_stDl) _stDl.innerHTML = allContactTypes().map(function(t) { return '<option value="' + escA(t) + '">'; }).join('');
-    if (_skDl) _skDl.innerHTML = allContactKeywords().map(function(t) { return '<option value="' + escA(t) + '">'; }).join('');
     document.getElementById('searchCommissionAskedMin').value = '';
     document.getElementById('searchCommissionPaidMin').value = '';
     document.getElementById('searchCommissionMode').value = 'all';
@@ -19348,13 +19441,9 @@ function openContactReport() {
     document.getElementById('reportName').value = '';
     document.getElementById('reportPosition').value = '';
     document.getElementById('reportPhone').value = '';
-    // 🔧 v283.0
+    // 🔧 v283.0 — 🔧 v283.7: پیشنهادها با پایین‌ریزندهٔ گزارش‌کارها
     document.getElementById('reportTypes').value = '';
     document.getElementById('reportKeywords').value = '';
-    const _rtDl = document.getElementById('reportTypesDl');
-    const _rkDl = document.getElementById('reportKeywordsDl');
-    if (_rtDl) _rtDl.innerHTML = allContactTypes().map(function(t) { return '<option value="' + escA(t) + '">'; }).join('');
-    if (_rkDl) _rkDl.innerHTML = allContactKeywords().map(function(t) { return '<option value="' + escA(t) + '">'; }).join('');
     document.getElementById('reportCommissionAskedMin').value = '';
     document.getElementById('reportCommissionPaidMin').value = '';
     // 🔧 v146: درصد کارپردازی — ۴ حالت
@@ -28841,6 +28930,31 @@ function renderReportDropdown(fieldId, type, query) {
             }
         });
     }
+    // 🔧 v283.7 — الزام کاربر: پایین‌ریزندهٔ گزارش‌کارها برای صفحات جستجو/
+    // گزارش اشخاص هم — انواع/کلیدواژه‌های قبلاً-استفاده‌شده + نام و نام
+    // خانوادگی + سمت + شرکت + اشانتیون‌ها
+    else if (type === 'contactTypes') {
+        values = allContactTypes().slice();
+    } else if (type === 'contactKeywords') {
+        values = allContactKeywords().slice();
+    } else if (type === 'commissionAsked' || type === 'commissionPaid') {
+        const seen = new Set();
+        getContacts().forEach(c => {
+            getContactCommissions(c).forEach(cm => {
+                const val = (cm[type === 'commissionAsked' ? 'asked' : 'paid'] || '').trim();
+                if (val && !seen.has(val.toLowerCase())) {
+                    seen.add(val.toLowerCase());
+                    values.push(val);
+                }
+            });
+        });
+    }
+    // 🔧 v283.7: در فیلدهای چندمقداری (با ویرگول) فقط آخرین قطعهٔ تایپ‌شده
+    // ملاک فیلتر است تا بعد از ویرگول هم پیشنهاد ادامه یابد
+    if ((type === 'contactTypes' || type === 'contactKeywords') && query) {
+        const parts = query.split(/[,،]/);
+        query = (parts[parts.length - 1] || '').trim();
+    }
     // فیلتر بر اساس query
     if (query) {
         values = values.filter(v => v.toLowerCase().includes(query));
@@ -28867,6 +28981,14 @@ function renderReportDropdown(fieldId, type, query) {
 }
 
 function selectReportDropdown(fieldId, value) {
+    // 🔧 v283.7: ورودی چیپِ کلیدواژهٔ فرم شخص — لمس پیشنهاد = افزودن فوری چیپ
+    if (fieldId === 'contactKeywordInput') {
+        contactChipAddValue('keyword', value);
+        const inp = document.getElementById(fieldId);
+        if (inp) inp.value = '';
+        hideReportDropdown(fieldId);
+        return;
+    }
     document.getElementById(fieldId).value = value;
     hideReportDropdown(fieldId);
 }

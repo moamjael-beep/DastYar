@@ -1,1 +1,1 @@
-v283.6b-2026-11-28-notif-menu-fix
+v283.7-2026-11-28-contact-dd
