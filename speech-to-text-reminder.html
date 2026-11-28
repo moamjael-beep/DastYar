@@ -4613,11 +4613,17 @@ body.locked .header-actions button {
 }
 /* 🔧 v186: zebra striping برای جدول نتایج جستجو هم — پررنگ‌تر */
 .search-results-table tbody tr:nth-child(even) { background: #d6eaff; }
-/* 🔧 v283.11 (الزام کاربر): ستون آدرس در جدول نهایی گزارش اشخاص —
-   عرض ۱۰ برابر ستون معمولی (~۶۰۰px) تا آدرس کامل و خوانا بماند */
+/* 🔧 v283.12 (الزام کاربر): عرض ستون‌های جدول نهایی گزارش اشخاص —
+   نام شرکت و نام شخص ۲ برابر ستون معمولی (~۱۲۰px) و آدرس نصفِ قبل (~۳۰۰px) */
+.search-results-table th:nth-child(2),
+.search-results-table td:nth-child(2),
+.search-results-table th:nth-child(3),
+.search-results-table td:nth-child(3) {
+    min-width: 120px;
+}
 .search-results-table th:nth-child(7),
 .search-results-table td:nth-child(7) {
-    min-width: 600px;
+    min-width: 300px;
     white-space: normal;
     word-break: break-word;
 }
@@ -8847,7 +8853,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v283.11-2026-11-28-net-backup';
+const APP_VERSION = 'v283.12-2026-11-28-net-backup';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
