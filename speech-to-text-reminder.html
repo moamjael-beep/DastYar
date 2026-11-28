@@ -4025,6 +4025,36 @@ body.locked .header-actions button {
     padding: 20px;
     animation: fadeIn 0.2s;
 }
+/* 🔧 v283.6 — کلیدهای داخل منوی اعلان‌ها: کلید اصلی فعال/غیرفعال + «همهٔ
+   بخش‌ها» + هر بخش به‌تنهایی (سررسیدها / پیام‌ها / تماس‌ها) */
+.bell-switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 2px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #37474f;
+    transition: opacity 0.15s;
+}
+.bell-switch-row.bell-row-disabled { opacity: 0.45; }
+.bell-switch-label { flex: 1; }
+.bell-switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
+.bell-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.bell-slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: #b7c2cd; border-radius: 999px; transition: background 0.2s;
+}
+.bell-slider:before {
+    content: ''; position: absolute; height: 18px; width: 18px;
+    right: 3px; top: 3px; background: #fff; border-radius: 50%;
+    transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+.bell-switch input:checked + .bell-slider { background: #43A047; }
+.bell-switch input:checked + .bell-slider:before { transform: translateX(-18px); }
+.bell-disabled { opacity: 0.45; }
+.bell-disabled * { pointer-events: none; }
 .bell-settings-modal {
     background: white;
     border-radius: 16px;
@@ -4989,7 +5019,7 @@ body.locked .header-actions button {
         <!-- 🔧 v212 (الزام کاربر): نقطهٔ فعال‌ساز زنگوله حذف شد — notif-badge
              دیگر ساخته نمی‌شود. -->
         <button class="icon-btn share-btn" id="importBtn" onclick="importDatabase()" title="وارد کردن دیتابیس از فایل JSON" style="display:none;">📥</button>
-        <button class="icon-btn share-btn" id="notifBtn" onclick="toggleNotifications()" title="فعال‌سازی اعلان‌ها" style="display:none;">🔔</button>
+        <button class="icon-btn share-btn" id="notifBtn" onclick="openNotifMenu()" title="منوی اعلان‌ها" style="display:none;">🔔</button>
         <button class="icon-btn share-btn" id="shareBtn" onclick="confirmBackup()" title="ذخیره بک‌آپ در فضای ذخیره‌سازی" style="display:none;">📤</button>
         <button class="icon-btn add-btn" id="addBtn" onclick="handleAddButtonClick()" title="افزودن یادآور / شخص">+</button>
     </div>
@@ -5987,7 +6017,7 @@ body.locked .header-actions button {
         <div class="hamburger-item" onclick="closeHamburgerMenu(); importDatabase();">
             <span class="h-ico">📥</span><span>بازیابی بک‌آپ</span>
         </div>
-        <div class="hamburger-item" onclick="closeHamburgerMenu(); toggleNotifications();">
+        <div class="hamburger-item" onclick="closeHamburgerMenu(); openNotifMenu();">
             <span class="h-ico">🔔</span><span>اعلان‌ها</span>
         </div>
         <div class="hamburger-item" onclick="closeHamburgerMenuSilent(); openHolidaysPanel();">
@@ -8693,7 +8723,7 @@ body.locked .header-actions button {
 //   قانون صفر: جریان WebRTC/سیگنالینگ دست نخورد؛ فقط نمایش، نوتیف و
 //      محل scrim تغییر کرد — پروب ۳۰/۳۰ + رگرسیون کامل سبز.
 // ════════════════════════════════════════════════════════════════════
-const APP_VERSION = 'v283.4-2026-11-28-group-flat-view-toggle';
+const APP_VERSION = 'v283.6-2026-11-28-notif-menu-fix';
 console.log('[Page] APP_VERSION =', APP_VERSION);
 // 🔧 v193: نمایش نسخه در credit footer
 (function() {
@@ -9498,10 +9528,16 @@ async function idbGetAllNotifLog() {
 async function idbPutNotifSettings(settings) {
     if (!idbAvailable()) return;
     try {
+        // 🔧 v283.6: بخش «یادآورهای سررسید» خاموش → در آینهٔ SW هم times خالی
+        // می‌رود تا سرویس‌ورکر در پس‌زمینه هیچ اعلان سررسیدی نفرستد (sw.js
+        // دست‌نخورده می‌ماند — خودش times خالی را هیچ می‌فهمد).
+        const eff = Object.assign({}, settings, {
+            times: (!settings.enabled || (settings.sections && settings.sections.deadlines === false)) ? [] : (settings.times || [])
+        });
         const db = await openIDB();
         await new Promise((resolve, reject) => {
             const tx = db.transaction([STORE_BACKUP], 'readwrite');
-            tx.objectStore(STORE_BACKUP).put(settings, 'notif_settings');
+            tx.objectStore(STORE_BACKUP).put(eff, 'notif_settings');
             tx.oncomplete = resolve;
             tx.onerror = () => reject(tx.error);
         });
@@ -16212,54 +16248,78 @@ async function registerDeadlineSync() {
 function getNotifThresholds() {
     const settings = getNotifSettings();
     if (!settings.enabled || !settings.times || settings.times.length === 0) return [];
+    // 🔧 v283.6: بخش «یادآورهای سررسید» خاموش → هیچ آستانه‌ای برنمی‌گردد
+    if (!notifSectionOn('deadlines')) return [];
     return settings.times.map(function(t) {
         return { minutes: t.minutes, key: t.key, label: t.label };
     });
 }
 
-// 🔧 v148: تابع اصلی toggle — لمس اول فعال، لمس دوم غیرفعال
-async function toggleNotifications() {
+// 🔧 v283.6 — الزام کاربر: «منوی اعلان‌ها خراب شده و باز نمی‌شود. درستش کن اما
+// مثل قبل که با کلیک بر رویش وقتی فعال بود غیرفعال می‌شد، نشود. برود داخلش و
+// از داخل فعال و غیرفعال شود همه بخش‌ها یا بخش‌های خاص. فعال یا غیرفعال بودن
+// قابلیت قبلی را هم در آن اضافه کن».
+//  • علت «باز نمی‌شود»: تابع قدیمی toggleNotifications وقتی اعلان‌ها فعال بود
+//    به‌جای بازکردن منو، اعلان‌ها را خاموش می‌کرد — یعنی در حالت عادیِ کاربر
+//    (اعلان فعال) منو هیچ‌وقت باز نمی‌شد.
+//  • حالا: کلیک روی 🔔 هدر یا آیتم «اعلان‌ها» همبرگری = فقط ورود به منو، بدون
+//    هیچ toggle و بدون درخواست permission. فعال/غیرفعال کردن فقط از داخل منو.
+//  • داخل منو: کلید اصلی «اعلان‌ها» (همان قابلیت قبلی — روشن/خاموش کلی) +
+//    کلید «همهٔ بخش‌ها» + کلید جدا برای هر بخش: یادآورهای سررسید، پیام‌های
+//    شبکه (گروهی و خصوصی)، تماس‌های شبکه.
+function openNotifMenu() {
     if (!('Notification' in window)) {
         showToast('مرورگر شما از اعلان‌ها پشتیبانی نمی‌کند');
         return;
     }
-    var settings = getNotifSettings();
-    // اگر فعال است → غیرفعال کن
-    if (settings.enabled && Notification.permission === 'granted') {
-        settings.enabled = false;
+    try { warmAudioContextOnUserGesture(); } catch(e) {}
+    showBellSettings();
+}
+
+// آیا بخش مشخصی از اعلان‌ها الان باید صد کند؟ کلید اصلی + فلگ بخش (پیش‌فرض روشن)
+function notifSectionOn(key) {
+    var s = getNotifSettings();
+    if (!s.enabled) return false;
+    var sec = s.sections || {};
+    return sec[key] !== false;
+}
+
+// فعال/غیرفعال کردن کل اعلان‌ها — همان قابلیت قدیمی toggle، حالا فقط از داخل
+// منو. اگر liveSettings داده شود همان شیء زندهٔ منو به‌روز می‌شود (تا ذخیرهٔ
+// بعدیِ منو تغییرات را پاک نکند).
+async function setNotificationsEnabled(on, liveSettings) {
+    const settings = liveSettings || getNotifSettings();
+    if (on) {
+        if (Notification.permission === 'denied') {
+            showToast('اعلان‌ها مسدود شده‌اند. در تنظیمات مرورگر اجازه دهید');
+            return false;
+        }
+        if (Notification.permission !== 'granted') {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    showToast('دسترسی به اعلان‌ها داده نشد. با این حال، بنر درون‌صفحه‌ای فعال است');
+                }
+                // 🔧 v201: حتی اگر permission داده نشد، تنظیمات را فعال کن
+                // تا بنر درون‌صفحه‌ای کار کند. permission فقط برای system notif لازم است.
+            } catch(e) {
+                showToast('خطا در درخواست اعلان: ' + e.message + ' — بنر درون‌صفحه‌ای همچنان فعال است');
+            }
+        }
+        // 🔧 v201: AudioContext را در همین gesture گرم کن
+        try { warmAudioContextOnUserGesture(); } catch(e) {}
+        settings.enabled = true;
         saveNotifSettings(settings);
         updateNotifButton();
-        showToast('🔔 اعلان‌ها غیرفعال شد');
-        return;
+        showToast('🔔 اعلان‌ها فعال شد');
+        checkNotifications();
+        return true;
     }
-    // اگر غیرفعال است → فعال کن
-    if (Notification.permission === 'denied') {
-        showToast('اعلان‌ها مسدود شده‌اند. در تنظیمات مرورگر اجازه دهید');
-        return;
-    }
-    if (Notification.permission !== 'granted') {
-        try {
-            const permission = await Notification.requestPermission();
-            if (permission !== 'granted') {
-                showToast('دسترسی به اعلان‌ها داده نشد. با این حال، بنر درون‌صفحه‌ای فعال است');
-            }
-            // 🔧 v201: مهم — حتی اگر permission داده نشد، تنظیمات را فعال کن
-            // تا بنر درون‌صفحه‌ای کار کند. permission فقط برای system notif لازم است.
-        } catch(e) {
-            showToast('خطا در درخواست اعلان: ' + e.message + ' — بنر درون‌صفحه‌ای همچنان فعال است');
-        }
-    }
-    // 🔧 v201: AudioContext را در همین gesture گرم کن — این مهم‌ترین نقطه‌است
-    // چون toggleNotifications از یک کلیک کاربر صدا زده می‌شود.
-    try { warmAudioContextOnUserGesture(); } catch(e) {}
-    // فعال‌سازی + باز کردن منوی تنظیمات
-    settings.enabled = true;
+    settings.enabled = false;
     saveNotifSettings(settings);
     updateNotifButton();
-    // باز کردن منوی تنظیمات زنگوله
-    showBellSettings();
-    showToast('🔔 اعلان‌ها فعال شد');
-    checkNotifications();
+    showToast('🔕 اعلان‌ها غیرفعال شد');
+    return true;
 }
 
 // 🔧 v148: به‌روزرسانی ظاهر دکمه زنگوله
@@ -16288,11 +16348,98 @@ function showBellSettings() {
     // عنوان
     const title = document.createElement('div');
     title.className = 'bell-settings-title';
-    title.textContent = '🔔 تنظیمات زنگوله';
+    title.textContent = '🔔 منوی اعلان‌ها';
     modal.appendChild(title);
+
+    // ── 🔧 v283.6 — بخش ۰: وضعیت اعلان‌ها ──
+    // کلید اصلی فعال/غیرفعال (قابلیت قبلیِ toggle) + کلید «همهٔ بخش‌ها» +
+    // کلید جدا برای هر بخش. کلیک روی خود دکمهٔ 🔔 دیگر toggle نمی‌کند —
+    // همهٔ فعال/غیرفعال کردن‌ها فقط از همین‌جاست.
+    const statusSection = document.createElement('div');
+    statusSection.className = 'bell-settings-section';
+    const statusTitle = document.createElement('div');
+    statusTitle.className = 'bell-settings-section-title';
+    statusTitle.textContent = '⚙️ وضعیت اعلان‌ها';
+    statusSection.appendChild(statusTitle);
+
+    function bellSwitchRow(label, checked, onchange) {
+        const row = document.createElement('div');
+        row.className = 'bell-switch-row';
+        const lab = document.createElement('span');
+        lab.className = 'bell-switch-label';
+        lab.textContent = label;
+        row.appendChild(lab);
+        const sw = document.createElement('label');
+        sw.className = 'bell-switch';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = !!checked;
+        const slider = document.createElement('span');
+        slider.className = 'bell-slider';
+        sw.appendChild(cb);
+        sw.appendChild(slider);
+        row.appendChild(sw);
+        cb.addEventListener('change', function() { onchange(cb.checked, sw); });
+        return { row: row, cb: cb, sw: sw };
+    }
+
+    // شیء زندهٔ تنظیمات — همان var settings بالای تابع؛ همهٔ تغییرهای این منو
+    // روی همین شیء می‌رود تا ذخیرهٔ بعدی هیچ تغییری را پاک نکند
+    settings.sections = Object.assign({ deadlines: true, netMsgs: true, netCalls: true }, settings.sections || {});
+    const sectionsAllOn = () => settings.sections.deadlines !== false && settings.sections.netMsgs !== false && settings.sections.netCalls !== false;
+
+    // کلید اصلی — قابلیت قبلی
+    const masterRow = bellSwitchRow('اعلان‌ها (کلید اصلی)', settings.enabled, function(on, sw) {
+        setNotificationsEnabled(on, settings).then(function(ok) {
+            if (!ok) sw.querySelector('input').checked = false;
+            refreshSectionRows();
+            refreshDependentUI();
+        });
+    });
+    statusSection.appendChild(masterRow.row);
+
+    // کلید «همهٔ بخش‌ها»
+    const allRow = bellSwitchRow('همهٔ بخش‌ها', sectionsAllOn(), function(on) {
+        settings.sections.deadlines = on;
+        settings.sections.netMsgs = on;
+        settings.sections.netCalls = on;
+        saveNotifSettings(settings);
+        sectionRows.forEach(function(r) { r.cb.checked = on; });
+        refreshDependentUI();
+        showToast(on ? '✅ همهٔ بخش‌های اعلان فعال شد' : '⛔ همهٔ بخش‌های اعلان خاموش شد');
+    });
+    statusSection.appendChild(allRow.row);
+
+    // کلید هر بخش به‌تنهایی
+    var sectionRows = [];
+    function appendSectionRow(label, key) {
+        const r = bellSwitchRow(label, settings.sections[key] !== false, function(on) {
+            settings.sections[key] = on;
+            saveNotifSettings(settings);
+            allRow.cb.checked = sectionsAllOn();
+            refreshDependentUI();
+        });
+        sectionRows.push(r);
+        statusSection.appendChild(r.row);
+    }
+    appendSectionRow('⏰ یادآورهای سررسید تسک‌ها', 'deadlines');
+    appendSectionRow('💬 پیام‌های شبکه (گروهی و خصوصی)', 'netMsgs');
+    appendSectionRow('📞 تماس‌های شبکه', 'netCalls');
+
+    function refreshSectionRows() {
+        sectionRows.forEach(function(r) {
+            r.row.classList.toggle('bell-row-disabled', !settings.enabled);
+            r.cb.disabled = !settings.enabled;
+        });
+        allRow.row.classList.toggle('bell-row-disabled', !settings.enabled);
+        allRow.cb.disabled = !settings.enabled;
+    }
+    refreshSectionRows();
+    modal.appendChild(statusSection);
     // بخش ۱: انتخاب صدا
     const soundSection = document.createElement('div');
     soundSection.className = 'bell-settings-section';
+    soundSection.setAttribute('data-bell-dep', 'master');   // 🔧 v283.6: فقط با کلید اصلی خاموش می‌شود (صدای همهٔ اعلان‌ها)
     const soundTitle = document.createElement('div');
     soundTitle.className = 'bell-settings-section-title';
     soundTitle.textContent = '🎵 صدا';
@@ -16320,6 +16467,7 @@ function showBellSettings() {
     // بخش ۲: زمان‌های یادآور (تا ۳ مورد)
     const timeSection = document.createElement('div');
     timeSection.className = 'bell-settings-section';
+    timeSection.setAttribute('data-bell-dep', 'reminders');   // 🔧 v283.6: با کلید اصلی یا بخش سررسیدها خاموش می‌شود
     const timeTitle = document.createElement('div');
     timeTitle.className = 'bell-settings-section-title';
     timeTitle.textContent = '⏰ زمان‌های یادآور (حداکثر ۳ مورد)';
@@ -16390,6 +16538,7 @@ function showBellSettings() {
     const testSection = document.createElement('div');
     testSection.className = 'bell-settings-section';
     testSection.style.cssText = 'border-top: 1px dashed #ccc; padding-top: 10px; margin-top: 8px;';
+    testSection.setAttribute('data-bell-dep', 'master');   // 🔧 v283.6: تست فقط وقتی اعلان‌ها روشن‌اند معنا دارد
     const testBtn = document.createElement('button');
     testBtn.type = 'button';
     testBtn.className = 'btn btn-secondary';
@@ -16464,6 +16613,14 @@ function showBellSettings() {
     btnRow.appendChild(cancelBtn);
     modal.appendChild(btnRow);
     overlay.appendChild(modal);
+    // 🔧 v283.6: وضعیت اولیهٔ خاکستری بخش‌های وابسته (بعد از ساخت همهٔ بخش‌ها)
+    function refreshDependentUI() {
+        const masterOn = !!settings.enabled;
+        const remindersOn = masterOn && settings.sections.deadlines !== false;
+        modal.querySelectorAll('[data-bell-dep="master"]').forEach(function(el) { el.classList.toggle('bell-disabled', !masterOn); });
+        modal.querySelectorAll('[data-bell-dep="reminders"]').forEach(function(el) { el.classList.toggle('bell-disabled', !remindersOn); });
+    }
+    refreshDependentUI();
     overlay.onclick = function(e) { if (e.target === overlay) closeBellSettings(); };
     document.body.appendChild(overlay);
     // 🔧 v216: marker مودال + track — Back موبایل تنظیمات زنگوله را می‌بندد
@@ -20371,6 +20528,102 @@ function NET_broadcast(event, payload) {
         try { NET_STATE.ch.send({ type: 'broadcast', event: event, payload: payload }); } catch(e) {}
     }
 }
+// ─── 🔧 v283.5 — دینگِ آنلاین‌شدن کاربر دیگر (الزام کاربر) ───
+// «اگر کاربری دیگر آنلاین شد و برنامه ما فعال بود این موضوع را بفهمد و یک
+// صدای دینگ زیبا پخش کند بدون هیچ نوتیف یا پیام دیگری».
+//   • تشخیص: در هندلر presence «sync» کانال گروه — مقایسهٔ نقشهٔ قبلی
+//     NET_STATE.online با نقشهٔ جدید؛ هر uid که قبلاً نبود و حالا هست =
+//     تازه‌آنلاین. sync اولِ بعد از اتصال/تغییر گروه فقط «مبنا» است و زنگ
+//     نمی‌خورد (بقیه از قبل آنلاین‌اند، «آنلاین شدن» رخ نداده).
+//   • فقط کاربرِ دیگر: uid خودم زنگ ندارد؛ چنددستگاههٔ خودم هم (همان uid).
+//   • فقط وقتی برنامه فعال است: تب نمایان + صفحهٔ قفل بسته. وگرنه هیچ —
+//     نه زنگ، نه صف، نه پیام.
+//   • بدون هیچ نوتیف/پیام: showToast هرگز صدا نمی‌خورد؛ هیچ عنصری به DOM
+//     اضافه نمی‌شود؛ فقط صدا. اگر AudioContext در دسترس نبود یا suspended
+//     ماند، بی‌صدا رد می‌شود.
+//   • صدای «دینگ» — WebAudio بدون فایل: دو نت نرم B5→E6 با هارمونیک زنگی،
+//     حملهٔ ۲۰ms و افت نمایی؛ ملایم و کوتاه (~۱.۱ ثانیه).
+//   • ضد فلوکینگ: برای هر uid حداکثر یک زنگ در ۱۰ ثانیه؛ زنگ‌های هم‌زمانِ
+//     چند کاربر با فاصلهٔ ۹۰۰ms پشت هم.
+const NET_DING_STATE = { ctx: null, lastPerUid: {}, lastGlobal: 0 };
+function netAudioUnlock() {
+    // اولین تعامل کاربر (کلیک/تایپ) → AudioContext ساخته و resume می‌شود
+    // تا زنگ‌های بعدی مجاز باشند. خطاها بی‌صدا نادیده (هیچ پیامی نمی‌دهیم).
+    try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        if (!NET_DING_STATE.ctx) NET_DING_STATE.ctx = new AC();
+        if (NET_DING_STATE.ctx.state === 'suspended') NET_DING_STATE.ctx.resume().catch(function() {});
+    } catch (e) {}
+}
+['pointerdown', 'keydown', 'touchstart'].forEach(function(ev) {
+    try { document.addEventListener(ev, netAudioUnlock, { passive: true }); } catch (e) {}
+});
+function netAppActive() {
+    // «برنامهٔ فعال» = تب جلوی چشم کاربر + صفحهٔ قفل بسته
+    try {
+        if (document.visibilityState !== 'visible') return false;
+        const ls = document.getElementById('lockScreen');
+        if (ls && ls.classList.contains('active')) return false;
+        return true;
+    } catch (e) { return false; }
+}
+function netDingNow(ctx) {
+    try {
+        const t0 = ctx.currentTime + 0.02;
+        [
+            { f: 987.77,  at: 0.00,  dur: 0.9, g: 0.15 },   // B5
+            { f: 1318.51, at: 0.13,  dur: 1.1, g: 0.12 }    // E6
+        ].forEach(function(n) {
+            const t1 = t0 + n.at, tEnd = t1 + n.dur;
+            const osc = ctx.createOscillator();  osc.type = 'sine';
+            const harm = ctx.createOscillator(); harm.type = 'sine';
+            osc.frequency.value = n.f;
+            harm.frequency.value = n.f * 2.756;   // پارشیال زنگ
+            const g1 = ctx.createGain(), g2 = ctx.createGain();
+            g1.gain.setValueAtTime(0.0001, t1);
+            g1.gain.exponentialRampToValueAtTime(n.g, t1 + 0.02);
+            g1.gain.exponentialRampToValueAtTime(0.0001, tEnd);
+            g2.gain.setValueAtTime(0.0001, t1);
+            g2.gain.exponentialRampToValueAtTime(n.g * 0.22, t1 + 0.02);
+            g2.gain.exponentialRampToValueAtTime(0.0001, t1 + n.dur * 0.45);
+            osc.connect(g1).connect(ctx.destination);
+            harm.connect(g2).connect(ctx.destination);
+            osc.start(t1);  osc.stop(tEnd + 0.05);
+            harm.start(t1); harm.stop(t1 + n.dur * 0.45 + 0.05);
+        });
+    } catch (e) {}
+}
+function netPlayOnlineDing() {
+    if (!netAppActive()) return;
+    netAudioUnlock();
+    const ctx = NET_DING_STATE.ctx;
+    if (!ctx) return;
+    if (ctx.state === 'running') { netDingNow(ctx); return; }
+    // کانتکست تازه‌ساخته معمولاً suspended است — یک‌بار resume و تلاش مجدد؛
+    // اگر نشد بی‌صدا رد می‌شود (هیچ پیامی نمی‌دهیم).
+    if (ctx.state === 'suspended') {
+        try { ctx.resume().catch(function() {}); } catch (e) {}
+        setTimeout(function() {
+            if (NET_DING_STATE.ctx === ctx && ctx.state === 'running' && netAppActive()) netDingNow(ctx);
+        }, 260);
+    }
+}
+function netPresenceDiffs(oldMap, newMap) {
+    // در هندلر «sync» presence صدا زده می‌شود — «قبل از» جایگزینی NET_STATE.online
+    if (!NET_STATE._presenceBaselined) { NET_STATE._presenceBaselined = true; return; }
+    const now = Date.now();
+    Object.keys(newMap || {}).forEach(function(uid) {
+        if (oldMap && oldMap[uid]) return;                        // قبلاً آنلاین بوده
+        if (uid === netMyUid()) return;                           // خودم (یا دستگاه دوم خودم)
+        if (now - (NET_DING_STATE.lastPerUid[uid] || 0) < 10000) return;   // ضد فلوکینگ هر کاربر
+        const delay = Math.max(0, NET_DING_STATE.lastGlobal + 900 - now);  // فاصلهٔ زنگ‌های هم‌زمان
+        NET_DING_STATE.lastPerUid[uid] = now;
+        NET_DING_STATE.lastGlobal = now + delay;
+        setTimeout(function() { netPlayOnlineDing(); }, delay);
+    });
+}
+
 function NET_subscribe() {
     if (ghEnabled()) { ghStartPoll(); return; }
     if (NET_STATE.voice.in) netVoiceLeave(true);   // BA-232: تغییر کانال → جلسهٔ صوتی قبلی منحل
@@ -20467,6 +20720,8 @@ function NET_subscribe() {
                 (st[k] || []).forEach(function(pl) { if (pl && pl.uid) map[pl.uid] = { name: (pl.name || 'کاربر'), mic: !!pl.mic, lis: !!pl.lis }; });
             });
         } catch(e) {}
+        // 🔧 v283.5: دینگ آنلاین‌شدن کاربر دیگر — مقایسه با نقشهٔ قبلی، قبل از جایگزینی
+        netPresenceDiffs(NET_STATE.online, map);
         NET_STATE.online = map;
         if (document.getElementById('netChatHeader')) netRenderChatHeader();
         const ov = document.getElementById('netOverlay');
@@ -20575,11 +20830,14 @@ function netNotifyIncoming(code, msg) {
     const mine = netMyGroups().find(function(x) { return x.code === code; });
     const gname = (mine && mine.name) || 'گروه';
     netNotifStripRender();
-    netSysNotify('💬 ' + (msg.sender_name || 'کاربر') + ' — ' + gname, netMsgPreview(msg));
+    // 🔧 v283.6: بخش «پیام‌های شبکه» خاموش → بدون اعلان (شمارندهٔ نخوانده‌ها همان‌طور کار می‌کند)
+    if (notifSectionOn('netMsgs')) netSysNotify('💬 ' + (msg.sender_name || 'کاربر') + ' — ' + gname, netMsgPreview(msg));
     if (ov && ov.classList.contains('active')) { try { netRender(); } catch(e) {} }
 }
 // نوتیف تماس/ورود به گفتگوی صوتی یک گروه
 function netNotifyCall(code, name) {
+    // 🔧 v283.6: بخش «تماس‌های شبکه» خاموش → بدون اعلان و بدون صدا
+    if (!notifSectionOn('netCalls')) return;
     const ov = document.getElementById('netOverlay');
     const viewing = !!(ov && ov.classList.contains('active') && NET_STATE.tab === 'chat'
         && NET_STATE.group && NET_STATE.group.code === code);
@@ -20616,7 +20874,8 @@ function netNotifyIncomingGroupMsgs(gname, rows) {
         wm[gname] = new Date().toISOString();
         if (!fresh.length) return;
         const m0 = fresh[fresh.length - 1];
-        netSysNotify('💬 ' + gname + (fresh.length > 1 ? ' — ' + toPersianNumber(fresh.length) + ' پیام جدید' : ''),
+        // 🔧 v283.6: بخش «پیام‌های شبکه» خاموش → بدون اعلان (واترمارک همان‌طور تازه می‌شود)
+        if (notifSectionOn('netMsgs')) netSysNotify('💬 ' + gname + (fresh.length > 1 ? ' — ' + toPersianNumber(fresh.length) + ' پیام جدید' : ''),
             (m0.sender_name || '') + ': ' + ((m0.text || '').slice(0, 60) || 'پیوست'));
     } catch(e) {}
 }
@@ -22755,7 +23014,7 @@ function netForget() {
     NET_STATE.unreadByGroup = {}; NET_STATE.lastMsgAt = {}; NET_STATE.notifKeys = {};
     netNotifStripRender();
     NET_STATE.showSetup = false;
-    NET_STATE.members = []; NET_STATE.tasks = []; NET_STATE.msgs = []; NET_STATE.online = {};
+    NET_STATE.members = []; NET_STATE.tasks = []; NET_STATE.msgs = []; NET_STATE.online = {}; NET_STATE._presenceBaselined = false;   // 🔧 v283.5: sync بعدی دوباره «مبنا» — بدون زنگ
     netStatusSet('غیرفعال');
     netRender();
     showToast('تنظیمات شبکه پاک شد');
@@ -22988,7 +23247,7 @@ async function netLeaveGroup() {
             }
         } catch(e) {}
         netSetActiveGroup(null);
-        NET_STATE.members = []; NET_STATE.tasks = []; NET_STATE.msgs = []; NET_STATE.online = {};
+        NET_STATE.members = []; NET_STATE.tasks = []; NET_STATE.msgs = []; NET_STATE.online = {}; NET_STATE._presenceBaselined = false;   // 🔧 v283.5: sync بعدی دوباره «مبنا» — بدون زنگ
         netRenderTab();
         showToast('از گروه خارج شدید');
         return;
@@ -22998,7 +23257,7 @@ async function netLeaveGroup() {
     }
     NET_leaveChannel();
     netSetActiveGroup(null);
-    NET_STATE.members = []; NET_STATE.tasks = []; NET_STATE.msgs = []; NET_STATE.online = {};
+    NET_STATE.members = []; NET_STATE.tasks = []; NET_STATE.msgs = []; NET_STATE.online = {}; NET_STATE._presenceBaselined = false;   // 🔧 v283.5: sync بعدی دوباره «مبنا» — بدون زنگ
     netRenderTab();
     showToast('از گروه خارج شدید');
 }
@@ -23711,7 +23970,7 @@ function netRemoveGroupEverywhere(code, name, msg) {
             netVoiceLeave(true);
             NET_leaveChannel();
             netSetActiveGroup(null);
-            NET_STATE.members = []; NET_STATE.tasks = []; NET_STATE.msgs = []; NET_STATE.online = {};
+            NET_STATE.members = []; NET_STATE.tasks = []; NET_STATE.msgs = []; NET_STATE.online = {}; NET_STATE._presenceBaselined = false;   // 🔧 v283.5: sync بعدی دوباره «مبنا» — بدون زنگ
             if (NET_STATE.tab !== 'groups') { NET_STATE.tab = 'groups'; }
             netRenderTab();
         }
@@ -24806,7 +25065,7 @@ function netPvHideForMe(mid) {
 function netPvNotify(m) {
     // 🔧 Q (v264): هر پیام خصوصی دریافتی → نوتیف کامل (بنر درون‌صفحه +
     // نوتیف سیستم) — مثل پیام گروهی، الزام کاربر «هرگونه دریافت نوتیف».
-    try { netSysNotify('💬 پیام خصوصی — ' + (m.sender_name || NET_STATE.pv.peerName || ''), ((m.text || '').slice(0, 60) || 'پیوست')); } catch(e) {}
+    try { if (notifSectionOn('netMsgs')) netSysNotify('💬 پیام خصوصی — ' + (m.sender_name || NET_STATE.pv.peerName || ''), ((m.text || '').slice(0, 60) || 'پیوست')); } catch(e) {}
 }
 // دریافت رویدادهای چت خصوصی (روی کانال سیگنال شخصی خودم)
 function NET_onPv(p) {
@@ -24995,7 +25254,8 @@ function NET_onCallSignal(p) {
                 NET_sendSignal({ kind: 'end', to: p.from, from: netMyUid(), reason: 'missed' });
                 netCallRingStop();
                 NET_callCleanup();
-                netSysNotify('📞 تماس از دست‌رفته', 'تماس ورودی ' + (C.peerName || 'ناشناس') + ' بی‌پاسخ ماند');
+                // 🔧 v283.6: بخش «تماس‌های شبکه» خاموش → بدون اعلان تماس از دست‌رفته
+                if (notifSectionOn('netCalls')) netSysNotify('📞 تماس از دست‌رفته', 'تماس ورودی ' + (C.peerName || 'ناشناس') + ' بی‌پاسخ ماند');
             }
         }, 30000);
         return;
